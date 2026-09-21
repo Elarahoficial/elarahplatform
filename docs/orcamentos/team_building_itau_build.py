@@ -32,6 +32,15 @@ xcss = '''
   .infocard h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.08;margin:8px 0 6px}
   .infocard p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
   .num{font-family:'DM Serif Display',serif;color:var(--orange);font-size:26px;line-height:1}
+  /* cards com foto no topo (slide propósito) */
+  .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28)}
+  .pcard .pphoto{aspect-ratio:16/10;overflow:hidden;background:#eee}
+  .pcard .pphoto img{width:100%;height:100%;object-fit:cover;display:block}
+  .pcard .pbody{padding:15px 18px 18px}
+  .pcard .pbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.1;margin:0 0 6px}
+  .pcard .pbody p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .pcard .pbody p b{color:var(--navy);font-weight:700}
   /* menu de experiências (3 cards) */
   .menu3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
   .exp{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 34px -22px rgba(0,0,0,.32)}
@@ -66,6 +75,10 @@ xcss = '''
   .cofcats{flex:1;min-width:280px;display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;align-content:start}
   .cofcat h4{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:0 0 4px}
   .cofcat p{font-size:10.5px;color:var(--ink);line-height:1.5;margin:0}
+  .bphotos{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .bph{aspect-ratio:16/10;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 32px -24px rgba(0,0,0,.34)}
+  .bph img{width:100%;height:100%;object-fit:cover;display:block}
+  .bmenu{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 18px;margin-top:16px}
   .priceband{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:var(--navy);color:#fff;border-radius:16px;padding:16px 26px;margin-top:14px}
   .priceband .pl{display:block;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);font-weight:700}
   .priceband .pv{font-family:'DM Serif Display',serif;font-size:30px;line-height:1;margin-top:3px}
@@ -120,7 +133,7 @@ PROOF = "Já realizado para times como <b>Compass</b>, <b>Natura</b> e <b>Hidrat
 
 cover = f'''
   <section class="slide">
-{head_block("Proposta de experiência · Team building", "Team building", "Itaú", "São Paulo · Nov/2026")}
+{head_block("Proposta de experiência · Team building", "Team building", "Itaú", "Conceição · São Paulo")}
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Team building · Turma privada</span>
@@ -130,10 +143,13 @@ cover = f'''
         <div class="chips">
           <span class="chip"><b>25</b> pessoas</span>
           <span class="chip"><b>Novembro</b> de 2026</span>
-          <span class="chip">São Paulo</span>
+        </div>
+        <div class="chips" style="margin-top:10px">
+          <span class="chip">Conceição · São Paulo</span>
+          <span class="chip">A partir de <b>R$ 289</b></span>
         </div>
       </div>
-      <div class="cover-photo">{img("capa-oficina-itau.jpg", "Oficina criativa: mãos em ação pintando peças de porcelana", "center 45%")}</div>
+      <div class="cover-photo">{img("perfumaria-oficina.jpg", "Oficina criativa corporativa: várias pessoas de mão na massa", "center 42%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Itaú")}
@@ -146,10 +162,19 @@ proposito = f'''
     <h2>Team building que ninguém <em>finge gostar</em></h2>
     <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos — sem hierarquia, sem quem sabe mais e quem sabe menos. 🧡</p>
     <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><span class="num">01</span><h3>Conversa que não rola no escritório</h3><p>Duas horas e meia lado a lado fazem o time falar de coisas que a reunião nunca puxa. Áreas diferentes se misturam sozinhas.</p></div>
-      <div class="infocard"><span class="num">02</span><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa saber pintar ou modelar. Diretoria e time começam do zero juntos — e é justamente aí que a hierarquia cai.</p></div>
-      <div class="infocard"><span class="num">03</span><h3>Fica depois do dia</h3><p>Cada um leva a própria peça pra mesa de trabalho. A lembrança do encontro fica visível no dia a dia do time.</p></div>
+    <div class="pgrid">
+      <div class="pcard">
+        <div class="pphoto">{img("cover-corp.jpg", "Time conversando e se conectando num encontro", "center 40%")}</div>
+        <div class="pbody"><h3>Conversa que não rola no escritório</h3><p>Duas horas e meia lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div>
+      </div>
+      <div class="pcard">
+        <div class="pphoto">{img("corp-criativo.jpg", "Time criando junto, de mão na massa", "center 45%")}</div>
+        <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa saber pintar ou modelar. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
+      </div>
+      <div class="pcard">
+        <div class="pphoto">{img("vibe-conexao-corp.jpg", "Time rindo e celebrando o encontro", "center 40%")}</div>
+        <div class="pbody"><h3>Fica depois do dia</h3><p>Cada um leva a própria peça pra mesa de trabalho. <b>A lembrança do encontro fica visível</b> no dia a dia do time.</p></div>
+      </div>
     </div>
     <div class="bnote" style="margin-top:16px">◆ A gente cuida de tudo: profissional que conduz, material, estrutura e montagem. O RH só precisa avisar a data e reunir o time — e, se quiserem, a gente reserva um momento de fala da liderança no meio do encontro. 🌿</div>
     {foot("Por que funciona")}
@@ -199,19 +224,21 @@ coffee = f'''
   <section class="slide">
 {head_simple("O brunch")}
     <span class="eyebrow orange">◆ Incluso nos planos mais altos</span>
-    <h2>Para uma experiência <em>mais completa</em></h2>
-    <p class="lead">A gente monta uma mesa de brunch completa pro grupo, servida durante a experiência — sem precisar contratar buffet à parte. 🥐</p>
-    <div class="cofrow">
-      <div class="cofphoto">{img("mesa-montada-corp.jpg", "Mesa de brunch montada, elegante e diurna", "center 50%")}</div>
-      <div class="cofcats" style="display:flex;flex-direction:column;gap:12px;justify-content:center">
-        <p style="font-size:12.5px;color:var(--ink);line-height:1.55;margin:0">Porque a pausa pro cafezinho também faz parte do encontro. É nesse momento mais leve, entre uma conversa e outra, que o time desacelera, troca e cria espaço pra novas conexões.</p>
-        <p style="font-size:12.5px;color:var(--ink);line-height:1.55;margin:0">Tudo acontece no próprio <b>Centro Empresarial Itaú Conceição</b>, integrando experiência criativa, pausa e convivência em um mesmo momento.</p>
-        <p style="font-size:12.5px;color:var(--muted);line-height:1.55;margin:0">Um respiro no meio da rotina pra criar, conversar e viver algo diferente junto. 🤍</p>
-      </div>
+    <h2>A mesa posta <em>esperando o time</em></h2>
+    <p class="lead">A gente monta uma mesa de brunch completa pro grupo, servida durante a experiência no próprio <strong>Centro Empresarial Itaú Conceição</strong> — sem precisar contratar buffet à parte. Porque a pausa pro cafezinho também faz parte do encontro. 🥐</p>
+    <div class="bphotos">
+      <div class="bph">{img("menu-coffee.jpg", "Mesa de brunch com salgados e finger food", "center 45%")}</div>
+      <div class="bph">{img("mesa-montada-corp.jpg", "Mesa de brunch montada, elegante e diurna", "center 55%")}</div>
+    </div>
+    <div class="bmenu">
+      <div class="cofcat"><h4>Salgados</h4><p>Mini croissants de presunto e queijo · mini sanduíches de frango cremoso · pão de queijo</p></div>
+      <div class="cofcat"><h4>Pães &amp; acompanhamentos</h4><p>Pães variados · manteiga · cream cheese · geleia · patê de frango ou de ervas</p></div>
+      <div class="cofcat"><h4>Doces &amp; frutas</h4><p>Bolo caseiro de laranja ou limão · brownie · frutas da estação · iogurte com granola</p></div>
+      <div class="cofcat"><h4>Bebidas</h4><p>Café · leite · suco de laranja · suco de fruta da estação · água</p></div>
     </div>
     <div class="priceband">
-      <div><span class="pl">Brunch completo</span><span class="pv" style="display:block;margin-top:4px">R$ 99 <small style="font-size:13px;font-family:'DM Sans';color:rgba(255,255,255,.7)">por pessoa</small></span></div>
-      <div class="side">Para 25 pessoas<br><b>R$ 2.475</b></div>
+      <div><span class="pl">Brunch corporativo</span><span class="pv" style="display:block;margin-top:4px">R$ 99 <small style="font-size:13px;font-family:'DM Sans';color:rgba(255,255,255,.7)">por pessoa</small></span></div>
+      <div class="side">Servido durante a experiência<br>no espaço do <b>Itaú</b></div>
     </div>
     <p class="fineprint">Fotos ilustrativas da montagem. Cardápio adaptável a restrições alimentares. Valor por pessoa, já incluído nos planos Premium e Completo.</p>
     {foot("O brunch")}
@@ -225,7 +252,7 @@ mimos = f'''
     <p class="lead">Além da peça que cada um cria, os planos superiores somam o registro fotográfico profissional — e o Completo ainda soma um brinde personalizado com a marca do Itaú.</p>
     <div class="opts">
       <div class="opt">
-        <div class="oph">{img("vibe-conexao-corp.jpg", "Momento espontâneo do time registrado por um fotógrafo", "center 40%")}</div>
+        <div class="oph">{img("eventocorporativo.jpg", "Registro fotográfico profissional de um evento corporativo", "center 42%")}</div>
         <div class="ob">
           <span class="ot">Nos planos mais altos</span>
           <h4>Registro fotográfico profissional</h4>
@@ -238,7 +265,7 @@ mimos = f'''
         </div>
       </div>
       <div class="opt hl">
-        <div class="oph">{img("garrafa-itau-laranja.jpg", "Garrafa laranja personalizada, brinde premium para o time", "center 40%")}</div>
+        <div class="oph">{img("garrafa-itau-brinde.jpg", "Garrafa laranja premium personalizada com a marca do Itaú", "center 50%")}</div>
         <div class="ob">
           <span class="ot">★ Plano completo · o brinde</span>
           <h4>Garrafa laranja personalizada</h4>
