@@ -11600,20 +11600,53 @@
 
   // Upsert completo de um registro de fornecedor (cadastro manual + edição
   // dos campos de CRM). Chaveado por fornecedor_key derivado do nome.
+  // Colunas de fornecedores_metadata que só passam a existir depois de
+  // uma migração específica, e o arquivo que cria cada uma.
+  const FORN_COLUNAS_OPCIONAIS = {
+    pix: 'sql/elarah_fornecedores_pix.sql',
+    instrucoes_pos_compra: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
+    instrucoes_template: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
+    instrucoes_variaveis: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
+    instrucoes_link: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
+  };
+  // Extrai o nome da coluna da mensagem do PostgREST:
+  // "Could not find the 'instrucoes_link' column of 'fornecedores_metadata'
+  //  in the schema cache".
+  function fornColunaFaltante(msg) {
+    const m = /(?:Could not find the\s+)?['"]([a-z0-9_]+)['"]\s+column/i.exec(String(msg || ''));
+    return m ? m[1] : '';
+  }
+
   async function saveFornecedorMetadata(payload) {
     const s = window.supabaseClient;
     if (!s) return { ok: false, error: 'Supabase client indisponível' };
     const key = fornecedorKey(payload.fornecedor_nome);
     if (!key) return { ok: false, error: 'Nome do fornecedor é obrigatório' };
     const row = Object.assign({}, payload, { fornecedor_key: key });
-    const { error } = await s.from('fornecedores_metadata')
-      .upsert(row, { onConflict: 'fornecedor_key' });
-    if (error) {
-      console.error('[Admin] saveFornecedorMetadata error', error);
-      return { ok: false, error: error.message };
+    // Uma coluna nova que o banco ainda não tem derrubava o upsert INTEIRO
+    // — foi assim que um Pix deixou de salvar por causa de instrucoes_link,
+    // campo que a admin nem tinha preenchido. Agora: se a coluna que falta
+    // veio VAZIA, tiramos ela do payload e tentamos de novo, pra o resto
+    // do cadastro salvar. Se veio preenchida, o erro continua na cara —
+    // não engolimos texto que a admin escreveu.
+    const ignoradas = [];
+    for (let tentativa = 0; tentativa < 8; tentativa++) {
+      const { error } = await s.from('fornecedores_metadata')
+        .upsert(row, { onConflict: 'fornecedor_key' });
+      if (!error) {
+        fornecedoresMetaCache = null;
+        return { ok: true, ignoradas };
+      }
+      const col = fornColunaFaltante(error.message);
+      const temValor = col && row[col] != null && String(row[col]).trim() !== '';
+      if (!col || !(col in row) || temValor) {
+        console.error('[Admin] saveFornecedorMetadata error', error);
+        return { ok: false, error: error.message, colunaFaltante: col };
+      }
+      delete row[col];
+      ignoradas.push(col);
     }
-    fornecedoresMetaCache = null;
-    return { ok: true };
+    return { ok: false, error: 'O banco recusou colunas demais que ainda não existem — rode as migrações pendentes.' };
   }
 
   // Remove o registro de um fornecedor de fornecedores_metadata.
@@ -12097,17 +12130,35 @@
         btn.disabled = false;
         btn.textContent = 'Salvar';
         const errStr = String(res.error || '');
+        // Dica pela coluna que o banco disse faltar — antes a mensagem
+        // chutava "instrucoes_pos_compra" pra qualquer erro de instrucoes_,
+        // e a admin ficava procurando uma coluna que já existia.
+        const colFaltante = res.colunaFaltante || '';
+        const sqlDaColuna = colFaltante && FORN_COLUNAS_OPCIONAIS[colFaltante];
         const hint = errStr.includes('tipo_parceria')
           ? '\n\nA vertente "Elarah em casa" precisa ser liberada no banco — rode sql/elarah_fornecedores_tipo_parceria_em_casa.sql no SQL Editor do Supabase.'
-          : (errStr.includes('instrucoes_')
-            ? '\n\nA coluna "instrucoes_pos_compra" ainda não existe — rode sql/elarah_experiences_instrucoes_pos_compra.sql no SQL Editor do Supabase.'
-          : (errStr.includes('pix')
-            ? '\n\nA coluna "pix" ainda não existe — rode sql/elarah_fornecedores_pix.sql no SQL Editor do Supabase.'
+          : (sqlDaColuna
+            ? '\n\nA coluna "' + colFaltante + '" ainda não existe no banco — rode ' +
+              sqlDaColuna + ' no SQL Editor do Supabase.'
+          : (colFaltante
+            ? '\n\nA coluna "' + colFaltante + '" ainda não existe no banco — falta rodar a migração que a cria no Supabase.'
             : (errStr.includes('fornecedores_metadata')
               ? '\n\nA migração sql/elarah_fornecedores_crm.sql provavelmente ainda não foi rodada no Supabase.'
               : '')));
         alert('Não consegui salvar o fornecedor.\n' + (res.error || '') + hint);
         return;
+      }
+      // Salvou, mas o banco ainda não tem algum campo novo (que estava
+      // vazio). Avisa qual migração libera, sem travar o cadastro.
+      if (res.ignoradas && res.ignoradas.length) {
+        const arquivos = Array.from(new Set(
+          res.ignoradas.map(c => FORN_COLUNAS_OPCIONAIS[c]).filter(Boolean)));
+        alert('Fornecedor salvo.\n\n' +
+          'Só um aviso: ' + res.ignoradas.join(', ') +
+          ' ainda não existe(m) no banco. Como esse(s) campo(s) estava(m) vazio(s), nada se perdeu.\n' +
+          (arquivos.length
+            ? '\nPra liberar, rode no SQL Editor do Supabase:\n' + arquivos.join('\n')
+            : ''));
       }
       close();
       if (typeof renderFornecedores === 'function') renderFornecedores();
