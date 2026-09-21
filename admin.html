@@ -2275,6 +2275,10 @@
           <select id="exp-filter-fornecedor" class="admin__analytics-select">
             <option value="">Todos os fornecedores</option>
           </select>
+          <select id="exp-filter-mes" class="admin__analytics-select"
+                  title="Mostra só as experiências que têm alguma data nesse mês. Conta as datas das turmas (incluindo as da Recorrência).">
+            <option value="">Todos os meses</option>
+          </select>
           <input type="text" id="exp-edit-link" placeholder="Cole o link ou ID p/ editar…"
                  class="admin__analytics-select" style="min-width:240px;" autocomplete="off"
                  title="Cole o link público da experiência (experiencia.html?id=…) ou o ID e aperte Enter para abrir o editor completo — preço, horários e todas as informações.">
@@ -3888,6 +3892,7 @@
           <div id="exp-horarios-list" class="admin__horarios-list"></div>
           <button type="button" id="exp-horarios-add-btn" class="admin__horario-add-btn">+ Adicionar horário</button>
           <p class="admin__form-hint">Cada horário tem seu próprio limite de vagas. Ex: <em>19h00 – 22h30</em> com 8 vagas. Vazio = ilimitado. O campo "rest." mostra as vagas restantes calculadas automaticamente.</p>
+          <p class="admin__form-hint" style="margin:6px 0 0;font-size:12px;color:#888;"><b>Pra reabrir com as vagas cheias, é só trocar a data acima e salvar.</b> Não precisa apagar o horário: as vagas restantes não são digitadas, são recalculadas a cada 10 minutos a partir de quem comprou (reservas do site + vendas manuais). Turma com reserva vira histórico em vez de ser apagada, pra não soltar a vaga de quem já pagou.</p>
         </div>
 
         <div class="admin__form-field">

@@ -7560,10 +7560,37 @@
         }
       } catch (e) { console.warn('[Admin] slots load failed', e); }
 
-      if (slotsFromDb.length) {
-        renderHorarioRows(slotsFromDb);
+      // No editor entram só as turmas VIGENTES:
+      //   • as da recorrência (linhas travadas, geridas no painel);
+      //   • as manuais ativas cuja data é a data atual da experiência
+      //     (ou que não têm data).
+      // Turma arquivada — a que virou histórico quando a data mudou,
+      // porque tinha reserva — não volta pro formulário. Se voltasse,
+      // o horário antigo "renasceria" a cada edição e o admin ficaria
+      // apagando de novo toda vez.
+      var dataAtualExp = String(exp.data || '').trim();
+      var agoraMs = Date.now();
+      var slotsEditaveis = slotsFromDb.filter(function (sl) {
+        if (!sl) return false;
+        if (sl.recurrenceRuleId) return true;
+        // Arquivada: virou histórico, não volta pro formulário.
+        if (sl.isActive === false) return false;
+        // Turma de outra data que JÁ passou: é histórico também. Turma
+        // de outra data ainda por vir continua editável (o admin pode
+        // estar só ajustando a data dela).
+        var dSlot = String(sl.data || '').trim();
+        if (!dataAtualExp || !dSlot || dSlot === dataAtualExp) return true;
+        var ts = sl.eventAt ? new Date(sl.eventAt).getTime() : NaN;
+        if (isNaN(ts)) return true;
+        return ts >= agoraMs;
+      });
+
+      if (slotsEditaveis.length) {
+        renderHorarioRows(slotsEditaveis);
       } else {
-        // Fallback: horarios sem slots (experiência pré-migração)
+        // Fallback: horarios sem slots (experiência pré-migração) ou
+        // data nova sem turma criada ainda — as linhas saem sem id, o
+        // saveSlots cria as turmas da data nova com as vagas cheias.
         var horarios = (Array.isArray(exp.horarios) && exp.horarios.length)
           ? exp.horarios
           : (exp.horario ? [exp.horario] : ['']);
@@ -8348,6 +8375,7 @@
       // consegue mapear horário → slot na hora da reserva. Agora alerta.
       if (saved && saved.id && ElarahData.saveSlots) {
         let slotSaveErr = null;
+        let slotsArquivados = [];
         try {
           var slotsToSave = collectSlots();
           // Preenche data e eventAt do slot com os valores da experiencia.
@@ -8359,6 +8387,11 @@
           if (okSlots === false) {
             slotSaveErr = new Error('saveSlots retornou false (veja o console)');
           }
+          // Turmas que saíram do formulário mas tinham reserva/venda
+          // manual não são apagadas — viram histórico (somem do site,
+          // mantêm as reservas ligadas nelas). Avisa, senão parece que
+          // o horário "não foi apagado".
+          slotsArquivados = (okSlots && okSlots.arquivados) || [];
         } catch (slotErr) {
           console.error('[Admin] saveSlots falhou:', slotErr);
           slotSaveErr = slotErr;
@@ -8371,6 +8404,19 @@
             'Abra o console (F12) pra ver o erro completo. Causas comuns: ' +
             'permissões de admin, conflito de constraint, ou problema de rede. ' +
             'Tente salvar novamente.'
+          );
+        } else if (slotsArquivados.length) {
+          const lista = slotsArquivados.map(function (sl) {
+            return '• ' + (sl.data ? sl.data + ' · ' : '') + (sl.horario || '');
+          }).join('\n');
+          alert(
+            'Turma(s) com reserva não são apagadas — viraram histórico:\n\n' +
+            lista + '\n\n' +
+            'Elas saíram do site (ninguém consegue mais comprar), mas ' +
+            'continuam existindo no banco pra não soltar as reservas e as ' +
+            'vendas manuais que já estavam nelas. Se soltasse, as vagas ' +
+            'dessas pessoas iam parar na turma errada.\n\n' +
+            'As reservas continuam em Compras, com data e horário originais.'
           );
         }
         ElarahData.invalidateSlotsCache && ElarahData.invalidateSlotsCache();
@@ -8416,6 +8462,9 @@
   // Ambos persistem entre re-renders dentro da mesma sessão.
   let activeExpFilter = '';
   let activeExpFornecedorFilter = '';
+  // Filtro de mês: '' = todos, 'sem-data' = sem data definida,
+  // 'YYYY-MM' = só experiências com alguma data nesse mês.
+  let activeExpMes = '';
   // Busca de texto (input search no header da aba Experiências).
   // Filtra contra nome, categoria, bairro e descrição (case-insensitive).
   let activeExpSearch = '';
@@ -8424,6 +8473,121 @@
   // "Arquivadas (N)" da barra de filtro alterna pra vê-las (e aí o
   // botão da linha vira "Desarquivar").
   let showArquivadas = false;
+
+  // ---- Filtro por mês/ano ----
+  // A data de uma experiência mora em mais de um lugar: nas turmas
+  // (experience_slots, inclusive as geradas pela Recorrência) e, quando
+  // não há turma, no event_at/rótulo da própria experiência. Aqui
+  // juntamos TODAS as datas — passadas e futuras —, porque o admin
+  // procura tanto a turma que vem quanto a de agosto que quer reativar.
+  const MESES_PT = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  function _expTodasAsDatas(exp, slotsArr) {
+    const ED = window.ElarahData || {};
+    const derive = typeof ED.deriveEventTimestamp === 'function'
+      ? ED.deriveEventTimestamp
+      : function () { return null; };
+    const agora = Date.now();
+    const out = [];
+    const slots = Array.isArray(slotsArr) ? slotsArr : [];
+    let usouSlot = false;
+    slots.forEach(function (sl) {
+      if (!sl || sl.isActive === false) return;
+      let ts = null;
+      if (sl.eventAt) {
+        const t = new Date(sl.eventAt).getTime();
+        if (!isNaN(t)) ts = t;
+      }
+      if (ts == null) ts = derive(sl.data, sl.horario, agora);
+      if (ts != null) { usouSlot = true; out.push(ts); }
+    });
+    // Nenhuma data veio de turma — cai pro nível da experiência.
+    if (!usouSlot && exp) {
+      let et = null;
+      if (exp.eventAt) {
+        const t = new Date(exp.eventAt).getTime();
+        if (!isNaN(t)) et = t;
+      }
+      if (et == null) {
+        et = derive(exp.data,
+          exp.horario || (Array.isArray(exp.horarios) ? exp.horarios[0] : null), agora);
+      }
+      if (et != null) out.push(et);
+    }
+    return out;
+  }
+
+  // 'YYYY-MM' no fuso de SP — o mês tem que ser o mês de São Paulo,
+  // não o do navegador de quem abre o admin.
+  function _mesChave(ts) {
+    try {
+      const partes = new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit'
+      }).formatToParts(new Date(ts));
+      const ano = (partes.find(function (p) { return p.type === 'year'; }) || {}).value;
+      const mes = (partes.find(function (p) { return p.type === 'month'; }) || {}).value;
+      if (ano && mes) return ano + '-' + mes;
+    } catch (e) { /* Intl sem timeZone: cai no fuso local */ }
+    const d = new Date(ts);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+
+  function _mesRotulo(chave) {
+    const partes = String(chave || '').split('-');
+    const mes = Number(partes[1]);
+    if (!MESES_PT[mes - 1]) return chave;
+    return MESES_PT[mes - 1] + ' ' + partes[0];
+  }
+
+  // Meses de uma experiência, sem repetir. Vazio = sem data definida
+  // (voucher, agenda livre, "data em breve").
+  function _expMeses(exp, slotsMap) {
+    const slots = slotsMap ? (slotsMap.get(exp.id) || []) : [];
+    const chaves = new Set();
+    _expTodasAsDatas(exp, slots).forEach(function (ts) { chaves.add(_mesChave(ts)); });
+    return chaves;
+  }
+
+  // Popula o <select id="exp-filter-mes"> só com os meses que existem
+  // de verdade na lista — sem mês vazio pra rolar à toa.
+  function buildExpMesFilter(experiences, slotsMap) {
+    const sel = document.getElementById('exp-filter-mes');
+    if (!sel) return;
+    const chaves = new Set();
+    let temSemData = false;
+    (experiences || []).forEach(function (e) {
+      const meses = _expMeses(e, slotsMap);
+      if (!meses.size) { temSemData = true; return; }
+      meses.forEach(function (k) { chaves.add(k); });
+    });
+    const ordenadas = Array.from(chaves).sort();
+
+    // Se o mês selecionado sumiu da lista (mudou de categoria, por ex.),
+    // volta pra "Todos os meses" em vez de mostrar lista vazia sem motivo.
+    if (activeExpMes && activeExpMes !== 'sem-data' && chaves.has(activeExpMes) === false) {
+      activeExpMes = '';
+    }
+    if (activeExpMes === 'sem-data' && !temSemData) activeExpMes = '';
+
+    sel.innerHTML = '<option value="">Todos os meses</option>' +
+      ordenadas.map(function (k) {
+        return '<option value="' + k + '"' + (k === activeExpMes ? ' selected' : '') + '>' +
+          escapeHtml(_mesRotulo(k)) + '</option>';
+      }).join('') +
+      (temSemData
+        ? '<option value="sem-data"' + (activeExpMes === 'sem-data' ? ' selected' : '') +
+          '>Sem data definida</option>'
+        : '');
+
+    if (!sel._wired) {
+      sel._wired = true;
+      sel.addEventListener('change', function () {
+        activeExpMes = sel.value || '';
+        renderExperiences();
+      });
+    }
+  }
 
   // Popula o <select id="exp-filter-fornecedor"> com os nomes únicos
   // que aparecem em qualquer experiência. Compara case-insensitive
@@ -8762,8 +8926,17 @@
     buildExpFilterBar(noModoAtual, totalArquivadas);
     buildExpFornecedorFilter(noModoAtual);
 
+    // Slots carregados ANTES dos filtros: o filtro de mês precisa das
+    // datas das turmas pra saber em que mês cada experiência cai.
+    var allSlotsMap = new Map();
+    try {
+      if (ElarahData.loadAllSlots) allSlotsMap = await ElarahData.loadAllSlots();
+    } catch (e) { /* tabela pode não existir */ }
+
+    buildExpMesFilter(noModoAtual, allSlotsMap);
+
     // Aplica filtros em AND: categoria (pílulas) + fornecedor (select)
-    // + busca livre (input).
+    // + mês (select) + busca livre (input).
     const searchNorm = (activeExpSearch || '').trim().toLowerCase();
     const experiences = (allExperiences || []).filter(function (e) {
       if (!e) return false;
@@ -8779,6 +8952,14 @@
         const nome = (e.fornecedorNome || '').toLowerCase();
         if (nome !== activeExpFornecedorFilter.toLowerCase()) return false;
       }
+      if (activeExpMes) {
+        const meses = _expMeses(e, allSlotsMap);
+        if (activeExpMes === 'sem-data') {
+          if (meses.size) return false;
+        } else if (!meses.has(activeExpMes)) {
+          return false;
+        }
+      }
       if (searchNorm) {
         const hay = [e.nome, e.categoria, e.bairro, e.descricao, e.fornecedorNome]
           .map(function (s) { return String(s || '').toLowerCase(); })
@@ -8789,12 +8970,6 @@
     });
     const tbody = document.getElementById('experiences-body');
     const countEl = document.getElementById('experiences-count');
-
-    // Carrega todos os slots pra exibir vagas por horário
-    var allSlotsMap = new Map();
-    try {
-      if (ElarahData.loadAllSlots) allSlotsMap = await ElarahData.loadAllSlots();
-    } catch (e) { /* tabela pode não existir */ }
 
     // DEDUP: o site (getVisibleExperiences) descarta cópias com a mesma
     // assinatura (nome+categoria+data+horário+bairro+preço), mantendo só a
@@ -8825,16 +9000,23 @@
       if (!(sig in _dupWinnerBySig)) _dupWinnerBySig[sig] = e.id;
     });
 
-    if (activeExpFilter) {
+    if (activeExpFilter || activeExpFornecedorFilter || activeExpMes || searchNorm) {
       countEl.textContent = experiences.length + ' de ' + allExperiences.length + ' experiência' + (allExperiences.length !== 1 ? 's' : '');
     } else {
       countEl.textContent = allExperiences.length + ' experiência' + (allExperiences.length !== 1 ? 's' : '');
     }
 
     if (experiences.length === 0) {
+      var vazioMsg = 'Nenhuma experiência cadastrada.';
+      if (activeExpMes === 'sem-data') {
+        vazioMsg = 'Nenhuma experiência sem data definida.';
+      } else if (activeExpMes) {
+        vazioMsg = 'Nenhuma experiência com data em ' + escapeHtml(_mesRotulo(activeExpMes)) + '.';
+      } else if (activeExpFilter) {
+        vazioMsg = 'Nenhuma experiência na categoria "' + escapeHtml(activeExpFilter) + '".';
+      }
       tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">' +
-        (activeExpFilter ? 'Nenhuma experiência na categoria "' + escapeHtml(activeExpFilter) + '".' : 'Nenhuma experiência cadastrada.') +
-        '</td></tr>';
+        vazioMsg + '</td></tr>';
       return;
     }
 
@@ -8843,14 +9025,19 @@
     // exibidos é mesclada de volta na ordem global preservando a posição
     // dos que não estão na tela (ver persistExpOrder).
     const reorderEnabled = true;
-    const reorderFiltered = !!(activeExpFilter || activeExpFornecedorFilter || searchNorm);
+    const reorderFiltered = !!(activeExpFilter || activeExpFornecedorFilter || activeExpMes || searchNorm);
     renderExpReorderHint(reorderEnabled, reorderFiltered);
 
     tbody.innerHTML = experiences.map(exp => {
       // HORÁRIO: resumo compacto. Dedup e, se houver muitos, mostra
       // só o primeiro + contagem. Lista completa fica no modal de
       // edição — aqui é só visão geral.
-      var expSlots = allSlotsMap.get(exp.id) || [];
+      // Turma arquivada/cancelada (is_active=false) não aparece no site
+      // — não pode aparecer no resumo do admin nem somar vaga, senão o
+      // "X / Y" da lista conta lugar que ninguém pode comprar.
+      var expSlotsRaw = allSlotsMap.get(exp.id) || [];
+      var expSlots = expSlotsRaw
+        .filter(function (sl) { return sl && sl.isActive !== false; });
       const horariosSet = new Set();
       if (Array.isArray(exp.horarios)) exp.horarios.forEach(h => h && horariosSet.add(String(h).trim()));
       if (exp.horario) horariosSet.add(String(exp.horario).trim());
@@ -8908,11 +9095,13 @@
       const publicVisible = typeof ED.isPubliclyVisible === 'function'
         ? ED.isPubliclyVisible(exp)
         : isActive;
-      // expSlots já foi calculado acima (vagas). isExpiredRecurring só
-      // dá true quando HÁ slots e todos os datados já passaram — sem
-      // slots devolve false, então não gera falso-positivo.
+      // Aqui vai a lista CRUA de slots (expSlotsRaw), não a filtrada das
+      // vagas: isExpiredRecurring já descarta as turmas inativas por
+      // dentro, e é assim que o site decide esconder. Mandar a lista já
+      // filtrada mudaria a resposta quando TODAS as turmas estão
+      // arquivadas — o selo do admin passaria a mentir sobre o site.
       const expiredRecurring = typeof ED.isExpiredRecurring === 'function'
-        ? ED.isExpiredRecurring(exp, expSlots, Date.now())
+        ? ED.isExpiredRecurring(exp, expSlotsRaw, Date.now())
         : false;
       const hiddenFromListings = exp.hideFromCategorias === true;
       // Cópia descartada pela dedup do site: é publicamente visível, mas
