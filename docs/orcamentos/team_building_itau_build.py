@@ -91,11 +91,14 @@ xcss = '''
   .opt .oph{aspect-ratio:16/10;overflow:hidden;position:relative;background:#eee;border-bottom:1px solid var(--line)}
   .opt .oph img{width:100%;height:100%;object-fit:cover;display:block}
   .opt .ob{padding:15px 20px 17px;flex:1;display:flex;flex-direction:column}
-  .opt .ot{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
-  .opt h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);line-height:1.06;margin-top:3px}
-  .opt ul{list-style:none;margin-top:9px;display:flex;flex-direction:column;gap:5px}
+  .opt .oph .pctag{position:absolute;top:11px;right:11px;background:var(--orange);color:#fff;font-size:8.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px;box-shadow:0 8px 16px -6px rgba(212,96,14,.5)}
+  .opt .otp{align-self:flex-start;font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--muted);background:#EFEAE0;padding:5px 12px;border-radius:999px;margin-bottom:7px}
+  .opt .otp.dark{background:var(--navy);color:#fff}
+  .opt h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);line-height:1.06}
+  .opt ul{list-style:none;margin-top:9px;display:flex;flex-direction:column;gap:6px}
   .opt ul li{position:relative;padding-left:16px;font-size:11px;color:var(--ink);line-height:1.32}
   .opt ul li::before{content:"\\2726";position:absolute;left:0;top:1px;color:var(--orange);font-size:9px}
+  .opt .endpill{align-self:flex-start;margin-top:11px;background:#FBE6D8;color:var(--navy);font-size:10px;font-weight:600;padding:6px 14px;border-radius:999px}
   /* logo cliente no header */
   .cobrand{display:flex;align-items:center;gap:9px}
   .cobrand .xx{color:var(--muted);font-size:15px;font-weight:300}
@@ -252,29 +255,29 @@ mimos = f'''
     <p class="lead">Além da peça que cada um cria, os planos superiores somam o registro fotográfico profissional — e o Completo ainda soma um brinde personalizado com a marca do Itaú.</p>
     <div class="opts">
       <div class="opt">
-        <div class="oph">{img("eventocorporativo.jpg", "Registro fotográfico profissional de um evento corporativo", "center 42%")}</div>
+        <div class="oph">{img("mimos-registro.jpg", "Registro fotográfico profissional de um encontro corporativo", "center 45%")}</div>
         <div class="ob">
-          <span class="ot">Nos planos mais altos</span>
+          <span class="otp">Nos planos mais altos</span>
           <h4>Registro fotográfico profissional</h4>
           <ul>
             <li>Um fotógrafo cobre o encontro inteiro</li>
             <li>Cada conversa e cada criação registradas</li>
             <li>Álbum digital pronto pro RH e pra comunicação interna</li>
-            <li>Conteúdo pronto pra usar no LinkedIn</li>
           </ul>
+          <span class="endpill">✓ Conteúdo pronto pra usar no LinkedIn</span>
         </div>
       </div>
       <div class="opt hl">
-        <div class="oph">{img("aromatizador-corp.jpg", "Kit de aromas premium personalizado — vela e difusor", "center 50%")}</div>
+        <div class="oph"><span class="pctag">★ Plano completo</span>{img("mimos-brinde.jpg", "Brinde personalizado — caneca e caixas de presente", "center 50%")}</div>
         <div class="ob">
-          <span class="ot">★ Plano completo · o brinde</span>
-          <h4>Kit de aromas personalizado</h4>
+          <span class="otp dark">O brinde</span>
+          <h4>Brinde personalizado</h4>
           <ul>
-            <li>Vela e difusor de ambientes premium pra cada pessoa</li>
-            <li>Embalagem discreta com a marca do Itaú</li>
+            <li>Um brinde pra cada pessoa do time</li>
+            <li>Personalizado com a marca do Itaú</li>
             <li>Entregue no dia, junto da peça que cada um criou</li>
-            <li>Um mimo elegante que fica na mesa do time</li>
           </ul>
+          <span class="endpill">✓ Um mimo que fica na mesa do time</span>
         </div>
       </div>
     </div>
