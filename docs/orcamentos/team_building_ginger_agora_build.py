@@ -42,7 +42,7 @@ xcss = '''
   .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0}
   .opts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px;align-items:stretch}
   .opt{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28)}
-  .opt .oph{height:112px;overflow:hidden;position:relative;background:#eee;border-bottom:1px solid var(--line)}
+  .opt .oph{aspect-ratio:1/1;overflow:hidden;position:relative;background:#eee;border-bottom:1px solid var(--line)}
   .opt .oph img{width:100%;height:100%;object-fit:cover;display:block}
   .opt .ob{padding:15px 20px 17px;flex:1;display:flex;flex-direction:column}
   .opt .ot{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
@@ -104,7 +104,7 @@ cover = f'''
           <span class="chip"><b>30/10</b> sex</span>
         </div>
       </div>
-      <div class="cover-photo">{img("agora-hero.jpg", "Time numa experiência de cerâmica no Agora Intu", "center 42%")}</div>
+      <div class="cover-photo">{img("agora-mesa.jpg", "Cenário de cerâmica montado no Agora Intu", "center 50%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Ginger")}
@@ -149,13 +149,14 @@ atmosfera = f'''
     <h2>O clima que espera <em>o time</em></h2>
     <p class="lead">Mesa posta com velas e flores, mãos na argila e o grupo criando junto — luz baixa, playlist boa e aquela sensação de estar num lugar especial. É essa a atmosfera do Agora Intu.</p>
     <div class="egrid">
-      <figure>{img("agora-mesa.jpg", "Mesa posta com velas e flores no Agora Intu", "center 50%")}<figcaption>Mesa posta &amp; velas</figcaption></figure>
-      <figure>{img("ceramica-meninas.jpg", "Grupo criando cerâmica junto", "center 30%")}<figcaption>Mão na massa, juntas</figcaption></figure>
+      <figure>{img("agora-pintura.jpg", "Grupo criando cerâmica junto no Agora Intu", "center 40%")}<figcaption>Mão na massa, juntas</figcaption></figure>
+      <figure>{img("agora-ceramica.jpg", "Modelagem de cerâmica à mão no Agora Intu", "center 40%")}<figcaption>Modelagem à mão</figcaption></figure>
+      <figure>{img("agora-selfie.jpg", "Time rindo durante a experiência", "center 40%")}<figcaption>Risada garantida</figcaption></figure>
       <figure>{img("torno.jpg", "Mãos modelando argila", "center 50%")}<figcaption>Argila nas mãos</figcaption></figure>
       <figure>{img("ceramica2.jpg", "Peças de cerâmica autorais", "center 50%")}<figcaption>As peças que ficam</figcaption></figure>
-      <figure>{img("agora-ceramica.jpg", "Modelagem de cerâmica à mão no Agora Intu", "center 40%")}<figcaption>Modelagem à mão</figcaption></figure>
       <figure>{img("agora-grupo.jpg", "Time reunido à mesa no Agora Intu", "center 50%")}<figcaption>O time à mesa</figcaption></figure>
     </div>
+    <div class="bnote" style="margin-top:16px">◆ <b>Tudo incluso:</b> espaço exclusivo · ceramista conduzindo · todos os materiais · queima da cerâmica · mesas e ambientação · playlist e velas · café, chá e água — e cada um leva a própria peça.</div>
     {foot("A atmosfera do Agora")}
   </section>'''
 
@@ -172,7 +173,7 @@ investimento = f'''
     <p class="subh">Opcionais pra deixar completo</p>
     <div class="opts">
       <div class="opt">
-        <div class="oph">{img("ojardim4.jpg", "Mesa de coffee com finger food e doces", "center 50%")}</div>
+        <div class="oph">{img("menu-coffee.jpg", "Finger food e doces do coffee break", "center 50%")}</div>
         <div class="ob">
           <span class="ot">Alimentação</span>
           <h4>Menu Completo</h4>
