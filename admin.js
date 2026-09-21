@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v46 — Arquivar experiência (some da lista sem mexer na contabilidade); Excluir agora diz o motivo quando o banco recusa');
+  console.info('[Elarah Admin] admin.js v47 — Salvar fornecedor não quebra por coluna que falta; emoji do WhatsApp via api.whatsapp.com; repasses pendentes incluem venda manual');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
