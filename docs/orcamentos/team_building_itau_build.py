@@ -133,7 +133,7 @@ cover = f'''
           <span class="chip">São Paulo</span>
         </div>
       </div>
-      <div class="cover-photo">{img("eventocorporativo.jpg", "Time reunido num evento corporativo, homens e mulheres celebrando junto", "center 40%")}</div>
+      <div class="cover-photo">{img("capa-oficina-itau.jpg", "Oficina criativa: mãos em ação pintando peças de porcelana", "center 45%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Itaú")}
@@ -162,23 +162,23 @@ experiencias = f'''
     <h2>Três experiências <em>pro time</em></h2>
     <p class="lead">Todas são feitas pra quem nunca fez, funcionam bem em grupo e colocam todo mundo de mão na massa. É só escolher a que combina mais com o time. 🧡</p>
     <div class="menu3">
-      <div class="exp hl">
-        <span class="selo">★ Sugestão Elarah</span>
-        <div class="ephoto">{img("vibe-criar-corp.jpg", "Mãos pintando peças de porcelana numa mesa criativa", "center 55%")}</div>
-        <div class="ebody">
-          <span class="en">01 · A mais criativa</span>
-          <h3>Pintura em Porcelana</h3>
-          <p>Cada pessoa personaliza sua própria peça e leva pra casa. Leve, visual e fácil de participar — rende conversa e deixa uma lembrança do encontro.</p>
-          <span class="from">A partir de <b>R$ 349</b> por pessoa.</span>
-        </div>
-      </div>
       <div class="exp">
         <div class="ephoto">{img("vela-corp.jpg", "Vela artesanal acesa, criada na experiência sensorial", "center 50%")}</div>
         <div class="ebody">
-          <span class="en">02 · A mais sensorial</span>
+          <span class="en">01 · A mais sensorial</span>
           <h3>Sabonete ou Vela</h3>
           <p>Cada participante cria sua própria peça escolhendo aromas e combinações. Uma pausa gostosa pra desacelerar, conversar e fazer algo diferente junto.</p>
           <span class="from">A partir de <b>R$ 289</b> por pessoa.</span>
+        </div>
+      </div>
+      <div class="exp hl">
+        <span class="selo">★ Sugestão Elarah</span>
+        <div class="ephoto">{img("xicarapintada.jpg", "Peças de porcelana pintadas à mão, coloridas e autorais", "center 50%")}</div>
+        <div class="ebody">
+          <span class="en">02 · A mais criativa</span>
+          <h3>Pintura em Porcelana</h3>
+          <p>Cada pessoa personaliza sua própria peça e leva pra casa. Leve, visual e fácil de participar — rende conversa e deixa uma lembrança do encontro.</p>
+          <span class="from">A partir de <b>R$ 349</b> por pessoa.</span>
         </div>
       </div>
       <div class="exp">
@@ -197,25 +197,24 @@ experiencias = f'''
 
 coffee = f'''
   <section class="slide">
-{head_simple("O coffee")}
-    <span class="eyebrow orange">◆ Coffee corporativo · no espaço do Itaú</span>
-    <h2>A mesa posta <em>esperando o time</em></h2>
-    <p class="lead">Um coffee corporativo montado dentro do espaço do Itaú, servido durante a experiência — salgados, pães, doces, frutas e bebidas, sem precisar contratar buffet à parte. 🥐</p>
+{head_simple("O brunch")}
+    <span class="eyebrow orange">◆ Incluso nos planos mais altos</span>
+    <h2>Para uma experiência <em>mais completa</em></h2>
+    <p class="lead">A gente monta uma mesa de brunch completa pro grupo, servida durante a experiência — sem precisar contratar buffet à parte. 🥐</p>
     <div class="cofrow">
-      <div class="cofphoto">{img("menu-coffee.jpg", "Mesa de coffee corporativo com salgados e finger food", "center 45%")}</div>
-      <div class="cofcats">
-        <div class="cofcat"><h4>Salgados</h4><p>Mini croissants de presunto e queijo · mini sanduíches de frango cremoso · pão de queijo</p></div>
-        <div class="cofcat"><h4>Pães &amp; acompanhamentos</h4><p>Pães variados · manteiga · cream cheese · geleia · patê de frango ou de ervas</p></div>
-        <div class="cofcat"><h4>Doces &amp; frutas</h4><p>Bolo caseiro de laranja ou limão · brownie · frutas da estação · iogurte com granola</p></div>
-        <div class="cofcat"><h4>Bebidas</h4><p>Café · leite · suco de laranja · suco de fruta da estação · água</p></div>
+      <div class="cofphoto">{img("mesa-montada-corp.jpg", "Mesa de brunch montada, elegante e diurna", "center 50%")}</div>
+      <div class="cofcats" style="display:flex;flex-direction:column;gap:12px;justify-content:center">
+        <p style="font-size:12.5px;color:var(--ink);line-height:1.55;margin:0">Porque a pausa pro cafezinho também faz parte do encontro. É nesse momento mais leve, entre uma conversa e outra, que o time desacelera, troca e cria espaço pra novas conexões.</p>
+        <p style="font-size:12.5px;color:var(--ink);line-height:1.55;margin:0">Tudo acontece no próprio <b>Centro Empresarial Itaú Conceição</b>, integrando experiência criativa, pausa e convivência em um mesmo momento.</p>
+        <p style="font-size:12.5px;color:var(--muted);line-height:1.55;margin:0">Um respiro no meio da rotina pra criar, conversar e viver algo diferente junto. 🤍</p>
       </div>
     </div>
     <div class="priceband">
-      <div><span class="pl">Coffee corporativo</span><span class="pv" style="display:block;margin-top:4px">R$ 99 <small style="font-size:13px;font-family:'DM Sans';color:rgba(255,255,255,.7)">por pessoa</small></span></div>
+      <div><span class="pl">Brunch completo</span><span class="pv" style="display:block;margin-top:4px">R$ 99 <small style="font-size:13px;font-family:'DM Sans';color:rgba(255,255,255,.7)">por pessoa</small></span></div>
       <div class="side">Para 25 pessoas<br><b>R$ 2.475</b></div>
     </div>
-    <p class="fineprint">Coffee corporativo servido no próprio espaço do Itaú, durante a experiência. Fotos ilustrativas da montagem; cardápio adaptável a restrições alimentares — é só avisar. Valor por pessoa; já incluído no plano Premium.</p>
-    {foot("O coffee")}
+    <p class="fineprint">Fotos ilustrativas da montagem. Cardápio adaptável a restrições alimentares. Valor por pessoa, já incluído nos planos Premium e Completo.</p>
+    {foot("O brunch")}
   </section>'''
 
 mimos = f'''
