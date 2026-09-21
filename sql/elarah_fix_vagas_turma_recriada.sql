@@ -398,5 +398,92 @@ where b.slot_id is null
 order by b.created_at desc;
 
 
+-- =============================================================
+-- 5. Quem está dentro das turmas negativas
+-- -------------------------------------------------------------
+-- Quando 4a mostra pessoas_de_outra_data = 0 e mesmo assim sobra
+-- negativo, a contagem está certa: tem mais gente do que a capacidade
+-- escrita. Esta consulta mostra NOME a nome quem está sendo contado,
+-- de onde veio (site ou venda manual) e marca quem aparece duas vezes
+-- na mesma turma — o caso clássico é a mesma pessoa comprando no site
+-- e sendo registrada de novo como venda manual, ocupando dois lugares.
+-- A marca compara por e-mail (ou pelo nome, quando não há e-mail).
+-- =============================================================
+with turmas as (
+  select s.id, s.experience_id, s.data, s.horario, s.vagas_total, s.vagas_restantes
+    from public.experience_slots s
+   where s.vagas_total is not null
+     and s.vagas_restantes < 0
+),
+pessoas as (
+  select t.id as slot_id, 'site' as origem, b.nome as quem,
+         b.email, b.telefone,
+         greatest(coalesce(b.quantidade, 1), 1) as pessoas,
+         b.status as situacao, b.created_at as quando
+    from turmas t
+    join public.bookings b
+      on b.slot_id = t.id and b.status in ('pending', 'pago')
+  union all
+  select t.id, 'venda manual', ms.customer_name,
+         ms.customer_email, ms.customer_phone,
+         greatest(coalesce(ms.quantity, 1), 1),
+         ms.payment_status, ms.created_at
+    from turmas t
+    join public.manual_sales ms
+      on ms.slot_id = t.id and ms.payment_status in ('pago', 'pendente')
+)
+select
+  e.nome                    as experiencia,
+  coalesce(t.data, '—')     as turma,
+  t.horario,
+  t.vagas_total             as capacidade,
+  p.origem,
+  p.quem,
+  coalesce(p.email, '—')    as email,
+  coalesce(p.telefone, '—') as telefone,
+  p.pessoas,
+  p.situacao,
+  to_char(p.quando at time zone 'America/Sao_Paulo', 'DD/MM/YYYY') as registrado_em,
+  case when count(*) over (
+         partition by t.id, lower(btrim(coalesce(p.email, p.quem)))
+       ) > 1 then 'REPETIDO' else '' end as atencao
+from pessoas p
+join turmas t on t.id = p.slot_id
+join public.experiences e on e.id = t.experience_id
+order by e.nome, t.data, p.quem, p.origem;
+
+
+-- =============================================================
+-- 6. OPCIONAL — acertar a capacidade das turmas que JÁ PASSARAM
+-- -------------------------------------------------------------
+-- NÃO roda sozinho: está comentado de propósito. Só use depois de
+-- olhar o passo 5 e concluir que as pessoas são reais (ou seja, não
+-- tem repetido pra apagar).
+--
+-- Turma que já aconteceu não trava venda nenhuma — o negativo ali é só
+-- número feio na lista do admin. Este UPDATE escreve, como capacidade,
+-- o número de pessoas que de fato foram: a turma passa a aparecer
+-- lotada (0 restantes) em vez de negativa. Não toca em turma futura,
+-- porque lá a capacidade é uma decisão sua, não um registro do passado.
+--
+-- Pra usar: tire os "-- " do começo das linhas e rode.
+--
+-- update public.experience_slots s
+--    set vagas_total = (
+--      coalesce((select sum(greatest(coalesce(b.quantidade, 1), 1))
+--                  from public.bookings b
+--                 where b.slot_id = s.id and b.status in ('pending', 'pago')), 0)
+--    + coalesce((select sum(greatest(coalesce(ms.quantity, 1), 1))
+--                  from public.manual_sales ms
+--                 where ms.slot_id = s.id and ms.payment_status in ('pago', 'pendente')), 0)
+--    )
+--  where s.vagas_total is not null
+--    and s.vagas_restantes < 0
+--    and s.event_at is not null
+--    and s.event_at < now();
+--
+-- select public.reconcile_all_vagas();
+
+
 -- ===== Refresh do cache do PostgREST =====
 notify pgrst, 'reload schema';
