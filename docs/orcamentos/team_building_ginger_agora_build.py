@@ -59,8 +59,8 @@ xcss = '''
   .foodsq{flex:0 0 200px;aspect-ratio:1/1;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 34px -22px rgba(0,0,0,.34)}
   .foodsq img{width:100%;height:100%;object-fit:cover;display:block}
   .foodrow .lead{flex:1;min-width:270px;margin:0}
-  .ophduo{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--line);border-bottom:1px solid var(--line)}
-  .ophduo .sq{aspect-ratio:1/1;overflow:hidden;position:relative;background:#eee}
+  .ophduo{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--line);border-bottom:1px solid var(--line);aspect-ratio:1/1}
+  .ophduo .sq{overflow:hidden;position:relative;background:#eee}
   .ophduo .sq img{width:100%;height:100%;object-fit:cover;display:block}
   .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
   .tier{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 16px 16px;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28);position:relative}
@@ -223,7 +223,8 @@ bonus = f'''
         <div class="ob">
           <span class="ot">Lembrancinha</span>
           <h4>Garrafa personalizada</h4>
-          <p>Gravada com a <b>marca da Ginger</b> ou o <b>nome de cada participante</b> — um mimo que fica na mesa de trabalho.</p>
+          <p>Gravada com a <b>marca da Ginger</b> ou o <b>nome de cada participante</b> — um mimo que fica na mesa de trabalho e lembra o encontro todo dia.</p>
+          <p>E tem mais: a gente também trabalha com <b>outras opções de brinde</b> (necessaire, kit aroma, caneca e mais). É só dizer a vibe do time que a gente monta a lembrança sob medida. 🤍</p>
           <div class="op">R$ 139<small>por pessoa</small></div>
         </div>
       </div>
