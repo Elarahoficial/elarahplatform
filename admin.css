@@ -379,6 +379,15 @@
 .admin__action-btn--delete:hover { background: #dc3545; color: #fff; }
 .admin__action-btn--duplicate { background: #FFF3CD; color: #856404; }
 .admin__action-btn--duplicate:hover { background: #f0ad4e; color: #fff; }
+/* Reativar / Ocultar. Sem essas duas regras o botao ficava SEM fundo
+   nenhum no meio de pilulas coloridas — parecia texto morto, e a admin
+   clicava achando que nao tinha acontecido nada. Verde pra trazer de
+   volta, cinza pra tirar do ar. */
+.admin__action-btn--show { background: #D4EDDA; color: #155724; }
+.admin__action-btn--show:hover { background: #1a8a4a; color: #fff; }
+.admin__action-btn--hide { background: #F1F3F4; color: #5f6368; }
+.admin__action-btn--hide:hover { background: #5f6368; color: #fff; }
+
 /* Arquivar: tira da lista sem apagar. Tom neutro pra nao competir
    com Excluir (vermelho) nem com Duplicar (ambar). */
 .admin__action-btn--archive { background: #ECEFF1; color: #4a5560; }

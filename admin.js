@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v47 — Salvar fornecedor não quebra por coluna que falta; emoji do WhatsApp via api.whatsapp.com; repasses pendentes incluem venda manual');
+  console.info('[Elarah Admin] admin.js v48 — Reativar de experiência semanal para de mentir quando não cria turma; botões Reativar/Ocultar com estilo; emoji do WhatsApp via api.whatsapp.com');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -8741,10 +8741,50 @@
         '. Abrindo a edição pra ajuste manual.', false);
       return false; // deixa o fallback abrir o modal
     }
+    // ZERO turma criada não é sucesso. Antes caía no toast de "✓
+    // reativada — 0 turmas recriadas", a lista re-renderizava e a
+    // experiência continuava Oculta: a admin clicava, via o ✓ e nada
+    // mudava. O caso clássico é colisão de rótulo: a chave única de
+    // experience_slots é (experience_id, data, horario) e `data` é o
+    // "DD/MM" SEM ANO — a turma de 23/10 do ano passado ocupa a chave da
+    // turma de 23/10 deste ano, o ON CONFLICT DO NOTHING pula e nada é
+    // inserido. Aqui a gente conta essas turmas vencidas pra dizer o
+    // que está travando, em vez de fingir que deu certo.
+    if (materialized === 0) {
+      const vencidas = await _contaTurmasVencidas(id);
+      _adminToast(
+        'Nenhuma turma futura foi criada' +
+        (vencidas > 0
+          ? ' — ' + vencidas + ' turma' + (vencidas === 1 ? '' : 's') +
+            ' com data já vencida ocupa' + (vencidas === 1 ? '' : 'm') +
+            ' os mesmos dias/horários. Rode sql/elarah_recurrence_rollover_slots_antigos.sql no Supabase.'
+          : '. Abrindo a edição pra ajuste manual.'),
+        false);
+      return false; // continua oculta de verdade → abre o modal
+    }
     _adminToast('✓ Experiência reativada — ' + materialized +
       ' turma' + (materialized === 1 ? '' : 's') + ' futura' +
       (materialized === 1 ? '' : 's') + ' recriada' + (materialized === 1 ? '' : 's') + '.');
     return true;
+  }
+
+  // Quantas turmas dessa experiência já venceram (event_at no passado).
+  // Serve só pra explicar por que a reativação não criou nada — falha
+  // silenciosa devolve 0 e a mensagem fica genérica.
+  async function _contaTurmasVencidas(experienceId) {
+    const sb = window.supabaseClient;
+    if (!sb) return 0;
+    try {
+      const { count, error } = await sb
+        .from('experience_slots')
+        .select('id', { count: 'exact', head: true })
+        .eq('experience_id', experienceId)
+        .lt('event_at', new Date().toISOString());
+      if (error) return 0;
+      return Number(count) || 0;
+    } catch (e) {
+      return 0;
+    }
   }
 
   async function renderExperiences() {
