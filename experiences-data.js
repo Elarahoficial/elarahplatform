@@ -1731,14 +1731,99 @@
     }
   }
 
+  // Identidade de uma turma: (data, horário). É o que a cliente compra.
+  function slotKey(data, horario) {
+    return String(data == null ? '' : data) +
+      '|' + String(horario == null ? '' : horario).trim();
+  }
+
+  // Ids de slots que já têm reserva do site ou venda manual viva.
+  // Esses NUNCA podem ser apagados: bookings.slot_id e
+  // manual_sales.slot_id são ON DELETE SET NULL, então apagar o slot
+  // não apaga a venda — só arranca o vínculo dela com a turma. A vaga
+  // some do lugar certo e reaparece somada no lugar errado.
+  // Tabela que não existe (migration não rodou) não é "não sei" — é
+  // "não tem venda dessa espécie aqui". Só erro de verdade (RLS, rede)
+  // manda a gente pro modo cauteloso.
+  function erroTabelaAusente(err) {
+    const code = String((err && err.code) || '');
+    const msg = String((err && err.message) || '').toLowerCase();
+    return code === '42P01' || code === 'PGRST205' ||
+      msg.indexOf('does not exist') !== -1 ||
+      msg.indexOf('not find the table') !== -1;
+  }
+
+  async function slotsComVendaViva(ids) {
+    const out = new Set();
+    const s = sb();
+    if (!s || !ids || !ids.length) return out;
+    let falhou = false;
+    try {
+      const { data, error } = await s
+        .from('bookings')
+        .select('slot_id')
+        .in('slot_id', ids)
+        .in('status', ['pending', 'pago']);
+      if (error) { if (!erroTabelaAusente(error)) falhou = true; }
+      else (data || []).forEach(function (r) { if (r.slot_id) out.add(r.slot_id); });
+    } catch (e) { falhou = true; }
+    try {
+      const { data, error } = await s
+        .from('manual_sales')
+        .select('slot_id')
+        .in('slot_id', ids)
+        .in('payment_status', ['pago', 'pendente']);
+      if (error) { if (!erroTabelaAusente(error)) falhou = true; }
+      else (data || []).forEach(function (r) { if (r.slot_id) out.add(r.slot_id); });
+    } catch (e) { falhou = true; }
+    if (falhou) {
+      // Não deu pra conferir (RLS, rede, tabela ausente): trata TODOS
+      // como ocupados. Arquivar um horário vazio é reversível — basta
+      // digitar ele de novo. Apagar um horário com reserva não é.
+      console.warn('[Elarah] saveSlots: não foi possível conferir as reservas ' +
+        'dos horários — preservando todos por segurança.');
+      ids.forEach(function (id) { out.add(id); });
+    }
+    return out;
+  }
+
   // Salva (upsert) slots pra uma experiência. Recebe array de objetos:
   //   [{ id?, data, horario, vagasTotal, eventAt }]
-  // Slots que existiam mas não estão no array são deletados.
+  //
+  // A IDENTIDADE DA TURMA É (data, horário) — não a linha do formulário.
+  // Enquanto data e horário forem os mesmos, a MESMA linha do banco é
+  // reaproveitada, mesmo que o admin tenha apagado a linha na tela e
+  // digitado o horário de novo.
+  //
+  // POR QUE ISSO IMPORTA (bug do "-34 / 8"):
+  //   Antes, apagar a linha do horário e redigitar o mesmo texto
+  //   DELETAVA o slot e criava outro com id novo. Como bookings.slot_id
+  //   e manual_sales.slot_id são ON DELETE SET NULL, toda reserva e
+  //   toda venda manual daquela turma perdia o vínculo. Na varredura
+  //   seguinte (reconcile_all_vagas roda de 10 em 10 minutos), as
+  //   vendas manuais sem vínculo eram readivinhadas pela regra "a
+  //   experiência só tem UMA turma ativa, então é essa" — e TODAS as
+  //   vendas manuais históricas da experiência caíam em cima da turma
+  //   nova. No admin aparecia "-34 / 8".
+  //
+  // REGRAS
+  //   (data, horário) igual ao que já existe  → reaproveita a linha.
+  //   mudou a DATA e a turma antiga tem venda → a antiga vira histórico
+  //                                             (is_active=false, vínculos
+  //                                             preservados) e a data nova
+  //                                             nasce como turma nova, com
+  //                                             as vagas cheias.
+  //   mudou a DATA e a turma antiga está vazia → só atualiza a linha.
+  //   sumiu do formulário e tem venda          → arquiva, não apaga.
+  //   sumiu do formulário e está vazia         → apaga.
   //
   // CRÍTICO: ignora slots com recurrence_rule_id IS NOT NULL.
   // Esses slots são gerenciados pela feature de Recorrência semanal
   // (CRUD separado no painel "Recorrência"). Tocar neles aqui apagaria
   // os 8 slots que a regra acabou de materializar — bug reportado.
+  //
+  // Retorna { ok: true, arquivados: [{ data, horario }] } em caso de
+  // sucesso, ou false quando nem dá pra tentar (sem supabase/id).
   async function saveSlots(experienceId, slotsArray) {
     const s = sb();
     if (!s || !experienceId) return false;
@@ -1747,12 +1832,25 @@
     //    Slots de recorrência ficam intocados.
     const { data: existing } = await s
       .from(SLOTS_TABLE)
-      .select('id, horario, data')
+      .select('id, horario, data, is_active')
       .eq('experience_id', experienceId)
       .is('recurrence_rule_id', null);
-    const existingIds = new Set((existing || []).map(function (r) { return r.id; }));
+    const existingRows = existing || [];
+    const existingById = new Map();
+    const existingByKey = new Map();
+    existingRows.forEach(function (r) {
+      existingById.set(r.id, r);
+      const k = slotKey(r.data, r.horario);
+      // Duplicata impossível pelo unique index, mas se existir fica com
+      // a primeira — a outra cai no fluxo de sobra (arquiva/apaga).
+      if (!existingByKey.has(k)) existingByKey.set(k, r);
+    });
 
-    // 1b) Tambem busca os slots de RECORRENCIA pra computar quais
+    // 1b) Quais dessas turmas já têm gente dentro. Decide, mais abaixo,
+    //     quem pode ser apagado e quem só pode ser arquivado.
+    const ocupados = await slotsComVendaViva(existingRows.map(function (r) { return r.id; }));
+
+    // 1c) Tambem busca os slots de RECORRENCIA pra computar quais
     //     (data, horario) ja estao "ocupados" por regra. Sem isso, se
     //     o form re-envia esses slots como novos (sem id), o upsert
     //     bate no unique index (experience_id, coalesce(data,''), horario)
@@ -1765,7 +1863,7 @@
       .not('recurrence_rule_id', 'is', null);
     const recurrenceKeys = new Set();
     (recurrenceSlots || []).forEach(function (r) {
-      recurrenceKeys.add((r.data || '') + '|' + String(r.horario || '').trim());
+      recurrenceKeys.add(slotKey(r.data, r.horario));
     });
 
     // 2) Separa upserts dos deletes. Dedupe por (data, horario) pra evitar
@@ -1787,19 +1885,33 @@
         event_at: slot.eventAt || null,
         is_active: slot.isActive !== false,
       };
-      if (slot.id && existingIds.has(slot.id)) {
-        row.id = slot.id;
-        keepIds.add(slot.id);
-      }
-      const key = (row.data || '') + '|' + row.horario;
+      const key = slotKey(row.data, row.horario);
 
       // Skip se a (data, horario) eh gerenciada pela recorrencia E o slot
       // do form nao tem id de slot manual existente. Esses slots devem
       // ser editados pelo painel de Recorrencia, nao pelo cadastro
       // manual — sem isso, o upsert tenta inserir uma duplicata e quebra.
-      if (!row.id && recurrenceKeys.has(key)) {
+      const prev = slot.id ? existingById.get(slot.id) : null;
+      const prevKeyIgual = prev && slotKey(prev.data, prev.horario) === key;
+      if (!prev && !existingByKey.has(key) && recurrenceKeys.has(key)) {
         skippedRecurrence += 1;
         return;
+      }
+
+      // Qual linha do banco essa linha do formulário representa:
+      //   1. a própria, se data+horário não mudaram;
+      //   2. a linha que JÁ é dona desse (data, horário) — é o caso de
+      //      apagar a linha na tela e digitar o mesmo horário de novo;
+      //   3. a própria, se mudou de data mas não tem ninguém dentro;
+      //   4. nenhuma → turma nova, nasce com as vagas cheias.
+      let adotaId = null;
+      if (prevKeyIgual) adotaId = prev.id;
+      else if (existingByKey.has(key)) adotaId = existingByKey.get(key).id;
+      else if (prev && !ocupados.has(prev.id)) adotaId = prev.id;
+
+      if (adotaId) {
+        row.id = adotaId;
+        keepIds.add(adotaId);
       }
 
       if (seenByKey.has(key)) {
@@ -1818,16 +1930,36 @@
         'slot(s) gerados pela recorrencia (gerencie via painel Recorrencia, nao pelo cadastro manual).');
     }
 
-    // 3) Deleta slots removidos do form — restrito a manuais.
+    // 3) Sobras: o que existia no banco e não está mais no formulário.
+    //    Com venda viva → ARQUIVA (is_active=false): some do site, mas a
+    //    turma continua existindo e as reservas seguem ligadas nela.
+    //    Sem ninguém dentro → apaga mesmo.
     //    .is('recurrence_rule_id', null) é segurança dupla: mesmo que
-    //    existingIds vaze algo de recorrência (não pode, mas defesa
-    //    em profundidade), o DELETE só apaga manual.
+    //    existingRows vaze algo de recorrência (não pode, mas defesa
+    //    em profundidade), só mexe em manual.
     const toDelete = [];
-    existingIds.forEach(function (id) { if (!keepIds.has(id)) toDelete.push(id); });
+    const toArchive = [];
+    existingRows.forEach(function (r) {
+      if (keepIds.has(r.id)) return;
+      if (ocupados.has(r.id)) toArchive.push(r);
+      else toDelete.push(r);
+    });
     if (toDelete.length) {
       await s.from(SLOTS_TABLE).delete()
-        .in('id', toDelete)
+        .in('id', toDelete.map(function (r) { return r.id; }))
         .is('recurrence_rule_id', null);
+    }
+    if (toArchive.length) {
+      const { error: errArch } = await s.from(SLOTS_TABLE)
+        .update({ is_active: false })
+        .in('id', toArchive.map(function (r) { return r.id; }))
+        .is('recurrence_rule_id', null);
+      if (errArch) {
+        console.error('[Elarah] saveSlots: falha ao arquivar turma com reserva:', errArch);
+      } else {
+        console.info('[Elarah] saveSlots: ' + toArchive.length +
+          ' turma(s) com reserva arquivada(s) em vez de apagada(s).');
+      }
     }
 
     // 4) Upsert os que ficaram/foram adicionados.
@@ -1893,7 +2025,12 @@
     // Invalida cache de slots
     slotsCache = null;
     slotsCachePromise = null;
-    return true;
+    return {
+      ok: true,
+      arquivados: toArchive.map(function (r) {
+        return { data: r.data || null, horario: r.horario || '' };
+      })
+    };
   }
 
   function invalidateSlotsCache() {
