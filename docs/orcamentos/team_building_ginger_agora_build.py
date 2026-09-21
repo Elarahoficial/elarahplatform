@@ -198,9 +198,43 @@ investimento = f'''
         <p>Finger food + doce da casa + café.</p>
       </div>
     </div>
-    <div class="bnote" style="margin-top:14px">◆ <b>Bônus pra deixar completo:</b> brinde personalizado com a marca da Ginger + registro fotográfico profissional (R$ 450) — um fotógrafo cobre o encontro e o álbum digital fica pronto pro RH e a comunicação interna.</div>
-    <p class="fineprint">Valores por pessoa, turma privada de 14, no Agora Intu (Pinheiros). Base R$ 279 (espaço exclusivo só do time por 1h30, o momento da experiência de cerâmica e o coffee) + menu à escolha: Tábua R$ 99, Finger food R$ 139 ou Menu completo R$ 189 por pessoa. Bônus: brinde personalizado e registro fotográfico profissional (R$ 450, valor total). Datas: 23/10 (sex), 29/10 (qui) ou 30/10 (sex). Reserva com sinal de 50%. A Elarah emite nota fiscal.</p>
+    <p class="fineprint">Valores por pessoa, turma privada de 14, no Agora Intu (Pinheiros). Base R$ 279 (espaço exclusivo só do time por 1h30, o momento da experiência de cerâmica e o coffee) + menu à escolha: Tábua R$ 99, Finger food R$ 139 ou Menu completo R$ 189 por pessoa. Datas: 23/10 (sex), 29/10 (qui) ou 30/10 (sex). Reserva com sinal de 50%. A Elarah emite nota fiscal.</p>
     {foot("Os planos")}
+  </section>'''
+
+bonus = f'''
+  <section class="slide">
+{head_simple("Bônus")}
+    <span class="eyebrow orange">◆ Pra levar de lembrança</span>
+    <h2>Bônus pra deixar <em>completo</em></h2>
+    <p class="lead">Além da peça que cada um cria, dá pra somar dois mimos que ficam com o time depois do encontro:</p>
+    <div class="opts">
+      <div class="opt">
+        <div class="oph">{img("lembrancinha-garrafa.jpg", "Garrafa personalizada com o nome de cada participante", "center 42%")}</div>
+        <div class="ob">
+          <span class="ot">Lembrancinha</span>
+          <h4>Garrafa personalizada</h4>
+          <p>Uma garrafa gravada com o nome de cada participante — ou a marca da Ginger. Um mimo que fica na mesa de trabalho.</p>
+          <div class="op">R$ 139<small>por pessoa</small></div>
+        </div>
+      </div>
+      <div class="opt">
+        <div class="oph">{img("eventocorporativo.jpg", "Registro fotográfico profissional de evento corporativo", "center 40%")}</div>
+        <div class="ob">
+          <span class="ot">Registro</span>
+          <h4>Foto profissional</h4>
+          <ul>
+            <li>Um fotógrafo cobre o encontro inteiro</li>
+            <li>Cada conversa e cada criação registradas</li>
+            <li>Álbum digital pronto pro RH e a comunicação interna</li>
+            <li>Conteúdo pronto pra usar no LinkedIn</li>
+          </ul>
+          <div class="op">R$ 450<small>valor total</small></div>
+        </div>
+      </div>
+    </div>
+    <p class="fineprint">Bônus opcionais, somados ao plano escolhido. Lembrancinha (garrafa personalizada): R$ 139 por pessoa. Registro fotográfico profissional: R$ 450 (valor total). O modelo da garrafa e a personalização são combinados antes do encontro.</p>
+    {foot("Bônus")}
   </section>'''
 
 contato = f'''
@@ -222,7 +256,7 @@ contato = f'''
     {foot("Como funciona & contato")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + experiencia + atmosfera + investimento + contato + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + experiencia + atmosfera + investimento + bonus + contato + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/experiencia-team-building-ginger-agora.html"
 open(out, "w", encoding="utf-8").write(html)
