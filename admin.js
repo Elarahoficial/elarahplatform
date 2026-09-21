@@ -11569,24 +11569,24 @@
     const saud = (nomeContato && nomeContato.trim())
       ? nomeContato.trim()
       : String(nomeFornecedor || '').trim();
-    return 'Oi' + (saud ? ' ' + saud : '') + '! Aqui é da Elarah.\n\n' +
-      'Que tal a gente já deixar as suas próximas datas deste mês no ar? ' +
+    // Formatação do WhatsApp: *texto* = negrito (asterisco simples).
+    return 'Oi' + (saud ? ' ' + saud : '') + '! Aqui é da Elarah 🧡\n\n' +
+      '📅 *Bora deixar as suas próximas datas deste mês já no ar?*\n\n' +
       'Quanto antes a experiência entra na plataforma, mais tempo ela tem de vitrine ' +
-      'e de divulgação da nossa parte — e mais chance de encher as vagas ' +
-      'sem correria de última hora.\n\n' +
-      'Me manda o que já estiver definido que eu cadastro hoje mesmo:\n\n' +
-      '• Link da experiência\n' +
-      '• Data\n' +
-      '• Horário\n' +
-      '• Valor\n' +
-      '• Descrição\n' +
-      '• Imagens\n' +
-      '• Quantidade de vagas\n' +
-      '• Localização\n\n' +
-      'Se for uma data nova de algo que já está cadastrado, me manda só o dia, ' +
-      'o horário e as vagas que eu cuido do resto.\n\n' +
-      'E se tiver alguma experiência ou evento novo pra estrear, me conta também — ' +
-      'adoro novidade na curadoria!';
+      'e de divulgação da nossa parte — e mais chance de *encher as vagas* ' +
+      'sem correria de última hora. 🚀\n\n' +
+      'Me manda o que já estiver definido que eu *cadastro hoje mesmo*:\n\n' +
+      '🔗 Link da experiência\n' +
+      '📆 Data\n' +
+      '⏰ Horário\n' +
+      '💰 Valor\n' +
+      '📝 Descrição\n' +
+      '📸 Imagens\n' +
+      '🎟️ Quantidade de vagas\n' +
+      '📍 Localização\n\n' +
+      '⚡ *Já tem experiência cadastrada com a gente?* Pra uma data nova me manda ' +
+      'só o dia, o horário e as vagas — o resto eu cuido.\n\n' +
+      '✨ E se tiver algo novo pra estrear, me conta também: adoro novidade na curadoria!';
   }
   function fornSolicitarExperienciasUrl(meta) {
     const phone = fornWaPhone(meta && meta.whatsapp);
