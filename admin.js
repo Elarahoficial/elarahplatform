@@ -12782,25 +12782,50 @@
     });
 
     // ===== Inclui manual_sales pagas com payout pendente =====
-    // Falha silenciosa se a tabela não existir (migration não rodada).
+    // Erro de leitura NÃO some mais em silêncio: vira aviso no card, senão
+    // a admin olha um total que parece completo e não está.
+    let msErroLeitura = '';
+    // Vendas manuais pagas que ninguém marcou como "gera repasse". Não
+    // inventamos valor pra elas (o card só soma o que está declarado),
+    // mas ficam listadas no rodapé do card pra não passarem batido.
+    const msSemRepasse = [];
     try {
       const sb = window.supabaseClient;
       if (sb) {
         // Puxa TODAS as vendas pagas (não só payout_status=pendente): uma
         // venda pode ter o fornecedor principal já pago mas um fornecedor
         // EXTRA ainda pendente — o filtro no banco perderia esse caso.
+        // select('*') de propósito: com lista explícita de colunas, UMA
+        // migração ainda não rodada (ex.: extra_payouts) derrubava a query
+        // inteira (PostgREST 42703) e NENHUMA venda manual aparecia aqui.
+        // É o mesmo select que a tabela de Compras já usa.
         const { data: msRows, error: msErr } = await sb.from('manual_sales')
-          .select('id, customer_name, experience_name, slot_date, slot_time, supplier_name, payout_amount_centavos, payout_status, experience_id, extra_payouts')
+          .select('*')
           .eq('payment_status', 'pago');
-        if (!msErr && Array.isArray(msRows)) {
-          // Mapa exp → fornecedor (usa o cache _finExpById se disponível,
-          // senão tenta ElarahData.getAllExperiences). Preserva semântica
-          // de fallback: supplier_name salvo > fornecedor da experiência.
-          const expById = (typeof _finExpById !== 'undefined' && _finExpById && _finExpById.size)
+        if (msErr) throw msErr;
+        if (Array.isArray(msRows)) {
+          // Mapa exp → fornecedor: usa o cache _finExpById quando já
+          // preenchido (aba Contabilidade aberta) e, senão, carrega as
+          // experiências na hora — em Compras "pura" o cache está vazio e
+          // a venda manual que herda o fornecedor da experiência caía em
+          // "— sem fornecedor —". Preserva a semântica de fallback:
+          // supplier_name salvo > fornecedor da experiência.
+          let expById = (typeof _finExpById !== 'undefined' && _finExpById && _finExpById.size)
             ? _finExpById
             : new Map();
+          if (!expById.size && window.ElarahData && ElarahData.getAllExperiences) {
+            try {
+              const exps = await ElarahData.getAllExperiences();
+              expById = new Map();
+              (exps || []).forEach(e => { if (e && e.id) expById.set(e.id, e); });
+            } catch (_) { /* segue sem o mapa */ }
+          }
           const addPendente = (nomeRaw, valor, item) => {
-            if (!(valor > 0)) return;
+            // Repasse pendente sem valor preenchido continua entrando:
+            // some do total (soma 0) mas aparece como "a definir", que é
+            // justamente o que precisa de ação. Só descarta a linha que
+            // não tem nem valor nem fornecedor — aí não há o que cobrar.
+            if (!(valor > 0) && !nomeRaw) return;
             const nome = nomeRaw || '— sem fornecedor —';
             if (!byForn.has(nome)) byForn.set(nome, _novoAgg(nome, !nomeRaw));
             _addItem(byForn.get(nome), item);
@@ -12814,13 +12839,28 @@
             const pessoas = [r.customer_name].filter(Boolean);
             const experiencia = r.experience_name ||
               (expObj && (expObj.nome || expObj.titulo)) || '—';
+            const fornecedorDaVenda = (r.supplier_name && r.supplier_name.trim()) ||
+              (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
+            // Schema manda 'nao_aplicavel' como default, mas venda antiga
+            // ou importada pode vir sem nada — vazio conta como pendente,
+            // igual ao que já fazemos com bookings.
+            const payoutStatus = (r.payout_status && String(r.payout_status).trim()) || 'pendente';
             // Fornecedor principal — só se ainda pendente.
-            if (r.payout_status === 'pendente') {
-              const nomeRaw = (r.supplier_name && r.supplier_name.trim()) ||
-                (expObj && (expObj.fornecedorNome || expObj.fornecedor_nome)) || '';
+            if (payoutStatus === 'pendente') {
               const valor = Number(r.payout_amount_centavos) || 0;
-              addPendente(nomeRaw, valor, {
+              addPendente(fornecedorDaVenda, valor, {
                 tipo: 'ms', id: r.id, pessoas, experiencia, quando, horas, valor,
+                semValor: !(valor > 0),
+              });
+            } else if (payoutStatus === 'nao_aplicavel' && fornecedorDaVenda) {
+              // Venda paga, fornecedor conhecido, mas o "esta venda gera
+              // repasse a fornecedor" ficou desmarcado (é o default do
+              // formulário). Não vira pendência automática — vira aviso.
+              msSemRepasse.push({
+                id: r.id,
+                cliente: r.customer_name || '—',
+                experiencia, quando, horas,
+                fornecedor: fornecedorDaVenda,
               });
             }
             // Fornecedores extras — cada um com seu próprio status.
@@ -12833,6 +12873,7 @@
                   tipo: 'ms_extra', id: r.id,
                   extraKey: (p.supplier_key && String(p.supplier_key).trim()) || fornecedorKey(nomeRaw),
                   pessoas, experiencia, quando, horas, valor,
+                  semValor: !(valor > 0),
                 });
               });
             }
@@ -12840,10 +12881,12 @@
         }
       }
     } catch (e) {
-      console.warn('[admin] manual_sales repasse aggregation skipped:', e && e.message);
+      msErroLeitura = (e && e.message) || 'erro desconhecido';
+      console.warn('[admin] manual_sales repasse aggregation falhou:', msErroLeitura);
     }
 
-    if (!byForn.size) {
+    // Nada pendente, nada a avisar → card some (comportamento de sempre).
+    if (!byForn.size && !msSemRepasse.length && !msErroLeitura) {
       card.style.display = 'none';
       listEl.innerHTML = '';
       return;
@@ -12918,6 +12961,52 @@
       );
     }).join('');
 
+    // ===== Rodapé: o que o card NÃO consegue somar =====
+    // 1) Falha ao ler vendas manuais — antes sumia em silêncio e o total
+    //    parecia completo. 2) Vendas manuais pagas com fornecedor mas sem
+    //    repasse marcado: não entram no total (nenhum valor foi declarado),
+    //    mas ficam à vista pra admin abrir e completar.
+    if (msErroLeitura) {
+      listEl.insertAdjacentHTML('beforeend',
+        '<div style="margin-top:6px;padding:10px 12px;border:1px solid #f4c7c1;background:#fdecea;border-radius:6px;font-size:.82rem;color:#c0392b;">' +
+          '<b>Não consegui ler as vendas manuais.</b> O total acima considera só as compras do site. ' +
+          '<span style="color:#8a4b44;">(' + escapeHtml(msErroLeitura) + ')</span>' +
+        '</div>');
+    }
+    if (msSemRepasse.length) {
+      // Mais urgente primeiro: experiência já realizada / mais próxima.
+      const semRep = msSemRepasse.slice().sort((a, b) => {
+        const ha = a.horas == null ? Infinity : a.horas;
+        const hb = b.horas == null ? Infinity : b.horas;
+        return ha - hb;
+      });
+      const linhas = semRep.map(s =>
+        '<li style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:5px 0;border-bottom:1px solid #f2e6cc;">' +
+          '<span style="font-weight:600;color:#1a1a1a;">' + escapeHtml(s.cliente) + '</span>' +
+          '<span style="color:#7a6440;">' + escapeHtml(s.experiencia) + '</span>' +
+          '<span style="color:#7a6440;white-space:nowrap;">' + escapeHtml(s.quando) + '</span>' +
+          (_repasseUrgente(s.horas)
+            ? '<span style="display:inline-block;padding:2px 7px;border-radius:8px;background:#fce8e6;color:#c0392b;font-size:.7rem;font-weight:700;white-space:nowrap;">' +
+                (s.horas != null && s.horas < 0 ? 'já passou' : 'em 48h') + '</span>'
+            : '') +
+          '<span style="color:#555;">fornecedor: <b>' + escapeHtml(s.fornecedor) + '</b></span>' +
+          '<button type="button" class="admin__add-btn" data-fin-edit-sale="' + escapeHtml(s.id) + '" ' +
+            'style="margin-left:auto;padding:3px 8px;font-size:.72rem;" ' +
+            'title="Abrir a venda e marcar o repasse ao fornecedor">Marcar repasse</button>' +
+        '</li>').join('');
+      listEl.insertAdjacentHTML('beforeend',
+        '<div style="margin-top:6px;padding:10px 12px;border:1px dashed #f0a05e;background:#fff8ee;border-radius:6px;">' +
+          '<div style="font-size:.84rem;color:#a05a00;margin-bottom:6px;">' +
+            '<b>' + (semRep.length === 1
+              ? '1 venda manual paga'
+              : semRep.length + ' vendas manuais pagas') +
+            ' sem repasse marcado.</b> Não entram no total acima porque nenhum valor de repasse foi informado — ' +
+            'abra a venda, marque <i>"esta venda gera repasse a fornecedor"</i> e o valor entra aqui.' +
+          '</div>' +
+          '<ul style="list-style:none;margin:0;padding:0;font-size:.8rem;">' + linhas + '</ul>' +
+        '</div>');
+    }
+
     // Botão "copiar" da chave Pix — para a propagação pra não disparar o
     // filtro da linha; copia pro clipboard com feedback visual.
     listEl.querySelectorAll('.admin__repasse-pix-copy').forEach(btn => {
@@ -12977,7 +13066,9 @@
           '<td style="padding:5px 7px;border-bottom:1px solid #f2e6cc;color:#555;white-space:nowrap;">' + escapeHtml(it.quando) + '</td>' +
           '<td style="padding:5px 7px;border-bottom:1px solid #f2e6cc;white-space:nowrap;">' + prazoBadge(it.horas) + '</td>' +
           '<td style="padding:5px 7px;border-bottom:1px solid #f2e6cc;text-align:right;font-weight:600;white-space:nowrap;">' +
-            escapeHtml(formatCents(it.valor, 'BRL')) + '</td>' +
+            (it.semValor
+              ? '<span style="color:#a05a00;font-weight:700;" title="Repasse marcado como pendente, mas sem valor informado na venda — edite a venda pra informar">a definir</span>'
+              : escapeHtml(formatCents(it.valor, 'BRL'))) + '</td>' +
         '</tr>';
       }).join('');
 
