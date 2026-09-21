@@ -11558,16 +11558,23 @@
   function fornWaPhone(raw) {
     return waPhoneDigits(raw);
   }
-  // Mensagem pronta "Solicitar novas experiências" — checklist completo
-  // pra o parceiro responder de uma vez só e acelerar o cadastro.
+  // Mensagem pronta "Solicitar novas experiências".
+  // Abre pelo GANHO do parceiro (antecedência = mais tempo de vitrine e
+  // divulgação = mais chance de encher as vagas), não por um pedido seco
+  // de cadastro — a versão antiga só perguntava "tem algo novo?" e dava
+  // pouca razão pra responder. Depois vem o checklist, e por último o
+  // caminho mais curto: data nova de experiência já cadastrada só precisa
+  // de dia, horário e vagas.
   function fornSolicitarExperienciasMsg(nomeContato, nomeFornecedor) {
     const saud = (nomeContato && nomeContato.trim())
       ? nomeContato.trim()
       : String(nomeFornecedor || '').trim();
     return 'Oi' + (saud ? ' ' + saud : '') + '! Aqui é da Elarah.\n\n' +
-      'Estamos sempre ampliando a curadoria de experiências da plataforma. ' +
-      'Você tem alguma experiência ou evento novo que a gente possa adicionar?\n\n' +
-      'Se tiver, me manda esses detalhes que eu já agilizo o cadastro:\n\n' +
+      'Que tal a gente já deixar as suas próximas datas deste mês no ar? ' +
+      'Quanto antes a experiência entra na plataforma, mais tempo ela tem de vitrine ' +
+      'e de divulgação da nossa parte — e mais chance de encher as vagas ' +
+      'sem correria de última hora.\n\n' +
+      'Me manda o que já estiver definido que eu cadastro hoje mesmo:\n\n' +
       '• Link da experiência\n' +
       '• Data\n' +
       '• Horário\n' +
@@ -11576,7 +11583,10 @@
       '• Imagens\n' +
       '• Quantidade de vagas\n' +
       '• Localização\n\n' +
-      'Qualquer dúvida é só chamar por aqui!';
+      'Se for uma data nova de algo que já está cadastrado, me manda só o dia, ' +
+      'o horário e as vagas que eu cuido do resto.\n\n' +
+      'E se tiver alguma experiência ou evento novo pra estrear, me conta também — ' +
+      'adoro novidade na curadoria!';
   }
   function fornSolicitarExperienciasUrl(meta) {
     const phone = fornWaPhone(meta && meta.whatsapp);
