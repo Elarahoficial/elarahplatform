@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v46 — Arquivar experiência (some da lista sem mexer na contabilidade); Excluir agora diz o motivo quando o banco recusa');
+  console.info('[Elarah Admin] admin.js v48 — Reativar de experiência semanal para de mentir quando não cria turma; botões Reativar/Ocultar com estilo; emoji do WhatsApp via api.whatsapp.com');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -181,6 +181,19 @@
     if (digits.length <= 11) return '55' + digits;
     // 12+ dígitos já carregam DDI (55 do Brasil ou qualquer outro).
     return digits;
+  }
+
+  // Link de WhatsApp com mensagem pronta. SEMPRE api.whatsapp.com/send/
+  // em vez de wa.me/<telefone>?text=: o wa.me corrompe surrogate pairs
+  // (emoji fora do BMP — 📅 🚀 ⚡ 😊) e o parceiro recebe "" no lugar de
+  // cada um. Acento não quebra porque cabe em 2 bytes; emoji precisa de
+  // 4, e é justamente aí que o wa.me erra. Mesmo formato de telefone;
+  // sem telefone, o WhatsApp abre o seletor de contato.
+  function waSendUrl(phone, msg) {
+    const digits = String(phone == null ? '' : phone).replace(/\D+/g, '');
+    return 'https://api.whatsapp.com/send/?' +
+      (digits ? 'phone=' + digits + '&' : '') +
+      'text=' + encodeURIComponent(msg == null ? '' : msg);
   }
 
   // ===== BOOT (async) =====
@@ -2150,8 +2163,7 @@
     // (Safari iOS, WhatsApp Web certos contextos) corrompe surrogate
     // pairs e o emoji aparece como '��' pro destinatário. /send/?phone=
     // não tem esse bug. Aceita o mesmo formato de telefone.
-    const url = 'https://api.whatsapp.com/send/?phone=' + phoneNorm +
-                '&text=' + encodeURIComponent(filled);
+    const url = waSendUrl(phoneNorm, filled);
 
     // Abre PRIMEIRO (gesto do usuário) pra evitar bloqueio do popup
     window.open(url, '_blank', 'noopener');
@@ -2779,7 +2791,7 @@
     }
     msg += 'Qualquer coisa é só me chamar aqui!';
 
-    const waHref = 'https://wa.me/?text=' + encodeURIComponent(msg);
+    const waHref = waSendUrl('', msg);
 
     const box = (inner) =>
       '<div style="padding:14px 16px;background:#f0fdf4;border:1px solid #bbe6c9;border-radius:10px;">' + inner + '</div>';
@@ -3179,7 +3191,7 @@
     if (!digits) return escapeHtml(tel);
     const primeiroNome = String(u.nome || '').trim().split(/\s+/)[0] || 'tudo bem';
     const msg = 'Oii ' + primeiroNome + '! Você se cadastrou na Elarah e temos um grupo onde liberamos experiências antes de todo mundo (algumas esgotam só por lá). Entra aqui pra não perder: https://chat.whatsapp.com/LRqJa9F7zGWAIMlh2D2yjl';
-    const href = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
+    const href = waSendUrl(digits, msg);
     const contatado = !!u.whatsapp_contacted_at;
     const btnBg = contatado ? '#25D366' : '#f0a05e';
     const tooltipBotao = contatado
@@ -8893,10 +8905,50 @@
         '. Abrindo a edição pra ajuste manual.', false);
       return false; // deixa o fallback abrir o modal
     }
+    // ZERO turma criada não é sucesso. Antes caía no toast de "✓
+    // reativada — 0 turmas recriadas", a lista re-renderizava e a
+    // experiência continuava Oculta: a admin clicava, via o ✓ e nada
+    // mudava. O caso clássico é colisão de rótulo: a chave única de
+    // experience_slots é (experience_id, data, horario) e `data` é o
+    // "DD/MM" SEM ANO — a turma de 23/10 do ano passado ocupa a chave da
+    // turma de 23/10 deste ano, o ON CONFLICT DO NOTHING pula e nada é
+    // inserido. Aqui a gente conta essas turmas vencidas pra dizer o
+    // que está travando, em vez de fingir que deu certo.
+    if (materialized === 0) {
+      const vencidas = await _contaTurmasVencidas(id);
+      _adminToast(
+        'Nenhuma turma futura foi criada' +
+        (vencidas > 0
+          ? ' — ' + vencidas + ' turma' + (vencidas === 1 ? '' : 's') +
+            ' com data já vencida ocupa' + (vencidas === 1 ? '' : 'm') +
+            ' os mesmos dias/horários. Rode sql/elarah_recurrence_rollover_slots_antigos.sql no Supabase.'
+          : '. Abrindo a edição pra ajuste manual.'),
+        false);
+      return false; // continua oculta de verdade → abre o modal
+    }
     _adminToast('✓ Experiência reativada — ' + materialized +
       ' turma' + (materialized === 1 ? '' : 's') + ' futura' +
       (materialized === 1 ? '' : 's') + ' recriada' + (materialized === 1 ? '' : 's') + '.');
     return true;
+  }
+
+  // Quantas turmas dessa experiência já venceram (event_at no passado).
+  // Serve só pra explicar por que a reativação não criou nada — falha
+  // silenciosa devolve 0 e a mensagem fica genérica.
+  async function _contaTurmasVencidas(experienceId) {
+    const sb = window.supabaseClient;
+    if (!sb) return 0;
+    try {
+      const { count, error } = await sb
+        .from('experience_slots')
+        .select('id', { count: 'exact', head: true })
+        .eq('experience_id', experienceId)
+        .lt('event_at', new Date().toISOString());
+      if (error) return 0;
+      return Number(count) || 0;
+    } catch (e) {
+      return 0;
+    }
   }
 
   async function renderExperiences() {
@@ -10816,7 +10868,7 @@
     lines.push('As vagas estão nas últimas — essa pode ser a sua *última chance* de garantir seu lugar! 🧡');
     lines.push('Se quiser, eu te envio o link pra confirmar agora mesmo.');
 
-    return 'https://wa.me/' + digits + '?text=' + encodeURIComponent(lines.join('\n'));
+    return waSendUrl(digits, lines.join('\n'));
   }
 
   // Fica fora do render pra sobreviver entre re-renders — se
@@ -11784,7 +11836,7 @@
       meta && meta.nome_contato,
       meta && meta.fornecedor_nome
     );
-    return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+    return waSendUrl(phone, msg);
   }
 
   // Upsert completo de um registro de fornecedor (cadastro manual + edição
@@ -12261,7 +12313,7 @@
         overlay.querySelector('#forn-f-contato').value,
         overlay.querySelector('#forn-f-nome').value
       );
-      solicitarLink.href = 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+      solicitarLink.href = waSendUrl(phone, msg);
     };
     refreshSolicitar();
     overlay.querySelector('#forn-f-whatsapp').addEventListener('input', refreshSolicitar);
@@ -15098,7 +15150,7 @@
       '• O que está incluso (material, comidinha, etc.)\n' +
       '• Local (ou se você vai até o espaço do cliente)\n\n' +
       'Obrigada!';
-    return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+    return waSendUrl(phone, msg);
   }
 
   // Experiências do fornecedor já filtradas pelo toggle "só ativas".
@@ -20265,7 +20317,7 @@
     linhas.push('');
     linhas.push('O repasse será feito até 48h antes do evento.');
     const msg = linhas.join('\n');
-    const link = 'https://wa.me/' + waDigits + '?text=' + encodeURIComponent(msg);
+    const link = waSendUrl(waDigits, msg);
     const id = _finEsc(r.id);
     const avisadoAt = r.fornecedor_avisado_at ? new Date(r.fornecedor_avisado_at) : null;
     const isAvisado = avisadoAt && !isNaN(avisadoAt.getTime());
@@ -26227,7 +26279,7 @@
     }
     msg += '\n\nQualquer dúvida é só me chamar 😊';
 
-    const url = 'https://wa.me/' + digits + '?text=' + encodeURIComponent(msg);
+    const url = waSendUrl(digits, msg);
     window.open(url, '_blank', 'noopener');
 
     // Marca como avisado (não bloqueia a abertura do WhatsApp se falhar).
