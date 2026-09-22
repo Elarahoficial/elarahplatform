@@ -141,18 +141,18 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Team building · Turma privada</span>
         <h1>O time junto, <em>de mão na massa</em></h1>
-        <p class="lead">Uma experiência criativa só pro time do <strong>Itaú</strong>. Sem dinâmica forçada e sem apresentação de slides: todo mundo na mesma mesa criando, num formato que solta o grupo de verdade — e cada um leva pra casa o que fez. 🧡</p>
+        <p class="lead">Uma experiência criativa só pro time do <strong>Itaú</strong>. Sem dinâmica forçada e sem apresentação de slides: <strong>todo mundo na mesma mesa criando</strong>, num formato que solta o grupo de verdade — e deixa uma lembrança que continua depois do encontro. 🧡</p>
         <div class="rule"></div>
         <div class="chips">
-          <span class="chip"><b>25</b> pessoas</span>
-          <span class="chip"><b>Novembro</b> de 2026</span>
+          <span class="chip"><b>25 pessoas</b></span>
+          <span class="chip"><b>Novembro de 2026</b></span>
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip">Conceição · São Paulo</span>
           <span class="chip">A partir de <b>R$ 289</b></span>
         </div>
       </div>
-      <div class="cover-photo">{img("capa-itau-oficina.jpg", "Time pintando cerâmica junto: homens e mulheres de mão na massa", "center 38%")}</div>
+      <div class="cover-photo">{img("capa-itau-moodboard.jpg", "Capa Itaú — mural criativo do time, mãos em ação", "center 50%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Itaú")}
@@ -162,21 +162,21 @@ proposito = f'''
   <section class="slide">
 {head_simple("Por que funciona")}
     <span class="eyebrow orange">◆ O que o time leva junto</span>
-    <h2>Team building que ninguém <em>finge gostar</em></h2>
+    <h2>Team building que <em>ninguém finge gostar</em></h2>
     <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos — sem hierarquia, sem quem sabe mais e quem sabe menos. 🧡</p>
     <div class="rule"></div>
     <div class="pgrid">
       <div class="pcard">
-        <div class="pphoto">{img("corp-conexao.jpg", "Colegas rindo e se conectando de verdade", "center 30%")}</div>
+        <div class="pphoto">{img("slide2-rindo.jpg", "Colegas rindo juntas de verdade", "center 30%")}</div>
         <div class="pbody"><h3>Conversa que não rola no escritório</h3><p>Duas horas e meia lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div>
       </div>
       <div class="pcard">
         <div class="pphoto">{img("slide2-arte.jpg", "Homens e mulheres fazendo arte juntos, rindo", "center 30%")}</div>
-        <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa saber pintar ou modelar. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
+        <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa ter experiência. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("vibe-conexao-corp.jpg", "Time rindo e celebrando o encontro", "center 35%")}</div>
-        <div class="pbody"><h3>Fica depois do dia</h3><p>Cada um leva a própria peça pra mesa de trabalho. <b>A lembrança do encontro fica visível</b> no dia a dia do time.</p></div>
+        <div class="pphoto">{img("slide2-brinde-recebe.jpg", "Participante feliz recebendo o brinde do encontro", "center 30%")}</div>
+        <div class="pbody"><h3>Fica depois do dia</h3><p>O que foi criado continua depois do encontro — <b>seja como peça individual ou como memória coletiva</b> do time.</p></div>
       </div>
     </div>
     <div class="bnote" style="margin-top:16px">◆ A gente cuida de tudo: profissional que conduz, material, estrutura e montagem. O RH só precisa avisar a data e reunir o time — e, se quiserem, a gente reserva um momento de fala da liderança no meio do encontro. 🌿</div>
@@ -191,7 +191,7 @@ experiencias = f'''
     <p class="lead">Todas são feitas pra quem nunca fez, funcionam bem em grupo e colocam todo mundo de mão na massa. É só escolher a que combina mais com o time. 🧡</p>
     <div class="menu3">
       <div class="exp">
-        <div class="ephoto">{img("vela-corp.jpg", "Vela artesanal acesa, criada na experiência sensorial", "center 50%")}</div>
+        <div class="ephoto">{img("vela-itau.jpg", "Vela aromática personalizada com a marca do Itaú", "center 50%")}</div>
         <div class="ebody">
           <span class="en">01 · A mais sensorial</span>
           <h3>Sabonete ou Vela</h3>
@@ -210,7 +210,7 @@ experiencias = f'''
         </div>
       </div>
       <div class="exp">
-        <div class="ephoto">{img("colagem.jpg", "Mãos criando uma colagem colaborativa sobre a mesa", "center 45%")}</div>
+        <div class="ephoto">{img("pintura-corp-class.jpg", "Time pintando junto numa oficina criativa corporativa", "center 40%")}</div>
         <div class="ebody">
           <span class="en">03 · A mais colaborativa</span>
           <h3>Pintura ou Colagem</h3>
@@ -231,7 +231,7 @@ coffee = f'''
     <p class="lead">A gente monta uma mesa de brunch completa pro grupo, servida durante a experiência no próprio <strong>Centro Empresarial Itaú Conceição</strong> — sem precisar contratar buffet à parte. Porque a pausa pro cafezinho também faz parte do encontro. 🥐</p>
     <div class="bphotos">
       <div class="bph">{img("salgadinho1.jpg", "Pão de queijo e salgados quentinhos com café", "center 50%")}</div>
-      <div class="bph">{img("bolocaseiro.jpg", "Bolo caseiro de laranja para o coffee", "center 50%")}</div>
+      <div class="bph">{img("bolocaseiro.jpg", "Bolo caseiro de laranja para o brunch", "center 50%")}</div>
     </div>
     <div class="bmenu">
       <div class="cofcat"><h4>Salgados</h4><p>Mini croissants de presunto e queijo · mini sanduíches de frango cremoso · pão de queijo</p></div>
@@ -268,7 +268,7 @@ mimos = f'''
         </div>
       </div>
       <div class="opt hl">
-        <div class="oph"><span class="pctag">★ Plano completo</span>{img("mimos-brinde.jpg", "Brinde personalizado — caneca e caixas de presente", "center 50%")}</div>
+        <div class="oph"><span class="pctag">★ Plano completo</span>{img("mimo-copo-termico.jpg", "Brinde personalizado — copo térmico premium neutro", "center 50%")}</div>
         <div class="ob">
           <span class="otp dark">O brinde</span>
           <h4>Brinde personalizado</h4>
@@ -295,7 +295,7 @@ investimento = f'''
       <thead><tr>
         <th class="corner"></th>
         <th>A experiência<span>profissional, materiais &amp; estrutura</span></th>
-        <th>Premium<span>+ fotógrafo profissional<br>+ coffee corporativo</span></th>
+        <th>Premium<span>+ fotógrafo profissional<br>+ brunch corporativo</span></th>
         <th class="hl"><span class="pill">★ Mais completo</span><br>Completo<span>+ brinde personalizado</span></th>
       </tr></thead>
       <tbody>
@@ -319,7 +319,7 @@ investimento = f'''
         </tr>
       </tbody>
     </table>
-    <div class="bnote" style="margin-top:14px">◆ Valores por pessoa, para 25 participantes, em novembro de 2026. Totais da turma no plano de entrada: <b>R$ 7.225</b> (Sabonete ou Vela), <b>R$ 8.725</b> (Pintura em Porcelana) e <b>R$ 9.225</b> (Pintura ou Colagem). Os valores consideram a realização da experiência no espaço do Itaú, com profissional, materiais, estrutura, montagem e desmontagem inclusos. No plano Premium, estão incluídos coffee corporativo e fotógrafo profissional. O plano Completo acrescenta brinde personalizado. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro do Itaú.</div>
+    <div class="bnote" style="margin-top:14px">◆ Valores por pessoa, para 25 participantes, em novembro de 2026. Totais da turma no plano de entrada: <b>R$ 7.225</b> (Sabonete ou Vela), <b>R$ 8.725</b> (Pintura em Porcelana) e <b>R$ 9.225</b> (Pintura ou Colagem). Os valores consideram a realização da experiência no espaço do Itaú, com profissional, materiais, estrutura, montagem e desmontagem inclusos. No plano Premium, estão incluídos brunch corporativo e fotógrafo profissional. O plano Completo acrescenta brinde personalizado. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro do Itaú.</div>
     {foot("Investimento")}
   </section>'''
 
@@ -331,15 +331,15 @@ contato = f'''
     <p class="lead">A Elarah cuida de toda a produção pro encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><span class="num">01</span><h3>Escolham a experiência e o plano</h3><p>A gente organiza a data em novembro de 2026 e reserva a agenda pro time do Itaú.</p></div>
-      <div class="infocard"><span class="num">02</span><h3>A gente leva tudo</h3><p>Profissional, materiais e estrutura. Chegamos antes, montamos e desmontamos no espaço do Itaú.</p></div>
-      <div class="infocard"><span class="num">03</span><h3>Cada experiência deixa uma lembrança</h3><p>Seja uma peça criada por cada participante ou uma memória coletiva do encontro, a experiência continua depois do dia.</p></div>
+      <div class="infocard"><span class="num">01</span><h3>Escolham a experiência e o plano</h3><p>A gente reserva a agenda pro time do Itaú em novembro de 2026.</p></div>
+      <div class="infocard"><span class="num">02</span><h3>A gente leva tudo</h3><p>Profissional, materiais e estrutura, montados no espaço do Itaú.</p></div>
+      <div class="infocard"><span class="num">03</span><h3>Cada experiência deixa uma lembrança</h3><p>O que foi criado continua com o time depois do dia.</p></div>
     </div>
     <div class="addon">
       <span class="plus">+</span>
       <div>
         <h4 style="font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy);margin:0 0 4px">Sob medida pro time</h4>
-        <p style="font-size:11.5px;color:var(--muted);line-height:1.5;margin:0">Dá pra reservar um momento de fala da liderança no meio do encontro, adaptar o brunch a restrições alimentares e personalizar o brinde com a marca do Itaú. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro. É só combinar. 🧡</p>
+        <p style="font-size:11.5px;color:var(--muted);line-height:1.5;margin:0">Fala da liderança no encontro, brunch adaptável a restrições e brinde com a marca do Itaú. Emitimos nota fiscal e ajustamos o pagamento com o financeiro. 🧡</p>
       </div>
     </div>
     <div class="quote">
