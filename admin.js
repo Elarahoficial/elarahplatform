@@ -23823,6 +23823,50 @@
     }
   }
 
+  // Prévia das datas que a regra vai gerar nos meses marcados: cada dia
+  // da semana marcado dentro de cada mês, a partir de hoje (mesmo
+  // critério do materialize_recurrence_slots). Só aparece com mês marcado.
+  function _recurrencePreviewDatesHtml(weekdays, months) {
+    const list = _recurrenceNormalizeMonths(months);
+    if (!list.length) return '';
+    const wdSet = new Set((weekdays || []).map(Number));
+    if (!wdSet.size) {
+      return '<p style="margin:8px 0 0;font-size:.78rem;color:#c0392b;">Marque o dia da semana pra ver as datas.</p>';
+    }
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let total = 0;
+    const rows = list.map(key => {
+      const [y, m] = key.split('-').map(Number);
+      const days = [];
+      for (let d = new Date(y, m - 1, 1); d.getMonth() === m - 1; d.setDate(d.getDate() + 1)) {
+        if (d >= today && wdSet.has(d.getDay())) {
+          days.push(WEEKDAY_SHORT[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '/' + String(m).padStart(2, '0'));
+        }
+      }
+      total += days.length;
+      const chips = days.length
+        ? days.map(t => '<span style="display:inline-block;padding:3px 8px;background:#fff;border:1px solid #f0c9a4;border-radius:6px;font-size:.76rem;color:#a4663b;">' + t + '</span>').join('')
+        : '<span style="font-size:.76rem;color:#999;font-style:italic;">nenhuma data (mês já passou)</span>';
+      return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px;">' +
+        '<strong style="font-size:.76rem;color:#444;min-width:52px;">' + _recurrenceEsc(_recurrenceMonthLabel(key)) + '</strong>' + chips +
+      '</div>';
+    }).join('');
+    return '<div style="margin-top:10px;padding:10px;background:#fff;border:1px dashed #f0a05e;border-radius:8px;">' +
+      '<div style="font-size:.76rem;font-weight:700;color:#a4663b;">Datas que vão aparecer no site (' + total + ')</div>' +
+      rows +
+      '<div style="margin-top:6px;font-size:.7rem;color:#888;font-style:italic;">Prévia — as datas são criadas ao salvar a regra.</div>' +
+    '</div>';
+  }
+
+  function _recurrenceRefreshPreview(card) {
+    const box = card && card.querySelector('[data-rec-months-preview]');
+    if (!box) return;
+    const wds = Array.from(card.querySelectorAll('[data-rec-field="weekday-check"]:checked')).map(cb => Number(cb.value));
+    const months = Array.from(card.querySelectorAll('[data-rec-field="month-check"]:checked')).map(cb => cb.value);
+    box.innerHTML = _recurrencePreviewDatesHtml(wds, months);
+  }
+
   // Mostra o campo Horizon só quando nenhum mês está marcado.
   function _recurrenceToggleHorizon(card) {
     const wrap = card && card.querySelector('[data-rec-horizon-wrap]');
@@ -24013,6 +24057,7 @@
         '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;margin-bottom:6px;">Meses em que acontece</label>' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px;" data-rec-field="months-container">' + monthsHtml + '</div>' +
         '<p style="margin:6px 0 0;font-size:.72rem;color:#888;font-style:italic;">Opcional. Marque só os meses em que essa aula vai ter (ex.: Out e Dez) — as datas aparecem só neles, o mês inteiro. Sem nenhum mês marcado, vale todo mês pelas próximas semanas do Horizon.</p>' +
+        '<div data-rec-months-preview>' + _recurrencePreviewDatesHtml(Array.from(selected), selectedMonths) + '</div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;">' +
         '<label style="font-size:.78rem;font-weight:600;color:#444;">Início' +
@@ -24096,6 +24141,7 @@
         const cb = e.target && e.target.matches('[data-rec-field="weekday-check"], [data-rec-field="month-check"]') ? e.target : null;
         if (!cb) return;
         _recurrenceToggleHorizon(card);
+        _recurrenceRefreshPreview(card);
         const lbl = cb.closest('label');
         if (!lbl) return;
         if (cb.checked) {
@@ -24215,6 +24261,7 @@
         const cb = e.target && e.target.matches('[data-rec-field="weekday-check"], [data-rec-field="month-check"]') ? e.target : null;
         if (!cb) return;
         _recurrenceToggleHorizon(card);
+        _recurrenceRefreshPreview(card);
         const lbl = cb.closest('label');
         if (!lbl) return;
         if (cb.checked) {
