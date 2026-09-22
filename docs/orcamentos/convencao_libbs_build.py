@@ -152,7 +152,7 @@ cover = f'''
           <span class="chip">Distrito Anhembi</span>
         </div>
         <div class="chips" style="margin-top:10px">
-          <span class="chip">Até <b>50 pessoas por sessão</b></span>
+          <span class="chip"><b>50 pessoas por sessão</b> · formato recomendado</span>
           <span class="chip">A partir de <b>R$ 89</b></span>
         </div>
       </div>
@@ -182,7 +182,7 @@ porque = f'''
         <div class="pbody"><h3>Fica depois do dia</h3><p>Cada um leva pra casa o que criou durante a experiência. <b>A lembrança do encontro continua depois da convenção.</b></p></div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:auto">◆ Feita pra acompanhar o ritmo da convenção: até <b>50 pessoas por sessão</b> e potencial de envolver até <b>60% do público</b> nos dois dias.</div>
+    <div class="bnote" style="margin-top:auto">◆ Feita pra acompanhar o ritmo da convenção: <b>50 pessoas por sessão</b> (formato recomendado) e potencial de envolver até <b>60% do público</b> nos dois dias.</div>
     {foot("Por que funciona")}
   </section>'''
 
@@ -245,8 +245,8 @@ comofunciona = f'''
       <div class="stat"><div class="sv">450</div><div class="sl">participações por dia</div></div>
       <div class="stat"><div class="sv">900</div><div class="sl">participações nos 2 dias</div></div>
     </div>
-    <p class="scalehint">Potencial de envolver até <b>60% do público total</b> · considerando a capacidade máxima de operação</p>
-    <div class="bnote" style="margin-top:14px"><b>Até 50 pessoas por sessão · equipe de 4 facilitadores.</b><br>Incluso: todos os insumos, utensílios e materiais da experiência.<br>Infraestrutura do evento: microfone, mesas e cadeiras por conta do contratante.</div>
+    <p class="scalehint"><b>50 pessoas é a referência recomendada por sessão.</b> Grupos maiores podem ser avaliados conforme espaço, estrutura e dinâmica escolhida · potencial de envolver até <b>60% do público total</b>.</p>
+    <div class="bnote" style="margin-top:14px"><b>A experiência foi desenhada para turmas de 50 pessoas</b>, garantindo mais conforto, interação e fluidez — dependendo da estrutura disponível, podemos avaliar grupos maiores por sessão. Equipe de 4 facilitadores; insumos, utensílios e materiais inclusos. Infraestrutura do evento (microfone, mesas e cadeiras) por conta do contratante — para grupos maiores, a estrutura de espaço, mesas, cadeiras e áudio deverá ser validada previamente.</div>
     <p class="closing">Mais do que passar pela ativação: parar, criar junto e levar um pouco desse encontro pra casa.</p>
     {foot("Como funciona")}
   </section>'''
@@ -345,7 +345,7 @@ fechamento = f'''
       Renata, me confirma o <strong>formato</strong> e a quantidade de sessões que a gente organiza os próximos passos e cuida de toda a produção.<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    <p class="fineprint">Proposta de experiência da Elarah para a Convenção LIBBS — Distrito Anhembi, 14 e 15 de dezembro, das 7h às 19h, para um público de cerca de 1.500 pessoas (perfil misto). Experiências à escolha, valores por pessoa: Home Spray Personalizado R$ 89, Vela Aromática R$ 119 ou Vela + Criação de Fragrância R$ 129. Cada sessão leva cerca de 40 minutos, com 20 minutos de giro entre turmas, participação espontânea e capacidade de até 50 pessoas por sessão — 9 sessões por dia, 18 no total, com capacidade de até 900 participações nos dois dias e potencial de envolver até 60% do público, caso a operação rode na capacidade máxima (participação espontânea, sem número garantido). Cada participante leva a própria criação. Insumos, utensílios e materiais inclusos; microfone, mesas e cadeiras por conta do contratante. Valor final conforme a quantidade de horas/sessões contratadas. Proposta válida mediante confirmação de data, formato e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência da Elarah para a Convenção LIBBS — Distrito Anhembi, 14 e 15 de dezembro, das 7h às 19h, para um público de cerca de 1.500 pessoas (perfil misto). Experiências à escolha, valores por pessoa: Home Spray Personalizado R$ 89, Vela Aromática R$ 119 ou Vela + Criação de Fragrância R$ 129. Cada sessão leva cerca de 40 minutos, com 20 minutos de giro entre turmas, participação espontânea e turmas de 50 pessoas por sessão como formato recomendado (grupos maiores avaliados conforme a estrutura disponível) — 9 sessões por dia, 18 no total, com capacidade de até 900 participações nos dois dias e potencial de envolver até 60% do público, caso a operação rode na capacidade máxima (participação espontânea, sem número garantido). Cada participante leva a própria criação. Insumos, utensílios e materiais inclusos; microfone, mesas e cadeiras por conta do contratante. Valor final conforme a quantidade de horas/sessões contratadas. Proposta válida mediante confirmação de data, formato e disponibilidade de agenda.</p>
     {foot("Como funciona & contato")}
   </section>'''
 
