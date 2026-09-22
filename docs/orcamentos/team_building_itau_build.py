@@ -35,11 +35,11 @@ xcss = '''
   /* cards com foto no topo (slide propósito) */
   .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
   .pcard{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28)}
-  .pcard .pphoto{aspect-ratio:16/10;overflow:hidden;background:#eee}
+  .pcard .pphoto{aspect-ratio:4/5;overflow:hidden;background:#eee}
   .pcard .pphoto img{width:100%;height:100%;object-fit:cover;display:block}
-  .pcard .pbody{padding:15px 18px 18px}
-  .pcard .pbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.1;margin:0 0 6px}
-  .pcard .pbody p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .pcard .pbody{padding:14px 17px 16px}
+  .pcard .pbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);line-height:1.1;margin:0 0 5px}
+  .pcard .pbody p{font-size:11px;color:var(--muted);line-height:1.45;margin:0}
   .pcard .pbody p b{color:var(--navy);font-weight:700}
   /* menu de experiências (3 cards) */
   .menu3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
@@ -75,8 +75,8 @@ xcss = '''
   .cofcats{flex:1;min-width:280px;display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;align-content:start}
   .cofcat h4{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:0 0 4px}
   .cofcat p{font-size:10.5px;color:var(--ink);line-height:1.5;margin:0}
-  .bphotos{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
-  .bph{aspect-ratio:16/10;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 32px -24px rgba(0,0,0,.34)}
+  .bphotos{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+  .bph{aspect-ratio:1/1;border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 32px -24px rgba(0,0,0,.34)}
   .bph img{width:100%;height:100%;object-fit:cover;display:block}
   .bmenu{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 18px;margin-top:16px}
   .priceband{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:var(--navy);color:#fff;border-radius:16px;padding:16px 26px;margin-top:14px}
@@ -117,7 +117,7 @@ def img(src, alt, pos="center 50%"):
 
 def head_block(kicker, main, accent, small):
     return f'''    <div class="slide__head">
-      <div class="brand cobrand"><img src="assets/logo.png" alt="Elarah"><span class="xx">&times;</span><span class="client">Itaú</span></div>
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right">
         <span class="kicker">{kicker}</span>
         <span class="compass">{main} <span>{accent}</span><small>{small}</small></span>
@@ -127,7 +127,7 @@ def head_block(kicker, main, accent, small):
 
 def head_simple(kicker):
     return f'''    <div class="slide__head">
-      <div class="brand cobrand"><img src="assets/logo.png" alt="Elarah"><span class="xx">&times;</span><span class="client">Itaú</span></div>
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">{kicker}</span></div>
     </div>'''
 
@@ -152,7 +152,7 @@ cover = f'''
           <span class="chip">A partir de <b>R$ 289</b></span>
         </div>
       </div>
-      <div class="cover-photo">{img("capa-itau-moodboard.jpg", "Capa Itaú — mural criativo do time, mãos em ação", "center 50%")}</div>
+      <div class="cover-photo">{img("capa-homens-pintando.jpg", "Time corporativo pintando junto numa oficina criativa", "center 45%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Itaú")}
@@ -179,7 +179,7 @@ proposito = f'''
         <div class="pbody"><h3>Fica depois do dia</h3><p>O que foi criado continua depois do encontro — <b>seja como peça individual ou como memória coletiva</b> do time.</p></div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ A gente cuida de tudo: profissional que conduz, material, estrutura e montagem. O RH só precisa avisar a data e reunir o time — e, se quiserem, a gente reserva um momento de fala da liderança no meio do encontro. 🌿</div>
+    <div class="bnote" style="margin-top:auto">◆ A gente cuida de tudo: profissional que conduz, material, estrutura e montagem. O RH só precisa avisar a data e reunir o time — e, se quiserem, a gente reserva um momento de fala da liderança no meio do encontro. 🌿</div>
     {foot("Por que funciona")}
   </section>'''
 
@@ -210,7 +210,7 @@ experiencias = f'''
         </div>
       </div>
       <div class="exp">
-        <div class="ephoto">{img("pintura-corp-class.jpg", "Time pintando junto numa oficina criativa corporativa", "center 40%")}</div>
+        <div class="ephoto">{img("capa-itau-moodboard.jpg", "Colagem criativa do time com a marca do Itaú", "center 50%")}</div>
         <div class="ebody">
           <span class="en">03 · A mais colaborativa</span>
           <h3>Pintura ou Colagem</h3>
@@ -219,7 +219,7 @@ experiencias = f'''
         </div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:14px">◆ Para um grupo de 25 pessoas, nossa sugestão é a <b>Pintura em Porcelana</b>: uma experiência leve, criativa e fácil de participar, que coloca todo mundo de mão na massa e cria espaço para conversas mais naturais. Cada pessoa personaliza sua própria peça e leva uma lembrança que continua presente no dia a dia — na mesa de trabalho, na pausa para o café ou entre uma reunião e outra. 🧡</div>
+    <div class="bnote" style="margin-top:auto">◆ Para um grupo de 25 pessoas, nossa sugestão é a <b>Pintura em Porcelana</b>: leve, criativa e fácil de participar, coloca todo mundo de mão na massa e cria espaço para conversas mais naturais — e cada pessoa leva uma lembrança que continua no dia a dia. 🧡</div>
     {foot("O menu")}
   </section>'''
 
@@ -230,8 +230,10 @@ coffee = f'''
     <h2>A mesa posta <em>esperando o time</em></h2>
     <p class="lead">A gente monta uma mesa de brunch completa pro grupo, servida durante a experiência no próprio <strong>Centro Empresarial Itaú Conceição</strong> — sem precisar contratar buffet à parte. Porque a pausa pro cafezinho também faz parte do encontro. 🥐</p>
     <div class="bphotos">
-      <div class="bph">{img("salgadinho1.jpg", "Pão de queijo e salgados quentinhos com café", "center 50%")}</div>
-      <div class="bph">{img("bolocaseiro.jpg", "Bolo caseiro de laranja para o brunch", "center 50%")}</div>
+      <div class="bph">{img("salgadinho1.jpg", "Pão de queijo e salgados quentinhos", "center 50%")}</div>
+      <div class="bph">{img("brunch-office2.jpg", "Brunch corporativo montado no escritório, com café e frutas", "center 50%")}</div>
+      <div class="bph">{img("brunch-office1.jpg", "Mesa de brunch no escritório com salgados, pães e frutas", "center 55%")}</div>
+      <div class="bph">{img("bolocaseiro.jpg", "Bolo caseiro de laranja e doces", "center 50%")}</div>
     </div>
     <div class="bmenu">
       <div class="cofcat"><h4>Salgados</h4><p>Mini croissants de presunto e queijo · mini sanduíches de frango cremoso · pão de queijo</p></div>
@@ -268,7 +270,7 @@ mimos = f'''
         </div>
       </div>
       <div class="opt hl">
-        <div class="oph"><span class="pctag">★ Plano completo</span>{img("mimo-copo-termico.jpg", "Brinde personalizado — copo térmico premium neutro", "center 50%")}</div>
+        <div class="oph"><span class="pctag">★ Plano completo</span>{img("brinde-corp.jpg", "Brinde personalizado — kit corporativo premium", "center 50%")}</div>
         <div class="ob">
           <span class="otp dark">O brinde</span>
           <h4>Brinde personalizado</h4>
