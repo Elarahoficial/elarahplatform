@@ -77,3 +77,8 @@ verify_jwt = false
 # Conversas. Autentica por dentro (JWT de admin, CRON_SECRET ou service role).
 [functions.admin-whatsapp-responder]
 verify_jwt = false
+
+# admin-reenviar-aviso-parceira — botão "Reenviar pela Meta" da lista de
+# Compras. Autentica por dentro (JWT de admin, CRON_SECRET ou service role).
+[functions.admin-reenviar-aviso-parceira]
+verify_jwt = false
