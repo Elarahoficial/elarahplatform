@@ -191,7 +191,7 @@ experiencias = f'''
     <p class="lead">Todas são feitas pra quem nunca fez, funcionam bem em grupo e colocam todo mundo de mão na massa. É só escolher a que combina mais com o time. 🧡</p>
     <div class="menu3">
       <div class="exp">
-        <div class="ephoto">{img("vela-itau.jpg", "Vela aromática personalizada com a marca do Itaú", "center 50%")}</div>
+        <div class="ephoto">{img("vela-itau-collage.jpg", "Vela aromática personalizada com a marca do Itaú", "center 50%")}</div>
         <div class="ebody">
           <span class="en">01 · A mais sensorial</span>
           <h3>Sabonete ou Vela</h3>
@@ -257,7 +257,7 @@ mimos = f'''
     <p class="lead">Além da peça que cada um cria, os planos superiores somam o registro fotográfico profissional — e o Completo ainda soma um brinde personalizado com a marca do Itaú.</p>
     <div class="opts">
       <div class="opt">
-        <div class="oph">{img("eventocorporativo.jpg", "Registro fotográfico profissional de um encontro corporativo", "center 42%")}</div>
+        <div class="oph">{img("mimos-registro-itau.jpg", "Registro fotográfico profissional de um encontro corporativo do Itaú", "center 42%")}</div>
         <div class="ob">
           <span class="otp">Nos planos mais altos</span>
           <h4>Registro fotográfico profissional</h4>
@@ -270,7 +270,7 @@ mimos = f'''
         </div>
       </div>
       <div class="opt hl">
-        <div class="oph"><span class="pctag">★ Plano completo</span>{img("brinde-corp-wide.jpg", "Brinde personalizado — kit corporativo premium", "center 50%")}</div>
+        <div class="oph"><span class="pctag">★ Plano completo</span>{img("brinde-itau.jpg", "Brinde personalizado — kit corporativo Itaú premium", "center 50%")}</div>
         <div class="ob">
           <span class="otp dark">O brinde</span>
           <h4>Brinde personalizado</h4>
