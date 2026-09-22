@@ -53,6 +53,33 @@ xcss = '''
   .nx{border-top:1.5px solid var(--line);padding-top:13px}
   .nx .nn{font-family:'DM Serif Display',serif;font-size:22px;color:var(--orange)}
   .nx h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy);margin:5px 0 0;line-height:1.15}
+  /* conceito editorial com foto */
+  .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:26px;align-items:stretch}
+  .cphoto{margin:0;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.42);min-height:430px}
+  .cphoto img{width:100%;height:100%;object-fit:cover;display:block}
+  .cpil{display:flex;flex-direction:column;justify-content:center;gap:28px}
+  .cp{padding-left:20px;border-left:2px solid var(--orange)}
+  .cp .cn{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;display:block;margin-bottom:5px}
+  .cp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:21px;color:var(--navy);margin:0 0 7px;line-height:1.08}
+  .cp p{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
+  /* investimento · valor construído */
+  .sum{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:22px}
+  .sum .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 22px;text-align:center;min-width:160px;flex:1}
+  .sum .box .bl{font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);display:block;line-height:1.3}
+  .sum .box .bv{font-family:'DM Serif Display',serif;font-size:30px;color:var(--navy);line-height:1;margin:8px 0 4px;display:block}
+  .sum .box small{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;display:block}
+  .sum .op{font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange-dark);flex:0 0 auto}
+  .sum .tot{background:var(--navy);border-color:var(--navy)}
+  .sum .tot .bl{color:var(--orange)}
+  .sum .tot .bv{color:#fff}
+  .sum .tot small{color:rgba(255,255,255,.82)}
+  .invsum{margin-top:18px;font-size:14.5px;color:var(--ink);line-height:1.5}
+  .invsum b{color:var(--navy)}
+  .invsum .big{font-family:'DM Serif Display',serif;font-size:22px;color:var(--orange-dark);vertical-align:-1px}
+  .invsum span{color:var(--muted)}
+  .incl2 ul{list-style:none;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px 26px}
+  .incl2 ul li{position:relative;padding-left:20px;font-size:12.5px;color:var(--ink);line-height:1.35}
+  .incl2 ul li span{position:absolute;left:0;top:1px;color:var(--orange)}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -111,12 +138,15 @@ conceito = f'''
   <section class="slide">
 {head_simple("O conceito")}
     <span class="eyebrow orange">◆ O conceito</span>
-    <h2>Uma pausa criativa no meio da <em>programação</em></h2>
-    <p class="lead">Entre reuniões, conversas e agenda, um momento para criar com as mãos e estar junto de uma forma diferente. A Elarah cuida da curadoria e da produção — o grupo só chega e aproveita.</p>
-    <div class="pillars">
-      <div class="pil"><span class="pn">01</span><h3>Criar com as mãos</h3><p>Uma experiência manual e intuitiva, sem necessidade de conhecimento prévio.</p></div>
-      <div class="pil"><span class="pn">02</span><h3>Conectar o time</h3><p>Uma dinâmica leve, que permite conversar e interagir naturalmente.</p></div>
-      <div class="pil"><span class="pn">03</span><h3>Desacelerar</h3><p>Um intervalo diferente dentro da programação, cercado de verde.</p></div>
+    <h2>Um respiro no meio da <em>correria</em></h2>
+    <p class="lead">Em meio à programação, um momento para desacelerar, criar com as mãos e estar junto de uma forma diferente. A Elarah cuida da curadoria e da produção para que o grupo apenas chegue e aproveite.</p>
+    <div class="cgrid">
+      <figure class="cphoto">{img("casalmodelagemceramica.jpg", "Mãos modelando argila juntas", "center 50%")}</figure>
+      <div class="cpil">
+        <div class="cp"><span class="cn">01</span><h3>Criar com as mãos</h3><p>Uma experiência manual, intuitiva e sem necessidade de conhecimento prévio.</p></div>
+        <div class="cp"><span class="cn">02</span><h3>Conectar o time</h3><p>Uma dinâmica leve, que permite conversar e interagir naturalmente.</p></div>
+        <div class="cp"><span class="cn">03</span><h3>Desacelerar</h3><p>Um intervalo diferente dentro da programação, cercado de verde.</p></div>
+      </div>
     </div>
     {foot("O conceito")}
   </section>'''
@@ -183,13 +213,32 @@ investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Uma experiência completa, <em>tudo incluso</em></h2>
-    <p class="lead">Um valor único e consolidado — a experiência inteira produzida pela Elarah, sem letras miúdas.</p>
-    <div class="priceband">
-      <div><span class="pl">Experiência completa · até 10 participantes</span><span class="pv">R$ 5.200</span></div>
-      <div class="side">Modelagem em cerâmica<br>+ coffee break · no O Jardim<br><b style="color:#fff;font-family:'DM Serif Display',serif">tudo incluso</b></div>
+    <h2>Uma experiência completa, <em>produzida pela Elarah</em></h2>
+    <p class="lead">O investimento reúne o melhor da experiência: espaço reservado, coffee break e modelagem manual em cerâmica, com produção integral da Elarah.</p>
+    <div class="sum">
+      <div class="box"><span class="bl">Espaço + coffee break</span><span class="bv">R$ 250</span><small>por pessoa</small></div>
+      <span class="op">+</span>
+      <div class="box"><span class="bl">Modelagem em cerâmica</span><span class="bv">R$ 270</span><small>por pessoa</small></div>
+      <span class="op">=</span>
+      <div class="box tot"><span class="bl">Experiência completa</span><span class="bv">R$ 520</span><small>por pessoa</small></div>
     </div>
-    <p class="fineprint">Valor único para o grupo (até 10 participantes), com espaço, coffee break, ceramista, materiais, condução, acabamento, queima, logística e produção Elarah inclusos. Valor sujeito à confirmação final de data, disponibilidade e fornecedores. Datas em avaliação: 08, 09 ou 10 de dezembro.</p>
+    <p class="invsum"><b>Experiência completa para até 10 participantes</b> — <span class="big">R$ 5.200</span> <span>· equivalente a R$ 520 por pessoa</span></p>
+    <div class="invbox" style="margin-top:16px">
+      <div class="incl incl2" style="flex:1;min-width:300px">
+        <span class="vt">O que está incluído</span>
+        <ul>
+          <li><span>✦</span>Espaço reservado no O Jardim</li>
+          <li><span>✦</span>Coffee break</li>
+          <li><span>✦</span>Modelagem manual em cerâmica</li>
+          <li><span>✦</span>Ceramista</li>
+          <li><span>✦</span>Argila e materiais</li>
+          <li><span>✦</span>Acabamento e queima</li>
+          <li><span>✦</span>Logística e devolução das peças</li>
+          <li><span>✦</span>Produção e curadoria Elarah</li>
+        </ul>
+      </div>
+    </div>
+    <p class="fineprint">Composição comercial da proposta (valor por pessoa), para grupo de até 10 participantes. Valor sujeito à confirmação final de data, disponibilidade e fornecedores. Datas em avaliação: 08, 09 ou 10 de dezembro.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -213,7 +262,7 @@ proximos = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + conceito + experiencia + local + incluso + investimento + proximos + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + conceito + experiencia + local + investimento + proximos + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/experiencia-bfa-ceramica-jardim.html"
 open(out, "w", encoding="utf-8").write(html)
