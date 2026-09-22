@@ -23823,6 +23823,69 @@
     }
   }
 
+  // Prévia das datas que a regra vai gerar nos meses marcados: cada dia
+  // da semana marcado dentro de cada mês, a partir de hoje (mesmo
+  // critério do materialize_recurrence_slots). Só aparece com mês marcado.
+  function _recurrencePreviewDatesHtml(weekdays, months) {
+    const list = _recurrenceNormalizeMonths(months);
+    if (!list.length) return '';
+    const wdSet = new Set((weekdays || []).map(Number));
+    if (!wdSet.size) {
+      return '<p style="margin:8px 0 0;font-size:.78rem;color:#c0392b;">Marque o dia da semana pra ver as datas.</p>';
+    }
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let total = 0;
+    const rows = list.map(key => {
+      const [y, m] = key.split('-').map(Number);
+      const days = [];
+      for (let d = new Date(y, m - 1, 1); d.getMonth() === m - 1; d.setDate(d.getDate() + 1)) {
+        if (d >= today && wdSet.has(d.getDay())) {
+          days.push(WEEKDAY_SHORT[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '/' + String(m).padStart(2, '0'));
+        }
+      }
+      total += days.length;
+      const chips = days.length
+        ? days.map(t => '<span style="display:inline-block;padding:3px 8px;background:#fff;border:1px solid #f0c9a4;border-radius:6px;font-size:.76rem;color:#a4663b;">' + t + '</span>').join('')
+        : '<span style="font-size:.76rem;color:#999;font-style:italic;">nenhuma data (mês já passou)</span>';
+      return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px;">' +
+        '<strong style="font-size:.76rem;color:#444;min-width:52px;">' + _recurrenceEsc(_recurrenceMonthLabel(key)) + '</strong>' + chips +
+      '</div>';
+    }).join('');
+    return '<div style="margin-top:10px;padding:10px;background:#fff;border:1px dashed #f0a05e;border-radius:8px;">' +
+      '<div style="font-size:.76rem;font-weight:700;color:#a4663b;">Datas que vão aparecer no site (' + total + ')</div>' +
+      rows +
+      '<div style="margin-top:6px;font-size:.7rem;color:#888;font-style:italic;">Prévia — as datas são criadas ao salvar a regra.</div>' +
+    '</div>';
+  }
+
+  function _recurrenceRefreshPreview(card) {
+    const box = card && card.querySelector('[data-rec-months-preview]');
+    if (!box) return;
+    const wds = Array.from(card.querySelectorAll('[data-rec-field="weekday-check"]:checked')).map(cb => Number(cb.value));
+    const months = Array.from(card.querySelectorAll('[data-rec-field="month-check"]:checked')).map(cb => cb.value);
+    box.innerHTML = _recurrencePreviewDatesHtml(wds, months);
+  }
+
+  // Mostra o campo Horizon só quando nenhum mês está marcado.
+  function _recurrenceToggleHorizon(card) {
+    const wrap = card && card.querySelector('[data-rec-horizon-wrap]');
+    if (!wrap) return;
+    const anyMonth = !!card.querySelector('[data-rec-field="month-check"]:checked');
+    wrap.style.display = anyMonth ? 'none' : '';
+  }
+
+  // Horizon só é obrigatório sem mês marcado. Com mês, a coluna continua
+  // NOT NULL no banco: guarda o valor digitado se for válido, senão o
+  // anterior, senão 8 (volta a valer se a admin desmarcar os meses).
+  function _recurrenceHorizonValid(v) {
+    return isFinite(v) && v >= 1 && v <= 52;
+  }
+  function _recurrenceHorizonForSave(v, months, fallback) {
+    if (!months.length || _recurrenceHorizonValid(v)) return v;
+    return _recurrenceHorizonValid(Number(fallback)) ? Number(fallback) : 8;
+  }
+
   // Erro típico quando o SQL elarah_recurrence_active_months.sql ainda
   // não rodou no Supabase — mensagem clara em vez do erro cru.
   function _recurrenceFriendlyError(error) {
@@ -23994,6 +24057,7 @@
         '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;margin-bottom:6px;">Meses em que acontece</label>' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px;" data-rec-field="months-container">' + monthsHtml + '</div>' +
         '<p style="margin:6px 0 0;font-size:.72rem;color:#888;font-style:italic;">Opcional. Marque só os meses em que essa aula vai ter (ex.: Out e Dez) — as datas aparecem só neles, o mês inteiro. Sem nenhum mês marcado, vale todo mês pelas próximas semanas do Horizon.</p>' +
+        '<div data-rec-months-preview>' + _recurrencePreviewDatesHtml(Array.from(selected), selectedMonths) + '</div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;">' +
         '<label style="font-size:.78rem;font-weight:600;color:#444;">Início' +
@@ -24005,7 +24069,9 @@
         '<label style="font-size:.78rem;font-weight:600;color:#444;">Vagas' +
           '<input type="number" data-rec-field="vagas_total" min="1" step="1" value="' + _recurrenceEsc(r.vagas_total) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
         '</label>' +
-        '<label style="font-size:.78rem;font-weight:600;color:#444;">Horizon (semanas)' +
+        // Com mês marcado a regra cobre os meses inteiros e o horizon não
+        // é usado — o campo some pra não confundir.
+        '<label data-rec-horizon-wrap style="font-size:.78rem;font-weight:600;color:#444;' + (selectedMonths.length ? 'display:none;' : '') + '">Horizon (semanas)' +
           '<input type="number" data-rec-field="horizon_weeks" min="1" max="52" step="1" value="' + _recurrenceEsc(r.horizon_weeks) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
         '</label>' +
       '</div>' +
@@ -24074,6 +24140,8 @@
       card.addEventListener('change', (e) => {
         const cb = e.target && e.target.matches('[data-rec-field="weekday-check"], [data-rec-field="month-check"]') ? e.target : null;
         if (!cb) return;
+        _recurrenceToggleHorizon(card);
+        _recurrenceRefreshPreview(card);
         const lbl = cb.closest('label');
         if (!lbl) return;
         if (cb.checked) {
@@ -24192,6 +24260,8 @@
       card.addEventListener('change', (e) => {
         const cb = e.target && e.target.matches('[data-rec-field="weekday-check"], [data-rec-field="month-check"]') ? e.target : null;
         if (!cb) return;
+        _recurrenceToggleHorizon(card);
+        _recurrenceRefreshPreview(card);
         const lbl = cb.closest('label');
         if (!lbl) return;
         if (cb.checked) {
@@ -24240,7 +24310,7 @@
     if (!d.hora_inicio) return 'Hora início obrigatória.';
     if (!d.horario_label) return 'Rótulo do horário obrigatório.';
     if (!isFinite(d.vagas_total) || d.vagas_total < 1) return 'Vagas deve ser inteiro >= 1.';
-    if (!isFinite(d.horizon_weeks) || d.horizon_weeks < 1 || d.horizon_weeks > 52) return 'Horizon entre 1 e 52 semanas.';
+    if (!_recurrenceNormalizeMonths(d.active_months).length && !_recurrenceHorizonValid(d.horizon_weeks)) return 'Horizon entre 1 e 52 semanas (ou marque os meses).';
     return '';
   }
 
@@ -24270,7 +24340,7 @@
         hora_fim: d.hora_fim || null,
         horario_label: d.horario_label,
         vagas_total: d.vagas_total,
-        horizon_weeks: d.horizon_weeks,
+        horizon_weeks: _recurrenceHorizonForSave(d.horizon_weeks, _recurrenceNormalizeMonths(d.active_months), 8),
         is_active: true,
       };
       // Só manda a coluna quando há mês marcado: regra sem meses segue
@@ -24371,16 +24441,18 @@
     const newHoraFim = getVal('hora_fim') || null;
     const newHorarioLabel = (getVal('horario_label') || '').trim();
     const newVagasTotal = Number(getVal('vagas_total'));
-    const newHorizonWeeks = Number(getVal('horizon_weeks'));
     const newMonths = _recurrenceNormalizeMonths(
       Array.from(card.querySelectorAll('[data-rec-field="month-check"]:checked')).map(cb => cb.value)
+    );
+    const newHorizonWeeks = _recurrenceHorizonForSave(
+      Number(getVal('horizon_weeks')), newMonths, oldRule && oldRule.horizon_weeks
     );
 
     if (!newWeekdays.length) { _recurrenceCardErr(cardMsg, 'Marque pelo menos 1 dia da semana.'); return; }
     if (!newHoraInicio) { _recurrenceCardErr(cardMsg, 'Hora início obrigatória.'); return; }
     if (!newHorarioLabel) { _recurrenceCardErr(cardMsg, 'Rótulo do horário obrigatório.'); return; }
     if (!isFinite(newVagasTotal) || newVagasTotal < 1) { _recurrenceCardErr(cardMsg, 'Vagas deve ser inteiro >= 1.'); return; }
-    if (!isFinite(newHorizonWeeks) || newHorizonWeeks < 1 || newHorizonWeeks > 52) { _recurrenceCardErr(cardMsg, 'Horizon entre 1 e 52 semanas.'); return; }
+    if (!_recurrenceHorizonValid(newHorizonWeeks)) { _recurrenceCardErr(cardMsg, 'Horizon entre 1 e 52 semanas (ou marque os meses).'); return; }
 
     // Cleanup proativo de órfãos ANTES de salvar.
     // Quando horario_label OU weekday muda, os slots FUTUROS que a
