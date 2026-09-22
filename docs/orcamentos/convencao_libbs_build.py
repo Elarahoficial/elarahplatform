@@ -167,7 +167,7 @@ porque = f'''
         <div class="pbody"><h3>Conversa que não rola no escritório</h3><p>Alguns minutos lado a lado fazem o time falar de coisas que a rotina nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("libbs-s2-criar.jpg", "Time criando junto, de mão na massa, do zero", "center 45%")}</div>
+        <div class="pphoto">{img("libbs-s2-criar.jpg", "Time criando junto na ativação, do zero", "center 42%")}</div>
         <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa saber fazer ou ter experiência. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
       </div>
       <div class="pcard">
