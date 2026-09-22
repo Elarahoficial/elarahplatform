@@ -163,19 +163,19 @@ proposito = f'''
 {head_simple("Por que funciona")}
     <span class="eyebrow orange">◆ O que o time leva junto</span>
     <h2>Team building que <em>ninguém finge gostar</em></h2>
-    <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos — sem hierarquia, sem quem sabe mais e quem sabe menos. 🧡</p>
+    <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos <strong>— sem hierarquia, sem quem sabe mais e quem sabe menos.</strong> 🧡</p>
     <div class="rule"></div>
     <div class="pgrid">
       <div class="pcard">
-        <div class="pphoto">{img("slide2-rindo.jpg", "Colegas rindo juntas de verdade", "center 30%")}</div>
+        <div class="pphoto">{img("s2ref-conversa.jpg", "Colegas conversando e rindo num encontro", "center 30%")}</div>
         <div class="pbody"><h3>Conversa que não rola no escritório</h3><p>Duas horas e meia lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("slide2-arte.jpg", "Homens e mulheres fazendo arte juntos, rindo", "center 30%")}</div>
+        <div class="pphoto">{img("s2ref-mesmope.jpg", "Participantes criando juntas no encontro", "center 25%")}</div>
         <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa ter experiência. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("slide2-brinde-recebe.jpg", "Participante feliz recebendo o brinde do encontro", "center 30%")}</div>
+        <div class="pphoto">{img("s2ref-fica.jpg", "Time rindo e celebrando o encontro", "center 25%")}</div>
         <div class="pbody"><h3>Fica depois do dia</h3><p>O que foi criado continua depois do encontro — <b>seja como peça individual ou como memória coletiva</b> do time.</p></div>
       </div>
     </div>
@@ -230,10 +230,10 @@ coffee = f'''
     <h2>A mesa posta <em>esperando o time</em></h2>
     <p class="lead">A gente monta uma mesa de brunch completa pro grupo, servida durante a experiência no próprio <strong>Centro Empresarial Itaú Conceição</strong> — sem precisar contratar buffet à parte. Porque a pausa pro cafezinho também faz parte do encontro. 🥐</p>
     <div class="bphotos">
-      <div class="bph">{img("salgadinho1.jpg", "Pão de queijo e salgados quentinhos", "center 50%")}</div>
-      <div class="bph">{img("brunch-office2.jpg", "Brunch corporativo montado no escritório, com café e frutas", "center 50%")}</div>
-      <div class="bph">{img("brunch-office1.jpg", "Mesa de brunch no escritório com salgados, pães e frutas", "center 55%")}</div>
-      <div class="bph">{img("bolocaseiro.jpg", "Bolo caseiro de laranja e doces", "center 50%")}</div>
+      <div class="bph">{img("salgadinho1.jpg", "Salgados: pão de queijo e mini salgados", "center 50%")}</div>
+      <div class="bph">{img("croissant.jpg", "Pães: croissants e pães variados", "center 50%")}</div>
+      <div class="bph">{img("bolocaseiro.jpg", "Doces & frutas: bolo caseiro de laranja", "center 50%")}</div>
+      <div class="bph">{img("brunch-office2.jpg", "Bebidas: café e sucos no brunch corporativo", "center 45%")}</div>
     </div>
     <div class="bmenu">
       <div class="cofcat"><h4>Salgados</h4><p>Mini croissants de presunto e queijo · mini sanduíches de frango cremoso · pão de queijo</p></div>
@@ -270,7 +270,7 @@ mimos = f'''
         </div>
       </div>
       <div class="opt hl">
-        <div class="oph"><span class="pctag">★ Plano completo</span>{img("brinde-corp.jpg", "Brinde personalizado — kit corporativo premium", "center 50%")}</div>
+        <div class="oph"><span class="pctag">★ Plano completo</span>{img("brinde-corp-c.jpg", "Brinde personalizado — kit corporativo premium", "center 50%")}</div>
         <div class="ob">
           <span class="otp dark">O brinde</span>
           <h4>Brinde personalizado</h4>
