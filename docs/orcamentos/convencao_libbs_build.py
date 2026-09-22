@@ -56,11 +56,17 @@ xcss = '''
   .stat{background:var(--navy);border-radius:16px;padding:18px 14px;text-align:center}
   .stat .sv{font-family:'DM Serif Display',serif;font-size:30px;line-height:1;color:var(--orange)}
   .stat .sl{font-size:9.5px;letter-spacing:.05em;color:rgba(255,255,255,.82);margin-top:8px;line-height:1.4;text-transform:uppercase}
-  /* fluxo */
-  .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:16px}
+  /* fluxo com fotos */
+  .flow{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}
   .fstep{text-align:center}
-  .fstep .fn{width:36px;height:36px;border-radius:999px;background:var(--orange);color:#fff;font-family:'DM Serif Display',serif;font-size:17px;display:flex;align-items:center;justify-content:center;margin:0 auto 9px}
-  .fstep h4{font-size:12px;color:var(--navy);font-weight:700;line-height:1.25;margin:0}
+  .fstep .fph{aspect-ratio:1/1;border-radius:14px;overflow:hidden;position:relative;border:1px solid var(--line);box-shadow:0 12px 26px -20px rgba(0,0,0,.36)}
+  .fstep .fph img{width:100%;height:100%;object-fit:cover;display:block}
+  .fstep .fn{position:absolute;top:8px;left:8px;width:26px;height:26px;border-radius:999px;background:var(--orange);color:#fff;font-family:'DM Serif Display',serif;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px -3px rgba(0,0,0,.3)}
+  .fstep .ft{font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-top:9px}
+  .fstep h4{font-size:11px;color:var(--navy);font-weight:600;line-height:1.25;margin:2px 0 0}
+  .scalehint{font-size:11px;color:var(--muted);margin-top:10px;text-align:center}
+  .scalehint b{color:var(--orange-dark)}
+  .closing{text-align:center;font-family:'DM Serif Display',serif;font-style:italic;font-size:15px;color:var(--navy);margin-top:16px;line-height:1.4}
   /* personalização */
   .cofrow{display:flex;gap:22px;margin-top:16px;align-items:stretch;flex-wrap:wrap}
   .cofphoto{flex:0 0 320px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 16px 34px -24px rgba(0,0,0,.34);min-height:250px}
@@ -130,31 +136,31 @@ cover = f'''
 {head_block("Proposta de experiência · Convenção", "Convenção", "LIBBS", "Distrito Anhembi · Dez")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Festival LIBBS · Experiência olfativa</span>
+        <span class="eyebrow">✦ Conexões transformam</span>
         <h1>Um intervalo pra criar, <em>um motivo pra conectar</em></h1>
-        <p class="lead">Uma experiência olfativa dentro da <strong>Convenção LIBBS</strong> — rápida, mão na massa e feita pra ficar na memória. Entre um conteúdo e outro, uma pausa pra criar e levar com você. 🧡</p>
+        <p class="lead">Uma experiência criativa dentro da <strong>Convenção LIBBS</strong> — rápida, mão na massa e feita pra ficar na memória. Entre um conteúdo e outro, uma pausa pra criar e levar com você. 🧡</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>14 e 15 de dezembro</b></span>
           <span class="chip">Distrito Anhembi</span>
         </div>
         <div class="chips" style="margin-top:10px">
-          <span class="chip">Até <b>50 pessoas/hora</b></span>
-          <span class="chip"><b>30–40 min</b> por experiência</span>
+          <span class="chip">Até <b>50 pessoas por sessão</b></span>
         </div>
       </div>
-      <div class="cover-photo">{img("perfumaria-oficina.jpg", "Grupo misto numa ativação olfativa, criando junto", "center 50%")}</div>
+      <div class="cover-photo">{img("eventocorporativo.jpg", "Pessoas se conectando na convenção", "center 42%")}</div>
     </div>
-    <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
+    <p class="fineprint" style="text-align:center;margin-top:24px;opacity:.7">★ Já realizado para times como Compass, Natura e Hidratei · visto no Mais Você (Globo)</p>
     {foot("Convenção LIBBS")}
   </section>'''
 
 porque = f'''
   <section class="slide">
 {head_simple("Por que funciona")}
-    <span class="eyebrow orange">◆ Um jeito leve de conectar</span>
-    <h2>Uma pausa que cabe no <em>ritmo da convenção</em></h2>
-    <p class="lead">No meio de um dia cheio de conteúdo, encontros e programação, a experiência cria uma pausa leve e mão na massa — sem tirar o participante por muito tempo do evento.</p>
+    <span class="eyebrow orange">◆ Uma pausa no ritmo da convenção</span>
+    <h2>Uma convenção que conecta <em>além do palco</em></h2>
+    <p class="lead">No meio de um dia cheio de conteúdo, encontros e programação, a experiência cria um intervalo leve pra sair do automático, colocar a mão na massa e conversar com quem está por perto.</p>
+    <p class="lead" style="margin-top:10px">A gente acredita que conexão não acontece só no palco. Ela aparece quando pessoas de áreas diferentes param, conversam e vivem alguma coisa juntas — sem cargo, sem área e sem precisar já se conhecer.</p>
     <div class="pgrid">
       <div class="pcard">
         <div class="pphoto">{img("aromaterapiameninas.jpg", "Pessoas conversando enquanto escolhem aromas", "center 40%")}</div>
@@ -169,7 +175,7 @@ porque = f'''
         <div class="pbody"><h3>Fica depois da convenção</h3><p>Cada pessoa leva pra casa o que criou durante a experiência. <b>A lembrança do encontro continua depois do evento.</b></p></div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:auto">◆ Desenhada pra acompanhar a escala da convenção: até <b>50 pessoas por hora</b> e potencial de envolver até <b>80% do público</b> nos dois dias.</div>
+    <div class="bnote" style="margin-top:auto">◆ Feita pra acompanhar o ritmo da convenção: até <b>50 pessoas por sessão</b> e potencial de envolver até <b>60% do público</b> nos dois dias.</div>
     {foot("Por que funciona")}
   </section>'''
 
@@ -178,37 +184,37 @@ experiencias = f'''
 {head_simple("As experiências")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
     <h2>Três experiências <em>pra conectar</em></h2>
-    <p class="lead">Todas são rápidas, mão na massa e pensadas pra funcionar bem no fluxo da convenção. Cada pessoa escolhe, cria e leva um pouco da experiência pra casa. 🧡</p>
+    <p class="lead">Todas são dinâmicas, mão na massa e pensadas pra funcionar bem no ritmo da convenção. Cada pessoa cria algo com as próprias mãos e leva uma lembrança pra casa. É só escolher a que mais combina com o perfil da marca. 🧡</p>
     <div class="menu3">
       <div class="exp">
-        <div class="ephoto">{img("vela-aromatica-real.jpg", "Criação de vela aromática com escolha de aromas", "center 45%")}</div>
+        <div class="ephoto">{img("libbs-homespray.jpg", "Home spray personalizado sendo criado na ativação", "center 55%")}</div>
         <div class="ebody">
-          <span class="en">01 · A mais sensorial</span>
+          <span class="en">01 · A mais fluida</span>
+          <h3>Home Spray Personalizado</h3>
+          <p>Cada pessoa explora os aromas, escolhe sua combinação e prepara um home spray de 100 ml personalizado com a identidade do evento. Prática, dinâmica e fácil de encaixar no fluxo da convenção.</p>
+          <span class="from"><b>R$ 79</b> por pessoa</span>
+        </div>
+      </div>
+      <div class="exp">
+        <div class="ephoto">{img("libbs-vela.jpg", "Vela aromática criada na ativação da convenção", "center 45%")}</div>
+        <div class="ebody">
+          <span class="en">02 · A mais sensorial</span>
           <h3>Vela Aromática</h3>
-          <p>Cada pessoa escolhe seus aromas, cria a própria vela e leva pra casa uma lembrança feita ali. Gostosa de fazer, rende conversa e conexão de um jeito leve.</p>
-          <span class="from">Até <b>50 pessoas</b> por hora.</span>
+          <p>Cada pessoa escolhe o aroma que mais gosta, cria a própria vela e leva pra casa uma lembrança feita ali. Gostosa de fazer, convida à conversa e deixa uma memória física do encontro.</p>
+          <span class="from"><b>R$ 119</b> por pessoa</span>
         </div>
       </div>
       <div class="exp">
-        <div class="ephoto">{img("perfumaria-apre1.jpg", "Home spray sendo envasado com a combinação de essências", "center 45%")}</div>
+        <div class="ephoto">{img("libbs-fragrancia.jpg", "Criação de fragrância e vela em lata personalizada", "center 45%")}</div>
         <div class="ebody">
-          <span class="en">02 · A mais fluida</span>
-          <h3>Home Spray</h3>
-          <p>Cada pessoa conhece os aromas, escolhe sua combinação e prepara o próprio home spray. Rápida e prática — criou, personalizou e já leva.</p>
-          <span class="from">Até <b>50 pessoas</b> por hora.</span>
-        </div>
-      </div>
-      <div class="exp">
-        <div class="ephoto">{img("perfumariamaes.jpg", "Mãos explorando aromas para criar um sabonete personalizado", "center 45%")}</div>
-        <div class="ebody">
-          <span class="en">03 · A mais leve</span>
-          <h3>Sabonete Aromático</h3>
-          <p>Uma experiência simples e criativa pra explorar aromas e criar um sabonete personalizado. Fácil de participar e com um take-home que continua depois do evento.</p>
-          <span class="from">Até <b>50 pessoas</b> por hora.</span>
+          <span class="en">03 · A mais personalizada</span>
+          <h3>Vela + Criação de Fragrância</h3>
+          <p>Cada pessoa combina diferentes aromas, cria sua própria fragrância e personaliza uma vela em lata com a identidade do evento. Mais autoral, com mais liberdade de escolha e uma camada extra de personalização.</p>
+          <span class="from"><b>R$ 129</b> por pessoa</span>
         </div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:14px">◆ Três jeitos diferentes de criar junto, conversar e levar um pouco desse encontro com você.</div>
+    <div class="bnote" style="margin-top:14px">◆ No fim, todas transformam o <b>“Juntos, bora conectar”</b> em algo que se vive, se cria e se leva pra casa.</div>
     {foot("As experiências")}
   </section>'''
 
@@ -217,22 +223,24 @@ comofunciona = f'''
 {head_simple("Como funciona")}
     <span class="eyebrow orange">◆ Fácil de participar</span>
     <h2>É só chegar e <em>criar</em></h2>
-    <p class="lead">Um fluxo simples e guiado, do primeiro aroma ao take-home — pensado pra acontecer no ritmo da convenção, com participação espontânea ao longo dos dois dias.</p>
+    <p class="lead">Em poucos minutos, a pessoa sai do ritmo da convenção, escolhe, experimenta e coloca a mão na massa. Uma pausa guiada que cabe na programação — e termina com algo feito por ela pra levar pra casa.</p>
     <div class="flow">
-      <div class="fstep"><div class="fn">1</div><h4>Conhece os aromas</h4></div>
-      <div class="fstep"><div class="fn">2</div><h4>Escolhe sua combinação</h4></div>
-      <div class="fstep"><div class="fn">3</div><h4>Cria</h4></div>
-      <div class="fstep"><div class="fn">4</div><h4>Personaliza</h4></div>
-      <div class="fstep"><div class="fn">5</div><h4>Leva pra casa</h4></div>
+      <div class="fstep"><div class="fph"><span class="fn">1</span>{img("flow-descobre.jpg","Fitas olfativas e frascos de essência","center 50%")}</div><div class="ft">Descobre</div><h4>Conhece os aromas</h4></div>
+      <div class="fstep"><div class="fph"><span class="fn">2</span>{img("flow-escolhe.jpg","Escolha dos aromas","center 40%")}</div><div class="ft">Escolhe</div><h4>Encontra sua combinação</h4></div>
+      <div class="fstep"><div class="fph"><span class="fn">3</span>{img("flow-cria.jpg","Mãos criando o produto","center 45%")}</div><div class="ft">Cria</div><h4>Coloca a mão na massa</h4></div>
+      <div class="fstep"><div class="fph"><span class="fn">4</span>{img("flow-personaliza.jpg","Personalização com etiqueta do evento","center 50%")}</div><div class="ft">Personaliza</div><h4>Deixa com a sua cara</h4></div>
+      <div class="fstep"><div class="fph"><span class="fn">5</span>{img("flow-leva.jpg","Produto final pronto pra levar","center 50%")}</div><div class="ft">Leva</div><h4>Sai com o take-home</h4></div>
     </div>
-    <p class="subh" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:22px 0 0">Desenhada pra escala da convenção</p>
+    <p class="subh" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:22px 0 0">Feita pra acompanhar o ritmo da convenção</p>
     <div class="stats">
-      <div class="stat"><div class="sv">até 50</div><div class="sl">pessoas por hora</div></div>
-      <div class="stat"><div class="sv">até 600</div><div class="sl">por dia (12h de programação)</div></div>
-      <div class="stat"><div class="sv">até 1.200</div><div class="sl">capacidade nos 2 dias</div></div>
-      <div class="stat"><div class="sv">até 80%</div><div class="sl">potencial do público total</div></div>
+      <div class="stat"><div class="sv">50</div><div class="sl">pessoas por sessão</div></div>
+      <div class="stat"><div class="sv">9</div><div class="sl">sessões por dia</div></div>
+      <div class="stat"><div class="sv">450</div><div class="sl">participações por dia</div></div>
+      <div class="stat"><div class="sv">900</div><div class="sl">participações nos 2 dias</div></div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Participação espontânea, com a ativação disponível ao longo da convenção — cada experiência leva <b>30–40 min</b> e cada pessoa sai com <b>1 take-home</b>. O formato final de mesas e estações será definido conforme a área disponível no Distrito Anhembi.</div>
+    <p class="scalehint">Potencial de envolver até <b>60% do público total</b> · considerando a capacidade máxima de operação</p>
+    <div class="bnote" style="margin-top:14px"><b>40 minutos pra criar. 20 minutos pra preparar a próxima turma.</b> A experiência roda em ciclos ao longo dos dois dias, com participação espontânea e até 50 pessoas por sessão. No final, cada participante sai com <b>1 take-home personalizado</b> — transformando alguns minutos da convenção em uma lembrança que continua depois dela.<br><span style="font-size:10px;color:var(--muted)">Operação prevista: 9 sessões/dia · 18 sessões no total · capacidade de até 900 participações.</span></div>
+    <p class="closing">Mais do que passar pela ativação: parar, criar junto e levar um pouco desse encontro pra casa.</p>
     {foot("Como funciona")}
   </section>'''
 
@@ -301,28 +309,28 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Organizado por experiência</span>
     <h2>O <em>investimento</em></h2>
-    <p class="lead">Valores por experiência, com todos os insumos, utensílios e materiais inclusos. O investimento final depende da quantidade de horas/sessões contratadas.</p>
+    <p class="lead">Valores por pessoa, com todos os insumos, utensílios e materiais inclusos. O investimento final depende da quantidade de horas/sessões contratadas.</p>
     <table class="itable">
       <thead><tr>
         <th class="corner"></th>
-        <th>Essencial<span>experiência guiada + peça feita na hora</span></th>
-        <th class="hl"><span class="pill">Personalizada</span><br>Personalizada<span>combinação de aromas + detalhes extras</span></th>
+        <th>Formato</th>
+        <th class="hl">Por pessoa</th>
       </tr></thead>
       <tbody>
         <tr>
-          <td class="rl"><b>Vela Aromática</b><span>escolhe os aromas e cria a própria vela</span></td>
-          <td class="tbd">investimento em validação</td>
-          <td class="tbd hl">investimento em validação</td>
+          <td class="rl"><b>Home Spray Personalizado</b><span>a mais fluida</span></td>
+          <td>Spray de 100 ml com a identidade do evento</td>
+          <td class="val hl">R$ 79</td>
         </tr>
         <tr>
-          <td class="rl"><b>Home Spray</b><span>conhece, combina e prepara o próprio spray</span></td>
-          <td class="tbd">investimento em validação</td>
-          <td class="tbd hl">investimento em validação</td>
+          <td class="rl"><b>Vela Aromática</b><span>a mais sensorial</span></td>
+          <td>Vela criada e levada na hora</td>
+          <td class="val hl">R$ 119</td>
         </tr>
         <tr>
-          <td class="rl"><b>Sabonete Aromático</b><span>explora aromas e cria um sabonete personalizado</span></td>
-          <td class="tbd">investimento em validação</td>
-          <td class="tbd hl">investimento em validação</td>
+          <td class="rl"><b>Vela + Criação de Fragrância</b><span>a mais personalizada</span></td>
+          <td>Fragrância autoral + vela em lata personalizada</td>
+          <td class="val hl">R$ 129</td>
         </tr>
       </tbody>
     </table>
@@ -348,7 +356,7 @@ fechamento = f'''
       Renata, me confirma o <strong>formato</strong> e a quantidade de sessões que a gente organiza os próximos passos e cuida de toda a produção.<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    <p class="fineprint">Proposta de experiência olfativa da Elarah para a Convenção LIBBS (Festival LIBBS) — Distrito Anhembi, 14 e 15 de dezembro, das 7h às 19h, para um público de cerca de 1.500 pessoas (perfil misto). Experiências à escolha (Vela Aromática, Home Spray ou Sabonete Aromático), de aproximadamente 30–40 minutos, com capacidade de até 50 participantes por hora e participação espontânea ao longo da convenção; 1 take-home por participante. Capacidade teórica de até 600 participações por dia e até 1.200 nos dois dias, com potencial de envolver até 80% do público caso a operação rode na capacidade máxima — participação espontânea, sem número garantido. Insumos, utensílios e materiais inclusos; microfone, mesas e cadeiras por conta do contratante. Investimentos em validação; valor final conforme a quantidade de horas/sessões. Proposta válida mediante confirmação de data, formato e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência da Elarah para a Convenção LIBBS — Distrito Anhembi, 14 e 15 de dezembro, das 7h às 19h, para um público de cerca de 1.500 pessoas (perfil misto). Experiências à escolha, valores por pessoa: Home Spray Personalizado R$ 79, Vela Aromática R$ 119 ou Vela + Criação de Fragrância R$ 129. Cada sessão leva cerca de 40 minutos, com 20 minutos de giro entre turmas, participação espontânea e capacidade de até 50 pessoas por sessão — 9 sessões por dia, 18 no total, com capacidade de até 900 participações nos dois dias e potencial de envolver até 60% do público, caso a operação rode na capacidade máxima (participação espontânea, sem número garantido). 1 take-home por participante. Insumos, utensílios e materiais inclusos; microfone, mesas e cadeiras por conta do contratante. Valor final conforme a quantidade de horas/sessões contratadas. Proposta válida mediante confirmação de data, formato e disponibilidade de agenda.</p>
     {foot("Como funciona & contato")}
   </section>'''
 
