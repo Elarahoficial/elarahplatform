@@ -184,14 +184,14 @@ experiencias = f'''
 {head_simple("As experiências")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
     <h2>Três experiências <em>pra conectar</em></h2>
-    <p class="lead">Todas são dinâmicas, mão na massa e pensadas pra funcionar bem no ritmo da convenção. Cada pessoa cria algo com as próprias mãos e leva uma lembrança pra casa. É só escolher a que mais combina com o perfil da marca. 🧡</p>
+    <p class="lead">Dinâmicas, mão na massa, com take-home. Cada pessoa cria algo e leva uma lembrança. Escolha a que mais combina com a marca. 🧡</p>
     <div class="menu3">
       <div class="exp">
         <div class="ephoto">{img("libbs-homespray.jpg", "Home spray personalizado sendo criado na ativação", "center 55%")}</div>
         <div class="ebody">
           <span class="en">01 · A mais fluida</span>
           <h3>Home Spray Personalizado</h3>
-          <p>Cada pessoa explora os aromas, escolhe sua combinação e prepara um home spray de 100 ml personalizado com a identidade do evento. Prática, dinâmica e fácil de encaixar no fluxo da convenção.</p>
+          <p>Cada pessoa escolhe os aromas e cria um home spray de 100 ml personalizado com a identidade do evento. <b>Rápida, prática e fácil de encaixar no fluxo da convenção.</b></p>
           <span class="from"><b>R$ 79</b> por pessoa</span>
         </div>
       </div>
@@ -200,16 +200,16 @@ experiencias = f'''
         <div class="ebody">
           <span class="en">02 · A mais sensorial</span>
           <h3>Vela Aromática</h3>
-          <p>Cada pessoa escolhe o aroma que mais gosta, cria a própria vela e leva pra casa uma lembrança feita ali. Gostosa de fazer, convida à conversa e deixa uma memória física do encontro.</p>
+          <p>Cada pessoa escolhe o aroma, cria a própria vela e leva pra casa uma lembrança feita ali. <b>Convida à conversa e deixa uma memória física do encontro.</b></p>
           <span class="from"><b>R$ 119</b> por pessoa</span>
         </div>
       </div>
       <div class="exp">
-        <div class="ephoto">{img("libbs-fragrancia.jpg", "Criação de fragrância e vela em lata personalizada", "center 45%")}</div>
+        <div class="ephoto">{img("libbs-vela-lata.jpg", "Vela em lata personalizada com fragrância autoral e flor seca", "center 50%")}</div>
         <div class="ebody">
           <span class="en">03 · A mais personalizada</span>
           <h3>Vela + Criação de Fragrância</h3>
-          <p>Cada pessoa combina diferentes aromas, cria sua própria fragrância e personaliza uma vela em lata com a identidade do evento. Mais autoral, com mais liberdade de escolha e uma camada extra de personalização.</p>
+          <p>Cada pessoa combina diferentes aromas e cria uma vela em lata personalizada com a identidade do evento. <b>Até 5 aromas combináveis, finalização com flor seca e uma experiência mais autoral.</b></p>
           <span class="from"><b>R$ 129</b> por pessoa</span>
         </div>
       </div>
