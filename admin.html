@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 136;
+      var EXPECTED = 138;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -2297,6 +2297,10 @@
           <span class="admin__table-title">Todas as experiências</span>
           <span class="admin__table-count" id="experiences-count"></span>
         </div>
+        <!-- Filtro de vitrine: a lista mistura o que está no ar com o que
+             sumiu do site, e não dava pra ver só o que o cliente enxerga.
+             Preenchido por buildExpStatusBar() no admin.js. -->
+        <div id="exp-status-bar" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:0 0 10px;"></div>
         <div id="exp-filter-bar" style="display:flex;flex-wrap:wrap;gap:6px;padding:0 0 14px;"></div>
         <table class="admin__table">
           <thead>
@@ -4793,7 +4797,7 @@
 <script src="admin-searchable-select.js?v=1"></script>
 <script src="admin-conversas.js?v=2"></script>
 <script src="admin-acessos.js?v=2"></script>
-<script src="admin.js?v=243"></script>
+<script src="admin.js?v=245"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH

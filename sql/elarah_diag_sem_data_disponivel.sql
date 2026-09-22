@@ -7,6 +7,13 @@
 -- comprar: clica no card e a página abre com "Sem datas disponíveis
 -- no momento". Some do funil sem sumir da lista.
 --
+-- NÃO entram aqui (o site já esconde, então não custam venda):
+--   • experiência com TODAS as turmas vencidas (o site some com ela)
+--   • experiência sem turma nenhuma (kit/voucher vende sem turma)
+--   • oculta no admin, arquivada e agenda livre
+-- Sobra o que realmente machuca: esgotada, dentro do prazo mínimo de
+-- compra e turma sem data definida.
+--
 -- Usa a MESMA regra do site (experiencia.html) pra decidir se uma
 -- turma é comprável:
 --   • turma ativa (is_active não é false)
@@ -90,12 +97,6 @@ select
   c.desativadas_futuras                           as desativadas,
   to_char(c.proxima_turma at time zone 'America/Sao_Paulo', 'DD/MM HH24:MI') as proxima_turma,
   case
-    when c.turmas = 0
-      then 'Sem nenhuma turma cadastrada — cadastre as datas (ou materialize a recorrência).'
-    when c.futuras = 0 and c.sem_data = 0 and c.desativadas_futuras > 0
-      then 'A(s) turma(s) futura(s) está(ão) desativada(s)/cancelada(s) — reative no painel ou crie outra data.'
-    when c.futuras = 0 and c.sem_data = 0
-      then 'Todas as turmas já passaram — crie as próximas datas.'
     when c.esgotadas > 0 and c.dentro_do_prazo = 0 and c.sem_data = 0
       then 'Esgotada: turma futura sem nenhuma vaga — abra vagas ou crie nova data.'
     when c.dentro_do_prazo > 0 and c.esgotadas = 0 and c.sem_data = 0
@@ -109,6 +110,8 @@ select
   end                                             as motivo
   from exp x
   join contagem c on c.id = x.id
- where c.compraveis = 0        -- nenhuma data pra comprar
-   and x.agenda_livre is false -- voucher/agenda aberta vende sem turma: fora
- order by c.futuras desc, x.categoria, x.nome;
+ where c.compraveis = 0            -- nenhuma data pra comprar
+   and x.agenda_livre is false     -- voucher/agenda aberta vende sem turma: fora
+   and c.turmas > 0                -- sem turma = kit/voucher, vende pelo horário legado
+   and (c.futuras > 0 or c.sem_data > 0)  -- o site só mostra se sobrou turma não vencida
+ order by c.esgotadas desc, c.dentro_do_prazo desc, x.categoria, x.nome;
