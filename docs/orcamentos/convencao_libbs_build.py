@@ -143,7 +143,7 @@ cover = f'''
           <span class="chip"><b>30–40 min</b> por experiência</span>
         </div>
       </div>
-      <div class="cover-photo">{img("capa-homens-pintando.jpg", "Adultos criando juntos numa experiência corporativa", "center 45%")}</div>
+      <div class="cover-photo">{img("perfumaria-oficina.jpg", "Grupo misto numa ativação olfativa, criando junto", "center 50%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Convenção LIBBS")}
@@ -157,11 +157,11 @@ porque = f'''
     <p class="lead">No meio de um dia cheio de conteúdo, encontros e programação, a experiência cria uma pausa leve e mão na massa — sem tirar o participante por muito tempo do evento.</p>
     <div class="pgrid">
       <div class="pcard">
-        <div class="pphoto">{img("capa-itau-oficina.jpg", "Pessoas conversando enquanto criam juntas", "center 42%")}</div>
+        <div class="pphoto">{img("aromaterapiameninas.jpg", "Pessoas conversando enquanto escolhem aromas", "center 40%")}</div>
         <div class="pbody"><h3>Conversa que acontece no caminho</h3><p>Enquanto escolhem aromas e criam juntos, as pessoas conversam de um jeito mais espontâneo. <b>Áreas e perfis diferentes se encontram naturalmente.</b></p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("perfumaria-oficina.jpg", "Grupo misto trabalhando com aromas", "center 50%")}</div>
+        <div class="pphoto">{img("perfumaria-apre.jpg", "Grupo manipulando essências numa ativação olfativa", "center 45%")}</div>
         <div class="pbody"><h3>Todo mundo entra do mesmo jeito</h3><p>Ninguém precisa saber fazer. É simples, guiada e pensada pra quem nunca participou. <b>É só chegar, escolher e criar.</b></p></div>
       </div>
       <div class="pcard">
@@ -190,7 +190,7 @@ experiencias = f'''
         </div>
       </div>
       <div class="exp">
-        <div class="ephoto">{img("homespray.jpg", "Home spray personalizado criado na hora", "center 45%")}</div>
+        <div class="ephoto">{img("perfumaria-apre1.jpg", "Home spray sendo envasado com a combinação de essências", "center 45%")}</div>
         <div class="ebody">
           <span class="en">02 · A mais fluida</span>
           <h3>Home Spray</h3>
@@ -199,7 +199,7 @@ experiencias = f'''
         </div>
       </div>
       <div class="exp">
-        <div class="ephoto">{img("sabonete2.jpg", "Sabonetes aromáticos personalizados", "center 50%")}</div>
+        <div class="ephoto">{img("perfumariamaes.jpg", "Mãos explorando aromas para criar um sabonete personalizado", "center 45%")}</div>
         <div class="ebody">
           <span class="en">03 · A mais leve</span>
           <h3>Sabonete Aromático</h3>
@@ -243,7 +243,7 @@ personaliza = f'''
     <h2>A experiência com a <em>cara da LIBBS</em></h2>
     <p class="lead">Da mesa ao produto que cada pessoa leva pra casa, a experiência pode receber a identidade da convenção.</p>
     <div class="cofrow">
-      <div class="cofphoto">{img("perfumariadecor.jpg", "Mesa de aromas organizada com etiquetas e materiais", "center 45%")}</div>
+      <div class="cofphoto">{img("perfumaria-corp.jpg", "Bancada de ativação com essências, menu de aromas e materiais organizados", "center 55%")}</div>
       <ul class="checks">
         <li><span class="ck">✓</span>Etiquetas dos produtos</li>
         <li><span class="ck">✓</span>Materiais de mesa</li>
@@ -266,7 +266,7 @@ extras = f'''
     <p class="lead">Como a convenção terá cerca de <strong>1.500 pessoas</strong> e a experiência tem capacidade limitada, dá pra incluir um pequeno item do universo olfativo pra quem não conseguir participar da atividade.</p>
     <div class="opts">
       <div class="opt hl">
-        <div class="oph"><span class="pctag">★ Opcional</span>{img("aromatizador-corp.jpg", "Itens aromáticos para levar como lembrança", "center 50%")}</div>
+        <div class="oph"><span class="pctag">★ Opcional</span>{img("sabonete.jpg", "Volume de sabonetes aromáticos para levar como take-home", "center 50%")}</div>
         <div class="ob">
           <span class="otp">Um pouco da experiência pra levar</span>
           <h4>Take-home pra todo mundo</h4>
@@ -279,7 +279,7 @@ extras = f'''
         </div>
       </div>
       <div class="opt">
-        <div class="oph">{img("vela-corp.jpg", "Mini vela aromática como lembrança do evento", "center 50%")}</div>
+        <div class="oph">{img("vela4.jpg", "Velas aromáticas em volume, prontas para distribuição", "center 50%")}</div>
         <div class="ob">
           <span class="otp">Como funciona</span>
           <h4>Escala pra convenção inteira</h4>
