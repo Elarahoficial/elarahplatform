@@ -187,7 +187,7 @@ experiencias = f'''
     <p class="lead">Dinâmicas, mão na massa, com take-home. Cada pessoa cria algo e leva uma lembrança. Escolha a que mais combina com a marca. 🧡</p>
     <div class="menu3">
       <div class="exp">
-        <div class="ephoto">{img("libbs-homespray.jpg", "Home spray personalizado sendo criado na ativação", "center 55%")}</div>
+        <div class="ephoto">{img("libbs-homespray-hand.jpg", "Home spray personalizado sendo criado na ativação", "center 40%")}</div>
         <div class="ebody">
           <span class="en">01 · A mais fluida</span>
           <h3>Home Spray Personalizado</h3>
@@ -360,7 +360,7 @@ fechamento = f'''
     {foot("Como funciona & contato")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + porque + experiencias + comofunciona + personaliza + extras + investimento + fechamento + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + porque + experiencias + comofunciona + extras + investimento + fechamento + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/experiencia-convencao-libbs.html"
 open(out, "w", encoding="utf-8").write(html)
