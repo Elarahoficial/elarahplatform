@@ -137,8 +137,8 @@ cover = f'''
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Conexões transformam</span>
-        <h1>Um intervalo pra criar, <em>um motivo pra conectar</em></h1>
-        <p class="lead">Uma experiência criativa dentro da <strong>Convenção LIBBS</strong> — rápida, mão na massa e feita pra ficar na memória. Entre um conteúdo e outro, uma pausa pra criar e levar com você. 🧡</p>
+        <h1>O time junto, <em>de mão na massa</em></h1>
+        <p class="lead">Uma experiência criativa dentro da <strong>Convenção LIBBS</strong>. Uma pausa no meio da programação pra criar, conversar e se conectar de um jeito leve — todo mundo junto, fazendo algo com as próprias mãos e levando uma lembrança pra casa. 🧡</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>14 e 15 de dezembro</b></span>
@@ -146,6 +146,7 @@ cover = f'''
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip">Até <b>50 pessoas por sessão</b></span>
+          <span class="chip">A partir de <b>R$ 79</b></span>
         </div>
       </div>
       <div class="cover-photo">{img("libbs-capa.jpg", "Pessoas se conectando na convenção", "center 40%")}</div>
@@ -159,20 +160,19 @@ porque = f'''
 {head_simple("Por que funciona")}
     <span class="eyebrow orange">◆ O que o time leva junto</span>
     <h2>Conexão que acontece <em>além do palco</em></h2>
-    <p class="lead">No meio de um dia cheio de conteúdo e encontros, a experiência cria uma pausa leve pra colocar a mão na massa, conversar e criar junto.</p>
-    <p style="font-family:'DM Serif Display',serif;font-style:italic;font-size:15px;color:var(--navy-soft);margin-top:12px">Porque conexão também se constrói fora da programação.</p>
+    <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos — sem hierarquia, sem quem sabe mais e quem sabe menos. 🧡</p>
     <div class="pgrid">
       <div class="pcard">
         <div class="pphoto">{img("aromaterapiameninas.jpg", "Pessoas conversando enquanto escolhem aromas", "center 40%")}</div>
-        <div class="pbody"><h3>Conversa que acontece no caminho</h3><p>Enquanto escolhem aromas e criam juntos, as pessoas conversam de um jeito mais espontâneo. <b>Áreas e perfis diferentes se encontram naturalmente.</b></p></div>
+        <div class="pbody"><h3>Conversa que não rola no escritório</h3><p>Alguns minutos lado a lado fazem o time falar de coisas que a rotina nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div>
       </div>
       <div class="pcard">
         <div class="pphoto">{img("perfumaria-apre.jpg", "Grupo manipulando essências numa ativação olfativa", "center 45%")}</div>
-        <div class="pbody"><h3>Todo mundo entra do mesmo jeito</h3><p>Ninguém precisa saber fazer. É simples, guiada e pensada pra quem nunca participou. <b>É só chegar, escolher e criar.</b></p></div>
+        <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa saber fazer ou ter experiência. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
       </div>
       <div class="pcard">
         <div class="pphoto">{img("velaaromatica.jpg", "Close do take-home aromático que cada um leva", "center 50%")}</div>
-        <div class="pbody"><h3>Fica depois da convenção</h3><p>Cada pessoa leva pra casa o que criou durante a experiência. <b>A lembrança do encontro continua depois do evento.</b></p></div>
+        <div class="pbody"><h3>Fica depois do dia</h3><p>Cada um leva pra casa o que criou durante a experiência. <b>A lembrança do encontro continua depois da convenção.</b></p></div>
       </div>
     </div>
     <div class="bnote" style="margin-top:auto">◆ Feita pra acompanhar o ritmo da convenção: até <b>50 pessoas por sessão</b> e potencial de envolver até <b>60% do público</b> nos dois dias.</div>
