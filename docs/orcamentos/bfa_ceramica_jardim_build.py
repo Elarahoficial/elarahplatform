@@ -1,5 +1,5 @@
 # Proposta Elarah · BFA (Images Matter) · Modelagem manual em ceramica + coffee break · O Jardim (deck) · 10 pax · 08-10/12
-# Base: portfolio_corporativo_jardim (experiencia + espaco + coffee + investimento). Editorial/neutro. Valor-alvo R$5.200 (a confirmar).
+# Base: portfolio_corporativo_jardim (experiencia + espaco + coffee + investimento). Editorial/neutro. Valor-alvo R$5.290 (a confirmar).
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
 
@@ -216,13 +216,13 @@ investimento = f'''
     <h2>Uma experiência completa, <em>produzida pela Elarah</em></h2>
     <p class="lead">O investimento reúne o melhor da experiência: espaço reservado, coffee break e modelagem manual em cerâmica, com produção integral da Elarah.</p>
     <div class="sum">
-      <div class="box"><span class="bl">Espaço + coffee break</span><span class="bv">R$ 250</span><small>por pessoa</small></div>
+      <div class="box"><span class="bl">Espaço + coffee break</span><span class="bv">R$ 249</span><small>por pessoa</small></div>
       <span class="op">+</span>
-      <div class="box"><span class="bl">Modelagem em cerâmica</span><span class="bv">R$ 270</span><small>por pessoa</small></div>
+      <div class="box"><span class="bl">Modelagem em cerâmica</span><span class="bv">R$ 279</span><small>por pessoa</small></div>
       <span class="op">=</span>
-      <div class="box tot"><span class="bl">Experiência completa</span><span class="bv">R$ 520</span><small>por pessoa</small></div>
+      <div class="box tot"><span class="bl">Experiência completa</span><span class="bv">R$ 529</span><small>por pessoa</small></div>
     </div>
-    <p class="invsum"><b>Experiência completa para até 10 participantes</b> — <span class="big">R$ 5.200</span> <span>· equivalente a R$ 520 por pessoa</span></p>
+    <p class="invsum"><b>Experiência completa para até 10 participantes</b> — <span class="big">R$ 5.290</span> <span>· equivalente a R$ 529 por pessoa</span></p>
     <div class="invbox" style="margin-top:16px">
       <div class="incl incl2" style="flex:1;min-width:300px">
         <span class="vt">O que está incluído</span>
