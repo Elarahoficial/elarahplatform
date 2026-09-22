@@ -99,6 +99,10 @@ xcss = '''
   .itable td.rl b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy)}
   .itable td.rl span{display:block;font-size:9.5px;color:var(--muted);margin-top:3px;line-height:1.35}
   .itable .tbd{font-family:'DM Sans';font-size:12.5px;font-style:italic;color:var(--orange-dark);font-weight:600}
+  .itable.tot td.rl{width:26%}
+  .itable.tot th,.itable.tot td{padding:13px 8px}
+  .itable .valm{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy);line-height:1.1;white-space:nowrap}
+  .itable .valm.big{font-size:21px;color:var(--orange-dark)}
   .itable .hl{background:#FBE6D8}
   .itable thead th.hl{color:var(--orange-dark)}
   .itable tbody tr:last-child td{border-bottom:none}
@@ -174,7 +178,7 @@ porque = f'''
         <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa saber fazer ou ter experiência. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("libbs-s2-vela.jpg", "Vela personalizada — o take-home que cada um leva", "center 50%")}</div>
+        <div class="pphoto">{img("libbs-s2-vela.jpg", "Vela personalizada — a criação que cada um leva", "center 50%")}</div>
         <div class="pbody"><h3>Fica depois do dia</h3><p>Cada um leva pra casa o que criou durante a experiência. <b>A lembrança do encontro continua depois da convenção.</b></p></div>
       </div>
     </div>
@@ -187,7 +191,7 @@ experiencias = f'''
 {head_simple("As experiências")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
     <h2>Três experiências <em>pra conectar</em></h2>
-    <p class="lead">Dinâmicas, mão na massa, com take-home. Cada pessoa cria algo e leva uma lembrança. Escolha a que mais combina com a marca. 🧡</p>
+    <p class="lead">Dinâmicas, mão na massa, com uma criação pra levar. Cada pessoa cria algo e leva uma lembrança. Escolha a que mais combina com a marca. 🧡</p>
     <div class="menu3">
       <div class="exp">
         <div class="ephoto">{img("libbs-homespray-hand.jpg", "Home spray personalizado sendo criado na ativação", "center 40%")}</div>
@@ -232,7 +236,7 @@ comofunciona = f'''
       <div class="fstep"><div class="fph"><span class="fn">2</span>{img("flow-escolhe.jpg","Escolha dos aromas","center 40%")}</div><div class="ft">Escolhe</div><h4>Encontra sua combinação</h4></div>
       <div class="fstep"><div class="fph"><span class="fn">3</span>{img("flow-cria.jpg","Mãos criando o produto","center 45%")}</div><div class="ft">Cria</div><h4>Coloca a mão na massa</h4></div>
       <div class="fstep"><div class="fph"><span class="fn">4</span>{img("flow-personaliza.jpg","Personalização com etiqueta do evento","center 50%")}</div><div class="ft">Personaliza</div><h4>Deixa com a sua cara</h4></div>
-      <div class="fstep"><div class="fph"><span class="fn">5</span>{img("flow-leva.jpg","Produto final pronto pra levar","center 50%")}</div><div class="ft">Leva</div><h4>Sai com o take-home</h4></div>
+      <div class="fstep"><div class="fph"><span class="fn">5</span>{img("flow-leva.jpg","Produto final pronto pra levar","center 50%")}</div><div class="ft">Leva</div><h4>Leva a própria criação</h4></div>
     </div>
     <p class="subh" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:22px 0 0">Feita pra acompanhar o ritmo da convenção</p>
     <div class="stats">
@@ -260,7 +264,7 @@ personaliza = f'''
         <li><span class="ck">✓</span>Materiais de mesa</li>
         <li><span class="ck">✓</span>Menu de aromas</li>
         <li><span class="ck">✓</span>Comunicação da ativação</li>
-        <li><span class="ck">✓</span>Embalagem do take-home</li>
+        <li><span class="ck">✓</span>Embalagem da criação</li>
         <li><span class="ck">✓</span>Nome da experiência</li>
         <li><span class="ck">✓</span>Identidade visual da convenção</li>
       </ul>
@@ -274,9 +278,9 @@ extras = f'''
 {head_simple("Extras")}
     <span class="eyebrow orange">◆ Pra experiência chegar em mais gente</span>
     <h2>Mais alcance, <em>mesma proposta sensorial</em></h2>
-    <p class="lead">Além da ativação principal, podemos ampliar o universo olfativo com um <strong>take-home personalizado LIBBS</strong>, conectado à identidade e à comunicação do evento, para chegar a ainda mais pessoas ao longo da convenção.</p>
+    <p class="lead">Além da ativação principal, podemos incluir um <strong>brinde olfativo personalizado LIBBS</strong> para ampliar o alcance da proposta e fazer com que mais pessoas levem uma lembrança da convenção. <strong>A partir de R$ 49,90 por pessoa.</strong></p>
     <p class="lead" style="margin-top:8px">Uma forma simples de ampliar o alcance da ativação, reforçar a presença da marca e fazer com que ninguém fique de fora.</p>
-    <div class="xbanner"><span class="pctag">★ Premium</span>{img("libbs-extras.jpg", "Linha de take-homes personalizados LIBBS — vela, sachê, home spray e sabonete", "center 55%")}</div>
+    <div class="xbanner"><span class="pctag">★ Premium</span>{img("libbs-extras.jpg", "Participantes recebendo o brinde olfativo personalizado LIBBS na ativação", "center 45%")}</div>
     <div class="bnote" style="margin-top:14px">◆ Foto ilustrativa do brinde. A gente fecha com vocês o item e a personalização antes do encontro. 🧡</div>
     {foot("Extras")}
   </section>'''
@@ -286,33 +290,41 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Organizado por experiência</span>
     <h2>O <em>investimento</em></h2>
-    <p class="lead">Valores por pessoa, com todos os insumos, utensílios e materiais inclusos. O investimento final depende da quantidade de horas/sessões contratadas.</p>
-    <table class="itable">
+    <p class="lead">Por pessoa e por operação, com todos os insumos, utensílios e materiais inclusos. O investimento final depende da quantidade de sessões contratadas.</p>
+    <table class="itable tot">
       <thead><tr>
         <th class="corner"></th>
-        <th>Formato</th>
-        <th class="hl">Por pessoa</th>
+        <th>Por pessoa</th>
+        <th>1 dia<span>9 sessões · até 450</span></th>
+        <th>2 dias<span>18 sessões · até 900</span></th>
+        <th class="hl"><span class="pill">✦ Mais completo</span><br>2 dias + 500 brindes<span>brinde olfativo personalizado</span></th>
       </tr></thead>
       <tbody>
         <tr>
           <td class="rl"><b>Home Spray Personalizado</b><span>a mais fluida</span></td>
-          <td>Spray de 100 ml com a identidade do evento</td>
-          <td class="val hl">R$ 89</td>
+          <td class="valm big">R$ 89</td>
+          <td class="valm">R$ 40.050</td>
+          <td class="valm">R$ 80.100</td>
+          <td class="valm hl">R$ 105.050</td>
         </tr>
         <tr>
           <td class="rl"><b>Vela Aromática</b><span>a mais sensorial</span></td>
-          <td>Vela criada e levada na hora</td>
-          <td class="val hl">R$ 119</td>
+          <td class="valm big">R$ 119</td>
+          <td class="valm">R$ 53.550</td>
+          <td class="valm">R$ 107.100</td>
+          <td class="valm hl">R$ 132.050</td>
         </tr>
         <tr>
           <td class="rl"><b>Vela + Criação de Fragrância</b><span>a mais personalizada</span></td>
-          <td>Fragrância autoral + vela em lata personalizada</td>
-          <td class="val hl">R$ 129</td>
+          <td class="valm big">R$ 129</td>
+          <td class="valm">R$ 58.050</td>
+          <td class="valm">R$ 116.100</td>
+          <td class="valm hl">R$ 141.050</td>
         </tr>
       </tbody>
     </table>
     <div class="bnote" style="margin-top:14px">◆ <b>Incluso na experiência:</b> todos os insumos, utensílios e materiais necessários para a produção e condução da atividade, com equipe de 4 a 5 facilitadores conforme o formato.</div>
-    <p class="fineprint">O investimento final depende da quantidade de horas/sessões contratadas. Microfone, mesas e cadeiras não estão inclusos e deverão ser disponibilizados pelo contratante conforme a experiência escolhida — experiências com grupos maiores podem precisar de estrutura de áudio, validada conforme a estrutura disponível no evento.</p>
+    <p class="fineprint">O plano Mais Completo considera a operação de 2 dias + 500 brindes olfativos personalizados LIBBS, a R$ 49,90 por unidade. O investimento final depende da quantidade de sessões contratadas. Microfone, mesas e cadeiras não estão inclusos e deverão ser disponibilizados pelo contratante conforme a experiência escolhida — experiências com grupos maiores podem precisar de estrutura de áudio, validada conforme a estrutura disponível no evento.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -333,7 +345,7 @@ fechamento = f'''
       Renata, me confirma o <strong>formato</strong> e a quantidade de sessões que a gente organiza os próximos passos e cuida de toda a produção.<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    <p class="fineprint">Proposta de experiência da Elarah para a Convenção LIBBS — Distrito Anhembi, 14 e 15 de dezembro, das 7h às 19h, para um público de cerca de 1.500 pessoas (perfil misto). Experiências à escolha, valores por pessoa: Home Spray Personalizado R$ 89, Vela Aromática R$ 119 ou Vela + Criação de Fragrância R$ 129. Cada sessão leva cerca de 40 minutos, com 20 minutos de giro entre turmas, participação espontânea e capacidade de até 50 pessoas por sessão — 9 sessões por dia, 18 no total, com capacidade de até 900 participações nos dois dias e potencial de envolver até 60% do público, caso a operação rode na capacidade máxima (participação espontânea, sem número garantido). 1 take-home por participante. Insumos, utensílios e materiais inclusos; microfone, mesas e cadeiras por conta do contratante. Valor final conforme a quantidade de horas/sessões contratadas. Proposta válida mediante confirmação de data, formato e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência da Elarah para a Convenção LIBBS — Distrito Anhembi, 14 e 15 de dezembro, das 7h às 19h, para um público de cerca de 1.500 pessoas (perfil misto). Experiências à escolha, valores por pessoa: Home Spray Personalizado R$ 89, Vela Aromática R$ 119 ou Vela + Criação de Fragrância R$ 129. Cada sessão leva cerca de 40 minutos, com 20 minutos de giro entre turmas, participação espontânea e capacidade de até 50 pessoas por sessão — 9 sessões por dia, 18 no total, com capacidade de até 900 participações nos dois dias e potencial de envolver até 60% do público, caso a operação rode na capacidade máxima (participação espontânea, sem número garantido). Cada participante leva a própria criação. Insumos, utensílios e materiais inclusos; microfone, mesas e cadeiras por conta do contratante. Valor final conforme a quantidade de horas/sessões contratadas. Proposta válida mediante confirmação de data, formato e disponibilidade de agenda.</p>
     {foot("Como funciona & contato")}
   </section>'''
 
