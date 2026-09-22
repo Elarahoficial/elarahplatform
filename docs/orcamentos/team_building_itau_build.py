@@ -270,7 +270,7 @@ mimos = f'''
         </div>
       </div>
       <div class="opt hl">
-        <div class="oph"><span class="pctag">★ Plano completo</span>{img("brinde-corp-c.jpg", "Brinde personalizado — kit corporativo premium", "center 50%")}</div>
+        <div class="oph"><span class="pctag">★ Plano completo</span>{img("brinde-corp-wide.jpg", "Brinde personalizado — kit corporativo premium", "center 50%")}</div>
         <div class="ob">
           <span class="otp dark">O brinde</span>
           <h4>Brinde personalizado</h4>
