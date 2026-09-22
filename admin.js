@@ -13,7 +13,7 @@
   // qual versão do admin.js tá realmente rodando no seu navegador.
   // Se você ainda vê a tabela plana do By Elarah, é sinal de que
   // o arquivo antigo foi cacheado e este log NÃO vai aparecer.
-  console.info('[Elarah Admin] admin.js v48 — Reativar de experiência semanal para de mentir quando não cria turma; botões Reativar/Ocultar com estilo; emoji do WhatsApp via api.whatsapp.com');
+  console.info('[Elarah Admin] admin.js v49 — Experiências: filtro No site / Fora do site / Sem data pra comprar, com selo próprio na linha');
 
   const PURCHASES_KEY = 'elarah_purchases';
 
@@ -8436,6 +8436,11 @@
   // "Arquivadas (N)" da barra de filtro alterna pra vê-las (e aí o
   // botão da linha vira "Desarquivar").
   let showArquivadas = false;
+  // Filtro de vitrine da aba Experiências: '' (todas), 'site' (as que o
+  // cliente vê), 'fora' (as que sumiram) e 'semdata' (aparecem mas não
+  // dá pra comprar). A lista crua mistura tudo e ficou impossível achar
+  // o que está no ar de verdade.
+  let activeExpStatusFilter = '';
 
   // Popula o <select id="exp-filter-fornecedor"> com os nomes únicos
   // que aparecem em qualquer experiência. Compara case-insensitive
@@ -8581,6 +8586,105 @@
     if (linkInput) linkInput.value = '';
   }
 
+  // ===== Status de vitrine (fonte única do selo e do filtro) =====
+  // Mesma ordem de portões do site. Antes isso era calculado só dentro
+  // da linha da tabela; agora sai daqui pra que o filtro e o selo nunca
+  // discordem entre si.
+  function _expVitrine(exp, expSlots, dupWinnerBySig, sigOf) {
+    const ED = window.ElarahData || {};
+    const isActive = exp.isActive !== false;
+    const publicVisible = typeof ED.isPubliclyVisible === 'function'
+      ? ED.isPubliclyVisible(exp)
+      : isActive;
+    const expiredRecurring = typeof ED.isExpiredRecurring === 'function'
+      ? ED.isExpiredRecurring(exp, expSlots, Date.now())
+      : false;
+    const hiddenFromListings = exp.hideFromCategorias === true;
+    const _sig = typeof sigOf === 'function' ? sigOf(exp) : null;
+    const _dono = _sig && dupWinnerBySig ? dupWinnerBySig[_sig] : null;
+    const isDupLoser = !!(publicVisible && _dono && _dono !== exp.id);
+    // "No site" inclui a Só By Elarah: ela sai das categorias mas
+    // continua aparecendo na faixa By Elarah.
+    const noSite = publicVisible && !expiredRecurring && !isDupLoser;
+
+    // Dá pra COMPRAR? Mesma regra do experiencia.html: turma ativa, com
+    // data, fora da janela de antecedência e com vaga.
+    const cutoffH = typeof ED.effectiveCutoffHours === 'function'
+      ? ED.effectiveCutoffHours(exp) : 24;
+    const agora = Date.now();
+    const limite = agora + cutoffH * 60 * 60 * 1000;
+    let compraveis = 0, esgotadas = 0, dentroCutoff = 0, semDataSlot = 0;
+    (expSlots || []).forEach(function (sl) {
+      if (!sl || sl.isActive === false) return;
+      const t = sl.eventAt ? new Date(sl.eventAt).getTime() : NaN;
+      if (isNaN(t)) { semDataSlot++; return; }
+      if (t < agora) return;
+      if (t < limite) { dentroCutoff++; return; }
+      const cap = sl.vagasTotal != null ? Number(sl.vagasTotal) : null;
+      if (cap != null) {
+        const rest = sl.vagasRestantes != null ? Number(sl.vagasRestantes) : cap;
+        if (!(rest > 0)) { esgotadas++; return; }
+      }
+      compraveis++;
+    });
+    const slotManaged = (expSlots || []).length > 0;
+    return {
+      isActive: isActive, publicVisible: publicVisible,
+      expiredRecurring: expiredRecurring, hiddenFromListings: hiddenFromListings,
+      isDupLoser: isDupLoser, noSite: noSite, cutoffH: cutoffH,
+      compraveis: compraveis, esgotadas: esgotadas,
+      dentroCutoff: dentroCutoff, semDataSlot: semDataSlot,
+      slotManaged: slotManaged,
+      semCompra: noSite && slotManaged && compraveis === 0,
+    };
+  }
+
+  // Barra "o que mostrar": separa o que o cliente VÊ do que sumiu do
+  // site. Fica acima das pílulas de categoria e sempre reflete a lista
+  // já filtrada por categoria/fornecedor/busca.
+  function buildExpStatusBar(totais, totalNaLista) {
+    const bar = document.getElementById('exp-status-bar');
+    if (!bar) return;
+    bar.innerHTML = '';
+
+    const label = document.createElement('span');
+    label.textContent = 'Mostrar:';
+    label.style.cssText = 'font-size:.78rem;color:#888;font-weight:600;margin-right:2px;';
+    bar.appendChild(label);
+
+    const opcoes = [
+      { v: '', txt: 'Todas (' + totalNaLista + ')',
+        title: 'Todas as experiências da lista, no site ou não.' },
+      { v: 'site', txt: '✓ No site (' + totais.site + ')',
+        title: 'Só o que o cliente vê hoje no site (inclui as da faixa By Elarah).' },
+      { v: 'fora', txt: 'Fora do site (' + totais.fora + ')',
+        title: 'Ocultas, com todas as turmas vencidas, dentro do bloqueio de antecedência ou descartadas como cópia.' },
+      { v: 'semdata', txt: 'Sem data pra comprar (' + totais.semdata + ')',
+        title: 'Aparecem no site, mas a página abre em "Sem datas disponíveis": esgotadas, dentro do prazo mínimo ou com turma sem data.' },
+    ];
+
+    opcoes.forEach(function (o) {
+      // Esconde o atalho "sem data pra comprar" quando não há nenhuma —
+      // pílula com (0) só polui a barra.
+      if (o.v === 'semdata' && !totais.semdata && activeExpStatusFilter !== 'semdata') return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = o.txt;
+      btn.title = o.title;
+      btn.className = 'admin__filter-pill' +
+        (activeExpStatusFilter === o.v ? ' admin__filter-pill--active' : '');
+      if (o.v === 'semdata' && totais.semdata) {
+        btn.style.borderColor = '#f0a05e';
+        btn.style.color = activeExpStatusFilter === o.v ? '' : '#a05a00';
+      }
+      btn.addEventListener('click', function () {
+        activeExpStatusFilter = activeExpStatusFilter === o.v ? '' : o.v;
+        renderExperiences();
+      });
+      bar.appendChild(btn);
+    });
+  }
+
   function buildExpFilterBar(experiences, totalArquivadas) {
     const bar = document.getElementById('exp-filter-bar');
     if (!bar) return;
@@ -8645,6 +8749,7 @@
       arqBtn.addEventListener('click', function () {
         showArquivadas = !showArquivadas;
         activeExpFilter = '';
+        activeExpStatusFilter = '';
         renderExperiences();
       });
       bar.appendChild(arqBtn);
@@ -8877,16 +8982,50 @@
       if (!(sig in _dupWinnerBySig)) _dupWinnerBySig[sig] = e.id;
     });
 
-    if (activeExpFilter) {
+    const _vitrinePorId = new Map();
+    (experiences || []).forEach(function (e) {
+      _vitrinePorId.set(e.id, _expVitrine(e, allSlotsMap.get(e.id) || [], _dupWinnerBySig, _dupSig));
+    });
+    // Contagem por status pras pílulas do filtro (sempre sobre a lista
+    // já filtrada por categoria/fornecedor/busca).
+    const _statusTotais = { site: 0, fora: 0, semdata: 0 };
+    _vitrinePorId.forEach(function (v) {
+      if (v.noSite) _statusTotais.site++; else _statusTotais.fora++;
+      if (v.semCompra) _statusTotais.semdata++;
+    });
+    buildExpStatusBar(_statusTotais, (experiences || []).length);
+
+    const experienciasVisiveis = !activeExpStatusFilter
+      ? experiences
+      : experiences.filter(function (e) {
+          const v = _vitrinePorId.get(e.id);
+          if (!v) return true;
+          if (activeExpStatusFilter === 'site') return v.noSite;
+          if (activeExpStatusFilter === 'fora') return !v.noSite;
+          if (activeExpStatusFilter === 'semdata') return v.semCompra;
+          return true;
+        });
+
+    if (activeExpStatusFilter) {
+      countEl.textContent = experienciasVisiveis.length + ' de ' + allExperiences.length +
+        ' experiência' + (allExperiences.length !== 1 ? 's' : '');
+    } else if (activeExpFilter) {
       countEl.textContent = experiences.length + ' de ' + allExperiences.length + ' experiência' + (allExperiences.length !== 1 ? 's' : '');
     } else {
       countEl.textContent = allExperiences.length + ' experiência' + (allExperiences.length !== 1 ? 's' : '');
     }
 
-    if (experiences.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">' +
-        (activeExpFilter ? 'Nenhuma experiência na categoria "' + escapeHtml(activeExpFilter) + '".' : 'Nenhuma experiência cadastrada.') +
-        '</td></tr>';
+    if (experienciasVisiveis.length === 0) {
+      const _vazioMsg = activeExpStatusFilter === 'site'
+        ? 'Nenhuma experiência aparecendo no site com esses filtros.'
+        : (activeExpStatusFilter === 'fora'
+          ? 'Nenhuma experiência fora do site com esses filtros.'
+          : (activeExpStatusFilter === 'semdata'
+            ? 'Nenhuma experiência no site sem data pra comprar. 🎉'
+            : (activeExpFilter
+              ? 'Nenhuma experiência na categoria "' + escapeHtml(activeExpFilter) + '".'
+              : 'Nenhuma experiência cadastrada.')));
+      tbody.innerHTML = '<tr><td colspan="9" class="admin__table-empty">' + _vazioMsg + '</td></tr>';
       return;
     }
 
@@ -8898,7 +9037,7 @@
     const reorderFiltered = !!(activeExpFilter || activeExpFornecedorFilter || searchNorm);
     renderExpReorderHint(reorderEnabled, reorderFiltered);
 
-    tbody.innerHTML = experiences.map(exp => {
+    tbody.innerHTML = experienciasVisiveis.map(exp => {
       // HORÁRIO: resumo compacto. Dedup e, se houver muitos, mostra
       // só o primeiro + contagem. Lista completa fica no modal de
       // edição — aqui é só visão geral.
@@ -8956,23 +9095,13 @@
       //   gate 1 · isPubliclyVisible  → is_active + cutoff 24h + expirou (exp)
       //   gate 2 · isExpiredRecurring → todas as turmas/slots datadas já passaram
       //   gate 3 · hideFromCategorias → fora das listagens (só faixa By Elarah)
-      const ED = window.ElarahData || {};
-      const publicVisible = typeof ED.isPubliclyVisible === 'function'
-        ? ED.isPubliclyVisible(exp)
-        : isActive;
-      // expSlots já foi calculado acima (vagas). isExpiredRecurring só
-      // dá true quando HÁ slots e todos os datados já passaram — sem
-      // slots devolve false, então não gera falso-positivo.
-      const expiredRecurring = typeof ED.isExpiredRecurring === 'function'
-        ? ED.isExpiredRecurring(exp, expSlots, Date.now())
-        : false;
-      const hiddenFromListings = exp.hideFromCategorias === true;
-      // Cópia descartada pela dedup do site: é publicamente visível, mas
-      // NÃO é a "dona" da assinatura — o site mostra só a primeira. Sem
-      // esse gate o admin dizia "Visível" e a experiência sumia do site.
-      const isDupLoser = publicVisible
-        && _dupWinnerBySig[_dupSig(exp)]
-        && _dupWinnerBySig[_dupSig(exp)] !== exp.id;
+      // Vem de _expVitrine (calculado acima pra todas): mesma conta que
+      // alimenta o filtro de status, então selo e filtro não divergem.
+      const _vit = _vitrinePorId.get(exp.id) || _expVitrine(exp, expSlots, _dupWinnerBySig, _dupSig);
+      const publicVisible = _vit.publicVisible;
+      const expiredRecurring = _vit.expiredRecurring;
+      const hiddenFromListings = _vit.hiddenFromListings;
+      const isDupLoser = _vit.isDupLoser;
 
       // Decide selo + motivo. Vermelho "Oculta" = sumiu do site inteiro.
       // Âmbar "Só By Elarah" = fora das categorias/home, visível apenas
@@ -9001,6 +9130,17 @@
         badgeLabel = 'Visível';
         tooltip = '';
       }
+      // Aparece no site mas não tem data comprável: o cliente clica e vê
+      // "Sem datas disponíveis". Selo próprio pra isso não passar batido.
+      if (badgeKind === 'visible' && _vit.semCompra) {
+        badgeKind = 'semdata';
+        badgeLabel = 'Sem data';
+        tooltip = 'Aparece no site, mas a página abre em "Sem datas disponíveis": ' +
+          (_vit.esgotadas ? _vit.esgotadas + ' turma(s) esgotada(s). ' : '') +
+          (_vit.dentroCutoff ? _vit.dentroCutoff + ' turma(s) dentro do prazo mínimo de ' + _vit.cutoffH + 'h. ' : '') +
+          (_vit.semDataSlot ? _vit.semDataSlot + ' turma(s) sem data definida. ' : '') +
+          'Abra vagas ou cadastre uma nova data.';
+      }
       const isHidden = badgeKind === 'hidden';
       // autoHidden: is_active=true mas o site esconde (cutoff/expirou OU
       // slots vencidos) → o botão abre o modal de edição em vez de
@@ -9011,6 +9151,7 @@
         hidden: 'background:#fdecea;color:#c0392b;',
         bylistings: 'background:#fff1de;color:#a05f1e;',
         dup: 'background:#f3e8ff;color:#7b2fbe;',
+        semdata: 'background:#fff4e6;color:#a05a00;',
       };
       const statusBadge = '<span style="display:inline-block;padding:2px 8px;border-radius:10px;'
         + BADGE_BG[badgeKind] + 'font-size:11px;font-weight:600;'
