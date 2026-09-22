@@ -5846,6 +5846,14 @@
               '</div>' +
             '</div>' +
 
+            // Nova confirmação: ao trocar data/horário/experiência, o
+            // cliente recebe de novo a confirmação (WhatsApp + e-mail) com
+            // os dados NOVOS. Desmarque pra só corrigir sem avisar.
+            '<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:.8rem;color:#444;cursor:pointer;">' +
+              '<input type="checkbox" id="admin-edit-booking-reconfirmar" checked style="width:15px;height:15px;cursor:pointer;">' +
+              '<span>Se a data, o horário ou a experiência mudar, <b>enviar nova confirmação</b> pro cliente</span>' +
+            '</label>' +
+
             '<div id="admin-edit-booking-refund" style="margin-top:14px;"></div>' +
 
             // ===== Aguardando experiência (desmarcou sem reembolso) =====
@@ -6286,6 +6294,14 @@
           saveBtn.textContent = 'Salvar';
           return;
         }
+        // Como estava ANTES da edição — a remarcação no servidor usa isso
+        // pra saber de onde devolver a vaga.
+        var anterior = {
+          experiencia_id: booking.experiencia_id,
+          data: booking.data,
+          horario: booking.horario,
+          quantidade: booking.quantidade,
+        };
         Object.assign(booking, update);
 
         // Agora sim o toggle de "Aguardando experiência" (se mudou). A edge
@@ -6310,6 +6326,45 @@
           } catch (agEx) {
             console.error('[Admin] exceção ao alterar aguardando_experiencia:', agEx);
             alert('Os dados da reserva foram salvos, mas houve erro ao alterar "Aguardando experiência":\n' + ((agEx && agEx.message) || String(agEx)));
+          }
+        }
+
+        // Remarcação: mudou experiência/data/horário/quantidade → o
+        // servidor move a vaga (devolve na turma antiga, tira da nova e
+        // religa o slot_id), libera lembrete/feedback pra data nova e
+        // manda a nova confirmação. Roda DEPOIS do "aguardando" pra que o
+        // estoque já esteja no estado certo quando ela ler a reserva.
+        var mudouAlgo = anterior.experiencia_id !== update.experiencia_id ||
+          String(anterior.data || '').trim() !== update.data ||
+          String(anterior.horario || '').trim() !== update.horario ||
+          (Number(anterior.quantidade) || 1) !== update.quantidade;
+        if (mudouAlgo && s.functions && s.functions.invoke) {
+          var reconfChk = modal.querySelector('#admin-edit-booking-reconfirmar');
+          try {
+            var rgRes = await s.functions.invoke('admin-reagendar-reserva', {
+              body: {
+                booking_id: booking.id,
+                anterior: anterior,
+                enviar_confirmacao: !!(reconfChk && reconfChk.checked),
+              },
+            });
+            var rg = rgRes && rgRes.data;
+            if ((rgRes && rgRes.error) || !rg || !rg.ok) {
+              var rgMotivo = (rg && (rg.message || rg.error)) || (rgRes && rgRes.error && rgRes.error.message) || 'erro desconhecido';
+              console.error('[Admin] admin-reagendar-reserva falhou:', rgRes);
+              alert('A reserva foi salva, mas NÃO consegui mover a vaga / reenviar a confirmação.\nMotivo: ' + rgMotivo + '\n\nA vaga se acerta sozinha em até 10 min; a confirmação dá pra reenviar pelo botão da reserva.');
+            } else {
+              if ('slot_novo' in rg) booking.slot_id = rg.slot_novo;
+              var conf = rg.confirmacao || {};
+              var partes = [];
+              if (conf.whatsapp) partes.push('WhatsApp: ' + (conf.whatsapp === 'enviado' ? '✓ enviado' : conf.whatsapp));
+              if (conf.email) partes.push('e-mail: ' + (conf.email === 'enviado' ? '✓ enviado' : conf.email));
+              if (partes.length) _adminToast('Nova confirmação — ' + partes.join(' · '));
+              if (Array.isArray(rg.warnings) && rg.warnings.length) alert('Atenção:\n• ' + rg.warnings.join('\n• '));
+            }
+          } catch (rgEx) {
+            console.error('[Admin] exceção em admin-reagendar-reserva:', rgEx);
+            alert('A reserva foi salva, mas houve erro ao mover a vaga / reenviar a confirmação:\n' + ((rgEx && rgEx.message) || String(rgEx)));
           }
         }
 

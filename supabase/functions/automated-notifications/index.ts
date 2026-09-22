@@ -118,6 +118,12 @@ function isSuppressed(b: any): boolean {
     meta.aguardando_experiencia === true || meta.suppress_customer_messaging === true;
 }
 
+// deno-lint-ignore no-explicit-any
+function reagendamentoSufixo(b: any): string {
+  const seq = Number((b?.metadata ?? {}).reagendamento_seq) || 0;
+  return seq > 0 ? ":r" + seq : "";
+}
+
 const SELECT =
   "id, nome, telefone, data, horario, status, experiencia_id, experiencia_nome, aguardando_experiencia, metadata, created_at, reminder_48h_sent_at, feedback_whatsapp_sent_at, pending_recovery_sent_at, experiences(imagem)";
 
@@ -166,7 +172,10 @@ serve(async (req) => {
       const { texto: message, params } = await build(b);
       const res = await gatedSendWhatsApp(supabase, {
         kind,
-        dedupeKey: kind + ":" + b.id,
+        // Reserva remarcada no painel (admin-reagendar-reserva) ganha chave
+        // nova: o lembrete/feedback da data NOVA sai mesmo que o da data
+        // antiga já tenha saído. Sem remarcação a chave é a de sempre.
+        dedupeKey: kind + ":" + b.id + reagendamentoSufixo(b),
         identifierOk: !!b.id && !!b.experiencia_id,
         rawPhone: phoneOf(b),
         suppressed,
