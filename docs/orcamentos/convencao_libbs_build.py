@@ -160,18 +160,18 @@ porque = f'''
 {head_simple("Por que funciona")}
     <span class="eyebrow orange">◆ O que o time leva junto</span>
     <h2>Conexão que acontece <em>além do palco</em></h2>
-    <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos — sem hierarquia, sem quem sabe mais e quem sabe menos. 🧡</p>
+    <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos <strong>— sem hierarquia, sem quem sabe mais e quem sabe menos.</strong> 🧡</p>
     <div class="pgrid">
       <div class="pcard">
-        <div class="pphoto">{img("aromaterapiameninas.jpg", "Pessoas conversando enquanto escolhem aromas", "center 40%")}</div>
+        <div class="pphoto">{img("libbs-s2-conversa.jpg", "Time rindo e conversando junto no encontro", "center 35%")}</div>
         <div class="pbody"><h3>Conversa que não rola no escritório</h3><p>Alguns minutos lado a lado fazem o time falar de coisas que a rotina nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("perfumaria-apre.jpg", "Grupo manipulando essências numa ativação olfativa", "center 45%")}</div>
+        <div class="pphoto">{img("libbs-s2-criar.jpg", "Time criando junto, de mão na massa, do zero", "center 45%")}</div>
         <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa saber fazer ou ter experiência. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("velaaromatica.jpg", "Close do take-home aromático que cada um leva", "center 50%")}</div>
+        <div class="pphoto">{img("libbs-s2-vela.jpg", "Vela personalizada — o take-home que cada um leva", "center 50%")}</div>
         <div class="pbody"><h3>Fica depois do dia</h3><p>Cada um leva pra casa o que criou durante a experiência. <b>A lembrança do encontro continua depois da convenção.</b></p></div>
       </div>
     </div>
