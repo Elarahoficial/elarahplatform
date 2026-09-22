@@ -156,17 +156,46 @@
       // deixa o form navegar para index.html?busca=term (comportamento nativo do GET)
     });
 
-    // Fileira: [☰ menu] + [busca]. Move o botão de menu (hambúrguer) do
-    // cabeçalho pra cá, do lado esquerdo da busca (como você pediu).
+    // Fileira: [☰ menu] + [busca]. Ela só aparece até 768px (ver
+    // app-skin.css) — é a largura em que o styles.css esconde a busca do
+    // header e esta pílula passa a ser a única busca da página. Acima
+    // disso as duas apareceriam juntas, então a faixa some.
     var row = document.createElement('div');
     row.className = 'sk-searchrow';
-    var toggle = header.querySelector('.header__mobile-toggle');
-    if (toggle) {
-      toggle.classList.add('sk-menu-moved');
-      row.appendChild(toggle);
-    }
     row.appendChild(form);
     header.insertAdjacentElement('afterend', row);
+
+    placeMenuToggle(header, row);
+  }
+
+  // O ☰ mora do lado esquerdo da pílula no celular (como pedido), mas a
+  // faixa some acima de 768px — e entre 769px e 1280px o header ainda
+  // usa o ☰. Se ele ficasse dentro da faixa escondida, o menu ficaria
+  // inacessível nessas larguras. Então movemos conforme a largura,
+  // guardando a posição original pra devolver exatamente onde estava.
+  function placeMenuToggle(header, row) {
+    var toggle = header.querySelector('.header__mobile-toggle');
+    if (!toggle || !window.matchMedia) return;
+    var home = toggle.parentNode;
+    var homeNext = toggle.nextSibling;
+    var mq = window.matchMedia('(max-width: 768px)');
+
+    function apply() {
+      if (mq.matches) {
+        if (toggle.parentNode === row) return;
+        toggle.classList.add('sk-menu-moved');
+        row.insertBefore(toggle, row.firstChild);
+      } else {
+        if (toggle.parentNode === home) return;
+        toggle.classList.remove('sk-menu-moved');
+        home.insertBefore(
+          toggle, homeNext && homeNext.parentNode === home ? homeNext : null);
+      }
+    }
+
+    apply();
+    if (mq.addEventListener) mq.addEventListener('change', apply);
+    else if (mq.addListener) mq.addListener(apply);
   }
 
   // Filtros viram menu suspenso: toca no título -> abre/fecha os controles.
@@ -281,7 +310,11 @@
     if (!nav || !window.MutationObserver) return;
     function reposition() {
       if (!nav.classList.contains('mobile-open')) return;
-      var row = document.querySelector('.sk-searchrow') || document.querySelector('.header');
+      // Acima de 768px a fileira de busca fica escondida: aí a
+      // referência é o próprio header (senão top viria 0 e o menu
+      // abriria por cima dele).
+      var row = document.querySelector('.sk-searchrow');
+      if (!row || !row.offsetParent) row = document.querySelector('.header');
       if (!row) return;
       var bottom = Math.max(0, Math.round(row.getBoundingClientRect().bottom));
       nav.style.top = bottom + 'px';
