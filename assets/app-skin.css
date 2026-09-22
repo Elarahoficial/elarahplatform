@@ -474,10 +474,22 @@
   gap: 12px;
   padding: 12px 16px;
   background: var(--sk-surface);
-  /* fica ACIMA do painel do menu (z-index 200) — o ☰ continua visível
-     e clicável pra fechar o menu */
+  /* Fica ABAIXO do header (z-index 100). No desktop o dropdown
+     "Explorar" é position:absolute DENTRO do header, e esta faixa é
+     opaca e larga: com z-index alto aqui ela cobria os primeiros itens
+     do menu (o menu aparecia "embaixo" da barra branca). */
   position: relative;
-  z-index: 205;
+  z-index: 1;
+}
+
+/* Até 1280px o header colapsa no ☰ (styles.css), que o app-skin move
+   pra dentro desta faixa. Aí o painel do menu (.header__nav.mobile-open,
+   z-index 200 dentro do header) precisa abrir POR BAIXO dela, senão o ☰
+   some atrás do painel e não dá pra fechar o menu. Nessa largura o
+   dropdown "Explorar" é estático dentro do próprio painel, então não há
+   conflito com ele. */
+@media (max-width: 1280px) {
+  .is-app .sk-searchrow { z-index: 205; }
 }
 .is-app .header__mobile-toggle.sk-menu-moved {
   order: 0;
