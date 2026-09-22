@@ -9,7 +9,7 @@
 --
 -- SOLUÇÃO
 --   Nova coluna `active_months text[]` na regra, com meses no formato
---   'YYYY-MM' (ex.: {'2026-10','2026-12'}).
+--   ano-mes, ex.: 2026-10 e 2026-12.
 --     • NULL ou vazio  → comportamento de sempre: gera as próximas
 --                        `horizon_weeks` semanas, todos os meses.
 --     • Com meses      → gera TODAS as datas dos dias da semana da
@@ -49,9 +49,11 @@
 alter table public.experience_recurrence_rules
   add column if not exists active_months text[];
 
--- Cada elemento precisa ser 'YYYY-MM' com mês 01..12. CHECK não aceita
--- subquery, então valida a lista inteira concatenada por vírgula.
-do $$
+-- Cada elemento precisa ser ano-mes (4 digitos, traco, 01 a 12). CHECK
+-- nao aceita subquery, entao valida a lista inteira juntada por virgula.
+-- Ancoras \A e \Z (em vez de ^ e cifrao) de proposito: o SQL Editor do
+-- Supabase se confunde com cifrao solto dentro de string.
+do $chk$
 begin
   if not exists (
     select 1 from information_schema.table_constraints
@@ -65,10 +67,10 @@ begin
         active_months is null
         or cardinality(active_months) = 0
         or array_to_string(active_months, ',')
-             ~ '^[0-9]{4}-(0[1-9]|1[0-2])(,[0-9]{4}-(0[1-9]|1[0-2]))*$'
+             ~ '\A[0-9]{4}-(0[1-9]|1[0-2])(,[0-9]{4}-(0[1-9]|1[0-2]))*\Z'
       );
   end if;
-end $$;
+end $chk$;
 
 
 -- ===== 2. materialize_recurrence_slots respeitando os meses =====
@@ -77,7 +79,7 @@ returns integer
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $fn$
 declare
   v_rule       public.experience_recurrence_rules%rowtype;
   v_today      date := current_date;
@@ -157,7 +159,7 @@ begin
 
   return v_inserted;
 end;
-$$;
+$fn$;
 
 
 -- ===== 3. Trigger passa a observar active_months também =====
