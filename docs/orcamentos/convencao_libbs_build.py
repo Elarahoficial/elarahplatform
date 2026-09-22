@@ -67,6 +67,9 @@ xcss = '''
   .scalehint{font-size:11px;color:var(--muted);margin-top:10px;text-align:center}
   .scalehint b{color:var(--orange-dark)}
   .closing{text-align:center;font-family:'DM Serif Display',serif;font-style:italic;font-size:15px;color:var(--navy);margin-top:16px;line-height:1.4}
+  .xbanner{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.42);margin-top:16px;aspect-ratio:16/8}
+  .xbanner img{width:100%;height:100%;object-fit:cover;display:block}
+  .xbanner .pctag{position:absolute;top:14px;right:14px;background:var(--orange);color:#fff;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:6px 15px;border-radius:999px;box-shadow:0 8px 16px -6px rgba(212,96,14,.55)}
   /* personalização */
   .cofrow{display:flex;gap:22px;margin-top:16px;align-items:stretch;flex-wrap:wrap}
   .cofphoto{flex:0 0 320px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 16px 34px -24px rgba(0,0,0,.34);min-height:250px}
@@ -270,37 +273,11 @@ extras = f'''
   <section class="slide">
 {head_simple("Extras")}
     <span class="eyebrow orange">◆ Pra experiência chegar em mais gente</span>
-    <h2>Pra experiência chegar em <em>mais gente</em></h2>
-    <p class="lead">Como a convenção terá cerca de <strong>1.500 pessoas</strong> e a experiência tem capacidade limitada, dá pra incluir um pequeno item do universo olfativo pra quem não conseguir participar da atividade.</p>
-    <div class="opts">
-      <div class="opt hl">
-        <div class="oph"><span class="pctag">★ Opcional</span>{img("sabonete.jpg", "Volume de sabonetes aromáticos para levar como take-home", "center 50%")}</div>
-        <div class="ob">
-          <span class="otp">Um pouco da experiência pra levar</span>
-          <h4>Take-home pra todo mundo</h4>
-          <ul>
-            <li>Mini vela</li>
-            <li>Sabonete</li>
-            <li>Sachê aromático</li>
-            <li>Aromatizador ou outro item do universo olfativo</li>
-          </ul>
-        </div>
-      </div>
-      <div class="opt">
-        <div class="oph">{img("vela4.jpg", "Velas aromáticas em volume, prontas para distribuição", "center 50%")}</div>
-        <div class="ob">
-          <span class="otp">Como funciona</span>
-          <h4>Escala pra convenção inteira</h4>
-          <ul>
-            <li>Distribuído junto da ativação, pra quem passar pela área</li>
-            <li>Mesmo universo olfativo da experiência</li>
-            <li>Quantidade e item definidos com vocês</li>
-            <li>Uma forma de a experiência alcançar mais gente</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <div class="bnote" style="margin-top:14px">◆ Apresentado como opcional. Definimos o item e o investimento junto com vocês, conforme a quantidade.</div>
+    <h2>Mais alcance, <em>mesma proposta sensorial</em></h2>
+    <p class="lead">Além da ativação principal, podemos ampliar o universo olfativo com um <strong>take-home personalizado LIBBS</strong>, conectado à identidade e à comunicação do evento, para chegar a ainda mais pessoas ao longo da convenção.</p>
+    <p class="lead" style="margin-top:8px">Uma forma simples de ampliar o alcance da ativação, reforçar a presença da marca e fazer com que ninguém fique de fora.</p>
+    <div class="xbanner"><span class="pctag">★ Premium</span>{img("libbs-extras.jpg", "Linha de take-homes personalizados LIBBS — vela, sachê, home spray e sabonete", "center 55%")}</div>
+    <div class="bnote" style="margin-top:14px">◆ Foto ilustrativa do brinde. A gente fecha com vocês o item e a personalização antes do encontro. 🧡</div>
     {foot("Extras")}
   </section>'''
 
