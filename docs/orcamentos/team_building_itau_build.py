@@ -38,7 +38,7 @@ xcss = '''
   .pcard .pphoto{aspect-ratio:4/5;overflow:hidden;background:#eee}
   .pcard .pphoto img{width:100%;height:100%;object-fit:cover;display:block}
   .pcard .pbody{padding:14px 17px 16px}
-  .pcard .pbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);line-height:1.1;margin:0 0 5px}
+  .pcard .pbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:15.5px;color:var(--navy);line-height:1.15;margin:0 0 5px;text-wrap:balance;min-height:2.3em}
   .pcard .pbody p{font-size:11px;color:var(--muted);line-height:1.45;margin:0}
   .pcard .pbody p b{color:var(--navy);font-weight:700}
   /* menu de experiências (3 cards) */
@@ -167,15 +167,15 @@ proposito = f'''
     <div class="rule"></div>
     <div class="pgrid">
       <div class="pcard">
-        <div class="pphoto">{img("s2ref-conversa.jpg", "Colegas conversando e rindo num encontro", "center 30%")}</div>
+        <div class="pphoto">{img("capa-itau-oficina.jpg", "Time conversando enquanto cria, de mão na massa", "center 42%")}</div>
         <div class="pbody"><h3>Conversa que não rola no escritório</h3><p>Duas horas e meia lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("s2ref-mesmope.jpg", "Participantes criando juntas no encontro", "center 25%")}</div>
+        <div class="pphoto">{img("corp-criativo.jpg", "Time inteiro de mão na massa, criando junto", "center 45%")}</div>
         <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa ter experiência. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
       </div>
       <div class="pcard">
-        <div class="pphoto">{img("s2ref-fica.jpg", "Time rindo e celebrando o encontro", "center 25%")}</div>
+        <div class="pphoto">{img("ceramica2.jpg", "As peças criadas no encontro, que ficam depois", "center 50%")}</div>
         <div class="pbody"><h3>Fica depois do dia</h3><p>O que foi criado continua depois do encontro — <b>seja como peça individual ou como memória coletiva</b> do time.</p></div>
       </div>
     </div>
@@ -257,7 +257,7 @@ mimos = f'''
     <p class="lead">Além da peça que cada um cria, os planos superiores somam o registro fotográfico profissional — e o Completo ainda soma um brinde personalizado com a marca do Itaú.</p>
     <div class="opts">
       <div class="opt">
-        <div class="oph">{img("mimos-registro.jpg", "Registro fotográfico profissional de um encontro corporativo", "center 45%")}</div>
+        <div class="oph">{img("eventocorporativo.jpg", "Registro fotográfico profissional de um encontro corporativo", "center 42%")}</div>
         <div class="ob">
           <span class="otp">Nos planos mais altos</span>
           <h4>Registro fotográfico profissional</h4>
