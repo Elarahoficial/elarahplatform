@@ -273,21 +273,37 @@ opcionais = f'''
 # ============================ 8 · PRÓXIMOS PASSOS ============================
 proximos = f'''
   <section class="slide">
-{head_simple("Próximos passos")}
+{head_simple("Como funciona & contato")}
     <span class="eyebrow orange">◆ Simples e sob medida</span>
-    <h2>É só reunir o <em>time</em></h2>
+    <h2>É só <em>reunir o time</em></h2>
     <p class="lead">A Elarah cuida de toda a produção pro encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><div class="ico" style="font-family:'DM Serif Display',serif;color:var(--orange-dark)">01</div><h3>Escolham a data</h3><p>Uma sexta-feira de outubro, a definir. A gente confirma a experiência e reserva o espaço escolhido pro time.</p></div>
-      <div class="infocard"><div class="ico" style="font-family:'DM Serif Display',serif;color:var(--orange-dark)">02</div><h3>A gente leva tudo</h3><p>Profissional, materiais e estrutura. Chegamos antes, montamos e desmontamos no fim.</p></div>
-      <div class="infocard"><div class="ico" style="font-family:'DM Serif Display',serif;color:var(--orange-dark)">03</div><h3>Cada um leva a sua criação</h3><p>Cada participante sai com a própria peça, perfume ou arranjo, conforme a experiência escolhida.</p></div>
+    <div class="steps">
+      <div class="step"><div class="num">1</div><h3>Escolham a experiência, o espaço e o plano</h3><p>A gente reserva o espaço pro time da Segatta e confirma a sexta-feira de outubro.</p></div>
+      <div class="step"><div class="num">2</div><h3>A gente leva tudo</h3><p>Profissional, todo o material e a estrutura. Chegamos antes, montamos e desmontamos no fim.</p></div>
+      <div class="step"><div class="num">3</div><h3>Cada um leva a sua criação</h3><p>Cada participante sai com a própria peça, perfume ou arranjo, conforme a experiência escolhida.</p></div>
     </div>
-    <div class="quote">
-      Vi, me confirma a experiência e a sexta-feira que fazem mais sentido, que a gente reserva o espaço e organiza cada detalhe pra vocês viverem esse encontro.<br>
-      ✦ <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
+    <div class="addon">
+      <span class="plus">✦</span>
+      <div>
+        <h4>Sob medida pro time</h4>
+        <p>Dá pra reservar um momento de <b>fala da liderança</b>, somar personalização com a marca da <b>Segatta</b> e ajustar a experiência ao time. A gente emite <b>nota fiscal</b> e ajusta prazo e forma de pagamento com o financeiro. É só combinar. 🧡</p>
+      </div>
     </div>
-    {foot("Próximos passos")}
+    <div class="cta">
+      <h2>Bora <em>reunir o time?</em> ✦</h2>
+      <p>Vi, me confirma a experiência, o espaço e o plano que fazem mais sentido, que eu reservo a agenda e organizo cada detalhe.</p>
+      <div class="cta-actions">
+        <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Vi%20a%20proposta%20da%20Segatta%20e%20quero%20fechar%20os%20detalhes." target="_blank" rel="noopener">💬 Falar no WhatsApp</a>
+        <div class="contact-links">
+          <span>+55 (11) 91445-5930</span>
+          <a href="https://instagram.com/elarah.oficial" target="_blank" rel="noopener">@elarah.oficial</a>
+          <a href="https://elarah.com.br" target="_blank" rel="noopener">elarah.com.br</a>
+        </div>
+      </div>
+    </div>
+    <p class="fineprint">Proposta de experiência da Elarah para a celebração dos 100 mil da Segatta Neuropsicologia — cerca de 8 pessoas, em uma sexta-feira de outubro (a definir), em São Paulo. Experiências à escolha: Cerâmica, Perfumaria Botânica ou Arranjos florais, no Entre Mãos (Perdizes) ou no Agora Intu (Pinheiros). Perfumaria Botânica: R$ 416 por pessoa no plano Experiência; demais valores a confirmar. Espaço, alimentação e condições comerciais a confirmar. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    {foot("Como funciona & contato")}
   </section>'''
 
 deck = ('<div class="deck">\n'
