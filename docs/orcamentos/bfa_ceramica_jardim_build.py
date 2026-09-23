@@ -163,7 +163,7 @@ porque = f'''
     <h2>Experiências que <em>mudam o ritmo</em> do dia</h2>
     <p class="lead">A ideia não é preencher a agenda com mais uma atividade. É criar espaço para <b>sair do automático, conversar de outro jeito e viver algo fora da rotina</b> — seja criando com as mãos ou se encontrando à mesa.</p>
     <div class="bfeat">
-      <div class="bphoto">{img("vibe-criar-corp.jpg", "Grupo criando junto durante uma experiência", "center 55%")}</div>
+      <div class="bphoto">{img("porque-criar.jpg", "Grupo rindo enquanto cria peças de cerâmica", "center 42%")}</div>
       <div class="bbody">
         <span class="btag">Criar</span>
         <h3>Criar abre espaço para conversar</h3>
@@ -171,7 +171,7 @@ porque = f'''
       </div>
     </div>
     <div class="bfeat">
-      <div class="bphoto">{img("jantar-vista.jpg", "Grupo reunido à mesa, entre sabores e conversa", "center 45%")}</div>
+      <div class="bphoto">{img("porque-mesa.jpg", "Amigos brindando e rindo à mesa", "center 40%")}</div>
       <div class="bbody">
         <span class="btag">À mesa</span>
         <h3>A mesa aproxima naturalmente</h3>
@@ -188,7 +188,7 @@ cer_conceito = f'''
 {head_simple("Ceramics & Coffee")}
     <span class="eyebrow orange">Ceramics &amp; Coffee</span>
     <h2>Uma pausa criativa entre <em>argila, conversa e café</em></h2>
-    <p class="lead">Uma experiência manual e sensorial para <b>desacelerar</b>, criar junto e viver um momento diferente em meio ao verde.</p>
+    <p class="lead">Uma experiência manual e sensorial para <b>desacelerar</b>, criar junto e abrir espaço para uma troca mais leve — rende conversa e deixa uma <b>lembrança do encontro</b>.</p>
     <div class="cgrid">
       <figure class="cphoto">{img("ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}</figure>
       <div class="cpil">
@@ -227,7 +227,7 @@ cer_investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">Investimento · Ceramics &amp; Coffee</span>
-    <h2>Uma experiência completa, <em>produzida pela Elarah</em></h2>
+    <h2>Uma experiência completa, <em>mão na massa</em></h2>
     <p class="lead">O investimento reúne o melhor da experiência: <b>espaço reservado</b>, <b>coffee break</b> e <b>modelagem manual em cerâmica</b>, com <b>produção integral da Elarah</b>.</p>
     <div class="sum">
       <div class="box"><span class="bl">Espaço + coffee break</span><span class="bv">R$ 249</span><small>por pessoa</small></div>
