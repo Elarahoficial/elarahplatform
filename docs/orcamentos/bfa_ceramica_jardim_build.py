@@ -201,7 +201,7 @@ porque = f'''
       </div>
     </div>
     <div class="bfeat">
-      <div class="bphoto">{img("porque-mesa.jpg", "Amigos brindando e rindo à mesa", "center 40%")}</div>
+      <div class="bphoto">{img("porque-mesa-workshop.jpg", "Grupo reunido à mesa em clima de conversa e luz de velas", "center 35%")}</div>
       <div class="bbody">
         <span class="btag">À mesa</span>
         <h3>A mesa aproxima naturalmente</h3>
