@@ -3781,6 +3781,17 @@
     _avisoPendentes = m;
   }
 
+  // Motivo técnico do reenvio → frase que diz o que fazer.
+  function _motivoAvisoLegivel(motivo) {
+    switch (motivo) {
+      case 'invalid_phone': return 'WhatsApp da parceira cadastrado errado (corrija na aba Fornecedores: DDD + número, ex. 11 91234-5678)';
+      case 'nao_elegivel': return 'parceira sem WhatsApp cadastrado, ou reserva não está paga';
+      case 'status_not_allowed': return 'reserva não está paga';
+      case 'suppressed': return 'reserva está como aguardando experiência';
+      default: return motivo || 'falhou';
+    }
+  }
+
   function _filtroAvisoAtivo() {
     const el = document.getElementById('bookings-filter-aviso');
     return !!(el && el.value === 'nao_saiu');
@@ -3808,7 +3819,7 @@
         }
         res.data.resultados.forEach(function (r) {
           if (r.enviado) enviados++;
-          else if (r.motivo !== 'ja_enviado_antes') problemas.push(r.booking_id.slice(0, 8) + '… ' + r.motivo);
+          else if (r.motivo !== 'ja_enviado_antes') problemas.push(r.booking_id.slice(0, 8) + '… ' + _motivoAvisoLegivel(r.motivo));
         });
       }
     } finally {
@@ -4916,7 +4927,9 @@
       const pendTag = pend
         ? '<div style="margin-top:3px;font-size:.68rem;font-weight:700;color:#c0392b;" title="' +
             escapeHtml(pend.erro || '') + '">' +
-            (pend.situacao === 'falhou' ? '⚠ Meta: falhou' : '⚠ Meta: não enviado') + '</div>'
+            (pend.situacao === 'falhou' ? '⚠ Meta: falhou'
+              : pend.situacao === 'falhou_na_entrega' ? '⚠ Meta: não chegou'
+              : '⚠ Meta: não enviado') + '</div>'
         : '';
       if (isAvisado) {
         const when = avisadoAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -6686,7 +6699,7 @@
           } else if (r.motivo === 'ja_enviado_antes') {
             alert('Esse aviso já tinha saído pela Meta antes — não reenviei pra não duplicar.');
           } else {
-            alert('Não saiu: ' + r.motivo + (r.detalhe ? '\n' + r.detalhe : ''));
+            alert('Não saiu: ' + _motivoAvisoLegivel(r.motivo));
           }
           invalidateBookings();
           renderBookings();

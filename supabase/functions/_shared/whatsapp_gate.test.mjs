@@ -72,7 +72,10 @@ async function run() {
   check("México +52 rejeitado", normalizePhoneBR("525512345678") === null || normalizePhoneBR("525512345678") !== null && false || normalizePhoneBR("525512345678") === null);
   check("incompleto rejeitado", normalizePhoneBR("1199999") === null);
   check("DDD inválido (10) rejeitado", normalizePhoneBR("1099999999") === null);
-  check("celular sem 9 rejeitado", normalizePhoneBR("1181234567") === null);
+  check("celular antigo sem o 9 ganha o 9", normalizePhoneBR("1181234567") === "5511981234567");
+  check("celular antigo com +55 ganha o 9", normalizePhoneBR("+55 48 9190-7056") === "5548991907056");
+  check("fixo continua fixo", normalizePhoneBR("1132345678") === "551132345678");
+  check("11 díg sem 9 rejeitado", normalizePhoneBR("11812345678") === null);
   check("vazio rejeitado", normalizePhoneBR("") === null);
 
   // 1) webhook chegando 2x (sequencial) → 1 envio, 2º duplicado
