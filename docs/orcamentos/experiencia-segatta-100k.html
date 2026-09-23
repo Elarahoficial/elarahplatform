@@ -222,6 +222,20 @@
   .imrow .rs{font-size:10.5px;color:var(--muted);margin-top:3px}
   .imprice{font-family:'DM Serif Display',serif;font-size:17px;color:var(--muted);letter-spacing:.01em}
   .imprice.on{color:var(--navy)}
+  /* investimento · dois blocos de preço */
+  .invblocks{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px;align-items:start}
+  .invb{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px 20px;box-shadow:0 16px 40px -28px rgba(0,0,0,.34)}
+  .invb .ibsp{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .invb .ibsub{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.4}
+  .invb .ibrows{margin-top:14px;border-top:1px solid var(--line)}
+  .invrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0}
+  .invrow + .invrow{border-top:1px solid var(--line)}
+  .invrow .ie{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy)}
+  .invrow .iv{display:flex;flex-direction:column;align-items:flex-end;line-height:1.05}
+  .invrow .pp{font-family:'DM Serif Display',serif;font-size:24px;color:var(--navy)}
+  .invrow .ppu{font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:2px}
+  .invrow .tg{font-size:10px;color:var(--orange-dark);font-weight:700;margin-top:4px;letter-spacing:.02em}
+  .invb .ibnote{margin-top:14px;font-size:10.5px;color:var(--muted);line-height:1.5}
   .imper{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
   /* vibe · legenda no padrão atmosfera Elarah (igual ao print) */
   .vibe figcaption{padding:24px 12px 10px;background:linear-gradient(to top,rgba(16,23,28,.86),transparent);font-size:11.5px}
@@ -594,20 +608,30 @@
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Três níveis para <em>escolher</em></h2>
-    <p class="lead">Cada experiência em três níveis — do essencial ao completo. A <b>Perfumaria Botânica</b> já entra com o valor por pessoa do plano Experiência; os demais valores seguem <b>a confirmar</b>.</p>
-    <div class="imatrix">
-      <div class="imrow imhead">
-        <div class="imcell"><span class="leg">Experiências</span></div>
-        <div class="imcell"><span class="tname">Experiência</span><div class="tdesc">Atividade + materiais + profissional + produção Elarah</div></div>
-        <div class="imcell imcol-hl"><span class="tname">Premium <span class="imtag">Mais escolhido</span></span><div class="tdesc">Tudo da Experiência + comidinhas &amp; bebidas + foto profissional</div></div>
-        <div class="imcell"><span class="tname">Completa</span><div class="tdesc">Tudo do Premium + brinde personalizado</div></div>
+    <h2>Escolham o espaço e a <em>experiência</em></h2>
+    <p class="lead">Duas formas de viver esse encontro, com tudo já organizado pela Elarah — experiência, materiais, espaço e comidinhas incluídas.</p>
+    <div class="invblocks">
+      <div class="invb">
+        <span class="ibsp">Entre Mãos · Perdizes</span>
+        <div class="ibsub">Experiência + espaço + comidinhas e bebidas</div>
+        <div class="ibrows">
+          <div class="invrow"><span class="ie">Cerâmica</span><span class="iv"><span class="pp">R$ 439</span><span class="ppu">por pessoa</span><span class="tg">R$ 3.512 · grupo de 8</span></span></div>
+          <div class="invrow"><span class="ie">Perfumaria Botânica</span><span class="iv"><span class="pp">R$ 509</span><span class="ppu">por pessoa</span><span class="tg">R$ 4.072 · grupo de 8</span></span></div>
+          <div class="invrow"><span class="ie">Arranjos florais</span><span class="iv"><span class="pp">R$ 399</span><span class="ppu">por pessoa</span><span class="tg">R$ 3.192 · grupo de 8</span></span></div>
+        </div>
+        <p class="ibnote">Inclui espaço, materiais, condução da experiência, lanchinho, sucos, café e chá.</p>
       </div>
-      <div class="imrow"><div class="imcell"><div class="rn">Cerâmica</div><div class="rs">Modelagem à mão · Perdizes</div></div><div class="imcell"><span class="imprice">A confirmar</span></div><div class="imcell imcol-hl"><span class="imprice">A confirmar</span></div><div class="imcell"><span class="imprice">A confirmar</span></div></div>
-      <div class="imrow"><div class="imcell"><div class="rn">Perfumaria Botânica</div><div class="rs">Perfume autoral · 50 ml</div></div><div class="imcell"><span class="imprice on">R$ 416</span><span class="imper">por pessoa</span></div><div class="imcell imcol-hl"><span class="imprice">A confirmar</span></div><div class="imcell"><span class="imprice">A confirmar</span></div></div>
-      <div class="imrow"><div class="imcell"><div class="rn">Arranjos florais</div><div class="rs">Arranjo autoral · Agora</div></div><div class="imcell"><span class="imprice">A confirmar</span></div><div class="imcell imcol-hl"><span class="imprice">A confirmar</span></div><div class="imcell"><span class="imprice">A confirmar</span></div></div>
+      <div class="invb">
+        <span class="ibsp">Agora Intu · Pinheiros</span>
+        <div class="ibsub">Experiência + espaço exclusivo + finger food</div>
+        <div class="ibrows">
+          <div class="invrow"><span class="ie">Cerâmica</span><span class="iv"><span class="pp">R$ 539</span><span class="ppu">por pessoa</span><span class="tg">R$ 4.312 · grupo de 8</span></span></div>
+          <div class="invrow"><span class="ie">Arranjos florais</span><span class="iv"><span class="pp">R$ 509</span><span class="ppu">por pessoa</span><span class="tg">R$ 4.072 · grupo de 8</span></span></div>
+        </div>
+        <p class="ibnote">Inclui espaço exclusivo, materiais, condução da experiência, café, chá, água e 5 bites quentes e frios servidos ao longo do encontro.</p>
+      </div>
     </div>
-    <p class="fineprint">Perfumaria Botânica: <b>R$ 416 por pessoa</b> no plano Experiência (fornecedor Semblante) — materiais e insumos inclusos, perfume autoral de 50 ml. Cerâmica, arranjos florais e os planos Premium e Completa: valores <b>a confirmar</b>. Alimentação e consumo dos espaços não inclusos até confirmação. Data: sexta-feira de outubro, a confirmar.</p>
+    <p class="fineprint">Valores finais para 8 participantes, já considerando toda a composição da experiência.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
