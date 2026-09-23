@@ -96,6 +96,24 @@ xcss = '''
   .wj .dot{width:22px;height:22px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
   .wj b{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);display:block;line-height:1}
   .wj span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  /* mapa de opções (curadoria) */
+  .optmap{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:26px}
+  .opt{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card);box-shadow:0 16px 36px -26px rgba(0,0,0,.36);display:flex;flex-direction:column}
+  .opt .ophoto{height:250px;position:relative}
+  .opt .ophoto img{width:100%;height:100%;object-fit:cover;display:block}
+  .opt .oplab{position:absolute;top:14px;left:14px;background:var(--navy);color:#fff;font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;padding:6px 12px;border-radius:999px}
+  .opt .opbody{padding:20px 26px 24px}
+  .opt h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:27px;color:var(--navy);margin:0 0 8px;line-height:1}
+  .opt .optags{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);font-weight:700;margin-bottom:9px}
+  .opt p{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
+  /* escolha final */
+  .choicerow{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px}
+  .choice{border:1px solid var(--line);border-radius:18px;padding:26px 26px 28px;background:var(--card);text-align:center;box-shadow:0 16px 36px -28px rgba(0,0,0,.34)}
+  .choice .clab{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .choice h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:30px;color:var(--navy);margin:7px 0 7px;line-height:1}
+  .choice .ctags{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--orange);font-weight:700;margin-bottom:16px}
+  .choice .cprice{font-family:'DM Serif Display',serif;font-size:36px;color:var(--navy);line-height:1}
+  .choice .cper{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -127,30 +145,76 @@ def head_simple(kicker):
 
 PROOF = "Experiências já realizadas para times como <b>Compass</b>, <b>Natura</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)"
 
-# ============================ EXPERIÊNCIA 01 · CERAMICS & COFFEE ============================
+# ============================ CAPA + CURADORIA ============================
 
 cover = f'''
   <section class="slide">
-{head_block("BFA · Creative Team Experience", "Images", "Matter", "Duas experiências")}
+{head_block("BFA · Creative Team Experiences", "Images", "Matter", "Duas propostas")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Experiência 01 · Ceramics &amp; Coffee</span>
-        <h1>Uma pausa criativa entre <em>argila, conversa e café</em></h1>
-        <p class="lead">Um encontro tátil e sensorial para o <b>time da BFA</b>: <b>modelagem manual em cerâmica</b> e coffee break, em um <b>jardim reservado no meio da cidade</b>. Cada pessoa cria a própria peça — que depois é finalizada e devolvida pronta.</p>
+        <span class="eyebrow">✦ Experiências para o time</span>
+        <h1>Duas experiências pensadas para o <em>mesmo encontro</em></h1>
+        <p class="lead">A partir do briefing da BFA, a Elarah selecionou <b>duas experiências</b> com propostas diferentes, mas o mesmo objetivo: criar um momento de <b>conexão, pausa e troca</b> para o time.</p>
         <div class="rule"></div>
         <div class="chips">
-          <span class="chip">Campo Belo · São Paulo</span>
           <span class="chip"><b>10</b> participantes</span>
+          <span class="chip">São Paulo</span>
         </div>
         <div class="chips" style="margin-top:10px">
-          <span class="chip"><b>08–10 de dezembro</b> · a confirmar</span>
-          <span class="chip">Programa em <b>2 experiências</b></span>
+          <span class="chip"><b>08, 09 ou 10 de dezembro</b> · a confirmar</span>
         </div>
       </div>
-      <div class="cover-photo">{img("eventocorporativo.jpg", "Evento corporativo da Elarah, grupo reunido à mesa", "center 42%")}</div>
+      <div class="cover-photo">{img("eventocorporativo.jpg", "Evento corporativo da Elarah, grupo reunido e conversando", "center 42%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("BFA · Images Matter")}
+  </section>'''
+
+curadoria = f'''
+  <section class="slide">
+{head_simple("A curadoria")}
+    <span class="eyebrow orange">◆ A curadoria</span>
+    <h2>Duas formas de viver esse <em>encontro</em></h2>
+    <p class="lead">A partir do briefing, buscamos experiências que funcionassem para um <b>grupo pequeno</b>, criassem espaço para <b>conversa e interação</b> e trouxessem algo especial para a programação. Chegamos a duas propostas com atmosferas diferentes: uma mais <b>criativa e contemplativa</b>; outra mais <b>social e gastronômica</b>.</p>
+    <div class="optmap">
+      <div class="opt">
+        <div class="ophoto">{img("ojardim1.jpg", "Espaço O Jardim, ao ar livre", "center 50%")}<span class="oplab">Opção 01</span></div>
+        <div class="opbody">
+          <h3>Ceramics &amp; Coffee</h3>
+          <div class="optags">Criativa · manual · durante o dia</div>
+          <p>Uma pausa criativa entre argila, conversa e café.</p>
+        </div>
+      </div>
+      <div class="opt">
+        <div class="ophoto">{img("pizzanegroni.jpg", "Pizza artesanal e bebida", "center 45%")}<span class="oplab">Opção 02</span></div>
+        <div class="opbody">
+          <h3>Pizza &amp; Wine</h3>
+          <div class="optags">Gastronômica · social · fim de tarde/noite</div>
+          <p>Uma noite de sabores, vinho e conversa.</p>
+        </div>
+      </div>
+    </div>
+    {foot("A curadoria")}
+  </section>'''
+
+opt1_divider = f'''
+  <section class="slide">
+{head_block("BFA · Opção 01", "Ceramics", "&amp; Coffee", "Criativa & contemplativa")}
+    <div class="cover">
+      <div>
+        <span class="eyebrow">✦ Opção 01 · Ceramics &amp; Coffee</span>
+        <h1>Uma pausa criativa entre <em>argila, conversa e café</em></h1>
+        <p class="lead">Uma experiência <b>criativa, manual e durante o dia</b> — tátil e sensorial, para o time desacelerar e criar junto, em um jardim reservado no meio da cidade.</p>
+        <div class="rule"></div>
+        <div class="chips">
+          <span class="chip">Criativa</span>
+          <span class="chip">Manual</span>
+          <span class="chip">Durante o dia</span>
+        </div>
+      </div>
+      <div class="cover-photo">{img("ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}</div>
+    </div>
+    {foot("Opção 01 · Ceramics & Coffee")}
   </section>'''
 
 conceito = f'''
@@ -254,23 +318,43 @@ investimento = f'''
     {foot("Investimento · Ceramics & Coffee")}
   </section>'''
 
-# ============================ EXPERIÊNCIA 02 · PIZZA & WINE ============================
+# ============================ OPÇÃO 02 · PIZZA & WINE ============================
+
+opt2_divider = f'''
+  <section class="slide">
+{head_block("BFA · Opção 02", "Pizza", "&amp; Wine", "Gastronômica & social")}
+    <div class="cover">
+      <div>
+        <span class="eyebrow">✦ Opção 02 · Pizza &amp; Wine</span>
+        <h1>Uma noite de <em>sabores, vinho e conversa</em></h1>
+        <p class="lead">Uma experiência <b>gastronômica, social e no fim de tarde/noite</b> — em torno da pizza e do vinho, feita para provar, conversar e compartilhar.</p>
+        <div class="rule"></div>
+        <div class="chips">
+          <span class="chip">Gastronômica</span>
+          <span class="chip">Social</span>
+          <span class="chip">Fim de tarde/noite</span>
+        </div>
+      </div>
+      <div class="cover-photo">{img("jantar-vista.jpg", "Jantar intimista à noite, com vista da cidade", "center 45%")}</div>
+    </div>
+    {foot("Opção 02 · Pizza & Wine")}
+  </section>'''
 
 g_conceito = f'''
   <section class="slide">
-{head_block("BFA · Experiência 02", "Pizza", "&amp; Wine", "Gastronomia & Vinho")}
-    <span class="expdiv">✦ Experiência 02 · Pizza &amp; Wine</span>
+{head_simple("Como acontece")}
+    <span class="eyebrow orange">◆ Como acontece a noite</span>
     <h2>Uma noite de <em>pizza, vinho e conexão</em></h2>
-    <p class="lead">Uma experiência gastronômica em torno da pizza e do vinho: <b>três sabores</b>, diferentes <b>harmonizações</b> e uma noite feita para <b>provar, conversar e compartilhar</b>. Conduzida por um parceiro gastronômico, num fim de tarde/noite — social, leve e sofisticada.</p>
+    <p class="lead">Uma experiência gastronômica em torno da pizza e do vinho: <b>três sabores</b>, diferentes <b>harmonizações</b> e uma noite feita para <b>provar, conversar e compartilhar</b>. Conduzida por um parceiro gastronômico — social, leve e sofisticada.</p>
     <div class="cgrid">
-      <figure class="cphoto">{img("jantar-vista.jpg", "Jantar intimista à noite, com vista da cidade", "center 45%")}</figure>
+      <figure class="cphoto">{img("drinkspetisco.jpg", "Taça de vinho e petiscos à mesa", "center 50%")}</figure>
       <div class="cpil">
         <div class="cp"><span class="cn">01</span><h3>Recepção &amp; boas-vindas</h3><p>Chegada tranquila, com o grupo se acomodando para a noite.</p></div>
         <div class="cp"><span class="cn">02</span><h3>Preparo conduzido</h3><p>O preparo das pizzas acontece conduzido por um parceiro gastronômico — acompanhado de perto pelo grupo.</p></div>
         <div class="cp"><span class="cn">03</span><h3>Degustação &amp; harmonização</h3><p>Três sabores servidos em sequência, cada um com sua harmonização de vinho.</p></div>
       </div>
     </div>
-    {foot("Pizza & Wine · Experiência 02")}
+    {foot("Pizza & Wine · Como acontece")}
   </section>'''
 
 g_pizza = f'''
@@ -281,7 +365,7 @@ g_pizza = f'''
     <p class="lead">Uma sequência pensada para provar aos poucos: <b>três sabores selecionados especialmente para a experiência</b>, cada um com uma harmonização diferente. A ideia é viver a jornada de sabores e conversar entre uma taça e outra.</p>
     <div class="gstrip">
       <figure>{img("pizza.jpg", "Pizza artesanal recém-saída do forno", "center 50%")}<figcaption>Três sabores</figcaption></figure>
-      <figure>{img("pizzanegroni.jpg", "Pizza com harmonização de bebida", "center 45%")}<figcaption>Sabor a sabor</figcaption></figure>
+      <figure>{img("pizza1.jpg", "Pizza artesanal fatiada", "center 50%")}<figcaption>Sabor a sabor</figcaption></figure>
       <figure>{img("vinhotintos.jpg", "Seleção de vinhos para harmonização", "center 45%")}<figcaption>Harmonização</figcaption></figure>
     </div>
     <div class="wjourney">
@@ -302,7 +386,7 @@ g_espaco = f'''
     <div class="gstrip">
       <figure>{img("espaço2.jpg", "Cozinha completa e equipada do espaço", "center 50%")}<figcaption>Cozinha completa</figcaption></figure>
       <figure>{img("cozinha31-prato.jpg", "Preparo conduzido por profissional", "center 40%")}<figcaption>Preparo conduzido</figcaption></figure>
-      <figure>{img("drinkspetisco.jpg", "Taça de vinho e petiscos na mesa", "center 50%")}<figcaption>À mesa</figcaption></figure>
+      <figure>{img("harmonizacaoqueijos.jpg", "Tábua para harmonizar com os vinhos", "center 50%")}<figcaption>À mesa</figcaption></figure>
     </div>
     <div class="bnote" style="margin-top:16px">◆ O <b>espaço</b> e o <b>parceiro gastronômico</b> têm funções diferentes: o ambiente recebe o grupo e a condução da experiência é feita pelo parceiro. Espaço, endereço e formato final <b>a confirmar</b>. 🍕</div>
     {foot("O espaço & a vibe")}
@@ -335,32 +419,41 @@ g_investimento = f'''
     {foot("Investimento · Pizza & Wine")}
   </section>'''
 
-# ============================ FECHAMENTO ============================
+# ============================ A ESCOLHA ============================
 
-proximos = f'''
+escolha = f'''
   <section class="slide">
-{head_simple("Próximos passos")}
-    <span class="eyebrow orange">◆ Próximos passos</span>
-    <h2>Como <em>seguimos</em></h2>
-    <p class="lead">Duas experiências para o time — <b>Ceramics &amp; Coffee</b> e <b>Pizza &amp; Wine</b>. Podem acontecer juntas ou em datas separadas: é só escolher que a gente cuida de todo o resto.</p>
-    <div class="nextrow">
-      <div class="nx"><span class="nn">01</span><h3>Escolhem as experiências e a data</h3></div>
-      <div class="nx"><span class="nn">02</span><h3>Reservamos espaço e parceiros</h3></div>
-      <div class="nx"><span class="nn">03</span><h3>A Elarah organiza tudo</h3></div>
-      <div class="nx"><span class="nn">04</span><h3>O grupo chega e aproveita</h3></div>
+{head_simple("A escolha")}
+    <span class="eyebrow orange">◆ A escolha</span>
+    <h2>Qual experiência combina mais com esse <em>momento</em>?</h2>
+    <p class="lead">Duas propostas, duas atmosferas diferentes. A partir da <b>escolha da experiência e da data</b>, a Elarah cuida de toda a produção.</p>
+    <div class="choicerow">
+      <div class="choice">
+        <span class="clab">Opção 01</span>
+        <h3>Ceramics &amp; Coffee</h3>
+        <div class="ctags">Criatividade · pausa · natureza</div>
+        <span class="cprice">R$ 529</span><span class="cper">por pessoa · até 10</span>
+      </div>
+      <div class="choice">
+        <span class="clab">Opção 02</span>
+        <h3>Pizza &amp; Wine</h3>
+        <div class="ctags">Gastronomia · vinho · conexão</div>
+        <span class="cprice">R$ 899</span><span class="cper">por pessoa · até 10</span>
+      </div>
     </div>
-    <div class="quote" style="margin-top:26px">
-      <strong style="font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy);display:block;margin-bottom:8px">Vamos definir a melhor data? ✦</strong>
-      Nos confirme qual das opções — <b>08, 09 ou 10 de dezembro</b> — funciona melhor para o time e cuidamos dos próximos passos.<br>
+    <div class="quote" style="margin-top:24px">
+      <strong style="font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy);display:block;margin-bottom:8px">Vamos seguir? ✦</strong>
+      Nos conte qual das duas propostas faz mais sentido para a programação da BFA — e para qual data (<b>08, 09 ou 10 de dezembro</b>) — que seguimos com os próximos passos.<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    {foot("Próximos passos")}
+    {foot("A escolha")}
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + conceito + experiencia + local + vibe + investimento
-        + g_conceito + g_pizza + g_espaco + g_investimento
-        + proximos + '\n\n</div>\n\n')
+        + cover + curadoria
+        + opt1_divider + conceito + experiencia + local + vibe + investimento
+        + opt2_divider + g_conceito + g_pizza + g_espaco + g_investimento
+        + escolha + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-bfa-ceramica-jardim.html"
 open(out, "w", encoding="utf-8").write(html)
