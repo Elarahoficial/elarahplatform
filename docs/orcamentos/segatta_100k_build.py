@@ -108,7 +108,7 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Segatta Neuropsicologia · Celebração dos 100 mil</span>
         <h1>Um marco que merece <em>ser celebrado</em></h1>
-        <p class="lead">Uma tarde especial para celebrar os <strong>100 mil seguidores</strong> no Instagram — o time junto, criando, compartilhando e marcando essa conquista de um jeito especial.</p>
+        <p class="lead">100 mil seguidores é uma conquista e tanto — e o motivo perfeito para reunir o time e comemorar juntos com uma experiência criativa e especial.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>100 mil</b> seguidores</span>
@@ -117,7 +117,7 @@ cover = f'''
           <span class="chip"><b>8 pessoas</b> · tarde</span>
         </div>
       </div>
-      <div class="cover-photo">{img("agora-grupo.jpg", "Time reunido em experiência criativa, luz natural", "center 45%")}</div>
+      <div class="cover-photo">{img("bfa-grupo1.webp", "Time reunido à mesa criando juntos, sorrindo, luz natural", "center 32%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Segatta Neuropsicologia · Celebração 100 mil")}
@@ -129,11 +129,11 @@ experiencias = f'''
 {head_simple("As experiências")}
     <span class="eyebrow orange">◆ Três experiências</span>
     <h2>Escolham como <em>celebrar</em></h2>
-    <p class="lead">Três experiências criativas para escolher a que mais combina com o time — todas conduzidas por profissionais, com materiais e produção da Elarah.</p>
+    <p class="lead">Três experiências criativas para reunir o time, colocar a mão na massa e comemorar juntos — todas conduzidas por profissionais, com materiais e produção da Elarah.</p>
     <div class="exp3">
-      {excard("Experiência 01", "ceramicamodelagem.jpg", "Mãos modelando peça em argila", "Cerâmica", "Cada um modela a própria peça em argila, à mão e sem pressa — e leva para casa.", "center 50%")}
-      {excard("Experiência 02", "buque.jpg", "Arranjo floral autoral", "Arranjos florais", "Guiados por uma florista, montam o próprio arranjo autoral com flores selecionadas.", "center 45%")}
-      {excard("Experiência 03", "perfumaria-oficina.jpg", "Bancada de perfumaria com essências", "Perfumaria & Home Spray", "Criam a própria fragrância ou um home spray autoral para perfumar os ambientes.", "center 45%")}
+      {excard("Experiência 01", "ceramicafamiliamais12.jpg", "Pessoas sorrindo enquanto criam cerâmica", "Cerâmica", "Cada um modela a própria peça em argila, à mão e sem pressa — e leva para casa.", "center 40%")}
+      {excard("Experiência 02", "aniversario-mesa-real.jpg", "Grupo montando arranjos florais juntos à mesa", "Arranjos florais", "Guiados por uma florista, montam o próprio arranjo autoral com flores selecionadas.", "center 50%")}
+      {excard("Experiência 03", "perfumaria-apre.jpg", "Pessoas experimentando aromas na bancada de perfumaria", "Perfumaria & Home Spray", "Criam a própria fragrância ou um home spray autoral para perfumar os ambientes.", "center 45%")}
     </div>
     {foot("As experiências")}
   </section>'''
@@ -144,16 +144,16 @@ como = f'''
 {head_simple("Como acontece")}
     <span class="eyebrow orange">◆ Como acontece</span>
     <h2>Simples, do início ao <em>fim</em></h2>
-    <p class="lead">A Elarah leva tudo montado até o local escolhido — profissional, materiais e estrutura. O time só chega e cria.</p>
+    <p class="lead">A Elarah prepara tudo. O time só chega, aproveita e celebra.</p>
     <div class="bfeat">
-      <div class="bphoto">{img("aula-grupo.jpg", "Grupo criando junto com condução de profissional", "center 40%")}</div>
+      <div class="bphoto">{img("bfa-grupo2.webp", "Grupo criando cerâmica junto, sorrindo, luz natural", "center 45%")}</div>
       <div class="bbody">
         <span class="btag">O passo a passo</span>
-        <h3>Chega tudo pronto</h3>
+        <h3>É só aproveitar</h3>
         <ul class="feat">
-          <li><span class="st">1</span><b>Boas-vindas</b> — recepção, bancada montada e um café de boas-vindas.</li>
-          <li><span class="st">2</span><b>Mão na criação</b> — cada um cria a própria peça, guiado pelo profissional.</li>
-          <li><span class="st">3</span><b>Leva para casa</b> — todo mundo sai com a própria criação e uma lembrança desse marco.</li>
+          <li><span class="st">1</span><b>Chega tudo pronto</b> — recepção, mesa preparada e boas-vindas.</li>
+          <li><span class="st">2</span><b>Criam juntos</b> — a experiência acontece de forma leve, guiada pelo profissional.</li>
+          <li><span class="st">3</span><b>Celebram e levam uma memória</b> — cada um sai com a própria criação e uma lembrança desse momento.</li>
         </ul>
       </div>
     </div>
@@ -166,11 +166,11 @@ vibe = f'''
 {head_simple("A vibe")}
     <span class="eyebrow orange">◆ A vibe</span>
     <h2>Criar junto, <em>celebrar junto</em></h2>
-    <p class="lead">Uma pausa gostosa na rotina, com criação, conversa e um momento especial para comemorar em equipe.</p>
+    <p class="lead">Uma tarde leve, criativa e cheia de bons momentos — mãos ocupadas, conversa boa e um ótimo motivo para comemorar juntos.</p>
     <div class="vibe">
-      <figure>{img("ceramicamodelagem.jpg", "Mãos na argila", "center 50%")}<figcaption>Mão na argila</figcaption></figure>
-      <figure>{img("buqueflor.jpg", "Flores selecionadas para o arranjo", "center 50%")}<figcaption>Flores selecionadas</figcaption></figure>
-      <figure>{img("perfumariamaes.jpg", "Bancada de perfumaria com essências e pétalas", "center 50%")}<figcaption>Aromas autorais</figcaption></figure>
+      <figure>{img("casalmodelagemceramica.jpg", "Mãos criando uma peça de cerâmica", "center 45%")}<figcaption>Mão na argila</figcaption></figure>
+      <figure>{img("aniversario-mesa-real.jpg", "Grupo montando arranjos florais juntos", "center 42%")}<figcaption>Arranjos autorais</figcaption></figure>
+      <figure>{img("perfumaria-apresentacao.jpg", "Pessoas experimentando aromas na perfumaria", "center 50%")}<figcaption>Aromas autorais</figcaption></figure>
     </div>
     {foot("A vibe da experiência")}
   </section>'''
@@ -184,7 +184,7 @@ espacos = f'''
     <p class="lead">Pode acontecer no próprio escritório da Segatta, em Perdizes, ou em um espaço parceiro próximo. O espaço final está <b>em curadoria</b> — abaixo, as opções que estamos avaliando.</p>
     <div class="exp3">
       {excard("Opção principal", "mesa-montada-corp.jpg", "Mesa montada para a experiência no escritório", "No escritório da Segatta", "Perdizes · SP. Levamos a experiência completa até o local.", "center 50%", chip="No local")}
-      {excard("Espaço parceiro próximo", "agora-ceramica.jpg", "Ateliê parceiro de cerâmica com luz natural", "Ateliê parceiro · zona oeste", "Parceiros próximos a Perdizes (ex.: Pinheiros) já no radar da Elarah.", "center 50%", chip="Em curadoria")}
+      {excard("Espaço parceiro próximo", "agora-grupo.jpg", "Grupo participando de experiência criativa em ateliê, luz natural", "Ateliê parceiro · zona oeste", "Parceiros próximos a Perdizes (ex.: Pinheiros) já no radar da Elarah.", "center 45%", chip="Em curadoria")}
       {excard("Outra opção de espaço", "casa-aquario-atelie.jpg", "Café ou ateliê parceiro aconchegante", "Café ou ateliê parceiro", "Selecionado conforme a experiência escolhida e a data do evento.", "center 50%", chip="Em curadoria")}
     </div>
     <div class="bnote">◆ Endereços, disponibilidade e eventuais consumos mínimos <b>a confirmar</b>. Priorizamos parceiros próximos a Perdizes já conhecidos da Elarah; o espaço final segue <b>em curadoria</b>.</div>
@@ -221,8 +221,8 @@ opcionais = f'''
     <h2>Para tornar o momento ainda mais <em>especial</em></h2>
     <p class="lead">Dois complementos opcionais, somados ao pacote escolhido — para registrar o dia e levar uma lembrança personalizada da Segatta. Valores <b>em curadoria</b>.</p>
     <div class="optcards">
-      {optcard("mimos-registro.jpg", "Registro fotográfico profissional do evento", "Complemento 01", "Foto profissional", ["Cobertura profissional da experiência", "Principais momentos registrados", "Álbum digital para compartilhar"], "Formato: valor fixo ou por pessoa · a confirmar", "center 50%")}
-      {optcard("mimo-copo-termico.jpg", "Lembrança personalizada — copo térmico", "Complemento 02", "Brindes & lembrancinhas", ["Personalização com a identidade da <b>Segatta Neuropsicologia</b>", "Uma lembrança do marco para cada convidado", "Referências Elarah como inspiração (copo térmico, garrafa, kit personalizado)"], "Personalização Segatta · em curadoria", "center 50%")}
+      {optcard("ceramicafamiliamais12.jpg", "Momento espontâneo e feliz durante a experiência", "Complemento 01", "Foto profissional", ["Cobertura profissional da experiência", "Principais momentos registrados", "Álbum digital para compartilhar"], "Formato: valor fixo ou por pessoa · a confirmar", "center 40%")}
+      {optcard("slide2-brinde-recebe.jpg", "Convidada recebendo a lembrança personalizada, sorrindo", "Complemento 02", "Brindes & lembrancinhas", ["Personalização com a identidade da <b>Segatta Neuropsicologia</b>", "Uma lembrança do marco para cada convidado", "Referências Elarah como inspiração (copo térmico, garrafa, kit personalizado)"], "Personalização Segatta · em curadoria", "center 45%")}
     </div>
     <p class="fineprint">Complementos opcionais, somados ao pacote escolhido. Os brindes já fazem parte do pacote <b>Completa</b> e também podem ser contratados à parte. Personalização com a identidade da Segatta <b>em curadoria</b>; valores a confirmar.</p>
     {foot("Opcionais · foto e brindes")}
@@ -234,7 +234,7 @@ proximos = f'''
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>Vamos <em>seguir</em>?</h2>
-    <p class="lead">Com a experiência, o nível e o espaço definidos, a Elarah cuida de toda a execução. Os valores entram assim que fecharmos o formato.</p>
+    <p class="lead">É só escolher a experiência, o nível e o espaço — a Elarah cuida de toda a produção, do começo ao fim. Os valores entram assim que fecharmos o formato.</p>
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="ico" style="font-family:'DM Serif Display',serif;color:var(--orange-dark)">01</div><h3>Escolhemos</h3><p>A experiência, o nível (Experiência · Premium · Completa) e o espaço.</p></div>
