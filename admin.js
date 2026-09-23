@@ -4750,6 +4750,37 @@
       return names.slice(0, -1).join(', ') + ' e ' + names[names.length - 1];
     }
 
+    // Remarcação que a parceira precisa saber: última edição no painel que
+    // trocou data/horário SEM trocar de parceira (trocou de parceira → pra
+    // nova é uma reserva nova, mensagem normal). Lê o histórico que o
+    // "✏️ Editar" grava em metadata.admin_edit_history.
+    // Retorna { deData, deHorario } ou null.
+    function supplierRescheduleInfo(b, expById) {
+      const meta = (b && b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
+      const hist = Array.isArray(meta.admin_edit_history) ? meta.admin_edit_history : [];
+      const normH = function (v) { return String(v || '').replace(/[–—]/g, '-').replace(/[\s-]/g, '').toLowerCase(); };
+      for (let i = hist.length - 1; i >= 0; i--) {
+        const h = hist[i];
+        if (!h || !h.from || !h.to) continue;
+        const deData = String(h.from.data || '').trim();
+        const deHorario = String(h.from.horario || '').trim();
+        const mudouData = deData !== String(h.to.data || '').trim();
+        const mudouHora = normH(deHorario) !== normH(h.to.horario);
+        if (!mudouData && !mudouHora) continue; // só qtd/valor — procura a anterior
+        if (h.from.experiencia_id !== h.to.experiencia_id) {
+          const fDe = normalizeFornecedorNome((expById.get(h.from.experiencia_id) || {}).fornecedorNome);
+          const fPara = normalizeFornecedorNome((expById.get(h.to.experiencia_id) || {}).fornecedorNome);
+          if (!fDe || fDe !== fPara) return null; // parceira nova: não é remarcação pra ela
+        }
+        // A data atual tem que ser a do fim desta edição (senão a reserva
+        // foi editada de novo depois e esta entrada não vale mais).
+        if (String(b.data || '').trim() !== String(h.to.data || '').trim()) return null;
+        if (!deData) return null;
+        return { deData: deData, deHorario: deHorario };
+      }
+      return null;
+    }
+
     function buildSupplierWhatsappLink(b, nomeResolved, telefone) {
       const wa = b._fornecedorWhatsappResolvido || '';
       const waDigits = waPhoneDigits(wa);
@@ -4791,9 +4822,26 @@
       const emailCli = String(b.email || (meta && meta.email) || '').trim();
 
       const linhas = [];
-      linhas.push('Oi! Tudo bem? Passando para te avisar que você tem ' + vagasLabel +
-        ' para a experiência *' + expNome + '* no dia *' + data + '* às *' + horario + '*.');
-      linhas.push('');
+      const remarcacao = supplierRescheduleInfo(b, expById);
+      if (remarcacao) {
+        // Remarcação na MESMA parceira: ela já conhecia a data antiga, então
+        // a mensagem avisa a troca "de → para" (pra liberar a vaga antiga e
+        // segurar a nova), em vez de parecer uma compra nova.
+        linhas.push('Oi! Tudo bem? Passando para te avisar de uma *REMARCAÇÃO* 🔄');
+        linhas.push('');
+        linhas.push('A reserva da experiência *' + expNome + '* (' + (qtd === 1 ? '1 vaga' : qtd + ' vagas') + ')' +
+          ' que estava para o dia *' + remarcacao.deData + '*' +
+          (remarcacao.deHorario ? ' às *' + remarcacao.deHorario + '*' : '') +
+          ' foi remarcada para o dia *' + data + '* às *' + horario + '*.');
+        linhas.push('');
+        linhas.push('❌ *Libera:* ' + remarcacao.deData + (remarcacao.deHorario ? ' · ' + remarcacao.deHorario : ''));
+        linhas.push('✅ *Nova data:* ' + data + ' · ' + horario);
+        linhas.push('');
+      } else {
+        linhas.push('Oi! Tudo bem? Passando para te avisar que você tem ' + vagasLabel +
+          ' para a experiência *' + expNome + '* no dia *' + data + '* às *' + horario + '*.');
+        linhas.push('');
+      }
       if (lista) linhas.push('👤 *Em nome de:* ' + lista);
       if (semNome > 0) {
         linhas.push('➕ *Mais ' + semNome + (semNome === 1 ? ' pessoa' : ' pessoas') +
@@ -6197,7 +6245,12 @@
         // ela herdaria o "✓ Avisado" da parceira antiga e ninguém a
         // confirmaria de fato.
         var expTrocada = chosenExp.id !== booking.experiencia_id;
-        if (expTrocada) {
+        // Mudou data/horário → a parceira precisa ser avisada da REMARCAÇÃO
+        // (o botão "Avisar" volta a vermelho e a mensagem sai no formato
+        // "era dia X, passou pro dia Y").
+        var dataTrocada = novaData !== String(booking.data || '').trim() ||
+          novoHorario !== String(booking.horario || '').trim();
+        if (expTrocada || dataTrocada) {
           update.fornecedor_avisado_at = null;
         }
 
