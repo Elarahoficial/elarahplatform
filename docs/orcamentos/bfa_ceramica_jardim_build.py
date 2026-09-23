@@ -185,8 +185,8 @@ porque = f'''
 
 cer_conceito = f'''
   <section class="slide">
-{head_simple("Ceramics & Coffee")}
-    <span class="eyebrow orange">Ceramics &amp; Coffee</span>
+{head_simple("Experiência 01 · Ceramics & Coffee")}
+    <span class="eyebrow orange">Experiência 01 · Ceramics &amp; Coffee</span>
     <h2>Uma pausa criativa entre <em>argila, conversa e café</em></h2>
     <p class="lead">Uma experiência manual e sensorial para <b>desacelerar</b>, criar junto e abrir espaço para uma troca mais leve — rende conversa e deixa uma <b>lembrança do encontro</b>.</p>
     <div class="cgrid">
@@ -204,7 +204,7 @@ cer_conceito = f'''
 # ============================ 4 · CERAMICS & COFFEE — LOCAL + ATMOSFERA ============================
 
 cer_atmosfera = atmosfera(
-    "O local & a atmosfera",
+    "Experiência 01 · Ceramics & Coffee",
     "O local &amp; a atmosfera",
     "Um jardim no meio da <em>cidade</em>",
     "Um café cercado de verde, <b>reservado só para o grupo</b>. Uma grande mesa compartilhada, coffee break, mãos na argila e tempo para conversar, criar e simplesmente estar junto.",
@@ -225,8 +225,8 @@ cer_atmosfera = atmosfera(
 
 cer_investimento = f'''
   <section class="slide">
-{head_simple("Investimento")}
-    <span class="eyebrow orange">Investimento · Ceramics &amp; Coffee</span>
+{head_simple("Experiência 01 · Ceramics & Coffee")}
+    <span class="eyebrow orange">Investimento</span>
     <h2>Uma experiência completa, <em>mão na massa</em></h2>
     <p class="lead">O investimento reúne o melhor da experiência: <b>espaço reservado</b>, <b>coffee break</b> e <b>modelagem manual em cerâmica</b>, com <b>produção integral da Elarah</b>.</p>
     <div class="sum">
@@ -260,47 +260,25 @@ cer_investimento = f'''
 
 pw_conceito = f'''
   <section class="slide">
-{head_simple("Pizza & Wine")}
-    <span class="eyebrow orange">Pizza &amp; Wine</span>
+{head_simple("Experiência 02 · Pizza & Wine")}
+    <span class="eyebrow orange">Experiência 02 · Pizza &amp; Wine</span>
     <h2>Uma noite de <em>sabores, vinho e conversa</em></h2>
-    <p class="lead">Uma experiência <b>gastronômica e social</b> em torno da mesa, feita para <b>provar, conversar e compartilhar</b>.</p>
+    <p class="lead">Uma experiência <b>gastronômica e social</b> em torno da mesa, com <b>três sabores de pizza</b> e diferentes <b>harmonizações</b> ao longo da noite — feita para provar, conversar e compartilhar.</p>
     <div class="cgrid">
-      <figure class="cphoto">{img("drinkspetisco.jpg", "Taça de vinho e petiscos à mesa", "center 50%")}</figure>
+      <figure class="cphoto">{img("pizzanegroni.jpg", "Pizza artesanal e taça servida à mesa", "center 45%")}</figure>
       <div class="cpil">
-        <div class="cp"><span class="cn">01 · Recepção &amp; boas-vindas</span><p>Chegada tranquila, com o grupo se acomodando para a noite.</p></div>
-        <div class="cp"><span class="cn">02 · Preparo conduzido</span><p>O preparo é conduzido pelo parceiro gastronômico e acompanhado de perto pelo grupo.</p></div>
-        <div class="cp"><span class="cn">03 · Degustação &amp; harmonização</span><p>Três sabores servidos em sequência, cada um com sua harmonização de vinho.</p></div>
+        <div class="cp"><span class="cn">01 · Recepção &amp; boas-vindas</span><p>O grupo chega, se acomoda e começa a noite com calma.</p></div>
+        <div class="cp"><span class="cn">02 · Preparo conduzido</span><p>O preparo das pizzas acontece conduzido pelo parceiro gastronômico e acompanhado pelo grupo.</p></div>
+        <div class="cp"><span class="cn">03 · Degustação &amp; harmonização</span><p>Três sabores são servidos em sequência, acompanhados por diferentes vinhos.</p></div>
       </div>
     </div>
-    {foot("Pizza & Wine")}
-  </section>'''
-
-# ============================ 7 · PIZZA & WINE — JORNADA DE SABORES ============================
-
-pw_jornada = f'''
-  <section class="slide">
-{head_simple("Pizza & harmonização")}
-    <span class="eyebrow orange">Pizza &amp; harmonização</span>
-    <h2>Três sabores, uma jornada de <em>vinhos</em></h2>
-    <p class="lead">Uma sequência pensada para provar aos poucos: <b>três sabores</b> ao longo da noite e diferentes <b>harmonizações</b> para acompanhar cada momento.</p>
-    <div class="gstrip">
-      <figure>{img("pizza.jpg", "Pizza artesanal recém-saída do forno", "center 50%")}<figcaption>Três sabores</figcaption></figure>
-      <figure>{img("pizza1.jpg", "Pizza artesanal fatiada", "center 50%")}<figcaption>Sabor a sabor</figcaption></figure>
-      <figure>{img("pizzanegroni.jpg", "Pizza artesanal e bebida", "center 45%")}<figcaption>Ao longo da noite</figcaption></figure>
-    </div>
-    <div class="wjourney">
-      <div class="wj"><span class="dot" style="background:#E9D8A6"></span><div><b>Branco</b><span>Abertura</span></div></div>
-      <div class="wj"><span class="dot" style="background:#E0959E"></span><div><b>Rosé</b><span>Meio da experiência</span></div></div>
-      <div class="wj"><span class="dot" style="background:#6E1F2E"></span><div><b>Tinto</b><span>Fechamento</span></div></div>
-    </div>
-    <div class="bnote" style="margin-top:14px">◆ Sequência de harmonização sugerida (branco · rosé · tinto). Sabores das pizzas e seleção final de vinhos <b>a confirmar</b> com o parceiro gastronômico. 🍷</div>
     {foot("Pizza & Wine")}
   </section>'''
 
 # ============================ 8 · PIZZA & WINE — LOCAL + ATMOSFERA ============================
 
 pw_atmosfera = atmosfera(
-    "O local & a atmosfera",
+    "Experiência 02 · Pizza & Wine",
     "O local &amp; a atmosfera",
     "Uma noite que acontece em torno da <em>mesa</em>",
     "Luz mais baixa, cozinha em movimento, mesa posta e taças servidas. Entre pizza, vinho e conversa, o encontro ganha um ritmo <b>mais social, leve e feito para aproveitar o tempo junto</b>.",
@@ -308,7 +286,7 @@ pw_atmosfera = atmosfera(
         ("cozinha31-prato.jpg", "Cozinha em movimento", "center 40%", "Cozinha em cena"),
         ("harmonizacaoqueijos.jpg", "Mesa posta para harmonizar", "center 50%", "Mesa posta"),
         ("vinhotintos.jpg", "Taças e vinhos servidos", "center 45%", "Taças servidas"),
-        ("entradachef.jpg", "Sabores da noite", "center 55%", "Sabores da noite"),
+        ("pizza.jpg", "Pizza artesanal em três sabores", "center 50%", "Sabores da noite"),
         ("jantar-vista.jpg", "Conversa à mesa", "center 45%", "Conversa boa"),
         ("drinkspetisco.jpg", "O time reunido à mesa", "center 50%", "O time reunido"),
     ],
@@ -321,8 +299,8 @@ pw_atmosfera = atmosfera(
 
 pw_investimento = f'''
   <section class="slide">
-{head_simple("Investimento")}
-    <span class="eyebrow orange">Investimento · Pizza &amp; Wine</span>
+{head_simple("Experiência 02 · Pizza & Wine")}
+    <span class="eyebrow orange">Investimento</span>
     <h2>Uma noite completa, <em>tudo incluso</em></h2>
     <p class="lead">A experiência gastronômica completa — <b>pizza em três sabores</b>, <b>harmonização de vinhos</b> e condução por <b>parceiro gastronômico</b>, com produção da Elarah.</p>
     <div class="priceband">
@@ -379,7 +357,7 @@ proximos = f'''
 deck = ('<div class="deck">\n'
         + cover + porque
         + cer_conceito + cer_atmosfera + cer_investimento
-        + pw_conceito + pw_jornada + pw_atmosfera + pw_investimento
+        + pw_conceito + pw_atmosfera + pw_investimento
         + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-bfa-ceramica-jardim.html"
