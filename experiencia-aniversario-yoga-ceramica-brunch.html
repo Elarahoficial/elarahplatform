@@ -207,7 +207,11 @@
   .tier.hl{border:2px solid var(--navy)}
   .tier .tname{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
   .tier .tprice{font-family:'DM Serif Display',serif;font-size:31px;color:var(--navy);margin:8px 0 1px;line-height:1}
-  .tier .tunit{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:14px;line-height:1.3}
+  .tier .tunit{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:2px;line-height:1.3}
+  .tier .tnote{font-size:9.5px;color:var(--muted);font-weight:600;letter-spacing:.02em;margin:0 0 13px}
+  .bfeat .bphoto.bphoto-duo{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--line)}
+  .bphoto-duo .bpd{position:relative;overflow:hidden}
+  .bphoto-duo .bpl{position:absolute;left:0;right:0;bottom:0;z-index:2;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:22px 11px 9px;background:linear-gradient(to top,rgba(10,28,22,.85),transparent)}
   .tier ul{list-style:none;display:flex;flex-direction:column;gap:7px;margin-top:2px}
   .tier ul li{position:relative;padding-left:18px;font-size:11.5px;color:var(--ink);line-height:1.3}
   .tier ul li::before{content:"\2726";position:absolute;left:0;top:1px;color:var(--orange);font-size:10px}
@@ -490,7 +494,7 @@
           <span class="chip">Yoga · Cerâmica · Brunch</span>
         </div>
       </div>
-      <div class="cover-photo"><img src="assets/brunch-office2.jpg" alt="Mesa de brunch posta com café, pães e bolos" style="object-position:center 50%"></div>
+      <div class="cover-photo"><img src="assets/capa-aniversario.jpg" alt="Convidada sorrindo durante a experiência criativa, à mesa com flores" style="object-position:center 24%"></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Aniversário · 13 de dezembro</span></div>
   </section>
@@ -503,7 +507,7 @@
     <h2>Dois momentos, uma <em>celebração</em></h2>
     <p class="lead">Uma manhã pensada para todo mundo aproveitar: adultos e crianças vivem experiências diferentes <b>ao mesmo tempo</b> e se encontram no brunch para celebrar juntos.</p>
     <div class="bfeat">
-      <div class="bphoto"><img src="assets/yogaecacau2.jpg" alt="Momento de yoga e bem-estar em um ambiente acolhedor" style="object-position:center 45%"></div>
+      <div class="bphoto bphoto-duo"><div class="bpd"><img src="assets/yoga-momento.jpg" alt="Momento de yoga dos adultos" style="object-position:center 50%"><span class="bpl">Adultos · Yoga</span></div><div class="bpd"><img src="assets/ceramica-kids.jpg" alt="Crianças modelando cerâmica" style="object-position:center 55%"><span class="bpl">Crianças · Cerâmica</span></div></div>
       <div class="bbody">
         <span class="btag">O ritmo da manhã</span>
         <h3>Cada um no seu momento</h3>
@@ -525,11 +529,29 @@
     <h2>Uma experiência para <em>cada grupo</em></h2>
     <p class="lead">Adultos e crianças aproveitam ao mesmo tempo — e todos se encontram no brunch para celebrar juntos.</p>
     <div class="exp3">
-      <div class="exc"><figure><img src="assets/yogaecacau1.jpg" alt="Prática de yoga em ambiente acolhedor" style="object-position:center 45%"></figure><div class="exb"><span class="exn">Para os adultos</span><h3>Yoga · 10 adultos</h3><p>Uma prática leve e relaxante para começar a manhã com calma e bem-estar.</p></div></div>
+      <div class="exc"><figure><img src="assets/yoga-real.jpg" alt="Duas mulheres praticando yoga ao ar livre" style="object-position:center 45%"></figure><div class="exb"><span class="exn">Para os adultos</span><h3>Yoga · 10 adultos</h3><p>Uma prática leve e relaxante para começar a manhã com calma e bem-estar.</p></div></div>
       <div class="exc"><figure><img src="assets/aniv-infantil.jpg" alt="Crianças pintando e criando peças de cerâmica" style="object-position:center 40%"></figure><div class="exb"><span class="exn">Para as crianças</span><h3>Cerâmica · 8 crianças</h3><p>As crianças criam e pintam a própria peça, com condução e todo o material — ao mesmo tempo do yoga.</p></div></div>
       <div class="exc"><figure><img src="assets/brunch-office1.jpg" alt="Mesa de brunch com pães, bolos e frutas" style="object-position:center 50%"></figure><div class="exb"><span class="exn">Para todos</span><h3>Brunch · todos juntos</h3><p>Depois das experiências, todo mundo se reúne à mesa para um brunch gostoso e celebrar.</p></div></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>As experiências</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">A vibe</span></div>
+    </div>
+    <span class="eyebrow orange">◆ A vibe do dia</span>
+    <h2>Uma manhã leve e <em>cheia de vida</em></h2>
+    <p class="lead">Relaxar, criar, brincar e celebrar — cada momento com o seu clima, e todos juntos no brunch para fechar o dia com carinho. 🧡</p>
+    <div class="vibe">
+      <figure><img src="assets/yoga-real.jpg" alt="Adultos em prática de yoga" style="object-position:center 40%"><figcaption>Respirar e relaxar</figcaption></figure>
+      <figure><img src="assets/ceramica-kids.jpg" alt="Crianças modelando cerâmica" style="object-position:center 55%"><figcaption>Mãozinhas na argila</figcaption></figure>
+      <figure><img src="assets/aniv-infantil.jpg" alt="Crianças criando peças de cerâmica" style="object-position:center 40%"><figcaption>Criar sem pressa</figcaption></figure>
+      <figure><img src="assets/brunch-office1.jpg" alt="Mesa de brunch farta" style="object-position:center 50%"><figcaption>Brunch caprichado</figcaption></figure>
+      <figure><img src="assets/menu-coffee.jpg" alt="Quitutes e finger foods da manhã" style="object-position:center 50%"><figcaption>Quitutes da manhã</figcaption></figure>
+      <figure><img src="assets/capa-aniversario.jpg" alt="Momento feliz de celebração à mesa" style="object-position:center 30%"><figcaption>Hora de celebrar</figcaption></figure>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A vibe da experiência</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -540,11 +562,11 @@
     <h2>Três opções de <em>brunch</em></h2>
     <p class="lead">Três cardápios para reunir todo mundo à mesa — é só escolher o que mais combina com a comemoração. 🥐</p>
     <div class="tiers">
-      <div class="tier hl"><span class="tag">Mais completo</span><span class="tname">Opção 1</span><span class="tprice">R$ 950</span><span class="tunit">no total · para o grupo</span><ul><li>Mini lanche natural</li><li>Pão de queijo</li><li>3 bolos</li><li>Waffle</li><li>Requeijão &amp; geleia</li><li>Suco &amp; café</li></ul></div>
-      <div class="tier"><span class="tname">Opção 2</span><span class="tprice">R$ 520</span><span class="tunit">no total · para o grupo</span><ul><li>Pão italiano</li><li>Pão de queijo</li><li>Waffle</li><li>3 bolos</li><li>Requeijão &amp; geleia</li><li>Suco &amp; café</li></ul></div>
-      <div class="tier"><span class="tname">Opção 3</span><span class="tprice">R$ 440</span><span class="tunit">no total · para o grupo</span><ul><li>Pão de queijo</li><li>3 bolos</li><li>Salada de frutas</li><li>Suco &amp; café</li></ul></div>
+      <div class="tier hl"><span class="tag">Mais completo</span><span class="tname">Opção 1</span><span class="tprice">R$ 53</span><span class="tunit">por pessoa</span><span class="tnote">R$ 950 no total · 18 pessoas</span><ul><li>Mini lanche natural</li><li>Pão de queijo</li><li>3 bolos</li><li>Waffle</li><li>Requeijão &amp; geleia</li><li>Suco &amp; café</li></ul></div>
+      <div class="tier"><span class="tname">Opção 2</span><span class="tprice">R$ 29</span><span class="tunit">por pessoa</span><span class="tnote">R$ 520 no total · 18 pessoas</span><ul><li>Pão italiano</li><li>Pão de queijo</li><li>Waffle</li><li>3 bolos</li><li>Requeijão &amp; geleia</li><li>Suco &amp; café</li></ul></div>
+      <div class="tier"><span class="tname">Opção 3</span><span class="tprice">R$ 25</span><span class="tunit">por pessoa</span><span class="tnote">R$ 440 no total · 18 pessoas</span><ul><li>Pão de queijo</li><li>3 bolos</li><li>Salada de frutas</li><li>Suco &amp; café</li></ul></div>
     </div>
-    <p class="fineprint">Valores do brunch no total, para o grupo. Cardápios podem ter pequenos ajustes conforme disponibilidade. A escolha do brunch soma-se ao valor da experiência (próximo slide).</p>
+    <p class="fineprint">Valores diluídos por pessoa, considerando 18 participantes (10 adultos + 8 crianças); o total de cada opção está indicado em cada card. Cardápios podem ter pequenos ajustes conforme disponibilidade. A escolha do brunch soma-se ao valor da experiência (próximo slide).</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>O brunch</span></div>
   </section>
   <section class="slide">

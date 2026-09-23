@@ -25,7 +25,11 @@ xcss = '''
   .tier.hl{border:2px solid var(--navy)}
   .tier .tname{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
   .tier .tprice{font-family:'DM Serif Display',serif;font-size:31px;color:var(--navy);margin:8px 0 1px;line-height:1}
-  .tier .tunit{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:14px;line-height:1.3}
+  .tier .tunit{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:2px;line-height:1.3}
+  .tier .tnote{font-size:9.5px;color:var(--muted);font-weight:600;letter-spacing:.02em;margin:0 0 13px}
+  .bfeat .bphoto.bphoto-duo{display:grid;grid-template-columns:1fr 1fr;gap:3px;background:var(--line)}
+  .bphoto-duo .bpd{position:relative;overflow:hidden}
+  .bphoto-duo .bpl{position:absolute;left:0;right:0;bottom:0;z-index:2;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:22px 11px 9px;background:linear-gradient(to top,rgba(10,28,22,.85),transparent)}
   .tier ul{list-style:none;display:flex;flex-direction:column;gap:7px;margin-top:2px}
   .tier ul li{position:relative;padding-left:18px;font-size:11.5px;color:var(--ink);line-height:1.3}
   .tier ul li::before{content:"\\2726";position:absolute;left:0;top:1px;color:var(--orange);font-size:10px}
@@ -77,12 +81,13 @@ def excard(n, src, alt, name, desc, pos="center 50%"):
             f'<div class="exb"><span class="exn">{n}</span><h3>{name}</h3><p>{desc}</p></div></div>')
 
 
-def brunch(nome, preco, itens, hl=False, tag=None):
+def brunch(nome, pp, total, itens, hl=False, tag=None):
     tagh = f'<span class="tag">{tag}</span>' if tag else ''
     lis = "".join(f"<li>{i}</li>" for i in itens)
     cls = "tier hl" if hl else "tier"
     return (f'<div class="{cls}">{tagh}<span class="tname">{nome}</span>'
-            f'<span class="tprice">R$ {preco}</span><span class="tunit">no total · para o grupo</span>'
+            f'<span class="tprice">R$ {pp}</span><span class="tunit">por pessoa</span>'
+            f'<span class="tnote">R$ {total} no total · 18 pessoas</span>'
             f'<ul>{lis}</ul></div>')
 
 
@@ -103,7 +108,7 @@ cover = f'''
           <span class="chip">Yoga · Cerâmica · Brunch</span>
         </div>
       </div>
-      <div class="cover-photo">{img("brunch-office2.jpg", "Mesa de brunch posta com café, pães e bolos", "center 50%")}</div>
+      <div class="cover-photo">{img("capa-aniversario.jpg", "Convidada sorrindo durante a experiência criativa, à mesa com flores", "center 24%")}</div>
     </div>
     {foot("Aniversário · 13 de dezembro")}
   </section>'''
@@ -116,7 +121,7 @@ como = f'''
     <h2>Dois momentos, uma <em>celebração</em></h2>
     <p class="lead">Uma manhã pensada para todo mundo aproveitar: adultos e crianças vivem experiências diferentes <b>ao mesmo tempo</b> e se encontram no brunch para celebrar juntos.</p>
     <div class="bfeat">
-      <div class="bphoto">{img("yogaecacau2.jpg", "Momento de yoga e bem-estar em um ambiente acolhedor", "center 45%")}</div>
+      <div class="bphoto bphoto-duo"><div class="bpd">{img("yoga-momento.jpg", "Momento de yoga dos adultos", "center 50%")}<span class="bpl">Adultos · Yoga</span></div><div class="bpd">{img("ceramica-kids.jpg", "Crianças modelando cerâmica", "center 55%")}<span class="bpl">Crianças · Cerâmica</span></div></div>
       <div class="bbody">
         <span class="btag">O ritmo da manhã</span>
         <h3>Cada um no seu momento</h3>
@@ -138,11 +143,30 @@ experiencias = f'''
     <h2>Uma experiência para <em>cada grupo</em></h2>
     <p class="lead">Adultos e crianças aproveitam ao mesmo tempo — e todos se encontram no brunch para celebrar juntos.</p>
     <div class="exp3">
-      {excard("Para os adultos", "yogaecacau1.jpg", "Prática de yoga em ambiente acolhedor", "Yoga · 10 adultos", "Uma prática leve e relaxante para começar a manhã com calma e bem-estar.", "center 45%")}
+      {excard("Para os adultos", "yoga-real.jpg", "Duas mulheres praticando yoga ao ar livre", "Yoga · 10 adultos", "Uma prática leve e relaxante para começar a manhã com calma e bem-estar.", "center 45%")}
       {excard("Para as crianças", "aniv-infantil.jpg", "Crianças pintando e criando peças de cerâmica", "Cerâmica · 8 crianças", "As crianças criam e pintam a própria peça, com condução e todo o material — ao mesmo tempo do yoga.", "center 40%")}
       {excard("Para todos", "brunch-office1.jpg", "Mesa de brunch com pães, bolos e frutas", "Brunch · todos juntos", "Depois das experiências, todo mundo se reúne à mesa para um brunch gostoso e celebrar.", "center 50%")}
     </div>
     {foot("As experiências")}
+  </section>'''
+
+
+# ============================ 3.5 · A VIBE ============================
+vibe = f'''
+  <section class="slide">
+{head_simple("A vibe")}
+    <span class="eyebrow orange">◆ A vibe do dia</span>
+    <h2>Uma manhã leve e <em>cheia de vida</em></h2>
+    <p class="lead">Relaxar, criar, brincar e celebrar — cada momento com o seu clima, e todos juntos no brunch para fechar o dia com carinho. 🧡</p>
+    <div class="vibe">
+      <figure>{img("yoga-real.jpg", "Adultos em prática de yoga", "center 40%")}<figcaption>Respirar e relaxar</figcaption></figure>
+      <figure>{img("ceramica-kids.jpg", "Crianças modelando cerâmica", "center 55%")}<figcaption>Mãozinhas na argila</figcaption></figure>
+      <figure>{img("aniv-infantil.jpg", "Crianças criando peças de cerâmica", "center 40%")}<figcaption>Criar sem pressa</figcaption></figure>
+      <figure>{img("brunch-office1.jpg", "Mesa de brunch farta", "center 50%")}<figcaption>Brunch caprichado</figcaption></figure>
+      <figure>{img("menu-coffee.jpg", "Quitutes e finger foods da manhã", "center 50%")}<figcaption>Quitutes da manhã</figcaption></figure>
+      <figure>{img("capa-aniversario.jpg", "Momento feliz de celebração à mesa", "center 30%")}<figcaption>Hora de celebrar</figcaption></figure>
+    </div>
+    {foot("A vibe da experiência")}
   </section>'''
 
 # ============================ 4 · BRUNCH — 3 OPÇÕES ============================
@@ -153,11 +177,11 @@ brunch_slide = f'''
     <h2>Três opções de <em>brunch</em></h2>
     <p class="lead">Três cardápios para reunir todo mundo à mesa — é só escolher o que mais combina com a comemoração. 🥐</p>
     <div class="tiers">
-      {brunch("Opção 1", "950", ["Mini lanche natural", "Pão de queijo", "3 bolos", "Waffle", "Requeijão &amp; geleia", "Suco &amp; café"], hl=True, tag="Mais completo")}
-      {brunch("Opção 2", "520", ["Pão italiano", "Pão de queijo", "Waffle", "3 bolos", "Requeijão &amp; geleia", "Suco &amp; café"])}
-      {brunch("Opção 3", "440", ["Pão de queijo", "3 bolos", "Salada de frutas", "Suco &amp; café"])}
+      {brunch("Opção 1", "53", "950", ["Mini lanche natural", "Pão de queijo", "3 bolos", "Waffle", "Requeijão &amp; geleia", "Suco &amp; café"], hl=True, tag="Mais completo")}
+      {brunch("Opção 2", "29", "520", ["Pão italiano", "Pão de queijo", "Waffle", "3 bolos", "Requeijão &amp; geleia", "Suco &amp; café"])}
+      {brunch("Opção 3", "25", "440", ["Pão de queijo", "3 bolos", "Salada de frutas", "Suco &amp; café"])}
     </div>
-    <p class="fineprint">Valores do brunch no total, para o grupo. Cardápios podem ter pequenos ajustes conforme disponibilidade. A escolha do brunch soma-se ao valor da experiência (próximo slide).</p>
+    <p class="fineprint">Valores diluídos por pessoa, considerando 18 participantes (10 adultos + 8 crianças); o total de cada opção está indicado em cada card. Cardápios podem ter pequenos ajustes conforme disponibilidade. A escolha do brunch soma-se ao valor da experiência (próximo slide).</p>
     {foot("O brunch")}
   </section>'''
 
@@ -207,7 +231,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + como + experiencias + brunch_slide + investimento + proximos
+        + cover + como + experiencias + vibe + brunch_slide + investimento + proximos
         + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-aniversario-yoga-ceramica-brunch.html"
