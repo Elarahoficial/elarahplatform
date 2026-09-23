@@ -97,10 +97,8 @@ xcss = '''
   .ic .itot span{font-size:8.5px;color:var(--muted);font-weight:600;letter-spacing:.02em;display:block}
   .ic .itot b{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);letter-spacing:.01em}
   .ic .ilab{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-bottom:9px}
-  .ic ul{list-style:none;display:flex;flex-direction:column;gap:6px}
-  .ic ul li{position:relative;padding-left:16px;font-size:10.5px;color:var(--ink);line-height:1.3}
-  .ic ul li span{position:absolute;left:0;top:0;color:var(--orange)}
-  .ic .grow{flex:1}
+  .ic .iinc{margin-top:auto;border-top:1px solid var(--line);padding-top:12px;font-size:9.5px;color:var(--muted);line-height:1.5;letter-spacing:.01em}
+  .ic.hl .iinc{border-top-color:rgba(138,109,52,.30);color:var(--navy-soft);font-weight:600}
   .ic.hl{background:linear-gradient(180deg,#F5EBDC,#F0E1CD);border:1.5px solid var(--orange)}
   .ic.hl .badge{align-self:center;background:var(--orange-dark);color:#fff;font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:7px 15px;border-radius:999px}
   .ic.hl h3{text-align:center;font-size:23px;margin-top:12px;min-height:auto}
@@ -320,7 +318,7 @@ pw_atmosfera = atmosfera(
         ("vinhotintos.jpg", "Taças e vinhos servidos", "center 45%", "Taças servidas"),
         ("pizza.jpg", "Pizza artesanal em três sabores", "center 50%", "Sabores da noite"),
         ("weber-grupo.webp", "Grupo sorrindo durante a experiência conduzida", "center 45%", "Condução da experiência"),
-        ("harmonizacaoqueijos.jpg", "Tábua curada para harmonizar", "center 50%", "Curadoria à mesa"),
+        ("curadoria-vinhos.jpg", "Flight de vinhos com harmonizações curadas", "center 50%", "Curadoria à mesa"),
     ],
     "Experiência completa",
     "espaço · condução gastronômica · pizza em três sabores · harmonização de vinhos · serviço · produção Elarah",
@@ -360,10 +358,10 @@ pw_investimento = f'''
 
 investimento_final = f'''
   <section class="slide">
-{head_simple("Investimento")}
-    <span class="eyebrow orange">✦ Investimento final</span>
-    <h2>Os dois momentos, <em>com valores claros</em></h2>
-    <p class="lead">Abaixo, o investimento de cada experiência e o valor total caso a programação inclua os <b>dois momentos</b>.</p>
+{head_simple("Investimento & próximos passos")}
+    <span class="eyebrow orange">✦ Investimento final &amp; próximos passos</span>
+    <h2>Dois momentos para ficar na <em>memória</em></h2>
+    <p class="lead">Duas experiências com atmosferas próprias, pensadas para trazer novos ritmos à programação do time — da <b>criação com as mãos</b> aos <b>encontros em torno da mesa</b>.</p>
     <div class="invf">
       <div class="ic">
         <span class="ihd">Experiência 01<b>Ceramics &amp; Coffee</b></span>
@@ -374,37 +372,18 @@ investimento_final = f'''
         <div class="iprice">R$ 529</div>
         <div class="iper">por pessoa</div>
         <div class="itot"><span>Total para até 10 participantes</span><b>R$ 5.290</b></div>
-        <hr>
-        <span class="ilab">Inclui</span>
-        <ul class="grow">
-          <li><span>✦</span>Espaço reservado</li>
-          <li><span>✦</span>Coffee break</li>
-          <li><span>✦</span>Modelagem em cerâmica</li>
-          <li><span>✦</span>Ceramista</li>
-          <li><span>✦</span>Argila e materiais</li>
-          <li><span>✦</span>Acabamento e queima</li>
-          <li><span>✦</span>Produção Elarah</li>
-        </ul>
+        <div class="iinc">espaço · coffee break · cerâmica · materiais · acabamento e queima</div>
       </div>
       <div class="ic">
         <span class="ihd">Experiência 02<b>Pizza &amp; Wine</b></span>
         <figure>{img("pizza.jpg", "Pizza artesanal servida à mesa", "center 50%")}</figure>
-        <h3>Encontro à mesa</h3>
+        <h3>Encontro gastronômico</h3>
         <div class="itags">Gastronomia · vinho · conexão</div>
         <hr>
         <div class="iprice">R$ 899</div>
         <div class="iper">por pessoa</div>
         <div class="itot"><span>Total para até 10 participantes</span><b>R$ 8.990</b></div>
-        <hr>
-        <span class="ilab">Inclui</span>
-        <ul class="grow">
-          <li><span>✦</span>Espaço reservado</li>
-          <li><span>✦</span>Pizza em três sabores</li>
-          <li><span>✦</span>Harmonização de vinhos</li>
-          <li><span>✦</span>Condução gastronômica</li>
-          <li><span>✦</span>Serviço à mesa</li>
-          <li><span>✦</span>Produção e curadoria Elarah</li>
-        </ul>
+        <div class="iinc">espaço · experiência gastronômica · três sabores · vinhos · harmonização</div>
       </div>
       <div class="ic hl">
         <span class="badge">★ Programação completa</span>
@@ -414,17 +393,17 @@ investimento_final = f'''
         <hr>
         <span class="ilab">Valor total</span>
         <div class="iprice">R$ 14.280</div>
-        <div class="itot"><span>Para até 10 participantes</span></div>
-        <p class="idesc grow">A união da criatividade com a gastronomia para um dia completo de conexão, leveza e boas memórias.</p>
-        <hr>
-        <span class="ilab" style="margin-bottom:0">Inclui tudo o que está nas duas experiências</span>
+        <div class="iper">total para até 10 participantes</div>
+        <div class="itot"><span>Valor por pessoa</span><b>R$ 1.428</b></div>
+        <div class="iinc">inclui as duas experiências</div>
       </div>
     </div>
-    <div class="invnote">
-      <span class="ii">i</span>
-      <p><b>Valores para grupo de até 10 participantes.</b> Datas previstas: 08, 09 ou 10 de dezembro. Ajustes finais de produção e agenda sujeitos à confirmação. A Elarah cuida da produção e do alinhamento final de cada experiência.</p>
+    <div class="quote" style="margin-top:22px">
+      <strong style="font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy);display:block;margin-bottom:8px">Vamos seguir? ✦</strong>
+      A partir da definição das datas (<b>08, 09 ou 10 de dezembro</b>), ajustamos os últimos detalhes e cuidamos da produção de cada experiência.<br>
+      <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    {foot("Investimento final")}
+    {foot("Investimento & próximos passos")}
   </section>'''
 
 # ============================ 10 · PRÓXIMOS PASSOS ============================
@@ -461,8 +440,7 @@ deck = ('<div class="deck">\n'
         + cover + porque
         + cer_conceito + cer_atmosfera
         + pw_conceito + pw_atmosfera
-        + investimento_final
-        + proximos + '\n\n</div>\n\n')
+        + investimento_final + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-bfa-ceramica-jardim.html"
 open(out, "w", encoding="utf-8").write(html)
