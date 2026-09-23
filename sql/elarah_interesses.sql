@@ -21,6 +21,7 @@ create table if not exists public.interesses (
   -- Quem é a pessoa interessada
   nome         text not null,
   categoria    text,                          -- ceramica, perfumaria, vela, gastronomia, etc.
+  experiencia  text,                           -- nome da experiência que ela pediu (ex: Aula de tufting)
   whatsapp     text,                           -- BR format livre (ex: 11 91234-5678)
   observacao   text,                           -- texto livre (o que ela quer, contexto, etc.)
   -- Pipeline simples: aguardando aviso x já avisada
@@ -32,6 +33,9 @@ create table if not exists public.interesses (
   created_at   timestamptz not null default now(),  -- "data em que adicionei"
   updated_at   timestamptz not null default now()
 );
+
+-- Bancos criados antes da coluna "experiencia" existir.
+alter table public.interesses add column if not exists experiencia text;
 
 create index if not exists interesses_status_idx     on public.interesses (status);
 create index if not exists interesses_categoria_idx   on public.interesses (categoria);
