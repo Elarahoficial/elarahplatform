@@ -154,7 +154,7 @@ como = f'''
     <h2>Simples, do início ao <em>fim</em></h2>
     <p class="lead">A Elarah prepara tudo. O time só chega, aproveita e celebra. 🎉</p>
     <div class="bfeat">
-      <div class="bphoto" style="background:var(--card)"><img src="assets/bfa-grupo2.webp" alt="Grupo criando cerâmica junto, sorrindo, luz natural" style="object-fit:contain;object-position:center"></div>
+      <div class="bphoto">{img("segatta-como.jpg", "Grupo criando junto à mesa, vista de cima, luz natural", "center 50%")}</div>
       <div class="bbody">
         <span class="btag">O passo a passo</span>
         <h3>É só aproveitar</h3>
