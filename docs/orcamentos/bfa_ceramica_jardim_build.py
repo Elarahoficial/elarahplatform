@@ -149,25 +149,26 @@ PROOF = "Experiências já realizadas para times como <b>Compass</b>, <b>Natura<
 
 cover = f'''
   <section class="slide">
-{head_block("BFA · Creative Team Experiences", "Images", "Matter", "Duas propostas")}
+{head_block("Curadoria Elarah", "BFA", "", "Creative Team Experiences")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Experiências para o time</span>
-        <h1>Duas experiências pensadas para o <em>mesmo encontro</em></h1>
-        <p class="lead">A partir do briefing da BFA, a Elarah selecionou <b>duas experiências</b> com propostas diferentes, mas o mesmo objetivo: criar um momento de <b>conexão, pausa e troca</b> para o time.</p>
+        <span class="eyebrow">✦ Curadoria Elarah para a programação BFA</span>
+        <h1>Duas experiências para a programação da <em>BFA</em></h1>
+        <p class="lead"><b>Conexão, pausa e troca</b> em dois momentos pensados para o time.</p>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin:6px 0 0;max-width:44ch">A Elarah desenhou <b>duas experiências</b> para criar momentos de <b>conexão, pausa e troca</b> ao longo da programação da BFA. Cada uma tem sua própria atmosfera, dinâmica e proposta — ambas pensadas para enriquecer a experiência do grupo.</p>
         <div class="rule"></div>
         <div class="chips">
-          <span class="chip"><b>10</b> participantes</span>
-          <span class="chip">São Paulo</span>
+          <span class="chip"><b>10 participantes</b> · <b>São Paulo</b></span>
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip"><b>08, 09 ou 10 de dezembro</b> · a confirmar</span>
         </div>
+        <div style="font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:20px">Curadoria Elarah para a programação BFA</div>
       </div>
       <div class="cover-photo">{img("eventocorporativo.jpg", "Evento corporativo da Elarah, grupo reunido e conversando", "center 42%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
-    {foot("BFA · Images Matter")}
+    {foot("Curadoria Elarah · BFA")}
   </section>'''
 
 curadoria = f'''
