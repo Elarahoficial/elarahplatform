@@ -2,6 +2,7 @@
 # Yoga (10 adultos) + Ceramica (8 criancas) SIMULTANEOS + Brunch (todos).
 # Precos ao cliente ja com margem de 20% (preco = custo / 0,8, arredondado p/ cima):
 #   Brunch Op1 custo 755 -> 950 | Op2 custo 414 -> 520 | Op3 custo 350 -> 440 | Ceramica+Yoga custo 1750 -> 2200
+# Atualizado: Brunch R$ 59/39/29 por pessoa (1.062/702/522) | Experiencia 2.339
 # Reaproveita base/componentes Elarah (head/tail, .bfeat, .exp3/.exc, .tiers/.tier).
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
@@ -105,6 +106,8 @@ cover = f'''
           <span class="chip"><b>13/12</b></span>
           <span class="chip"><b>10 adultos</b> + <b>8 crianças</b></span>
           <span class="chip">No espaço <b>Elarah</b></span>
+          <span class="chip">Rua Martim Pescador, <b>170</b></span>
+          <span class="chip">Jardim <b>Anália Franco</b></span>
           <span class="chip">Yoga · Cerâmica · Brunch</span>
         </div>
       </div>
@@ -177,9 +180,9 @@ brunch_slide = f'''
     <h2>Três opções de <em>brunch</em></h2>
     <p class="lead">Três cardápios para reunir todo mundo à mesa — é só escolher o que mais combina com a comemoração. 🥐</p>
     <div class="tiers">
-      {brunch("Opção 1", "53", "950", ["Mini lanche natural", "Pão de queijo", "3 bolos", "Waffle", "Requeijão &amp; geleia", "Suco &amp; café"], hl=True, tag="Mais completo")}
-      {brunch("Opção 2", "29", "520", ["Pão italiano", "Pão de queijo", "Waffle", "3 bolos", "Requeijão &amp; geleia", "Suco &amp; café"])}
-      {brunch("Opção 3", "25", "440", ["Pão de queijo", "3 bolos", "Salada de frutas", "Suco &amp; café"])}
+      {brunch("Opção 1", "59", "1.062", ["Mini lanche natural", "Pão de queijo", "3 bolos", "Waffle", "Requeijão &amp; geleia", "Suco &amp; café"], hl=True, tag="Mais completo")}
+      {brunch("Opção 2", "39", "702", ["Pão italiano", "Pão de queijo", "Waffle", "3 bolos", "Requeijão &amp; geleia", "Suco &amp; café"])}
+      {brunch("Opção 3", "29", "522", ["Pão de queijo", "3 bolos", "Salada de frutas", "Suco &amp; café"])}
     </div>
     <p class="fineprint">Valores diluídos por pessoa, considerando 18 participantes (10 adultos + 8 crianças); o total de cada opção está indicado em cada card. Cardápios podem ter pequenos ajustes conforme disponibilidade. A escolha do brunch soma-se ao valor da experiência (próximo slide).</p>
     {foot("O brunch")}
@@ -197,15 +200,15 @@ investimento = f'''
         <span class="il">A experiência</span>
         <div class="id">Cerâmica para <b style="color:#fff">8 crianças</b> + Yoga para <b style="color:#fff">10 adultos</b><br>condução, materiais e produção Elarah inclusos</div>
       </div>
-      <div class="iv">R$ 2.200<small>valor fechado da experiência</small></div>
+      <div class="iv">R$ 2.339<small>valor fechado da experiência</small></div>
     </div>
     <div class="brunchrow">
-      <div class="bopt"><div class="bn">+ Brunch · Opção 3</div><div class="bv">R$ 440</div><div class="bs">no total</div></div>
-      <div class="bopt"><div class="bn">+ Brunch · Opção 2</div><div class="bv">R$ 520</div><div class="bs">no total</div></div>
-      <div class="bopt"><div class="bn">+ Brunch · Opção 1</div><div class="bv">R$ 950</div><div class="bs">no total</div></div>
+      <div class="bopt"><div class="bn">+ Brunch · Opção 3</div><div class="bv">R$ 522</div><div class="bs">no total</div></div>
+      <div class="bopt"><div class="bn">+ Brunch · Opção 2</div><div class="bv">R$ 702</div><div class="bs">no total</div></div>
+      <div class="bopt"><div class="bn">+ Brunch · Opção 1</div><div class="bv">R$ 1.062</div><div class="bs">no total</div></div>
     </div>
-    <p class="invtot">Com o brunch escolhido, o investimento total fica entre <b>R$ 2.640</b> e <b>R$ 3.150</b>, conforme a opção.</p>
-    <p class="fineprint">Experiência para 8 crianças (cerâmica) e 10 adultos (yoga), no espaço Elarah, em 13/12. Inclui condução profissional, materiais e produção. O brunch é somado conforme a opção escolhida. Data e detalhes finais a confirmar.</p>
+    <p class="invtot">Com o brunch escolhido, o investimento total fica entre <b>R$ 2.861</b> e <b>R$ 3.401</b>, conforme a opção.</p>
+    <p class="fineprint">Experiência para 8 crianças (cerâmica) e 10 adultos (yoga), no espaço Elarah (Rua Martim Pescador, 170 · Jardim Anália Franco), em 13/12. Inclui condução profissional, materiais e produção. O brunch é somado conforme a opção escolhida. Data e detalhes finais a confirmar.</p>
     {foot("Investimento")}
   </section>'''
 
