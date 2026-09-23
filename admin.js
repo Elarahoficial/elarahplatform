@@ -3761,12 +3761,73 @@
   // só o selo/contador no topo aparece. Alternado pelo clique no selo.
   var _showAguardandoExpOnly = false;
 
+  // Filtro "Aviso NÃO saiu pela Meta": Map booking_id → { situacao, erro },
+  // vindo da edge function (a whatsapp_send_log só é legível pelo servidor).
+  // null = ainda não carregado.
+  var _avisoPendentes = null;
+
+  async function _carregarAvisosPendentes() {
+    const sb = window.supabaseClient;
+    if (!sb || !sb.functions || !sb.functions.invoke) return;
+    const res = await sb.functions.invoke('admin-reenviar-aviso-parceira', { body: { acao: 'pendentes' } });
+    if (res.error || !res.data || !res.data.ok) {
+      alert('Não consegui carregar os avisos que não saíram: ' +
+        ((res.error && res.error.message) || (res.data && (res.data.detalhe || res.data.error)) || 'resposta vazia'));
+      _avisoPendentes = new Map();
+      return;
+    }
+    const m = new Map();
+    (res.data.pendentes || []).forEach(function (p) { m.set(p.booking_id, p); });
+    _avisoPendentes = m;
+  }
+
+  function _filtroAvisoAtivo() {
+    const el = document.getElementById('bookings-filter-aviso');
+    return !!(el && el.value === 'nao_saiu');
+  }
+
+  // Reenvia pela Meta todas as compras que o filtro está mostrando, em
+  // lotes de 50 (limite da edge function).
+  async function _reenviarAvisosFiltrados(ids) {
+    const sb = window.supabaseClient;
+    if (!sb || !sb.functions || !sb.functions.invoke) { alert('Supabase indisponível. Recarregue a página.'); return; }
+    if (!ids.length) { alert('Nenhuma compra na lista pra reenviar.'); return; }
+    if (!confirm('Reenviar pela API oficial da Meta o aviso das ' + ids.length +
+      ' compra(s) da lista?\n\nQuem já recebeu pela Meta não recebe de novo.')) return;
+    const btn = document.getElementById('btn-reenviar-avisos-meta');
+    const original = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+    let enviados = 0;
+    const problemas = [];
+    try {
+      for (let i = 0; i < ids.length; i += 50) {
+        const res = await sb.functions.invoke('admin-reenviar-aviso-parceira', { body: { booking_ids: ids.slice(i, i + 50) } });
+        if (res.error || !res.data || !Array.isArray(res.data.resultados)) {
+          problemas.push('lote ' + (i / 50 + 1) + ': ' + ((res.error && res.error.message) || 'resposta vazia'));
+          continue;
+        }
+        res.data.resultados.forEach(function (r) {
+          if (r.enviado) enviados++;
+          else if (r.motivo !== 'ja_enviado_antes') problemas.push(r.booking_id.slice(0, 8) + '… ' + r.motivo);
+        });
+      }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = original; }
+    }
+    alert(enviados + ' aviso(s) enviado(s) pela Meta ✓' +
+      (problemas.length ? '\n\nNão saíram (' + problemas.length + '):\n' + problemas.slice(0, 20).join('\n') : ''));
+    await _carregarAvisosPendentes();
+    invalidateBookings();
+    renderBookings();
+  }
+
   function wireBookingsControls() {
     const refreshBtn = document.getElementById('btn-refresh-bookings');
     const filterExp = document.getElementById('bookings-filter-exp');
     const filterCliente = document.getElementById('bookings-filter-cliente');
     const filterStatus = document.getElementById('bookings-filter-status');
-    if (refreshBtn) refreshBtn.addEventListener('click', () => {
+    if (refreshBtn) refreshBtn.addEventListener('click', async () => {
+      if (_filtroAvisoAtivo()) await _carregarAvisosPendentes();
       invalidateBookings();
       invalidateGiftCardsCache();
       renderBookings();
@@ -3888,6 +3949,15 @@
     var filterSfInit = document.getElementById('bookings-filter-status-fornecedor');
     if (filterFornInit) filterFornInit.addEventListener('change', () => renderBookings());
     if (filterSfInit) filterSfInit.addEventListener('change', () => renderBookings());
+    var filterAvisoInit = document.getElementById('bookings-filter-aviso');
+    if (filterAvisoInit) filterAvisoInit.addEventListener('change', async () => {
+      if (filterAvisoInit.value === 'nao_saiu') await _carregarAvisosPendentes();
+      renderBookings();
+    });
+    var reenviarTodosBtn = document.getElementById('btn-reenviar-avisos-meta');
+    if (reenviarTodosBtn) reenviarTodosBtn.addEventListener('click', () => {
+      _reenviarAvisosFiltrados(Array.isArray(reenviarTodosBtn._ids) ? reenviarTodosBtn._ids : []);
+    });
     var filterOrigemInit = document.getElementById('bookings-filter-origem');
     if (filterOrigemInit) filterOrigemInit.addEventListener('change', () => renderBookings());
     var filterDataInit = document.getElementById('bookings-filter-data');
@@ -4413,6 +4483,7 @@
     const filterForn = filterFornEl ? filterFornEl.value : '';
     const filterSfEl = document.getElementById('bookings-filter-status-fornecedor');
     const filterSf = filterSfEl ? filterSfEl.value : '';
+    const filtroAviso = _filtroAvisoAtivo();
 
     // Este painel só mostra bookings PAGAS. Primeiro aplica os filtros
     // "base" (experiência, cliente, fornecedor, status fornecedor); os
@@ -4438,6 +4509,7 @@
         if (!hay.includes(filterCliente)) return false;
       }
       if (filterForn && (b._fornecedorResolvido || '') !== filterForn) return false;
+      if (filtroAviso && !(_avisoPendentes && _avisoPendentes.has(b.id))) return false;
       if (filterSf) {
         // Caso especial "repasse_urgente": pendente E (evento já
         // ocorreu OU faltam ≤ 48h pra ocorrer). Mostra exatamente
@@ -4493,8 +4565,17 @@
     // apareceriam ignorando o filtro (confuso). O filtro é sobre reservas
     // do site.
     const showSite = _showAguardandoExpOnly ? true : (filterOrigem !== 'manual');
-    const showManual = _showAguardandoExpOnly ? false : ((filterOrigem !== 'site') && !facetActive);
-    const showGift = _showAguardandoExpOnly ? false : ((filterOrigem === '') && !facetActive);
+    // O aviso automático só existe pra reservas do site — com o filtro de
+    // aviso ligado, vendas manuais e gift cards saem da lista.
+    const showManual = (_showAguardandoExpOnly || filtroAviso) ? false : ((filterOrigem !== 'site') && !facetActive);
+    const showGift = (_showAguardandoExpOnly || filtroAviso) ? false : ((filterOrigem === '') && !facetActive);
+
+    const reenviarTodosEl = document.getElementById('btn-reenviar-avisos-meta');
+    if (reenviarTodosEl) {
+      reenviarTodosEl._ids = filtroAviso ? filtered.map(b => b.id) : [];
+      reenviarTodosEl.style.display = filtroAviso && filtered.length ? '' : 'none';
+      reenviarTodosEl.textContent = '📤 Reenviar os ' + filtered.length + ' pela Meta';
+    }
 
     // Stats globais (não-filtradas) vêm da fonte única (RPC financial_summary).
     // qty_*_pagos do RPC já reflete sum(quantidade) — 1 booking com 3
@@ -4635,7 +4716,9 @@
         ? ('<tr><td colspan="19" class="admin__table-empty">' +
             (_showAguardandoExpOnly
               ? 'Nenhuma compra aguardando experiência.'
-              : 'Nenhuma reserva para esses filtros.') +
+              : (filtroAviso
+                ? 'Nenhum aviso pendente — todas as parceiras receberam pela Meta ✓'
+                : 'Nenhuma reserva para esses filtros.')) +
             '</td></tr>')
         : '';
       if (showManual) {
@@ -4829,6 +4912,12 @@
       const avisadoAt = b.fornecedor_avisado_at ? new Date(b.fornecedor_avisado_at) : null;
       const isAvisado = avisadoAt && !isNaN(avisadoAt.getTime());
       const bookingId = escapeHtml(b.id);
+      const pend = _avisoPendentes && _filtroAvisoAtivo() ? _avisoPendentes.get(b.id) : null;
+      const pendTag = pend
+        ? '<div style="margin-top:3px;font-size:.68rem;font-weight:700;color:#c0392b;" title="' +
+            escapeHtml(pend.erro || '') + '">' +
+            (pend.situacao === 'falhou' ? '⚠ Meta: falhou' : '⚠ Meta: não enviado') + '</div>'
+        : '';
       if (isAvisado) {
         const when = avisadoAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         return '<td style="white-space:nowrap;">' +
@@ -4841,7 +4930,7 @@
           '<button type="button" data-desavisar-booking="' + bookingId + '" ' +
           'style="margin-left:4px;padding:4px 7px;background:transparent;border:1px solid #ddd;border-radius:6px;color:#666;font-size:.72rem;cursor:pointer;" ' +
           'title="Marcar como não avisado">↺</button>' +
-          metaResendButton(bookingId) +
+          metaResendButton(bookingId) + pendTag +
           '</td>';
       }
       return '<td style="white-space:nowrap;"><a href="' + escapeHtml(link) + '" target="_blank" rel="noopener" ' +
@@ -4849,7 +4938,7 @@
         'style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#c0392b;color:#fff;border-radius:6px;font-size:.74rem;font-weight:700;text-decoration:none;white-space:nowrap;" ' +
         'title="Não avisado ainda. Clique pra abrir o WhatsApp e marcar como avisado.">' +
         '<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>' +
-        'Avisar</a>' + metaResendButton(bookingId) + '</td>';
+        'Avisar</a>' + metaResendButton(bookingId) + pendTag + '</td>';
     }
 
     // ===== Mensagem automática pro CLIENTE por fornecedor =====
@@ -6593,6 +6682,7 @@
             alert('Não consegui enviar: ' + ((res.error && res.error.message) || 'resposta vazia'));
           } else if (r.enviado) {
             alert('Aviso enviado pela Meta ✓');
+            if (_filtroAvisoAtivo()) await _carregarAvisosPendentes();
           } else if (r.motivo === 'ja_enviado_antes') {
             alert('Esse aviso já tinha saído pela Meta antes — não reenviei pra não duplicar.');
           } else {
