@@ -38,6 +38,11 @@ export function normalizePhoneBR(raw) {
   const ddd = Number(d.slice(0, 2));
   if (!VALID_DDDS.has(ddd)) return null;
   if (d.length === 11 && d[2] !== "9") return null;
+  // Celular no formato ANTIGO, sem o 9 da frente (ex.: "(48) 9190-7056"):
+  // 10 dígitos com o 3º entre 6 e 9 não é fixo — é celular de antes da
+  // migração do nono dígito. Todo celular BR hoje tem o 9, então completa.
+  // O WhatsApp de contas antigas ainda EXIBE o número assim.
+  if (d.length === 10 && /[6-9]/.test(d[2])) d = d.slice(0, 2) + "9" + d.slice(2);
   if (d.length === 10 && !/[2-5]/.test(d[2])) return null;
   return "55" + d;
 }
