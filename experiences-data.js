@@ -127,6 +127,31 @@
       .filter(function (h) { return /[0-9a-zA-ZÀ-ÿ]/.test(h); });
   }
 
+  // Duração a partir do horário: "19h00 – 22h30" → "3h30", "10h – 12h" →
+  // "2h", "18h00 - 18h45" → "45min". Vira a duração quando o campo foi
+  // esquecido no cadastro (senão o site mostrava a duração vazia).
+  // Horário sem fim (só "19h00") ou texto livre → '' (não inventa).
+  function duracaoFromHorario(h) {
+    const partes = String(h == null ? '' : h).split(/\s*[–—-]\s*|\s+(?:às|as|a|até)\s+/i)
+      .filter(function (x) { return /\d/.test(x); });
+    if (partes.length < 2) return '';
+    const toMin = function (t) {
+      const m = String(t).match(/(\d{1,2})\s*(?:[h:]\s*(\d{2})?)?/i);
+      if (!m) return null;
+      const hh = Number(m[1]), mm = m[2] ? Number(m[2]) : 0;
+      if (hh > 24 || mm > 59) return null;
+      return hh * 60 + mm;
+    };
+    const ini = toMin(partes[0]), fim = toMin(partes[1]);
+    if (ini == null || fim == null) return '';
+    let dur = fim - ini;
+    if (dur <= 0) dur += 24 * 60; // passa da meia-noite (22h – 02h)
+    if (dur <= 0 || dur > 16 * 60) return '';
+    const hh = Math.floor(dur / 60), mm = dur % 60;
+    if (!hh) return mm + 'min';
+    return hh + 'h' + (mm ? String(mm).padStart(2, '0') : '');
+  }
+
   function dbRowToExperience(row) {
     if (!row) return null;
     const horarios = _sanitizeHorarios(row.horarios);
@@ -138,7 +163,7 @@
       nome: row.nome || '',
       categoria: row.categoria || '',
       data: row.data || '',
-      duracao: row.duracao || '',
+      duracao: String(row.duracao || '').trim() || duracaoFromHorario(horario),
       bairro: row.bairro || '',
       endereco: row.endereco || '',
       inclui: row.inclui || '',
@@ -304,7 +329,7 @@
       nome: (exp.nome || '').trim(),
       categoria: (exp.categoria || '').trim(),
       data: (exp.data || '').trim(),
-      duracao: (exp.duracao || '').trim(),
+      duracao: (exp.duracao || '').trim() || duracaoFromHorario(horarios[0]),
       bairro: (exp.bairro || '').trim(),
       endereco: (exp.endereco || '').trim(),
       inclui: (exp.inclui || '').trim(),
@@ -2141,6 +2166,7 @@
   }
 
   window.ElarahData = {
+    duracaoFromHorario,
     getAllExperiences,
     getVisibleExperiences,
     getActiveExperiences,
