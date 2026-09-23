@@ -43,6 +43,11 @@
   --afa-ink:    #2B2422;
   --afa-muted:  #7A6E6A;
   --afa-line:   #F0E4DC;
+  /* Círculo do logo: fundo e sombra. Ficam em variável porque são a
+     única parte da estrutura que precisa combinar com a identidade do
+     parceiro mesmo antes de o arquivo do logo carregar. */
+  --afa-logo-bg: radial-gradient(circle at 50% 45%, #FFFDF8 0%, var(--afa-blush) 62%, #EFE0D2 100%);
+  --afa-logo-shadow: 0 8px 26px rgba(0,0,0,.10);
   /* Elarah — só no que é ação da Elarah (reservar, suporte) */
   --elarah-orange: #F27623;
   --elarah-orange-d: #D4600E;
@@ -78,9 +83,9 @@ body {
 .afa__head { text-align: center; margin-bottom: 26px; }
 .afa__logo {
   width: 132px; height: 132px; margin: 0 auto 16px; border-radius: 50%;
-  background: radial-gradient(circle at 50% 45%, #FDEFF0 0%, var(--afa-blush) 62%, #F6D7D9 100%);
+  background: var(--afa-logo-bg);
   display: flex; align-items: center; justify-content: center;
-  overflow: hidden; box-shadow: 0 8px 26px rgba(140,42,44,.12);
+  overflow: hidden; box-shadow: var(--afa-logo-shadow);
 }
 .afa__logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .afa__logo-fallback {
