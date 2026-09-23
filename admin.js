@@ -4927,7 +4927,9 @@
       const pendTag = pend
         ? '<div style="margin-top:3px;font-size:.68rem;font-weight:700;color:#c0392b;" title="' +
             escapeHtml(pend.erro || '') + '">' +
-            (pend.situacao === 'falhou' ? '⚠ Meta: falhou' : '⚠ Meta: não enviado') + '</div>'
+            (pend.situacao === 'falhou' ? '⚠ Meta: falhou'
+              : pend.situacao === 'falhou_na_entrega' ? '⚠ Meta: não chegou'
+              : '⚠ Meta: não enviado') + '</div>'
         : '';
       if (isAvisado) {
         const when = avisadoAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });

@@ -19,8 +19,11 @@
 //   clique: não prova que a mensagem saiu.
 //
 // O QUE FAZ, por reserva
-//   1. Se já existe envio 'sent' pra ela → NÃO reenvia (duplicate).
-//   2. Libera só a linha 'failed' (nunca apaga um envio que saiu).
+//   1. Se já existe envio 'sent' pra ela E a Meta não recusou a entrega →
+//      NÃO reenvia (duplicate).
+//   2. Libera a linha que falhou — no envio ('failed') ou na ENTREGA ('sent'
+//      que a Meta depois devolveu como failed no webhook, ex.: 131042,
+//      pagamento da conta). Nunca apaga um envio que chegou.
 //   3. Envia pelo portão de sempre (status pago, aguardando_experiencia,
 //      WhatsApp da parceira cadastrado, kill switch, rollout).
 //   4. Saiu → carimba fornecedor_avisado_at com o horário do envio real.
@@ -106,15 +109,24 @@ serve(async (req) => {
       // 1+2: nunca reenvia o que já saiu; libera só a tentativa que falhou.
       const { data: log } = await supabase
         .from("whatsapp_send_log")
-        .select("status")
+        .select("status, provider_id")
         .eq("dedupe_key", chave)
         .maybeSingle();
       const anterior = (log as { status?: string } | null)?.status ?? null;
+      const providerId = (log as { provider_id?: string } | null)?.provider_id ?? null;
       if (anterior === "sent") {
-        resultados.push({ booking_id: id, enviado: false, motivo: "ja_enviado_antes" });
-        continue;
-      }
-      if (anterior) {
+        // "sent" só diz que a Meta ACEITOU o pedido. Se o webhook depois
+        // trouxe failed (e nunca delivered/read), a parceira não recebeu.
+        const falhas = providerId ? await entregasQueFalharam(supabase, [providerId]) : new Map();
+        if (!falhas.has(providerId)) {
+          resultados.push({ booking_id: id, enviado: false, motivo: "ja_enviado_antes" });
+          continue;
+        }
+        await supabase.from("whatsapp_send_log")
+          .delete()
+          .eq("dedupe_key", chave)
+          .eq("provider_id", providerId);
+      } else if (anterior) {
         await supabase.from("whatsapp_send_log")
           .delete()
           .eq("dedupe_key", chave)
@@ -207,26 +219,39 @@ async function listarPendentes(supabase: any) {
   });
   if (!elegiveis.length) return [];
 
-  const logs = new Map<string, { status: string; error: string | null }>();
+  const logs = new Map<string, { status: string; error: string | null; provider_id: string | null }>();
   // deno-lint-ignore no-explicit-any
   const chaves = elegiveis.map((b: any) => "fornecedor:" + b.id);
   for (let i = 0; i < chaves.length; i += 200) {
     const { data, error: e3 } = await supabase
       .from("whatsapp_send_log")
-      .select("dedupe_key, status, error")
+      .select("dedupe_key, status, error, provider_id")
       .in("dedupe_key", chaves.slice(i, i + 200));
     if (e3) throw new Error(e3.message);
     // deno-lint-ignore no-explicit-any
     for (const l of (data ?? []) as any[]) {
-      logs.set(String(l.dedupe_key).slice("fornecedor:".length), { status: l.status, error: l.error ?? null });
+      logs.set(String(l.dedupe_key).slice("fornecedor:".length), {
+        status: l.status,
+        error: l.error ?? null,
+        provider_id: l.provider_id ?? null,
+      });
     }
   }
+
+  const enviados = [...logs.values()]
+    .filter((l) => l.status === "sent" && l.provider_id)
+    .map((l) => l.provider_id as string);
+  const falhasEntrega = await entregasQueFalharam(supabase, enviados);
 
   return elegiveis
     // deno-lint-ignore no-explicit-any
     .map((b: any) => {
       const l = logs.get(b.id);
-      if (l?.status === "sent") return null;
+      if (l?.status === "sent") {
+        const f = l.provider_id ? falhasEntrega.get(l.provider_id) : null;
+        if (!f) return null;
+        return { booking_id: b.id, situacao: "falhou_na_entrega", erro: f };
+      }
       return {
         booking_id: b.id,
         situacao: !l ? "nao_enviado" : l.status === "failed" ? "falhou" : l.status,
@@ -234,4 +259,29 @@ async function listarPendentes(supabase: any) {
       };
     })
     .filter(Boolean);
+}
+
+// Mensagens que a Meta aceitou mas depois devolveu como FAILED no webhook,
+// sem nenhum delivered/read. provider_id → "código título" do erro.
+// deno-lint-ignore no-explicit-any
+async function entregasQueFalharam(supabase: any, providerIds: string[]): Promise<Map<string, string>> {
+  const falhas = new Map<string, string>();
+  const chegaram = new Set<string>();
+  for (let i = 0; i < providerIds.length; i += 200) {
+    const { data, error } = await supabase
+      .from("whatsapp_status_envio")
+      .select("wa_message_id, status, erro_codigo, erro_titulo")
+      .in("wa_message_id", providerIds.slice(i, i + 200));
+    if (error) throw new Error(error.message);
+    // deno-lint-ignore no-explicit-any
+    for (const st of (data ?? []) as any[]) {
+      const id = String(st.wa_message_id);
+      if (st.status === "delivered" || st.status === "read") chegaram.add(id);
+      else if (st.status === "failed") {
+        falhas.set(id, [st.erro_codigo, st.erro_titulo].filter(Boolean).join(" ") || "falhou na entrega");
+      }
+    }
+  }
+  for (const id of chegaram) falhas.delete(id);
+  return falhas;
 }
