@@ -7702,6 +7702,7 @@
           : '';
       }
       document.getElementById('exp-duracao').value = exp.duracao || '';
+      delete document.getElementById('exp-duracao').dataset.auto;
       document.getElementById('exp-bairro').value = exp.bairro || '';
       document.getElementById('exp-preco').value = exp.preco || '';
       document.getElementById('exp-endereco').value = exp.endereco || '';
@@ -7882,6 +7883,7 @@
       modalTitle.textContent = 'Nova experiência';
       submitBtn.textContent = 'Salvar experiência';
       form.reset();
+      delete document.getElementById('exp-duracao').dataset.auto;
       // form.reset() não dispara 'input', então atualiza o preview manual.
       if (typeof window._refreshImagePreview === 'function') {
         try { window._refreshImagePreview(); } catch (e) {}
@@ -7994,6 +7996,27 @@
 
     if (horariosAddBtn) {
       horariosAddBtn.addEventListener('click', () => addHorarioRow({ horario: '' }));
+    }
+
+    // ===== Duração automática a partir do horário =====
+    // Ao digitar o 1º horário (ex.: "19h00 – 22h30"), a Duração se
+    // preenche sozinha ("3h30"). Só sobrescreve se o campo estiver vazio
+    // ou se o valor atual também foi calculado aqui — se a admin digitou
+    // uma duração própria, ela é respeitada.
+    var duracaoEl = document.getElementById('exp-duracao');
+    if (horariosList && duracaoEl && window.ElarahData && window.ElarahData.duracaoFromHorario) {
+      horariosList.addEventListener('input', function (ev) {
+        if (!ev.target || !ev.target.classList.contains('admin__horario-input')) return;
+        var first = horariosList.querySelector('.admin__horario-input');
+        if (!first) return;
+        var calc = window.ElarahData.duracaoFromHorario(first.value);
+        if (!calc) return;
+        if (duracaoEl.value.trim() === '' || duracaoEl.dataset.auto === '1') {
+          duracaoEl.value = calc;
+          duracaoEl.dataset.auto = '1';
+        }
+      });
+      duracaoEl.addEventListener('input', function () { delete duracaoEl.dataset.auto; });
     }
 
     // ===== Preview da imagem =====
@@ -9309,7 +9332,39 @@
     }
   }
 
+  // Preenche no BANCO a duração das experiências cadastradas sem ela,
+  // calculando a partir do horário (ex.: "19h00 – 22h30" → "3h30").
+  // Roda uma vez por carregamento do painel, em segundo plano; só mexe
+  // em quem está com duração vazia e tem horário com início e fim.
+  var _duracaoBackfillFeito = false;
+  async function backfillDuracoesVazias() {
+    if (_duracaoBackfillFeito) return;
+    _duracaoBackfillFeito = true;
+    var s = window.supabaseClient;
+    var calc = window.ElarahData && window.ElarahData.duracaoFromHorario;
+    if (!s || !calc) return;
+    try {
+      var r = await s.from('experiences')
+        .select('id, horario, horarios, duracao')
+        .or('duracao.is.null,duracao.eq.');
+      if (r.error || !Array.isArray(r.data)) return;
+      var feitos = 0;
+      for (var i = 0; i < r.data.length; i++) {
+        var row = r.data[i];
+        var h = (Array.isArray(row.horarios) && row.horarios[0]) || row.horario || '';
+        var dur = calc(h);
+        if (!dur) continue;
+        var u = await s.from('experiences').update({ duracao: dur }).eq('id', row.id);
+        if (!u.error) feitos++;
+      }
+      if (feitos) console.info('[Admin] duração preenchida a partir do horário em', feitos, 'experiência(s)');
+    } catch (e) {
+      console.warn('[Admin] backfill de duração falhou:', e);
+    }
+  }
+
   async function renderExperiences() {
+    backfillDuracoesVazias();
     const allExperiencesRaw = await getExperiences();
 
     // Mostra todas as experiências, INCLUINDO By Elarah originals.
