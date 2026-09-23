@@ -87,8 +87,8 @@ const PROVIDER: "meta" | "zapi" = (() => {
 // oficial faria a cliente receber tudo em DOBRO.
 //
 // Ex.: WHATSAPP_FLUXOS_DESLIGADOS="reminder48,feedback,pending"
-// Kinds: confirmation, reminder48, feedback, pending, instrucoes,
-//        fornecedor, byelarah_aviso.
+// Kinds: confirmation, reagendamento, reminder48, feedback, pending,
+//        instrucoes, fornecedor, byelarah_aviso.
 const FLUXOS_DESLIGADOS = new Set(
   (Deno.env.get("WHATSAPP_FLUXOS_DESLIGADOS") ?? "")
     .split(/[,\s]+/)
@@ -335,6 +335,11 @@ const META_TEMPLATE_DEFAULTS: Record<string, string> = {
   // ficam em WHATSAPP_FLUXOS_DESLIGADOS — os nomes seguem aqui pro dia em que
   // a plataforma assumir algum deles.
   confirmation: "elarah_confirmacao_reserva",
+  // Confirmação reenviada quando a admin muda a data/experiência da reserva
+  // (admin-reagendar-reserva). MESMO template da confirmação, mas é um
+  // fluxo próprio: "confirmation" fica em WHATSAPP_FLUXOS_DESLIGADOS (o
+  // sistema de fora manda a da compra), e ele não sabe da remarcação.
+  reagendamento: "elarah_confirmacao_reserva",
   reminder48: "elarah_lembrete_2dias",
   feedback: "elarah_feedback",
   pending: "elarah_pagamento_pendente",
@@ -345,6 +350,7 @@ const META_TEMPLATE_DEFAULTS: Record<string, string> = {
 };
 const META_TEMPLATE_ENV: Record<string, string> = {
   confirmation: "META_TEMPLATE_CONFIRMACAO",
+  reagendamento: "META_TEMPLATE_CONFIRMACAO",
   reminder48: "META_TEMPLATE_LEMBRETE",
   feedback: "META_TEMPLATE_FEEDBACK",
   pending: "META_TEMPLATE_PENDENTE",
@@ -364,6 +370,7 @@ const META_TEMPLATE_ENV: Record<string, string> = {
 const META_TEMPLATE_IMAGEM_ENV: Record<string, string> = {
   byelarah_aviso: "META_TEMPLATE_INSCRICOES_IMAGEM",
   confirmation: "META_TEMPLATE_CONFIRMACAO_IMAGEM",
+  reagendamento: "META_TEMPLATE_CONFIRMACAO_IMAGEM",
   reminder48: "META_TEMPLATE_LEMBRETE_IMAGEM",
   feedback: "META_TEMPLATE_FEEDBACK_IMAGEM",
   pending: "META_TEMPLATE_PENDENTE_IMAGEM",
