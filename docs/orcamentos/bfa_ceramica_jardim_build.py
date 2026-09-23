@@ -210,9 +210,9 @@ cer_atmosfera = atmosfera(
     "Um café cercado de verde, <b>reservado só para o grupo</b>. Uma grande mesa compartilhada, coffee break, mãos na argila e tempo para conversar, criar e simplesmente estar junto.",
     [
         ("ojardim1.jpg", "Deck e jardim do O Jardim", "center 50%", "O jardim"),
-        ("bfa-grupo2.webp", "Grupo numa grande mesa compartilhada", "center 40%", "Mesa compartilhada"),
+        ("natura-mesa.jpg", "Grupo numa grande mesa compartilhada no jardim", "center 50%", "Mesa compartilhada"),
         ("ceramica-fria.jpg", "Mãos na argila", "center 45%", "Mãos na argila"),
-        ("casalmodelagemceramica.jpg", "Pessoas criando junto", "center 50%", "Criando juntos"),
+        ("natura-criando.jpg", "Participante modelando a própria peça no evento", "center 55%", "Criando juntos"),
         ("ojardim4.jpg", "Coffee break servido à mesa", "center 50%", "Coffee break"),
         ("bfa-grupo1.webp", "O time reunido à mesa", "center 40%", "O time à mesa"),
     ],
