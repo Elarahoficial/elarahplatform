@@ -81,6 +81,38 @@ xcss = '''
   /* dois blocos foto+texto (bfeat sem lista) */
   .bfeat + .bfeat{margin-top:18px}
   .bfeat .bbody p{font-size:13px;color:var(--muted);line-height:1.55;margin:10px 0 0}
+  /* investimento final · 3 colunas comparativas */
+  .invf{display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;margin-top:22px;align-items:stretch}
+  .ic{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;padding:20px 20px 22px;background:var(--card);box-shadow:0 16px 38px -30px rgba(0,0,0,.34)}
+  .ic .ihd{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;line-height:1.5}
+  .ic .ihd b{display:block;color:var(--navy);font-size:11px;letter-spacing:.11em;margin-top:1px}
+  .ic figure{margin:12px 0 14px;border-radius:12px;overflow:hidden;height:124px}
+  .ic figure img{width:100%;height:100%;object-fit:cover;display:block}
+  .ic h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy);line-height:1.05;margin:0;min-height:47px}
+  .ic .itags{font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);font-weight:700;margin-top:9px}
+  .ic hr{border:0;border-top:1px solid var(--line);margin:14px 0}
+  .ic .iprice{font-family:'DM Serif Display',serif;font-size:34px;color:var(--navy);line-height:1}
+  .ic .iper{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:5px}
+  .ic .itot{background:#F1EDE3;border-radius:11px;padding:9px 12px;text-align:center;margin-top:13px}
+  .ic .itot span{font-size:8.5px;color:var(--muted);font-weight:600;letter-spacing:.02em;display:block}
+  .ic .itot b{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);letter-spacing:.01em}
+  .ic .ilab{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-bottom:9px}
+  .ic ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .ic ul li{position:relative;padding-left:16px;font-size:10.5px;color:var(--ink);line-height:1.3}
+  .ic ul li span{position:absolute;left:0;top:0;color:var(--orange)}
+  .ic .grow{flex:1}
+  .ic.hl{background:linear-gradient(180deg,#F5EBDC,#F0E1CD);border:1.5px solid var(--orange)}
+  .ic.hl .badge{align-self:center;background:var(--orange-dark);color:#fff;font-size:8.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:7px 15px;border-radius:999px}
+  .ic.hl h3{text-align:center;font-size:23px;margin-top:12px;min-height:auto}
+  .ic.hl h3 em{font-style:italic;color:var(--orange-dark)}
+  .ic.hl .itags{text-align:center}
+  .ic.hl hr{border-top-color:rgba(138,109,52,.28)}
+  .ic.hl .itot{background:rgba(255,255,255,.55)}
+  .ic .idesc{font-size:11px;color:var(--navy-soft);line-height:1.5;margin-top:13px}
+  .invnote{display:flex;gap:14px;align-items:flex-start;margin-top:20px;background:#ECE7DC;border-radius:14px;padding:15px 22px}
+  .invnote .ii{flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--muted);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:12px;font-family:Georgia,serif;font-style:italic;margin-top:1px}
+  .invnote p{font-size:11px;color:var(--navy-soft);line-height:1.65;margin:0}
+  .invnote p b{color:var(--navy)}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -324,6 +356,77 @@ pw_investimento = f'''
     {foot("Investimento · Pizza & Wine")}
   </section>'''
 
+# ============================ 7 · INVESTIMENTO FINAL (CONSOLIDADO) ============================
+
+investimento_final = f'''
+  <section class="slide">
+{head_simple("Investimento")}
+    <span class="eyebrow orange">✦ Investimento final</span>
+    <h2>Os dois momentos, <em>com valores claros</em></h2>
+    <p class="lead">Abaixo, o investimento de cada experiência e o valor total caso a programação inclua os <b>dois momentos</b>.</p>
+    <div class="invf">
+      <div class="ic">
+        <span class="ihd">Experiência 01<b>Ceramics &amp; Coffee</b></span>
+        <figure>{img("ceramicamodelagem.jpg", "Mãos modelando cerâmica", "center 50%")}</figure>
+        <h3>Criação com as mãos</h3>
+        <div class="itags">Criatividade · pausa · natureza</div>
+        <hr>
+        <div class="iprice">R$ 529</div>
+        <div class="iper">por pessoa</div>
+        <div class="itot"><span>Total para até 10 participantes</span><b>R$ 5.290</b></div>
+        <hr>
+        <span class="ilab">Inclui</span>
+        <ul class="grow">
+          <li><span>✦</span>Espaço reservado</li>
+          <li><span>✦</span>Coffee break</li>
+          <li><span>✦</span>Modelagem em cerâmica</li>
+          <li><span>✦</span>Ceramista</li>
+          <li><span>✦</span>Argila e materiais</li>
+          <li><span>✦</span>Acabamento e queima</li>
+          <li><span>✦</span>Produção Elarah</li>
+        </ul>
+      </div>
+      <div class="ic">
+        <span class="ihd">Experiência 02<b>Pizza &amp; Wine</b></span>
+        <figure>{img("pizza.jpg", "Pizza artesanal servida à mesa", "center 50%")}</figure>
+        <h3>Encontro à mesa</h3>
+        <div class="itags">Gastronomia · vinho · conexão</div>
+        <hr>
+        <div class="iprice">R$ 899</div>
+        <div class="iper">por pessoa</div>
+        <div class="itot"><span>Total para até 10 participantes</span><b>R$ 8.990</b></div>
+        <hr>
+        <span class="ilab">Inclui</span>
+        <ul class="grow">
+          <li><span>✦</span>Espaço reservado</li>
+          <li><span>✦</span>Pizza em três sabores</li>
+          <li><span>✦</span>Harmonização de vinhos</li>
+          <li><span>✦</span>Condução gastronômica</li>
+          <li><span>✦</span>Serviço à mesa</li>
+          <li><span>✦</span>Produção e curadoria Elarah</li>
+        </ul>
+      </div>
+      <div class="ic hl">
+        <span class="badge">★ Programação completa</span>
+        <h3>Dois momentos,<br><em>um só time</em></h3>
+        <div class="itags">Criar · compartilhar · celebrar</div>
+        <figure>{img("pizza-brinde.jpg", "Brinde entre os dois momentos", "center 50%")}</figure>
+        <hr>
+        <span class="ilab">Valor total</span>
+        <div class="iprice">R$ 14.280</div>
+        <div class="itot"><span>Para até 10 participantes</span></div>
+        <p class="idesc grow">A união da criatividade com a gastronomia para um dia completo de conexão, leveza e boas memórias.</p>
+        <hr>
+        <span class="ilab" style="margin-bottom:0">Inclui tudo o que está nas duas experiências</span>
+      </div>
+    </div>
+    <div class="invnote">
+      <span class="ii">i</span>
+      <p><b>Valores para grupo de até 10 participantes.</b> Datas previstas: 08, 09 ou 10 de dezembro. Ajustes finais de produção e agenda sujeitos à confirmação. A Elarah cuida da produção e do alinhamento final de cada experiência.</p>
+    </div>
+    {foot("Investimento final")}
+  </section>'''
+
 # ============================ 10 · PRÓXIMOS PASSOS ============================
 
 proximos = f'''
@@ -356,8 +459,9 @@ proximos = f'''
 
 deck = ('<div class="deck">\n'
         + cover + porque
-        + cer_conceito + cer_atmosfera + cer_investimento
-        + pw_conceito + pw_atmosfera + pw_investimento
+        + cer_conceito + cer_atmosfera
+        + pw_conceito + pw_atmosfera
+        + investimento_final
         + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-bfa-ceramica-jardim.html"
