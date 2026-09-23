@@ -125,7 +125,7 @@ cover = f'''
           <span class="chip"><b>8 pessoas</b> · tarde</span>
         </div>
       </div>
-      <div class="cover-photo">{img("bfa-grupo1.webp", "Grupo sorrindo durante a experiência de cerâmica, luz natural", "center 32%")}</div>
+      <div class="cover-photo">{img("segatta-capa.webp", "Grupo sorrindo durante a experiência de cerâmica, luz natural", "center 40%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Segatta Neuropsicologia · Celebração 100 mil")}
@@ -154,7 +154,7 @@ como = f'''
     <h2>Simples, do início ao <em>fim</em></h2>
     <p class="lead">A Elarah prepara tudo. O time só chega, aproveita e celebra. 🎉</p>
     <div class="bfeat">
-      <div class="bphoto">{img("bfa-grupo2.webp", "Grupo criando cerâmica junto, sorrindo, luz natural", "center 45%")}</div>
+      <div class="bphoto" style="background:var(--card)"><img src="assets/bfa-grupo2.webp" alt="Grupo criando cerâmica junto, sorrindo, luz natural" style="object-fit:contain;object-position:center"></div>
       <div class="bbody">
         <span class="btag">O passo a passo</span>
         <h3>É só aproveitar</h3>
@@ -192,12 +192,12 @@ espacos = f'''
 {head_simple("Os espaços")}
     <span class="eyebrow orange">◆ Os espaços</span>
     <h2>Onde a experiência <em>acontece</em></h2>
-    <p class="lead">A oficina acontece no ateliê parceiro Entre Mãos; o café e a confraternização podem ficar por conta do BETC Havas Café.</p>
+    <p class="lead">A experiência de cerâmica acontece em um ateliê parceiro, com toda a estrutura montada para o grupo.</p>
     <div class="exp3" style="grid-template-columns:1fr 1fr">
-      {excard("Cerâmica · oficina", "netas-atelie.jpg", "Ateliê de cerâmica com pessoas criando, luz natural", "Entre Mãos", "Ateliê parceiro de cerâmica, com toda a estrutura montada para o grupo.", "center 50%")}
-      {excard("Café &amp; confraternização", "betchavas3.jpg", "Café charmoso e arejado, com verde e luz natural", "BETC Havas Café", "Opção para o momento de café e confraternização — não é o espaço da oficina.", "center 50%")}
+      {excard("Ateliê de cerâmica", "netas-atelie.jpg", "Ateliê de cerâmica com pessoas criando, luz natural", "Entre Mãos", "Ateliê parceiro de cerâmica, com toda a estrutura para a experiência.", "center 50%")}
+      {excard("Ateliê de cerâmica", "casa-aquario-atelie.jpg", "Ateliê de cerâmica acolhedor, luz natural", "Ateliê Signal", "Ateliê parceiro de cerâmica, no mesmo padrão de qualidade.", "center 50%")}
     </div>
-    <div class="bnote">◆ Endereços, disponibilidade e o uso do BETC (café e confraternização) seguem <b>a confirmar</b>.</div>
+    <div class="bnote">◆ Endereços e disponibilidade <b>a confirmar</b>; o ateliê é definido conforme a data da sexta escolhida.</div>
     {foot("Os espaços")}
   </section>'''
 
@@ -282,7 +282,7 @@ proximos = f'''
 
 deck = ('<div class="deck">\n'
         + cover + experiencias + como + vibe + espacos
-        + investimento + opcionais + proximos + '\n\n</div>\n\n')
+        + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-segatta-100k.html"
 open(out, "w", encoding="utf-8").write(html)
