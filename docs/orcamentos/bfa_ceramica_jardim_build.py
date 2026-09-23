@@ -106,6 +106,12 @@ xcss = '''
   .opt h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:27px;color:var(--navy);margin:0 0 8px;line-height:1}
   .opt .optags{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--orange);font-weight:700;margin-bottom:9px}
   .opt p{font-size:12.5px;color:var(--muted);line-height:1.5;margin:0}
+  /* por que funciona · 3 cards verticais */
+  .why3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:26px}
+  .wc figure{margin:0;border-radius:16px;overflow:hidden;height:250px;border:1px solid rgba(38,51,42,.10);box-shadow:0 14px 32px -22px rgba(0,0,0,.4)}
+  .wc figure img{width:100%;height:100%;object-fit:cover;display:block}
+  .wc h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);margin:16px 0 8px;line-height:1.12}
+  .wc p{font-size:12px;color:var(--muted);line-height:1.55;margin:0}
   /* escolha final */
   .choicerow{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px}
   .choice{border:1px solid var(--line);border-radius:18px;padding:26px 26px 28px;background:var(--card);text-align:center;box-shadow:0 16px 36px -28px rgba(0,0,0,.34)}
@@ -172,29 +178,28 @@ cover = f'''
 
 curadoria = f'''
   <section class="slide">
-{head_simple("A curadoria")}
-    <span class="eyebrow orange">◆ A curadoria</span>
-    <h2>Duas formas de viver esse <em>encontro</em></h2>
-    <p class="lead">A partir do briefing, buscamos experiências que funcionassem para um <b>grupo pequeno</b>, criassem espaço para <b>conversa e interação</b> e trouxessem algo especial para a programação. Chegamos a duas propostas com atmosferas diferentes: uma mais <b>criativa e contemplativa</b>; outra mais <b>social e gastronômica</b>.</p>
-    <div class="optmap">
-      <div class="opt">
-        <div class="ophoto">{img("ojardim1.jpg", "Espaço O Jardim, ao ar livre", "center 50%")}<span class="oplab">Opção 01</span></div>
-        <div class="opbody">
-          <h3>Ceramics &amp; Coffee</h3>
-          <div class="optags">Criativa · manual · durante o dia</div>
-          <p>Uma pausa criativa entre argila, conversa e café.</p>
-        </div>
+{head_simple("O que o time leva junto")}
+    <span class="eyebrow orange">O que o time leva junto</span>
+    <h2>Experiências que <em>mudam o ritmo</em> do dia</h2>
+    <p class="lead">A ideia não é preencher a agenda com mais uma atividade. É criar um espaço para o time <b>sair do automático, conversar de outro jeito e compartilhar algo fora da rotina</b> — seja criando com as mãos ou se encontrando à mesa.</p>
+    <div class="why3">
+      <div class="wc">
+        <figure>{img("vibe-conexao-corp.jpg", "Pessoas conversando e interagindo durante uma experiência", "center 40%")}</figure>
+        <h3>A conversa acontece diferente</h3>
+        <p>Quando o contexto muda, a troca também muda. Entre uma peça sendo criada, um café ou uma taça, a conversa encontra espaço para acontecer naturalmente.</p>
       </div>
-      <div class="opt">
-        <div class="ophoto">{img("pizzanegroni.jpg", "Pizza artesanal e bebida", "center 45%")}<span class="oplab">Opção 02</span></div>
-        <div class="opbody">
-          <h3>Pizza &amp; Wine</h3>
-          <div class="optags">Gastronômica · social · fim de tarde/noite</div>
-          <p>Uma noite de sabores, vinho e conversa.</p>
-        </div>
+      <div class="wc">
+        <figure>{img("jantar-vista.jpg", "Grupo reunido à mesa, conversando", "center 45%")}</figure>
+        <h3>Cada momento tem seu próprio ritmo</h3>
+        <p>Tem hora de colocar a mão na massa, tem hora de sentar à mesa. Experiências diferentes, com espaço para presença, descoberta e troca.</p>
+      </div>
+      <div class="wc">
+        <figure>{img("corp-conexao.jpg", "Momento humano de conexão entre o time", "center 40%")}</figure>
+        <h3>O encontro continua depois</h3>
+        <p>Uma peça que fica, um sabor que vira referência, uma história que volta na conversa. A experiência termina, mas alguma coisa dela acompanha o time.</p>
       </div>
     </div>
-    {foot("A curadoria")}
+    {foot("O que o time leva junto")}
   </section>'''
 
 opt1_divider = f'''
