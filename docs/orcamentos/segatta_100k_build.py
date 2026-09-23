@@ -37,6 +37,8 @@ xcss = '''
   .imrow .rn{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);line-height:1.05}
   .imrow .rs{font-size:10.5px;color:var(--muted);margin-top:3px}
   .imprice{font-family:'DM Serif Display',serif;font-size:17px;color:var(--muted);letter-spacing:.01em}
+  .imprice.on{color:var(--navy)}
+  .imper{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
   /* opcionais · foto + brindes */
   .optcards{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:22px}
   .optc{display:grid;grid-template-columns:132px 1fr;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 14px 32px -24px rgba(0,0,0,.3)}
@@ -85,10 +87,13 @@ def excard(n, src, alt, name, desc, pos="center 50%", chip=None):
             f'<div class="exb"><span class="exn">{n}</span><h3>{name}</h3><p>{desc}</p></div></div>')
 
 
-def mrow(name, sub):
-    c = '<span class="imprice">A confirmar</span>'
+def mrow(name, sub, cells):
     return (f'<div class="imrow"><div class="imcell"><div class="rn">{name}</div><div class="rs">{sub}</div></div>'
-            f'<div class="imcell">{c}</div><div class="imcell imcol-hl">{c}</div><div class="imcell">{c}</div></div>')
+            f'<div class="imcell">{cells[0]}</div><div class="imcell imcol-hl">{cells[1]}</div><div class="imcell">{cells[2]}</div></div>')
+
+
+TBD = '<span class="imprice">A confirmar</span>'
+P416 = '<span class="imprice on">R$ 416</span><span class="imper">por pessoa</span>' 
 
 
 def optcard(src, alt, kicker, title, bullets, note, pos="center 50%"):
@@ -131,9 +136,9 @@ experiencias = f'''
     <h2>Escolham como <em>celebrar</em></h2>
     <p class="lead">Três experiências criativas para reunir o time, colocar a mão na massa e comemorar juntos — todas conduzidas por profissionais, com materiais e produção da Elarah.</p>
     <div class="exp3">
-      {excard("Experiência 01", "ceramicafamiliamais12.jpg", "Pessoas sorrindo enquanto criam cerâmica", "Cerâmica", "Cada um modela a própria peça em argila, à mão e sem pressa — e leva para casa.", "center 40%")}
-      {excard("Experiência 02", "aniversario-mesa-real.jpg", "Grupo montando arranjos florais juntos à mesa", "Arranjos florais", "Guiados por uma florista, montam o próprio arranjo autoral com flores selecionadas.", "center 50%")}
-      {excard("Experiência 03", "perfumaria-apre.jpg", "Pessoas experimentando aromas na bancada de perfumaria", "Perfumaria & Home Spray", "Criam a própria fragrância ou um home spray autoral para perfumar os ambientes.", "center 45%")}
+      {excard("Experiência 01", "ceramicafamiliamais12.jpg", "Pessoas sorrindo enquanto criam cerâmica", "Cerâmica", "Modelagem à mão, guiada por ceramista, em um ateliê em Perdizes.", "center 40%")}
+      {excard("Experiência 02", "perfumaria-apre.jpg", "Pessoas experimentando aromas na bancada de perfumaria botânica", "Perfumaria Botânica", "Uma experiência sensorial para explorar aromas e criar um perfume botânico autoral de 50 ml.", "center 45%")}
+      {excard("Experiência 03", "aniversario-mesa-real.jpg", "Grupo montando arranjos florais juntos à mesa", "Arranjos florais", "Uma experiência criativa para montar um arranjo autoral e levar a criação para casa.", "center 50%")}
     </div>
     {foot("As experiências")}
   </section>'''
@@ -179,15 +184,15 @@ vibe = f'''
 espacos = f'''
   <section class="slide">
 {head_simple("Os espaços")}
-    <span class="eyebrow orange">◆ Onde acontece</span>
-    <h2>Onde for melhor para <em>vocês</em></h2>
-    <p class="lead">Pode acontecer no próprio escritório da Segatta, em Perdizes, ou em um espaço parceiro próximo. O espaço final está <b>em curadoria</b> — abaixo, as opções que estamos avaliando.</p>
+    <span class="eyebrow orange">◆ Escolham o cenário</span>
+    <h2>Cada experiência, seu <em>cenário</em></h2>
+    <p class="lead">Cada experiência tem o espaço ideal — em Perdizes ou num parceiro próximo já no radar da Elarah. Abaixo, o cenário sugerido para cada uma.</p>
     <div class="exp3">
-      {excard("Opção principal", "mesa-montada-corp.jpg", "Mesa montada para a experiência no escritório", "No escritório da Segatta", "Perdizes · SP. Levamos a experiência completa até o local.", "center 50%", chip="No local")}
-      {excard("Espaço parceiro próximo", "agora-grupo.jpg", "Grupo participando de experiência criativa em ateliê, luz natural", "Ateliê parceiro · zona oeste", "Parceiros próximos a Perdizes (ex.: Pinheiros) já no radar da Elarah.", "center 45%", chip="Em curadoria")}
-      {excard("Outra opção de espaço", "casa-aquario-atelie.jpg", "Café ou ateliê parceiro aconchegante", "Café ou ateliê parceiro", "Selecionado conforme a experiência escolhida e a data do evento.", "center 50%", chip="Em curadoria")}
+      {excard("01 · Cerâmica · Perdizes", "netas-atelie.jpg", "Ateliê de cerâmica com pessoas criando, luz natural", "Ateliê Signal ou Entre Mãos", "Ateliê de cerâmica em Perdizes — o espaço é confirmado conforme a data escolhida.", "center 50%", chip="Conforme a data")}
+      {excard("02 · Perfumaria Botânica", "betchavas3.jpg", "Café charmoso e arejado com verde e mesas comunais", "BETC Havas Café", "Café charmoso e cheio de luz — o cenário para a experiência sensorial de perfumaria.", "center 50%", chip="Sugerido")}
+      {excard("03 · Arranjos Florais", "agora-mesa.jpg", "Cenário montado no Agora, mesa com flores e materiais", "Agora", "Espaço criativo e luminoso para montar o arranjo autoral, com tudo preparado.", "center 50%", chip="Sugerido")}
     </div>
-    <div class="bnote">◆ Endereços, disponibilidade e eventuais consumos mínimos <b>a confirmar</b>. Priorizamos parceiros próximos a Perdizes já conhecidos da Elarah; o espaço final segue <b>em curadoria</b>.</div>
+    <div class="bnote">◆ Endereços, disponibilidade, alimentação e eventuais consumos <b>a confirmar</b>. O ateliê de cerâmica (<b>Ateliê Signal</b> ou <b>Entre Mãos</b>) é definido conforme a data da sexta escolhida.</div>
     {foot("Os espaços")}
   </section>'''
 
@@ -197,19 +202,19 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Três níveis para <em>escolher</em></h2>
-    <p class="lead">Cada experiência em três níveis — do essencial ao completo. Os <b>valores estão em curadoria</b> e entram assim que definirmos o formato, o espaço e o número final de participantes.</p>
+    <p class="lead">Cada experiência em três níveis — do essencial ao completo. A <b>Perfumaria Botânica</b> já entra com o valor por pessoa do plano Experiência; os demais valores seguem <b>a confirmar</b>.</p>
     <div class="imatrix">
       <div class="imrow imhead">
         <div class="imcell"><span class="leg">Experiências</span></div>
         <div class="imcell"><span class="tname">Experiência</span><div class="tdesc">Atividade + materiais + profissional + produção Elarah</div></div>
-        <div class="imcell imcol-hl"><span class="tname">Premium <span class="imtag">Mais escolhido</span></span><div class="tdesc">Tudo da Experiência + comidinhas + bebidas</div></div>
-        <div class="imcell"><span class="tname">Completa</span><div class="tdesc">Tudo do Premium + brindes / lembrancinhas + personalização</div></div>
+        <div class="imcell imcol-hl"><span class="tname">Premium <span class="imtag">Mais escolhido</span></span><div class="tdesc">Tudo da Experiência + comidinhas &amp; bebidas + foto profissional</div></div>
+        <div class="imcell"><span class="tname">Completa</span><div class="tdesc">Tudo do Premium + brinde personalizado</div></div>
       </div>
-      {mrow("Cerâmica", "Modelagem em argila")}
-      {mrow("Arranjos florais", "Arranjo autoral")}
-      {mrow("Perfumaria &amp; Home Spray", "Fragrância / home spray")}
+      {mrow("Cerâmica", "Modelagem à mão · Perdizes", [TBD, TBD, TBD])}
+      {mrow("Perfumaria Botânica", "Perfume autoral · 50 ml", [P416, TBD, TBD])}
+      {mrow("Arranjos florais", "Arranjo autoral · Agora", [TBD, TBD, TBD])}
     </div>
-    <p class="fineprint">Valores por pessoa <b>em curadoria</b> — definidos com o formato, o espaço e o número final de participantes (8 pessoas). Foto profissional e brindes personalizados disponíveis como opcionais (próximo slide). Data: sexta-feira de outubro, a confirmar.</p>
+    <p class="fineprint">Perfumaria Botânica: <b>R$ 416 por pessoa</b> no plano Experiência (fornecedor Semblante) — materiais e insumos inclusos, perfume autoral de 50 ml. Cerâmica, arranjos florais e os planos Premium e Completa: valores <b>a confirmar</b>. Alimentação e consumo dos espaços não inclusos até confirmação. Data: sexta-feira de outubro, a confirmar.</p>
     {foot("Investimento")}
   </section>'''
 
