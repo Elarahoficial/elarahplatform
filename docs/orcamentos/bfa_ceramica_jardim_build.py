@@ -265,7 +265,7 @@ pw_conceito = f'''
     <h2>Uma noite de <em>sabores, vinho e conversa</em></h2>
     <p class="lead">Uma experiência <b>gastronômica e social</b> em torno da mesa, com <b>três sabores de pizza</b> e diferentes <b>harmonizações</b> ao longo da noite — feita para provar, conversar e compartilhar.</p>
     <div class="cgrid">
-      <figure class="cphoto">{img("pizzanegroni.jpg", "Pizza artesanal e taça servida à mesa", "center 45%")}</figure>
+      <figure class="cphoto">{img("pizza-brinde.jpg", "Brinde com taças de vinho sobre a mesa com pizzas", "center 50%")}</figure>
       <div class="cpil">
         <div class="cp"><span class="cn">01 · Recepção &amp; boas-vindas</span><p>O grupo chega, se acomoda e começa a noite com calma.</p></div>
         <div class="cp"><span class="cn">02 · Preparo conduzido</span><p>O preparo das pizzas acontece conduzido pelo parceiro gastronômico e acompanhado pelo grupo.</p></div>
@@ -287,8 +287,8 @@ pw_atmosfera = atmosfera(
         ("weber-mesa.webp", "Mesa posta para a experiência gastronômica", "center 55%", "Mesa posta"),
         ("vinhotintos.jpg", "Taças e vinhos servidos", "center 45%", "Taças servidas"),
         ("pizza.jpg", "Pizza artesanal em três sabores", "center 50%", "Sabores da noite"),
-        ("weber-conversa.webp", "Grupo animado durante a experiência", "center 40%", "Conversa boa"),
-        ("drinkspetisco.jpg", "O time reunido à mesa", "center 50%", "O time reunido"),
+        ("weber-grupo.webp", "Grupo sorrindo durante a experiência conduzida", "center 45%", "Condução da experiência"),
+        ("harmonizacaoqueijos.jpg", "Tábua curada para harmonizar", "center 50%", "Curadoria à mesa"),
     ],
     "Experiência completa",
     "espaço · condução gastronômica · pizza em três sabores · harmonização de vinhos · serviço · produção Elarah",
@@ -304,8 +304,8 @@ pw_investimento = f'''
     <h2>Uma noite completa, <em>tudo incluso</em></h2>
     <p class="lead">A experiência gastronômica completa — <b>pizza em três sabores</b>, <b>harmonização de vinhos</b> e condução por <b>parceiro gastronômico</b>, com produção da Elarah.</p>
     <div class="priceband">
-      <div><span class="pl">Experiência completa · até 10 participantes</span><span class="pv">R$ 8.990</span></div>
-      <div class="side">R$ 899 por pessoa<br>pizza · harmonização de vinhos<br><b style="color:#fff;font-family:'DM Serif Display',serif">tudo incluso</b></div>
+      <div><span class="pl">Experiência completa</span><span class="pv">R$ 899</span><span style="display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.75);font-weight:600;margin-top:6px">por pessoa</span></div>
+      <div class="side">pizza · harmonização de vinhos<br>condução gastronômica<br><b style="color:#fff;font-family:'DM Serif Display',serif">tudo incluso</b></div>
     </div>
     <div class="invbox" style="margin-top:16px">
       <div class="incl incl2" style="flex:1;min-width:300px">
@@ -320,7 +320,7 @@ pw_investimento = f'''
         </ul>
       </div>
     </div>
-    <p class="fineprint">Investimento único da experiência completa (valor por pessoa), para grupo de até 10 participantes. Espaço, parceiro gastronômico e seleção de vinhos a confirmar. Datas em avaliação: 08, 09 ou 10 de dezembro.</p>
+    <p class="fineprint">Investimento único da experiência completa, valor por pessoa. Espaço, parceiro gastronômico e seleção de vinhos a confirmar. Datas em avaliação: 08, 09 ou 10 de dezembro.</p>
     {foot("Investimento · Pizza & Wine")}
   </section>'''
 
