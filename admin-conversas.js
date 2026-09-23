@@ -125,18 +125,29 @@
   // O fio da conversa: as duas tabelas, juntadas e ordenadas por tempo.
   // São duas consultas de propósito — a view serve pra LISTA (uma linha por
   // telefone); aqui precisamos de cada mensagem, das duas origens.
+  // O mesmo celular com e sem o 9 da frente: a Meta grava contas antigas
+  // sem o 9 (554891907056), e o que a Elarah envia sai com o 9
+  // (5548991907056). O fio junta as duas formas.
+  function variantesTelefone(tel) {
+    var d = String(tel || '').replace(/\D+/g, '');
+    if (/^55\d{2}9\d{8}$/.test(d)) return [d, d.slice(0, 4) + d.slice(5)];
+    if (/^55\d{2}[6-9]\d{7}$/.test(d)) return [d, d.slice(0, 4) + '9' + d.slice(4)];
+    return [d];
+  }
+
   async function carregarFio(telefone) {
     var s = sb();
     if (!s) return [];
+    var tels = variantesTelefone(telefone);
     var res = await Promise.all([
       s.from('whatsapp_mensagens')
         .select('wa_message_id, telefone, nome_perfil, tipo, texto, media_id, media_mime, wa_timestamp, recebida_em')
-        .eq('telefone', telefone)
+        .in('telefone', tels)
         .order('wa_timestamp', { ascending: true })
         .limit(500),
       s.from('whatsapp_send_log')
         .select('dedupe_key, kind, corpo, status, error, created_at')
-        .eq('telefone', telefone)
+        .in('telefone', tels)
         .order('created_at', { ascending: true })
         .limit(500)
     ]);
