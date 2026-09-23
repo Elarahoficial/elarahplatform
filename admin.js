@@ -26766,22 +26766,80 @@
   // Força do match: 3 = nome igual, 2 = nome parecido, 1 = mesma categoria.
   const _INT_MATCH_LABEL = { 3: 'Nome igual', 2: 'Nome parecido', 1: 'Mesma categoria' };
 
+  // Palavras de categoria (pintura, cerâmica, vela, arco, flecha...) não
+  // diferenciam uma experiência da outra: "pintura em abajur" x "pintura
+  // em taça" só compartilham "pintura". O que decide é o resto (abajur x
+  // taça).
+  const _INT_PALAVRAS_CATEGORIA = new Set();
+  Object.keys(_INT_CATEGORIA_LABELS).forEach(k => {
+    _intTokens(k + ' ' + _INT_CATEGORIA_LABELS[k]).forEach(w => _INT_PALAVRAS_CATEGORIA.add(w));
+  });
+
+  // Palavras comuns em observação que não dizem QUAL experiência é.
+  const _INT_PALAVRAS_RUIDO = new Set([
+    'quer', 'queria', 'querem', 'gostaria', 'gosta', 'fazer', 'pediu', 'pedir',
+    'interessada', 'interessado', 'interesse', 'avisar', 'aviso', 'quando', 'abrir',
+    'tiver', 'ter', 'tem', 'data', 'dia', 'dias', 'sabado', 'domingo', 'semana',
+    'final', 'fim', 'manha', 'tarde', 'noite', 'amiga', 'amigo', 'mae', 'filha',
+    'filho', 'presente', 'aniversario', 'grupo', 'pessoa', 'casal', 'namorado',
+    'namorada', 'marido', 'esposa', 'prefere', 'preferencia', 'horario', 'valor',
+    'preco', 'turma', 'proxima', 'proximo', 'nova', 'novo', 'mais', 'ela', 'ele',
+    'dela', 'dele', 'ver', 'algo', 'tipo', 'coisa', 'qualquer', 'sim', 'nao',
+    'mesma', 'mesmo', 'junto', 'junta', 'sozinha', 'depois', 'antes', 'mes',
+    'janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto',
+    'setembro', 'outubro', 'novembro', 'dezembro', 'whatsapp', 'insta', 'instagram',
+    'chamou', 'mandou', 'mensagem', 'perguntou', 'disse', 'falou', 'contato'
+  ]);
+
+  // O que a pessoa pediu: campo "Experiência desejada"; senão o "Quer: X"
+  // que o fallback grava na observação; senão a própria observação
+  // (o placeholder dela é "O que ela quer, contexto...").
+  function _intPedido(interesse) {
+    if (interesse.experiencia) return { texto: interesse.experiencia, fonte: 'experiencia' };
+    const obs = String(interesse.observacao || '');
+    const m = obs.match(/^\s*quer:\s*(.+?)(\s+—\s+|$)/i);
+    if (m) return { texto: m[1], fonte: 'experiencia' };
+    return { texto: obs, fonte: 'observacao' };
+  }
+
+  // Tokens que diferenciam: tira categoria, ruído e números.
+  function _intDistintivos(s) {
+    return _intTokens(s).filter(w =>
+      !_INT_PALAVRAS_CATEGORIA.has(w) && !_INT_PALAVRAS_RUIDO.has(w) && !/^\d+$/.test(w));
+  }
+
   function _intMatch(interesse, exp) {
+    const pedido = _intPedido(interesse);
     const expNome = _intNorm(exp.nome);
-    const desejada = _intNorm(interesse.experiencia);
-    if (desejada && expNome) {
+    if (!expNome) return 0;
+
+    if (pedido.fonte === 'experiencia') {
+      const desejada = _intNorm(pedido.texto);
       if (desejada === expNome) return 3;
       const tD = _intTokens(desejada);
-      const tE = _intTokens(expNome);
-      if (tD.length && tD.join(' ') === tE.join(' ')) return 3;
-      if (desejada.length >= 4 && (expNome.indexOf(desejada) !== -1 || desejada.indexOf(expNome) !== -1)) return 2;
-      if (tD.length && tE.length) {
-        const setE = new Set(tE);
-        const comuns = tD.filter(w => setE.has(w)).length;
-        if (comuns && comuns / Math.min(tD.length, tE.length) >= 0.6) return 2;
-      }
+      if (tD.length && tD.join(' ') === _intTokens(expNome).join(' ')) return 3;
     }
-    const frases = _intCategoriaFrases(interesse.categoria);
+
+    // Pediu algo específico (abajur, taça, colar...): só combina se a
+    // experiência tiver esse algo no nome. Categoria sozinha NÃO basta.
+    const dD = _intDistintivos(pedido.texto);
+    if (dD.length) {
+      const setE = new Set(_intTokens((exp.nome || '') + ' ' + (exp.categoria || '')));
+      const comuns = dD.filter(w => setE.has(w)).length;
+      if (!comuns) return 0;
+      // Campo específico: a maior parte do que ela pediu tem que estar lá.
+      // Observação é texto livre: basta uma palavra que diferencie.
+      if (pedido.fonte === 'experiencia' && comuns / dD.length < 0.5) return 0;
+      return 2;
+    }
+
+    // Pedido genérico (só a categoria, ou "aula de pintura"): qualquer
+    // experiência da categoria serve.
+    let frases = _intCategoriaFrases(interesse.categoria);
+    if (!frases.length) {
+      const tP = _intTokens(pedido.texto).filter(w => _INT_PALAVRAS_CATEGORIA.has(w));
+      frases = tP;
+    }
     if (frases.length) {
       const hay = ' ' + _intTokens((exp.nome || '') + ' ' + (exp.categoria || '')).join(' ') + ' ';
       if (frases.some(f => hay.indexOf(' ' + f + ' ') !== -1)) return 1;
@@ -26924,7 +26982,7 @@
         '<div style="padding:12px 14px;font-weight:700;color:#8a5a12;">🔔 ' +
           (alertas.length === 1 ? 'Lançou uma experiência' : 'Lançaram ' + alertas.length + ' experiências') +
           ' que combina' + (alertas.length === 1 ? '' : 'm') + ' com a lista de espera' +
-          '<div style="font-weight:400;font-size:.82rem;color:#8a6d3b;margin-top:2px;">Experiências criadas depois que a pessoa entrou na lista, com nome igual/parecido ao que ela pediu ou da mesma categoria.</div>' +
+          '<div style="font-weight:400;font-size:.82rem;color:#8a6d3b;margin-top:2px;">Experiências criadas depois que a pessoa entrou na lista, com nome igual/parecido ao que ela pediu. \"Mesma categoria\" só aparece pra quem não pediu nada específico.</div>' +
         '</div>' +
         itens +
       '</div>';
