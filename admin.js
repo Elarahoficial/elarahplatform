@@ -23804,8 +23804,138 @@
       horario_label: '19h00 – 22h00',
       vagas_total: 12,
       horizon_weeks: 8,
+      active_months: [],
       is_active: true,
     };
+  }
+
+  // ----- Meses em que a regra vale (active_months) -----
+  // 'YYYY-MM'. Vazio = todos os meses (segue o horizon em semanas).
+  // Serve pra ateliê que muda de agenda mês a mês: "toda quarta" só em
+  // outubro e dezembro, sem precisar de duas experiências.
+  const MONTH_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+  function _recurrenceMonthKey(y, m) {
+    return y + '-' + String(m + 1).padStart(2, '0');
+  }
+
+  function _recurrenceMonthLabel(key) {
+    const parts = String(key || '').split('-');
+    const m = Number(parts[1]) - 1;
+    if (parts.length !== 2 || !(m >= 0 && m <= 11)) return String(key || '?');
+    return MONTH_SHORT[m] + '/' + parts[0].slice(2);
+  }
+
+  // Próximos 12 meses a partir do mês atual + qualquer mês já marcado
+  // que caia fora dessa janela (ex.: mês que já passou), pra admin ver
+  // e poder desmarcar.
+  function _recurrenceMonthOptions(selected) {
+    const now = new Date();
+    const keys = [];
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      keys.push(_recurrenceMonthKey(d.getFullYear(), d.getMonth()));
+    }
+    (selected || []).forEach(k => { if (keys.indexOf(k) === -1) keys.push(k); });
+    return keys.sort();
+  }
+
+  function _recurrenceNormalizeMonths(arr) {
+    if (!Array.isArray(arr)) return [];
+    return Array.from(new Set(arr.map(String).filter(k => /^\d{4}-(0[1-9]|1[0-2])$/.test(k)))).sort();
+  }
+
+  function _recurrenceMonthsShortList(arr) {
+    const list = _recurrenceNormalizeMonths(arr);
+    return list.length ? list.map(_recurrenceMonthLabel).join(', ') : 'todos os meses';
+  }
+
+  // Mês (YYYY-MM) de um event_at no fuso de São Paulo — mesmo critério
+  // do SQL, que materializa por data local.
+  function _recurrenceEventMonth(eventAt) {
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit',
+      }).formatToParts(new Date(eventAt));
+      const y = parts.find(p => p.type === 'year');
+      const m = parts.find(p => p.type === 'month');
+      return y && m ? y.value + '-' + m.value : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Prévia das datas que a regra vai gerar nos meses marcados: cada dia
+  // da semana marcado dentro de cada mês, a partir de hoje (mesmo
+  // critério do materialize_recurrence_slots). Só aparece com mês marcado.
+  function _recurrencePreviewDatesHtml(weekdays, months) {
+    const list = _recurrenceNormalizeMonths(months);
+    if (!list.length) return '';
+    const wdSet = new Set((weekdays || []).map(Number));
+    if (!wdSet.size) {
+      return '<p style="margin:8px 0 0;font-size:.78rem;color:#c0392b;">Marque o dia da semana pra ver as datas.</p>';
+    }
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let total = 0;
+    const rows = list.map(key => {
+      const [y, m] = key.split('-').map(Number);
+      const days = [];
+      for (let d = new Date(y, m - 1, 1); d.getMonth() === m - 1; d.setDate(d.getDate() + 1)) {
+        if (d >= today && wdSet.has(d.getDay())) {
+          days.push(WEEKDAY_SHORT[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '/' + String(m).padStart(2, '0'));
+        }
+      }
+      total += days.length;
+      const chips = days.length
+        ? days.map(t => '<span style="display:inline-block;padding:3px 8px;background:#fff;border:1px solid #f0c9a4;border-radius:6px;font-size:.76rem;color:#a4663b;">' + t + '</span>').join('')
+        : '<span style="font-size:.76rem;color:#999;font-style:italic;">nenhuma data (mês já passou)</span>';
+      return '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:6px;">' +
+        '<strong style="font-size:.76rem;color:#444;min-width:52px;">' + _recurrenceEsc(_recurrenceMonthLabel(key)) + '</strong>' + chips +
+      '</div>';
+    }).join('');
+    return '<div style="margin-top:10px;padding:10px;background:#fff;border:1px dashed #f0a05e;border-radius:8px;">' +
+      '<div style="font-size:.76rem;font-weight:700;color:#a4663b;">Datas que vão aparecer no site (' + total + ')</div>' +
+      rows +
+      '<div style="margin-top:6px;font-size:.7rem;color:#888;font-style:italic;">Prévia — as datas são criadas ao salvar a regra.</div>' +
+    '</div>';
+  }
+
+  function _recurrenceRefreshPreview(card) {
+    const box = card && card.querySelector('[data-rec-months-preview]');
+    if (!box) return;
+    const wds = Array.from(card.querySelectorAll('[data-rec-field="weekday-check"]:checked')).map(cb => Number(cb.value));
+    const months = Array.from(card.querySelectorAll('[data-rec-field="month-check"]:checked')).map(cb => cb.value);
+    box.innerHTML = _recurrencePreviewDatesHtml(wds, months);
+  }
+
+  // Mostra o campo Horizon só quando nenhum mês está marcado.
+  function _recurrenceToggleHorizon(card) {
+    const wrap = card && card.querySelector('[data-rec-horizon-wrap]');
+    if (!wrap) return;
+    const anyMonth = !!card.querySelector('[data-rec-field="month-check"]:checked');
+    wrap.style.display = anyMonth ? 'none' : '';
+  }
+
+  // Horizon só é obrigatório sem mês marcado. Com mês, a coluna continua
+  // NOT NULL no banco: guarda o valor digitado se for válido, senão o
+  // anterior, senão 8 (volta a valer se a admin desmarcar os meses).
+  function _recurrenceHorizonValid(v) {
+    return isFinite(v) && v >= 1 && v <= 52;
+  }
+  function _recurrenceHorizonForSave(v, months, fallback) {
+    if (!months.length || _recurrenceHorizonValid(v)) return v;
+    return _recurrenceHorizonValid(Number(fallback)) ? Number(fallback) : 8;
+  }
+
+  // Erro típico quando o SQL elarah_recurrence_active_months.sql ainda
+  // não rodou no Supabase — mensagem clara em vez do erro cru.
+  function _recurrenceFriendlyError(error) {
+    const msg = String((error && (error.message || error.code)) || 'erro');
+    if (/active_months/i.test(msg)) {
+      return 'O banco ainda não conhece a escolha de meses. Rode sql/elarah_recurrence_active_months.sql no Supabase e tente de novo.';
+    }
+    return msg;
   }
 
   function _recurrenceWeekdayLabel(v) {
@@ -23845,7 +23975,9 @@
     // Busca regras + slots futuros + nome da experiência em paralelo
     const [rulesRes, slotsRes, expRes] = await Promise.all([
       sb.from('experience_recurrence_rules')
-        .select('id, weekdays, hora_inicio, hora_fim, horario_label, vagas_total, horizon_weeks, is_active, created_at')
+        // '*' em vez de lista fixa: tolera banco sem active_months
+        // (SQL de meses ainda não rodado) sem quebrar o painel.
+        .select('*')
         .eq('experience_id', experienceId)
         .order('created_at', { ascending: true }),
       sb.from('experience_slots')
@@ -23947,11 +24079,27 @@
       '</label>';
     }).join('');
 
+    const selectedMonths = _recurrenceNormalizeMonths(r.active_months);
+    const selMonthSet = new Set(selectedMonths);
+    const monthsHtml = _recurrenceMonthOptions(selectedMonths).map(k => {
+      const on = selMonthSet.has(k);
+      return '<label style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;background:' + (on ? '#fff8ef' : '#fff') + ';border:1px solid ' + (on ? '#f0a05e' : '#ddd') + ';border-radius:999px;cursor:pointer;font-size:.78rem;font-weight:600;color:' + (on ? '#a4663b' : '#666') + ';">' +
+        '<input type="checkbox" data-rec-field="month-check" value="' + _recurrenceEsc(k) + '"' + (on ? ' checked' : '') + ' style="margin:0;cursor:pointer;">' +
+        _recurrenceEsc(_recurrenceMonthLabel(k)) +
+      '</label>';
+    }).join('');
+
     return '<div class="rec-rule-card" data-rec-rule-id="' + _recurrenceEsc(r.id) + '" style="background:' + bg + ';border:1px solid ' + border + ';border-radius:10px;padding:14px;opacity:' + labelOpacity + ';">' +
       '<div style="margin-bottom:12px;">' +
         '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;margin-bottom:6px;">Dias da semana</label>' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px;" data-rec-field="weekdays-container">' + checkboxesHtml + '</div>' +
         '<p style="margin:6px 0 0;font-size:.72rem;color:#888;font-style:italic;">Marque um ou mais dias. Cada dia marcado gera 8 slots (8 semanas × N dias = total).</p>' +
+      '</div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<label style="font-size:.78rem;font-weight:600;color:#444;display:block;margin-bottom:6px;">Meses em que acontece</label>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:6px;" data-rec-field="months-container">' + monthsHtml + '</div>' +
+        '<p style="margin:6px 0 0;font-size:.72rem;color:#888;font-style:italic;">Opcional. Marque só os meses em que essa aula vai ter (ex.: Out e Dez) — as datas aparecem só neles, o mês inteiro. Sem nenhum mês marcado, vale todo mês pelas próximas semanas do Horizon.</p>' +
+        '<div data-rec-months-preview>' + _recurrencePreviewDatesHtml(Array.from(selected), selectedMonths) + '</div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px;">' +
         '<label style="font-size:.78rem;font-weight:600;color:#444;">Início' +
@@ -23963,7 +24111,9 @@
         '<label style="font-size:.78rem;font-weight:600;color:#444;">Vagas' +
           '<input type="number" data-rec-field="vagas_total" min="1" step="1" value="' + _recurrenceEsc(r.vagas_total) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
         '</label>' +
-        '<label style="font-size:.78rem;font-weight:600;color:#444;">Horizon (semanas)' +
+        // Com mês marcado a regra cobre os meses inteiros e o horizon não
+        // é usado — o campo some pra não confundir.
+        '<label data-rec-horizon-wrap style="font-size:.78rem;font-weight:600;color:#444;' + (selectedMonths.length ? 'display:none;' : '') + '">Horizon (semanas)' +
           '<input type="number" data-rec-field="horizon_weeks" min="1" max="52" step="1" value="' + _recurrenceEsc(r.horizon_weeks) + '" style="display:block;margin-top:4px;width:100%;padding:8px;border:1px solid #ccc;border-radius:6px;font-family:inherit;font-size:.88rem;">' +
         '</label>' +
       '</div>' +
@@ -24030,8 +24180,10 @@
       // (laranja quando marcado, cinza quando desmarcado). Visual
       // imediato sem precisar salvar.
       card.addEventListener('change', (e) => {
-        const cb = e.target && e.target.matches('[data-rec-field="weekday-check"]') ? e.target : null;
+        const cb = e.target && e.target.matches('[data-rec-field="weekday-check"], [data-rec-field="month-check"]') ? e.target : null;
         if (!cb) return;
+        _recurrenceToggleHorizon(card);
+        _recurrenceRefreshPreview(card);
         const lbl = cb.closest('label');
         if (!lbl) return;
         if (cb.checked) {
@@ -24148,8 +24300,10 @@
 
       // Mesmo feedback visual das checkboxes do modo edição.
       card.addEventListener('change', (e) => {
-        const cb = e.target && e.target.matches('[data-rec-field="weekday-check"]') ? e.target : null;
+        const cb = e.target && e.target.matches('[data-rec-field="weekday-check"], [data-rec-field="month-check"]') ? e.target : null;
         if (!cb) return;
+        _recurrenceToggleHorizon(card);
+        _recurrenceRefreshPreview(card);
         const lbl = cb.closest('label');
         if (!lbl) return;
         if (cb.checked) {
@@ -24187,6 +24341,9 @@
       draft.horario_label = (val('horario_label') || '').trim();
       draft.vagas_total = Number(val('vagas_total'));
       draft.horizon_weeks = Number(val('horizon_weeks'));
+      draft.active_months = _recurrenceNormalizeMonths(
+        Array.from(card.querySelectorAll('[data-rec-field="month-check"]:checked')).map(cb => cb.value)
+      );
     });
   }
 
@@ -24195,7 +24352,7 @@
     if (!d.hora_inicio) return 'Hora início obrigatória.';
     if (!d.horario_label) return 'Rótulo do horário obrigatório.';
     if (!isFinite(d.vagas_total) || d.vagas_total < 1) return 'Vagas deve ser inteiro >= 1.';
-    if (!isFinite(d.horizon_weeks) || d.horizon_weeks < 1 || d.horizon_weeks > 52) return 'Horizon entre 1 e 52 semanas.';
+    if (!_recurrenceNormalizeMonths(d.active_months).length && !_recurrenceHorizonValid(d.horizon_weeks)) return 'Horizon entre 1 e 52 semanas (ou marque os meses).';
     return '';
   }
 
@@ -24225,13 +24382,17 @@
         hora_fim: d.hora_fim || null,
         horario_label: d.horario_label,
         vagas_total: d.vagas_total,
-        horizon_weeks: d.horizon_weeks,
+        horizon_weeks: _recurrenceHorizonForSave(d.horizon_weeks, _recurrenceNormalizeMonths(d.active_months), 8),
         is_active: true,
       };
+      // Só manda a coluna quando há mês marcado: regra sem meses segue
+      // funcionando mesmo antes do SQL de meses rodar.
+      const months = _recurrenceNormalizeMonths(d.active_months);
+      if (months.length) payload.active_months = months;
       const { error } = await _recurrenceInsertRule(payload);
       if (error) {
         console.error('[Elarah Recurrence] flush draft error:', error);
-        out.erros.push('Regra ' + _recurrenceWeekdaysShortList(d.weekdays) + ': ' + (error.message || error.code));
+        out.erros.push('Regra ' + _recurrenceWeekdaysShortList(d.weekdays) + ': ' + _recurrenceFriendlyError(error));
         continue;
       }
       out.criadas += 1;
@@ -24322,13 +24483,18 @@
     const newHoraFim = getVal('hora_fim') || null;
     const newHorarioLabel = (getVal('horario_label') || '').trim();
     const newVagasTotal = Number(getVal('vagas_total'));
-    const newHorizonWeeks = Number(getVal('horizon_weeks'));
+    const newMonths = _recurrenceNormalizeMonths(
+      Array.from(card.querySelectorAll('[data-rec-field="month-check"]:checked')).map(cb => cb.value)
+    );
+    const newHorizonWeeks = _recurrenceHorizonForSave(
+      Number(getVal('horizon_weeks')), newMonths, oldRule && oldRule.horizon_weeks
+    );
 
     if (!newWeekdays.length) { _recurrenceCardErr(cardMsg, 'Marque pelo menos 1 dia da semana.'); return; }
     if (!newHoraInicio) { _recurrenceCardErr(cardMsg, 'Hora início obrigatória.'); return; }
     if (!newHorarioLabel) { _recurrenceCardErr(cardMsg, 'Rótulo do horário obrigatório.'); return; }
     if (!isFinite(newVagasTotal) || newVagasTotal < 1) { _recurrenceCardErr(cardMsg, 'Vagas deve ser inteiro >= 1.'); return; }
-    if (!isFinite(newHorizonWeeks) || newHorizonWeeks < 1 || newHorizonWeeks > 52) { _recurrenceCardErr(cardMsg, 'Horizon entre 1 e 52 semanas.'); return; }
+    if (!_recurrenceHorizonValid(newHorizonWeeks)) { _recurrenceCardErr(cardMsg, 'Horizon entre 1 e 52 semanas (ou marque os meses).'); return; }
 
     // Cleanup proativo de órfãos ANTES de salvar.
     // Quando horario_label OU weekday muda, os slots FUTUROS que a
@@ -24349,9 +24515,14 @@
     const weekdaysChanged = oldRule &&
       (oldWeekdays.length !== newWeekdays.length ||
        oldWeekdays.some((v, i) => v !== newWeekdays[i]));
-    if ((horarioChanged || weekdaysChanged) && oldRule) {
+    const oldMonths = _recurrenceNormalizeMonths(oldRule && oldRule.active_months);
+    // Só conta como "mudou" quando o novo conjunto RESTRINGE datas: marcar
+    // meses (ou trocar) pode deixar datas fora; desmarcar tudo = todo mês.
+    const monthsChanged = oldRule && newMonths.length > 0 &&
+      (oldMonths.length !== newMonths.length || oldMonths.some((v, i) => v !== newMonths[i]));
+    if ((horarioChanged || weekdaysChanged || monthsChanged) && oldRule) {
       try {
-        const cleaned = await _recurrenceCleanupOrphans(experienceId, ruleId, newHorarioLabel, newWeekdays);
+        const cleaned = await _recurrenceCleanupOrphans(experienceId, ruleId, newHorarioLabel, newWeekdays, newMonths);
         if (cleaned > 0) {
           console.info('[Elarah Recurrence] cleanup: ' + cleaned + ' slot(s) órfão(s) removidos/desligados');
         }
@@ -24368,9 +24539,15 @@
       vagas_total: newVagasTotal,
       horizon_weeks: newHorizonWeeks,
     };
+    // Manda active_months quando há mês marcado ou quando a regra já
+    // tinha meses (desmarcar tudo = voltar a valer todo mês). Regra que
+    // nunca usou meses não toca na coluna — funciona sem o SQL novo.
+    if (newMonths.length || oldMonths.length) {
+      patch.active_months = newMonths.length ? newMonths : null;
+    }
     const { error } = await sb.from('experience_recurrence_rules').update(patch).eq('id', ruleId);
     if (error) {
-      _recurrenceCardErr(cardMsg, 'Erro ao salvar: ' + (error.message || error.code));
+      _recurrenceCardErr(cardMsg, 'Erro ao salvar: ' + _recurrenceFriendlyError(error));
       console.error('[Elarah Recurrence] save error:', error);
       return;
     }
@@ -24545,12 +24722,14 @@
   //   já refletia o 1º save — slots de label anterior ainda mais antigo
   //   ficavam órfãos invisíveis. Comparar contra o estado NOVO é a
   //   única forma robusta.
-  async function _recurrenceCleanupOrphans(experienceId, ruleId, newHorarioLabel, newWeekdays) {
+  async function _recurrenceCleanupOrphans(experienceId, ruleId, newHorarioLabel, newWeekdays, newMonths) {
     const sb = window.supabaseClient;
     if (!sb || !ruleId) return 0;
 
     const expectedLabel = (newHorarioLabel || '').trim();
     const expectedWdSet = new Set((newWeekdays || []).map(Number));
+    // Vazio = todos os meses (nenhuma data diverge por mês).
+    const expectedMonthSet = new Set(_recurrenceNormalizeMonths(newMonths));
 
     // Lista TODOS os slots futuros desta regra (sem filtrar por horario)
     const { data: candidates, error: err1 } = await sb
@@ -24568,7 +24747,9 @@
       const slotDow = slot.event_at ? new Date(slot.event_at).getDay() : null;
       const horarioDiverge = slotHorario !== expectedLabel;
       const weekdayDiverge = slotDow !== null && expectedWdSet.size > 0 && !expectedWdSet.has(slotDow);
-      if (!horarioDiverge && !weekdayDiverge) continue; // slot está alinhado, mantém
+      const slotMonth = slot.event_at ? _recurrenceEventMonth(slot.event_at) : null;
+      const monthDiverge = slotMonth !== null && expectedMonthSet.size > 0 && !expectedMonthSet.has(slotMonth);
+      if (!horarioDiverge && !weekdayDiverge && !monthDiverge) continue; // slot está alinhado, mantém
 
       // Checa booking ativo
       const { count, error: errCount } = await sb

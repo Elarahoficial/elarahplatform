@@ -1433,6 +1433,8 @@
       };
       if (Array.isArray(r.weekdays)) payload.weekdays = r.weekdays;
       if (r.weekday != null) payload.weekday = r.weekday;
+      // Meses em que a regra vale (sql/elarah_recurrence_active_months.sql).
+      if (Array.isArray(r.active_months) && r.active_months.length) payload.active_months = r.active_months;
       // Insere uma a uma: se uma regra falhar, as outras ainda entram.
       const { error: insErr } = await s.from(RECURRENCE_TABLE).insert(payload);
       if (insErr) {
