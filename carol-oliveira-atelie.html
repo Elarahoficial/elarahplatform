@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Carol Oliveira Ateliê — experiências na Elarah</title>
+  <meta name="description" content="Todos os links das experiências do Carol Oliveira Ateliê disponíveis para reserva na Elarah. Escolha a sua data e garanta a vaga.">
+  <link rel="canonical" href="https://elarah.com.br/carol-oliveira-atelie.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Elarah">
+  <meta property="og:title" content="Carol Oliveira Ateliê — experiências na Elarah">
+  <meta property="og:description" content="Todos os links das experiências do Carol Oliveira Ateliê disponíveis para reserva na Elarah.">
+  <meta property="og:url" content="https://elarah.com.br/carol-oliveira-atelie.html">
+  <meta property="og:image" content="https://elarah.com.br/assets/logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <meta name="theme-color" content="#FFFFFF">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://nwijxjmenbfyehvscogs.supabase.co">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+  <!-- =====================================================
+       PÁGINA DE LINKS DO PARCEIRO — "link na bio"
+       -----------------------------------------------------
+       Página co-branded (parceiro + Elarah) com TODOS os links
+       das experiências do parceiro que estão públicas no site.
+
+       A lista NÃO é escrita à mão: ela é montada em tempo de
+       carregamento a partir da mesma fonte que o site usa
+       (ElarahData.getVisibleExperiences), então:
+         - experiência oculta no admin (is_active=false) não aparece
+         - experiência vencida / dentro do cutoff não aparece
+         - experiência nova do parceiro aparece sozinha
+       Ou seja: não precisa mexer nesta página quando o catálogo
+       do parceiro muda.
+
+       Pra criar a página de OUTRO parceiro: copie este arquivo e
+       troque só o bloco PARCEIRO lá embaixo.
+       ===================================================== -->
+
+  <link rel="stylesheet" href="parceiro-links.css?v=1">
+  <style>
+    /* Carol Oliveira Ateliê — preto e branco, como a assinatura dela.
+       Sem cor nenhuma na identidade: o único ponto colorido da página
+       é o laranja da Elarah no botão de reservar, que é justamente o
+       que a gente quer que a pessoa clique.
+       Só as cores — a estrutura vem de parceiro-links.css. */
+    :root {
+      --afa-wine:   #111111;
+      --afa-wine-d: #000000;
+      --afa-rose:   #555555;
+      --afa-blush:  #F2F2F2;
+      --afa-sage:   #BDBDBD;
+      --afa-sand:   #E4E4E4;
+      --afa-cream:  #FFFFFF;
+      --afa-ink:    #111111;
+      --afa-muted:  #6B6B6B;
+      --afa-line:   #E6E6E6;
+      --afa-logo-bg: #FFFFFF;
+      --afa-logo-shadow: none;
+    }
+
+    /* Identidade preto e branco: as manchas coloridas do fundo viram
+       borrões cinzas no branco. Aqui a página fica limpa mesmo. */
+    .afa-bg { display: none; }
+  </style>
+</head>
+<body>
+  <div class="afa-bg" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+  <main class="afa">
+    <header class="afa__head">
+      <div class="afa__logo afa__logo--assinatura" id="afa-logo">
+        <span class="afa__logo-fallback" id="afa-logo-fallback">Carol Oliveira<br>Ateliê</span>
+      </div>
+      <!-- O logo dela já é o nome escrito à mão; o <h1> fica só para
+           leitor de tela e buscador, sem repetir na tela. -->
+      <h1 class="afa__name afa__sr-only" id="afa-name">Carol Oliveira Ateliê</h1>
+      <p class="afa__tag" id="afa-tag">Experiências criativas para fazer com as mãos, em São Paulo</p>
+
+      <div class="afa__chips" id="afa-chips"></div>
+
+      <a class="afa__badge" href="index.html" id="afa-badge">
+        Reserve pela <img src="assets/logo.png" alt="Elarah">
+      </a>
+    </header>
+
+    <h2 class="afa__section-title">Experiências com vaga aberta</h2>
+
+    <div class="afa__list" id="afa-list" aria-live="polite" aria-busy="true">
+      <div class="afa-skel"></div>
+      <div class="afa-skel"></div>
+      <div class="afa-skel"></div>
+    </div>
+
+    <p class="afa__msg" id="afa-empty" hidden></p>
+
+    <a class="afa__all" href="index.html">Ver todas as experiências da Elarah →</a>
+
+    <a class="afa__help"
+       href="https://wa.me/5511914455930?text=Ol%C3%A1!%20Vim%20pela%20p%C3%A1gina%20do%20Carol%20Oliveira%20Ateli%C3%AA%20e%20queria%20ajuda%20com%20uma%20reserva."
+       target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.2-5.2A8.5 8.5 0 1 1 21 11.5z"></path>
+      </svg>
+      Fale com a Elarah · <strong>(11)&nbsp;91445-5930</strong>
+    </a>
+
+    <footer class="afa__foot">
+      Reservas, pagamento e confirmação pela <a href="index.html">Elarah</a>.<br>
+      <a href="termos.html">Termos</a> · <a href="privacidade.html">Privacidade</a>
+    </footer>
+  </main>
+
+<script src="promo.js?v=5"></script>
+  <script src="supabase-loader.js?v=11"></script>
+  <script src="supabase-client.js?v=12"></script>
+  <script src="experiences-data.js?v=42"></script>
+  <script src="analytics.js?v=4"></script>
+  <script src="parceiro-links.js?v=2"></script>
+  <script>
+    // Config deste parceiro. Pra outro parceiro: copie o HTML e mude
+    // só este bloco (e os textos do cabeçalho acima).
+    ElarahParceiroLinks.init({
+      nome: 'Carol Oliveira Ateliê',
+      // Nome do fornecedor exatamente como está no cadastro da
+      // experiência. A comparação ignora acento, maiúscula e espaço
+      // sobrando, mas exige o nome INTEIRO — assim um parceiro futuro
+      // de nome parecido não cai nesta página. Listei as grafias
+      // plausíveis; confirmar no admin qual é a usada e apagar o resto
+      // (ou acrescentar a que faltar).
+      match: ['Carol Oliveira Ateliê', 'Carol Oliveira', 'Ateliê Carol Oliveira', 'Carol Ateliê'],
+      // Escape hatch: IDs de experiências que devem entrar mesmo se o
+      // campo "Fornecedor" estiver vazio/diferente no admin.
+      idsExtra: [],
+      // Caminhos onde o logo pode estar. A página testa na ordem e usa
+      // o primeiro que existir. O arquivo commitado já vem recortado na
+      // medida do traço e com fundo transparente, pra assinatura poder
+      // ser exibida sem moldura.
+      logo: [
+        'assets/parceiros/carol-oliveira.png',
+        'assets/parceiros/carol-oliveira-atelie.png',
+        'assets/parceiros/carol-oliveira.jpg',
+        'assets/carol-oliveira.png',
+        'assets/carol-oliveira.jpg',
+        'assets/carololiveira.png',
+        'assets/carololiveira.jpg'
+      ],
+      // FALTA CONFIRMAR: assim que vierem, descomentar e preencher.
+      // Sem eles a página simplesmente não mostra os chips de contato.
+      // instagram: 'carololiveiraatelie',
+      // whatsapp: '5511999999999',
+      // whatsappLabel: '(11) 99999-9999',
+      utm: 'carol-oliveira-atelie'
+    });
+  </script>
+</body>
+</html>
