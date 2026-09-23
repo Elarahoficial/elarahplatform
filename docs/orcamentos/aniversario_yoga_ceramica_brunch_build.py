@@ -108,7 +108,7 @@ cover = f'''
           <span class="chip">Yoga · Cerâmica · Brunch</span>
         </div>
       </div>
-      <div class="cover-photo">{img("aniversariogi.jpg", "Mesa rosa de aniversário com flores e prato de cerâmica pintado", "center 45%")}</div>
+      <div class="cover-photo">{img("aniv-yoga-capa-mesa.jpg", "Mesa de aniversário montada com flores rosa e cadeiras com aventais rosa", "center 40%")}</div>
     </div>
     {foot("Aniversário · 13 de dezembro")}
   </section>'''
