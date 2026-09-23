@@ -26677,7 +26677,12 @@
   // botão "Avisar" abre o WhatsApp com a mensagem pronta — a admin
   // só cola o link. Tabela: public.interesses (RLS is_admin()).
   let _intCache = [];
+  let _intExpCache = [];
   let _intWired = false;
+  // Experiência em foco (clicou "Ver interessados" num alerta): a tabela
+  // mostra só quem combina com ela e o "Avisar" já vem com o link dela.
+  let _intFocoExpId = null;
+  const _INT_ALERTAS_DISPENSADOS_KEY = 'elarah_int_alertas_dispensados';
 
   // Rótulos das categorias (mesma lista dos selects do admin). Espelha
   // os <option> de #int-categoria pra mostrar o nome bonito na tabela.
@@ -26719,6 +26724,103 @@
     return waPhoneDigits(raw) || null;
   }
 
+  // ----- Comparação de nomes (interesse x experiência lançada) -----
+  // Minúsculo, sem acento, só letras/números. "Cerâmica & Café!" →
+  // "ceramica cafe".
+  function _intNorm(s) {
+    return String(s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
+  // Palavras que não dizem nada sobre QUAL experiência é.
+  const _INT_STOPWORDS = new Set([
+    'de', 'da', 'do', 'das', 'dos', 'em', 'no', 'na', 'nos', 'nas', 'com',
+    'para', 'pra', 'por', 'uma', 'um', 'the', 'and', 'aula', 'aulas',
+    'oficina', 'oficinas', 'workshop', 'curso', 'experiencia', 'experiencias',
+    'elarah', 'sp', 'sao', 'paulo', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'
+  ]);
+
+  // Tokens "significativos" com plural simplificado (velas → vela).
+  function _intTokens(s) {
+    return _intNorm(s).split(' ')
+      .filter(w => w.length >= 3 && !_INT_STOPWORDS.has(w))
+      .map(w => (w.length > 4 && /s$/.test(w)) ? w.slice(0, -1) : w);
+  }
+
+  // Frases que identificam a categoria no nome/categoria da experiência.
+  // Ex.: arquearia → ["arquearia", "arco e flecha"]. "outro"/"autoral"/
+  // "sensorial" são genéricas demais pra casar por texto.
+  const _INT_CATEGORIA_GENERICAS = new Set(['outro', 'autoral', 'sensorial']);
+  function _intCategoriaFrases(cat) {
+    if (!cat || _INT_CATEGORIA_GENERICAS.has(cat)) return [];
+    const frases = [cat].concat(String(_intCategoriaLabel(cat)).split('/'));
+    const out = [];
+    frases.forEach(f => {
+      const t = _intTokens(f).join(' ');
+      if (t && out.indexOf(t) === -1) out.push(t);
+    });
+    return out;
+  }
+
+  // Força do match: 3 = nome igual, 2 = nome parecido, 1 = mesma categoria.
+  const _INT_MATCH_LABEL = { 3: 'Nome igual', 2: 'Nome parecido', 1: 'Mesma categoria' };
+
+  function _intMatch(interesse, exp) {
+    const expNome = _intNorm(exp.nome);
+    const desejada = _intNorm(interesse.experiencia);
+    if (desejada && expNome) {
+      if (desejada === expNome) return 3;
+      const tD = _intTokens(desejada);
+      const tE = _intTokens(expNome);
+      if (tD.length && tD.join(' ') === tE.join(' ')) return 3;
+      if (desejada.length >= 4 && (expNome.indexOf(desejada) !== -1 || desejada.indexOf(expNome) !== -1)) return 2;
+      if (tD.length && tE.length) {
+        const setE = new Set(tE);
+        const comuns = tD.filter(w => setE.has(w)).length;
+        if (comuns && comuns / Math.min(tD.length, tE.length) >= 0.6) return 2;
+      }
+    }
+    const frases = _intCategoriaFrases(interesse.categoria);
+    if (frases.length) {
+      const hay = ' ' + _intTokens((exp.nome || '') + ' ' + (exp.categoria || '')).join(' ') + ' ';
+      if (frases.some(f => hay.indexOf(' ' + f + ' ') !== -1)) return 1;
+    }
+    return 0;
+  }
+
+  // Experiência "no ar": ativa, não é teste e não foi arquivada.
+  function _intExpNoAr(exp) {
+    return exp && exp.is_active !== false && exp.is_test !== true && exp.arquivada !== true;
+  }
+
+  // Melhor experiência no ar pra um interessado (a mais forte; empate →
+  // a mais recente). Usada pra dica na linha e pro link do "Avisar".
+  function _intMelhorExp(interesse) {
+    let best = null;
+    _intExpCache.forEach(exp => {
+      if (!_intExpNoAr(exp)) return;
+      const score = _intMatch(interesse, exp);
+      if (!score) return;
+      if (!best || score > best.score ||
+          (score === best.score && String(exp.created_at || '') > String(best.exp.created_at || ''))) {
+        best = { exp: exp, score: score };
+      }
+    });
+    return best;
+  }
+
+  function _intLerDispensados() {
+    try {
+      const raw = window.localStorage.getItem(_INT_ALERTAS_DISPENSADOS_KEY);
+      const obj = raw ? JSON.parse(raw) : {};
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch (_) { return {}; }
+  }
+  function _intSalvarDispensados(obj) {
+    try { window.localStorage.setItem(_INT_ALERTAS_DISPENSADOS_KEY, JSON.stringify(obj)); } catch (_) {}
+  }
+
   async function _intFetch() {
     const sb = window.supabaseClient;
     if (!sb) return [];
@@ -26734,6 +26836,23 @@
     return data || [];
   }
 
+  // select('*') de propósito: is_test/arquivada podem não existir em
+  // bancos que ainda não rodaram as migrations — aí só ficam undefined.
+  async function _intFetchExperiencias() {
+    const sb = window.supabaseClient;
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('experiences')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(2000);
+    if (error) {
+      console.error('[Interesses] experiences load error:', error.message);
+      return [];
+    }
+    return data || [];
+  }
+
   function _intRenderStats(list) {
     const total = list.length;
     const aguardando = list.filter(i => (i.status || 'aguardando') === 'aguardando').length;
@@ -26744,19 +26863,141 @@
     setTxt('int-stat-avisado', avisado);
   }
 
+  // Alerta no topo: experiências lançadas DEPOIS que alguém entrou na
+  // lista de espera e que combinam (nome igual/parecido ou mesma
+  // categoria) com interessados que ainda estão aguardando aviso.
+  function _intRenderAlertas() {
+    const box = document.getElementById('int-alertas');
+    if (!box) return;
+    const dispensados = _intLerDispensados();
+    const aguardando = _intCache.filter(i => (i.status || 'aguardando') === 'aguardando');
+
+    const alertas = [];
+    _intExpCache.forEach(exp => {
+      if (!_intExpNoAr(exp) || !exp.created_at) return;
+      const matches = [];
+      aguardando.forEach(i => {
+        if (!i.created_at || exp.created_at < i.created_at) return;
+        const score = _intMatch(i, exp);
+        if (score) matches.push({ i: i, score: score });
+      });
+      if (!matches.length) return;
+      // Dispensado vale até aparecer interessado novo pra essa experiência.
+      const chave = matches.map(m => m.i.id).sort().join(',');
+      if (dispensados[exp.id] === chave) return;
+      const score = Math.max.apply(null, matches.map(m => m.score));
+      alertas.push({ exp: exp, matches: matches, score: score, chave: chave });
+    });
+
+    if (!alertas.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    alertas.sort((a, b) => (b.score - a.score) ||
+      String(b.exp.created_at).localeCompare(String(a.exp.created_at)));
+
+    const cores = {
+      3: { bg: '#fdecec', fg: '#b3261e' },
+      2: { bg: '#fdf1e3', fg: '#b6741f' },
+      1: { bg: '#eef3fb', fg: '#3b5b92' }
+    };
+    const itens = alertas.map(a => {
+      const c = cores[a.score];
+      const nomes = a.matches
+        .sort((x, y) => y.score - x.score)
+        .map(m => _intEsc(String(m.i.nome || '').trim().split(/\s+/)[0] || m.i.nome));
+      const nomesTxt = nomes.slice(0, 5).join(', ') + (nomes.length > 5 ? ' e mais ' + (nomes.length - 5) : '');
+      const qtd = a.matches.length;
+      return '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-top:1px solid #f0e2c8;">' +
+        '<span style="display:inline-block;padding:2px 9px;border-radius:99px;font-size:.72rem;font-weight:700;background:' + c.bg + ';color:' + c.fg + ';white-space:nowrap;">' + _INT_MATCH_LABEL[a.score] + '</span>' +
+        '<div style="flex:1;min-width:220px;">' +
+          '<div style="font-weight:600;">' + _intEsc(a.exp.nome) +
+            (a.exp.categoria ? ' <span style="color:#888;font-weight:400;font-size:.82rem;">· ' + _intEsc(a.exp.categoria) + '</span>' : '') + '</div>' +
+          '<div style="font-size:.82rem;color:#666;">Lançada em ' + _intFormatDate(a.exp.created_at) + ' · ' +
+            qtd + (qtd === 1 ? ' pessoa aguardando' : ' pessoas aguardando') + ': ' + nomesTxt + '</div>' +
+        '</div>' +
+        '<button data-int-foco="' + _intEsc(a.exp.id) + '" style="background:#2c5e3f;color:#fff;border:none;padding:7px 12px;border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;">Ver interessados</button>' +
+        '<button data-int-dispensar="' + _intEsc(a.exp.id) + '" data-int-chave="' + _intEsc(a.chave) + '" title="Esconder esse alerta (volta se entrar alguém novo)" style="background:none;border:1px solid #ddd;color:#888;padding:7px 10px;border-radius:7px;font-family:inherit;font-size:.8rem;cursor:pointer;">Dispensar</button>' +
+      '</div>';
+    }).join('');
+
+    box.style.display = '';
+    box.innerHTML =
+      '<div style="border:1px solid #f0d9ac;background:#fffaf0;border-radius:12px;overflow:hidden;">' +
+        '<div style="padding:12px 14px;font-weight:700;color:#8a5a12;">🔔 ' +
+          (alertas.length === 1 ? 'Lançou uma experiência' : 'Lançaram ' + alertas.length + ' experiências') +
+          ' que combina' + (alertas.length === 1 ? '' : 'm') + ' com a lista de espera' +
+          '<div style="font-weight:400;font-size:.82rem;color:#8a6d3b;margin-top:2px;">Experiências criadas depois que a pessoa entrou na lista, com nome igual/parecido ao que ela pediu ou da mesma categoria.</div>' +
+        '</div>' +
+        itens +
+      '</div>';
+  }
+
+  // Popula o select de categoria e os chips de resumo (aguardando / total
+  // por categoria). Só entram categorias que têm alguém na lista.
+  function _intRenderCategorias() {
+    const porCat = {};
+    _intCache.forEach(i => {
+      const k = i.categoria || '';
+      if (!porCat[k]) porCat[k] = { total: 0, aguardando: 0 };
+      porCat[k].total++;
+      if ((i.status || 'aguardando') === 'aguardando') porCat[k].aguardando++;
+    });
+    const cats = Object.keys(porCat).sort((a, b) =>
+      (porCat[b].aguardando - porCat[a].aguardando) ||
+      (porCat[b].total - porCat[a].total) ||
+      _intCategoriaLabel(a).localeCompare(_intCategoriaLabel(b), 'pt-BR'));
+
+    const sel = document.getElementById('int-filter-categoria');
+    const atual = sel ? sel.value : '';
+    if (sel) {
+      sel.innerHTML = '<option value="">Todas as categorias</option>' +
+        cats.map(k => '<option value="' + _intEsc(k || '__sem__') + '">' +
+          _intEsc(k ? _intCategoriaLabel(k) : 'Sem categoria') + ' (' + porCat[k].total + ')</option>').join('');
+      if (atual && Array.prototype.some.call(sel.options, o => o.value === atual)) sel.value = atual;
+    }
+
+    const chips = document.getElementById('int-cat-resumo');
+    if (!chips) return;
+    const selVal = sel ? sel.value : '';
+    chips.innerHTML = cats.map(k => {
+      const v = k || '__sem__';
+      const ativo = selVal === v;
+      const n = porCat[k];
+      return '<button data-int-cat="' + _intEsc(v) + '" style="border:1px solid ' + (ativo ? '#2c5e3f' : '#e3e3e3') + ';background:' + (ativo ? '#2c5e3f' : '#fff') + ';color:' + (ativo ? '#fff' : '#333') + ';padding:6px 11px;border-radius:99px;font-family:inherit;font-size:.8rem;cursor:pointer;">' +
+        _intEsc(k ? _intCategoriaLabel(k) : 'Sem categoria') +
+        ' <strong>' + n.aguardando + '</strong>' +
+        '<span style="opacity:.65;">/' + n.total + '</span></button>';
+    }).join('');
+  }
+
+  function _intRenderFoco() {
+    const box = document.getElementById('int-foco');
+    if (!box) return;
+    const exp = _intFocoExpId ? _intExpCache.find(e => String(e.id) === String(_intFocoExpId)) : null;
+    if (!exp) { _intFocoExpId = null; box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = '';
+    box.innerHTML = '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 12px;border-radius:10px;background:#eef6f0;color:#2c5e3f;font-size:.86rem;">' +
+      '<span style="flex:1;">Mostrando quem combina com <strong>' + _intEsc(exp.nome) + '</strong> — o "Avisar" já vai com o link dela.</span>' +
+      '<button data-int-foco-limpar="1" style="background:none;border:1px solid #2c5e3f;color:#2c5e3f;padding:5px 10px;border-radius:7px;font-family:inherit;font-size:.8rem;cursor:pointer;">Ver todos</button>' +
+    '</div>';
+  }
+
   function _intRenderTable() {
     const body = document.getElementById('int-table-body');
     if (!body) return;
     const searchEl = document.getElementById('int-filter-search');
     const statusEl = document.getElementById('int-filter-status');
+    const catEl = document.getElementById('int-filter-categoria');
     const q = (searchEl ? searchEl.value : '').trim().toLowerCase();
     const statusFilter = statusEl ? statusEl.value : '';
+    const catFilter = catEl ? catEl.value : '';
+    const focoExp = _intFocoExpId ? _intExpCache.find(e => String(e.id) === String(_intFocoExpId)) : null;
 
     let rows = _intCache.slice();
+    if (focoExp) rows = rows.filter(i => _intMatch(i, focoExp) > 0);
     if (statusFilter) rows = rows.filter(i => (i.status || 'aguardando') === statusFilter);
+    if (catFilter) rows = rows.filter(i => (i.categoria || '__sem__') === catFilter);
     if (q) {
       rows = rows.filter(i => {
-        const hay = [i.nome, i.observacao, _intCategoriaLabel(i.categoria), i.whatsapp]
+        const hay = [i.nome, i.experiencia, i.observacao, _intCategoriaLabel(i.categoria), i.whatsapp]
           .map(x => String(x || '').toLowerCase()).join(' ');
         return hay.indexOf(q) !== -1;
       });
@@ -26766,11 +27007,38 @@
     if (countEl) countEl.textContent = rows.length ? (rows.length + (rows.length === 1 ? ' interessado' : ' interessados')) : '';
 
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="7" class="admin__table-empty">Nenhum interessado encontrado.</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" class="admin__table-empty">Nenhum interessado encontrado.</td></tr>';
       return;
     }
 
-    body.innerHTML = rows.map(function (i) {
+    // Agrupa por categoria (sem categoria por último); dentro do grupo,
+    // quem está aguardando vem antes, depois o mais recente.
+    const catNome = i => i.categoria ? _intCategoriaLabel(i.categoria) : '';
+    rows.sort((a, b) => {
+      const ca = catNome(a), cb = catNome(b);
+      if (ca !== cb) {
+        if (!ca) return 1;
+        if (!cb) return -1;
+        return ca.localeCompare(cb, 'pt-BR');
+      }
+      const sa = a.status === 'avisado' ? 1 : 0, sb2 = b.status === 'avisado' ? 1 : 0;
+      if (sa !== sb2) return sa - sb2;
+      return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+    });
+
+    const html = [];
+    let grupoAtual = null;
+    rows.forEach(function (i) {
+      const grupo = catNome(i);
+      if (grupo !== grupoAtual) {
+        grupoAtual = grupo;
+        const doGrupo = rows.filter(r => catNome(r) === grupo);
+        const ag = doGrupo.filter(r => (r.status || 'aguardando') === 'aguardando').length;
+        html.push('<tr><td colspan="8" style="background:#f7f5f1;font-weight:700;font-size:.82rem;color:#555;padding:8px 12px;">' +
+          _intEsc(grupo || 'Sem categoria') +
+          ' <span style="font-weight:400;color:#888;">· ' + ag + ' aguardando · ' + doGrupo.length + ' no total</span></td></tr>');
+      }
+
       const isAvisado = i.status === 'avisado';
       const statusBadge = isAvisado
         ? '<span style="display:inline-block;padding:2px 9px;border-radius:99px;font-size:.74rem;font-weight:600;background:#e3f3e8;color:#1a8a4a;">Avisado</span>'
@@ -26779,9 +27047,20 @@
       const avisarBtn = waDigits
         ? '<button data-int-avisar="' + i.id + '" title="Avisar no WhatsApp" style="background:#25d366;color:#fff;border:none;padding:6px 10px;border-radius:7px;font-family:inherit;font-size:.8rem;font-weight:600;cursor:pointer;">Avisar</button>'
         : '<span style="color:#bbb;font-size:.78rem;" title="Sem WhatsApp cadastrado">sem WhatsApp</span>';
-      return '<tr>' +
+
+      // Dica: já existe experiência no ar que combina com o pedido.
+      let dica = '';
+      if (!isAvisado) {
+        const best = _intMelhorExp(i);
+        if (best) {
+          dica = '<div style="margin-top:3px;font-size:.74rem;color:#b6741f;" title="' + _INT_MATCH_LABEL[best.score] + '">✨ No ar: ' + _intEsc(best.exp.nome) + '</div>';
+        }
+      }
+
+      html.push('<tr>' +
         '<td>' + _intEsc(i.nome) + '</td>' +
         '<td>' + (i.categoria ? _intEsc(_intCategoriaLabel(i.categoria)) : '<span style="color:#bbb;">—</span>') + '</td>' +
+        '<td style="max-width:220px;white-space:normal;">' + (i.experiencia ? _intEsc(i.experiencia) : '<span style="color:#bbb;">—</span>') + dica + '</td>' +
         '<td>' + (i.whatsapp ? _intEsc(i.whatsapp) : '<span style="color:#bbb;">—</span>') + '</td>' +
         '<td style="max-width:260px;white-space:normal;color:#666;">' + (i.observacao ? _intEsc(i.observacao) : '<span style="color:#bbb;">—</span>') + '</td>' +
         '<td>' + _intFormatDate(i.created_at) + '</td>' +
@@ -26790,8 +27069,9 @@
           avisarBtn +
           '<button data-int-del="' + i.id + '" title="Excluir" style="background:none;border:1px solid #e2c4c4;color:#c0392b;padding:6px 9px;border-radius:7px;font-family:inherit;font-size:.8rem;cursor:pointer;">Excluir</button>' +
         '</div></td>' +
-        '</tr>';
-    }).join('');
+        '</tr>');
+    });
+    body.innerHTML = html.join('');
   }
 
   async function _intAddSubmit(ev) {
@@ -26804,15 +27084,26 @@
     if (!nome) { setMsg('Informe o nome.', '#c0392b'); if (nomeEl) nomeEl.focus(); return; }
     if (!sb) { setMsg('Sem conexão com o banco.', '#c0392b'); return; }
 
+    const expEl = document.getElementById('int-experiencia');
+    const experiencia = expEl ? expEl.value.trim() : '';
+    const observacao = document.getElementById('int-observacao').value.trim();
     const payload = {
       nome: nome,
       categoria: document.getElementById('int-categoria').value || null,
+      experiencia: experiencia || null,
       whatsapp: document.getElementById('int-whatsapp').value.trim() || null,
-      observacao: document.getElementById('int-observacao').value.trim() || null,
+      observacao: observacao || null,
       status: 'aguardando'
     };
     setMsg('Salvando...', '#666');
-    const { error } = await sb.from('interesses').insert([payload]);
+    let { error } = await sb.from('interesses').insert([payload]);
+    // Banco sem a coluna "experiencia" (sql/elarah_interesses_experiencia.sql
+    // ainda não rodou): salva mesmo assim, com o pedido dentro da observação.
+    if (error && /experiencia/i.test(error.message || '')) {
+      delete payload.experiencia;
+      if (experiencia) payload.observacao = 'Quer: ' + experiencia + (observacao ? ' — ' + observacao : '');
+      ({ error } = await sb.from('interesses').insert([payload]));
+    }
     if (error) { setMsg('Erro ao salvar: ' + error.message, '#c0392b'); return; }
     setMsg('Adicionado! 🧡', '#1a8a4a');
     const form = document.getElementById('int-add-form');
@@ -26831,7 +27122,8 @@
   }
 
   // "Avisar": monta a mensagem pronta, pede o link pra admin colar e
-  // abre o WhatsApp. Depois marca o interessado como avisado.
+  // abre o WhatsApp. Depois marca o interessado como avisado. Se já tem
+  // experiência no ar que combina (ou uma em foco), o link vem preenchido.
   async function _intAvisar(id) {
     const sb = window.supabaseClient;
     const item = _intCache.find(i => String(i.id) === String(id));
@@ -26839,9 +27131,13 @@
     const digits = _intWhatsappDigits(item.whatsapp);
     if (!digits) { alert('Esse interessado não tem WhatsApp cadastrado.'); return; }
 
+    let exp = _intFocoExpId ? _intExpCache.find(e => String(e.id) === String(_intFocoExpId)) : null;
+    if (!exp) { const best = _intMelhorExp(item); exp = best ? best.exp : null; }
+    const linkSugerido = exp ? buildExperienceUrl(exp.id, null, exp.nome) : '';
+
     const primeiroNome = String(item.nome || '').trim().split(/\s+/)[0] || '';
-    const catTxt = item.categoria ? (' de ' + _intCategoriaLabel(item.categoria)) : '';
-    const link = window.prompt('Cole o link da experiência pra incluir na mensagem (pode deixar em branco e colar direto no WhatsApp):', '');
+    const catTxt = exp ? (' de ' + exp.nome) : (item.categoria ? (' de ' + _intCategoriaLabel(item.categoria)) : '');
+    const link = window.prompt('Cole o link da experiência pra incluir na mensagem (pode deixar em branco e colar direto no WhatsApp):', linkSugerido);
     // prompt retorna null se a admin cancelar — aí aborta sem avisar.
     if (link === null) return;
     const linkTrim = link.trim();
@@ -26868,6 +27164,12 @@
     await renderInteresses();
   }
 
+  function _intRerender() {
+    _intRenderCategorias();
+    _intRenderFoco();
+    _intRenderTable();
+  }
+
   function _intWireOnce() {
     if (_intWired) return;
     _intWired = true;
@@ -26877,6 +27179,52 @@
     if (searchEl) searchEl.addEventListener('input', _intRenderTable);
     const statusEl = document.getElementById('int-filter-status');
     if (statusEl) statusEl.addEventListener('change', _intRenderTable);
+    const catEl = document.getElementById('int-filter-categoria');
+    if (catEl) catEl.addEventListener('change', _intRerender);
+
+    // Chips de categoria: clicar filtra; clicar de novo limpa.
+    const chips = document.getElementById('int-cat-resumo');
+    if (chips) {
+      chips.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-int-cat]');
+        if (!btn || !catEl) return;
+        const v = btn.getAttribute('data-int-cat');
+        catEl.value = catEl.value === v ? '' : v;
+        _intRerender();
+      });
+    }
+
+    // Alertas: "Ver interessados" foca a experiência; "Dispensar" esconde.
+    const alertas = document.getElementById('int-alertas');
+    if (alertas) {
+      alertas.addEventListener('click', function (e) {
+        const foco = e.target.closest('[data-int-foco]');
+        if (foco) {
+          _intFocoExpId = foco.getAttribute('data-int-foco');
+          if (catEl) catEl.value = '';
+          if (statusEl) statusEl.value = 'aguardando';
+          _intRerender();
+          const tabela = document.getElementById('int-table-body');
+          if (tabela && tabela.scrollIntoView) tabela.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          return;
+        }
+        const disp = e.target.closest('[data-int-dispensar]');
+        if (disp) {
+          const d = _intLerDispensados();
+          d[disp.getAttribute('data-int-dispensar')] = disp.getAttribute('data-int-chave');
+          _intSalvarDispensados(d);
+          _intRenderAlertas();
+        }
+      });
+    }
+    const focoBox = document.getElementById('int-foco');
+    if (focoBox) {
+      focoBox.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-int-foco-limpar]')) return;
+        _intFocoExpId = null;
+        _intRerender();
+      });
+    }
 
     // Delegação de cliques nos botões da tabela (avisar / excluir).
     const body = document.getElementById('int-table-body');
@@ -26893,9 +27241,12 @@
   async function renderInteresses() {
     if (!document.getElementById('panel-interesses')) return;
     _intWireOnce();
-    _intCache = await _intFetch();
+    const res = await Promise.all([_intFetch(), _intFetchExperiencias()]);
+    _intCache = res[0];
+    _intExpCache = res[1];
     _intRenderStats(_intCache);
-    _intRenderTable();
+    _intRenderAlertas();
+    _intRerender();
   }
 
   // ===== START =====

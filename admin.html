@@ -3397,6 +3397,11 @@
         <p class="admin__page-subtitle">Lista de espera — pessoas que pediram pra ser avisadas quando uma experiência ficar disponível.</p>
       </div>
 
+      <!-- Alerta: experiência lançada com nome parecido/igual ao que a
+           lista de espera pediu (ou da mesma categoria). Preenchido por
+           _intRenderAlertas() em admin.js. -->
+      <div id="int-alertas" style="display:none;margin-bottom:18px;"></div>
+
       <div class="admin__stats">
         <div class="admin__stat">
           <div class="admin__stat-label">Total</div>
@@ -3464,6 +3469,10 @@
             <input type="text" id="int-whatsapp" placeholder="(11) 91234-5678" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
           </div>
           <div style="display:flex;flex-direction:column;gap:4px;">
+            <label style="font-size:.78rem;color:#666;font-weight:600;">Experiência desejada</label>
+            <input type="text" id="int-experiencia" placeholder="Ex: Aula de tufting, Oficina de velas..." style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;grid-column:1 / -1;">
             <label style="font-size:.78rem;color:#666;font-weight:600;">Observação</label>
             <input type="text" id="int-observacao" placeholder="O que ela quer, contexto, data preferida..." style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
           </div>
@@ -3477,12 +3486,19 @@
       <!-- Filtros -->
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px;">
         <input type="search" id="int-filter-search" placeholder="Buscar por nome, observação..." style="flex:1;min-width:240px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+        <select id="int-filter-categoria" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
+          <option value="">Todas as categorias</option>
+        </select>
         <select id="int-filter-status" style="padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-family:inherit;font-size:.9rem;">
           <option value="">Todos</option>
           <option value="aguardando">Aguardando aviso</option>
           <option value="avisado">Já avisados</option>
         </select>
       </div>
+
+      <!-- Resumo por categoria (chips clicáveis que filtram a tabela) -->
+      <div id="int-cat-resumo" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;"></div>
+      <div id="int-foco" style="display:none;margin-bottom:12px;"></div>
 
       <!-- Tabela -->
       <div class="admin__table-wrap">
@@ -3495,6 +3511,7 @@
             <tr>
               <th>Nome</th>
               <th>Categoria</th>
+              <th>Experiência desejada</th>
               <th>WhatsApp</th>
               <th>Observação</th>
               <th>Adicionado em</th>
@@ -3503,7 +3520,7 @@
             </tr>
           </thead>
           <tbody id="int-table-body">
-            <tr><td colspan="7" class="admin__table-empty">Nenhum interessado cadastrado ainda.</td></tr>
+            <tr><td colspan="8" class="admin__table-empty">Nenhum interessado cadastrado ainda.</td></tr>
           </tbody>
         </table>
       </div>
