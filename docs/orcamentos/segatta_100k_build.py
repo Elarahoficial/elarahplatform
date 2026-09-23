@@ -39,8 +39,8 @@ xcss = '''
   .imprice{font-family:'DM Serif Display',serif;font-size:17px;color:var(--muted);letter-spacing:.01em}
   .imprice.on{color:var(--navy)}
   .imper{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
-  /* vibe · legenda mais leve (sem barra pesada) */
-  .vibe figcaption{padding:16px 13px 11px;background:linear-gradient(to top,rgba(10,28,22,.42),rgba(10,28,22,0));text-shadow:0 1px 6px rgba(0,0,0,.6)}
+  /* vibe · legenda no padrão atmosfera Elarah (igual ao print) */
+  .vibe figcaption{padding:24px 12px 10px;background:linear-gradient(to top,rgba(16,23,28,.86),transparent);font-size:11.5px}
   /* opcionais · pra levar de lembranca (layout Ginger) */
   .opts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px;align-items:stretch}
   .opt{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28)}
@@ -178,13 +178,14 @@ vibe = f'''
     <h2>Criar junto, <em>celebrar junto</em></h2>
     <p class="lead">Uma tarde leve, criativa e cheia de bons momentos — mãos ocupadas, conversa boa e um ótimo motivo para comemorar juntos.</p>
     <div class="vibe">
-      <figure>{img("bfa-grupo1.webp", "Time reunido criando junto, sorrindo, luz natural", "center 32%")}<figcaption>Time reunido</figcaption></figure>
-      <figure>{img("casalmodelagemceramica.jpg", "Mãos criando uma peça de cerâmica", "center 45%")}<figcaption>Mão na argila</figcaption></figure>
-      <figure>{img("ceramica-meninas.jpg", "Pessoas rindo enquanto criam cerâmica", "center 45%")}<figcaption>Criar e rir</figcaption></figure>
-      <figure>{img("aniversario-mesa-real.jpg", "Grupo montando arranjos florais juntos", "center 42%")}<figcaption>Arranjos a quatro mãos</figcaption></figure>
-      <figure>{img("perfumaria-apresentacao.jpg", "Pessoas experimentando aromas na perfumaria", "center 50%")}<figcaption>Descobrir aromas</figcaption></figure>
-      <figure>{img("agora-grupo.jpg", "Grupo reunido à mesa criando, luz natural", "center 45%")}<figcaption>Juntos na mesa</figcaption></figure>
+      <figure>{img("agora-pintura.jpg", "Grupo criando cerâmica junto", "center 40%")}<figcaption>Mão na massa, juntas</figcaption></figure>
+      <figure>{img("agora-ceramica.jpg", "Modelagem de cerâmica à mão", "center 40%")}<figcaption>Modelagem à mão</figcaption></figure>
+      <figure>{img("agora-selfie.jpg", "Time rindo durante a experiência", "center 40%")}<figcaption>Risada garantida</figcaption></figure>
+      <figure>{img("torno.jpg", "Mãos modelando argila no torno", "center 50%")}<figcaption>Argila nas mãos</figcaption></figure>
+      <figure>{img("ceramica2.jpg", "Peças de cerâmica autorais", "center 50%")}<figcaption>As peças que ficam</figcaption></figure>
+      <figure>{img("agora-grupo.jpg", "Time reunido à mesa", "center 50%")}<figcaption>O time à mesa</figcaption></figure>
     </div>
+    <div class="bnote" style="margin-top:16px">◆ <b>Tudo incluso:</b> espaço exclusivo · ceramista conduzindo · todos os materiais · queima da cerâmica · mesas e ambientação · playlist e velas · café, chá e água — e cada um leva a própria peça.</div>
     {foot("A vibe da experiência")}
   </section>'''
 
