@@ -27179,9 +27179,49 @@
     await renderInteresses();
   }
 
-  // "Avisar": monta a mensagem pronta, pede o link pra admin colar e
-  // abre o WhatsApp. Depois marca o interessado como avisado. Se já tem
-  // experiência no ar que combina (ou uma em foco), o link vem preenchido.
+  // Descobre o nome da experiência a partir do link colado:
+  //   1. experiencia.html?id=<uuid> → nome no cadastro de experiências;
+  //   2. qualquer outra página do site (landing, parceiro...) → og:title
+  //      / <title> da página.
+  // Retorna '' quando não dá pra descobrir.
+  async function _intNomeDoLink(link) {
+    let u;
+    try { u = new URL(link, window.location.href); } catch (_) { return ''; }
+
+    const expId = u.searchParams.get('id');
+    if (expId) {
+      const cached = _intExpCache.find(e => String(e.id) === String(expId));
+      if (cached && cached.nome) return cached.nome;
+      const sb = window.supabaseClient;
+      if (sb) {
+        try {
+          const { data } = await sb.from('experiences').select('nome').eq('id', expId).maybeSingle();
+          if (data && data.nome) return data.nome;
+        } catch (_) {}
+      }
+    }
+
+    // Só dá pra ler páginas do próprio site (CORS).
+    if (u.origin !== window.location.origin) return '';
+    try {
+      const ctrl = typeof AbortController === 'function' ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), 5000) : null;
+      const resp = await fetch(u.href, ctrl ? { signal: ctrl.signal } : undefined);
+      if (timer) clearTimeout(timer);
+      if (!resp.ok) return '';
+      const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+      const og = doc.querySelector('meta[property="og:title"]');
+      let titulo = (og && og.getAttribute('content')) || (doc.title || '');
+      // "Nome · 2ª Edição" / "Nome — Elarah" / "Nome | Elarah" → "Nome"
+      titulo = titulo.split(/\s+[—|·-]\s+/)[0].trim();
+      if (!titulo || /^elarah$/i.test(titulo)) return '';
+      return titulo;
+    } catch (_) { return ''; }
+  }
+
+  // "Avisar": a admin cola o link da experiência, o nome é puxado DO
+  // LINK e a mensagem é montada com ele (dá pra corrigir antes de abrir o
+  // WhatsApp). Depois marca o interessado como avisado.
   async function _intAvisar(id) {
     const sb = window.supabaseClient;
     const item = _intCache.find(i => String(i.id) === String(id));
@@ -27189,19 +27229,32 @@
     const digits = _intWhatsappDigits(item.whatsapp);
     if (!digits) { alert('Esse interessado não tem WhatsApp cadastrado.'); return; }
 
-    let exp = _intFocoExpId ? _intExpCache.find(e => String(e.id) === String(_intFocoExpId)) : null;
-    if (!exp) { const best = _intMelhorExp(item); exp = best ? best.exp : null; }
-    const linkSugerido = exp ? buildExperienceUrl(exp.id, null, exp.nome) : '';
-
-    const primeiroNome = String(item.nome || '').trim().split(/\s+/)[0] || '';
-    const catTxt = exp ? (' de ' + exp.nome) : (item.categoria ? (' de ' + _intCategoriaLabel(item.categoria)) : '');
-    const link = window.prompt('Cole o link da experiência pra incluir na mensagem (pode deixar em branco e colar direto no WhatsApp):', linkSugerido);
+    // Só pré-preenche quando a admin escolheu a experiência no alerta.
+    const focoExp = _intFocoExpId ? _intExpCache.find(e => String(e.id) === String(_intFocoExpId)) : null;
+    const linkSugerido = focoExp ? buildExperienceUrl(focoExp.id, null, focoExp.nome) : '';
+    const link = window.prompt('Cole o link da experiência — o nome dela vai pra mensagem:', linkSugerido);
     // prompt retorna null se a admin cancelar — aí aborta sem avisar.
     if (link === null) return;
     const linkTrim = link.trim();
 
+    // Abre a aba já (ainda dentro do clique) pro bloqueador de pop-up não
+    // barrar; o endereço do WhatsApp entra depois de descobrir o nome.
+    const win = window.open('about:blank', '_blank');
+
+    let nome = linkTrim ? await _intNomeDoLink(linkTrim) : '';
+    if (!nome) {
+      if (focoExp) nome = focoExp.nome;
+      else nome = _intPedido(item).fonte === 'experiencia' ? String(_intPedido(item).texto || '').trim() : '';
+    }
+    const nomeFinal = window.prompt('Nome da experiência na mensagem (confira ou corrija):', nome);
+    if (nomeFinal === null) { if (win) win.close(); return; }
+    const nomeTrim = nomeFinal.trim();
+
+    const primeiroNome = String(item.nome || '').trim().split(/\s+/)[0] || '';
     let msg = 'Oi' + (primeiroNome ? ' ' + primeiroNome : '') + '! 🧡\n\n' +
-      'Aquela experiência' + catTxt + ' que você estava interessada já está disponível na Elarah! ' +
+      (nomeTrim
+        ? 'A experiência *' + nomeTrim + '* que você estava esperando já está disponível na Elarah! '
+        : 'Aquela experiência que você estava esperando já está disponível na Elarah! ') +
       'Achei que você ia gostar de saber em primeira mão.';
     if (linkTrim) {
       msg += '\n\nGaranta a sua por aqui: ' + linkTrim;
@@ -27209,7 +27262,12 @@
     msg += '\n\nQualquer dúvida é só me chamar 😊';
 
     const url = waSendUrl(digits, msg);
-    window.open(url, '_blank', 'noopener');
+    if (win && !win.closed) {
+      try { win.opener = null; } catch (_) {}
+      win.location.href = url;
+    } else {
+      window.open(url, '_blank', 'noopener');
+    }
 
     // Marca como avisado (não bloqueia a abertura do WhatsApp se falhar).
     if (sb) {
