@@ -39,6 +39,8 @@ xcss = '''
   .imprice{font-family:'DM Serif Display',serif;font-size:17px;color:var(--muted);letter-spacing:.01em}
   .imprice.on{color:var(--navy)}
   .imper{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
+  /* vibe · legenda mais leve (sem barra pesada) */
+  .vibe figcaption{padding:16px 13px 11px;background:linear-gradient(to top,rgba(10,28,22,.42),rgba(10,28,22,0));text-shadow:0 1px 6px rgba(0,0,0,.6)}
   /* opcionais · pra levar de lembranca (layout Ginger) */
   .opts{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px;align-items:stretch}
   .opt{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28)}
@@ -192,12 +194,12 @@ espacos = f'''
 {head_simple("Os espaços")}
     <span class="eyebrow orange">◆ Os espaços</span>
     <h2>Onde a experiência <em>acontece</em></h2>
-    <p class="lead">A experiência de cerâmica acontece em um ateliê parceiro, com toda a estrutura montada para o grupo.</p>
+    <p class="lead">Dois espaços parceiros para a celebração — um intimista e versátil, outro criativo e acolhedor.</p>
     <div class="exp3" style="grid-template-columns:1fr 1fr">
-      {excard("Ateliê de cerâmica", "netas-atelie.jpg", "Ateliê de cerâmica com pessoas criando, luz natural", "Entre Mãos", "Ateliê parceiro de cerâmica, com toda a estrutura para a experiência.", "center 50%")}
-      {excard("Ateliê de cerâmica", "casa-aquario-atelie.jpg", "Ateliê de cerâmica acolhedor, luz natural", "Ateliê Signal", "Ateliê parceiro de cerâmica, no mesmo padrão de qualidade.", "center 50%")}
+      {excard("Perdizes · o mais versátil", "netas-atelie.jpg", "Ateliê intimista com pessoas em experiência criativa, luz natural", "Entre Mãos", "Um espaço intimista e versátil para receber <b>Cerâmica</b>, <b>Perfumaria Botânica</b> ou <b>Arranjos Florais</b>.", "center 50%", chip="As 3 experiências")}
+      {excard("Pinheiros", "agora-hero.jpg", "Espaço Agora Intu preparado para a experiência, com participantes", "Agora Intu", "Espaço criativo e acolhedor para a experiência de <b>Arranjos Florais</b>.", "center 45%", chip="Arranjos florais")}
     </div>
-    <div class="bnote">◆ Endereços e disponibilidade <b>a confirmar</b>; o ateliê é definido conforme a data da sexta escolhida.</div>
+    <div class="bnote">◆ Endereços e disponibilidade <b>a confirmar</b>.</div>
     {foot("Os espaços")}
   </section>'''
 
