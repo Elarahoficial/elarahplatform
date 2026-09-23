@@ -69,6 +69,10 @@ serve(async (req) => {
   }
 
   const telefone = normalizePhoneBR(String(corpo?.telefone ?? ""));
+  // A Meta identifica contas antigas SEM o 9 do celular (5548 9190-7056),
+  // enquanto o número normalizado leva o 9. A mensagem recebida fica gravada
+  // do jeito da Meta — então a janela de 24h procura pelas duas formas.
+  const variantes = telefone ? variantesTelefoneBR(telefone) : [];
   const texto = String(corpo?.texto ?? "").trim();
 
   if (!telefone) return json({ ok: false, error: "telefone_invalido" }, 400);
@@ -96,7 +100,7 @@ serve(async (req) => {
     const { data } = await supabase
       .from("whatsapp_mensagens")
       .select("wa_timestamp")
-      .eq("telefone", telefone)
+      .in("telefone", variantes)
       .order("wa_timestamp", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -158,3 +162,12 @@ serve(async (req) => {
     provider_id: r.providerId ?? null,
   });
 });
+
+// 5548991907056 → [5548991907056, 554891907056]: o mesmo celular com e sem
+// o 9 da frente (a Meta usa a forma antiga pra contas antigas).
+function variantesTelefoneBR(tel: string): string[] {
+  const d = String(tel).replace(/\D+/g, "");
+  const out = [d];
+  if (/^55\d{2}9\d{8}$/.test(d)) out.push(d.slice(0, 4) + d.slice(5));
+  return out;
+}
