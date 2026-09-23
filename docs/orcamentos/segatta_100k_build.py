@@ -121,12 +121,11 @@ cover = f'''
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>100 mil</b> seguidores</span>
-          <span class="chip"><b>Perdizes</b> · SP</span>
           <span class="chip">Sexta de <b>outubro</b> · a definir</span>
           <span class="chip"><b>8 pessoas</b> · tarde</span>
         </div>
       </div>
-      <div class="cover-photo">{img("bfa-grupo1.webp", "Time reunido à mesa criando juntos, sorrindo, luz natural", "center 32%")}</div>
+      <div class="cover-photo">{img("bfa-grupo1.webp", "Grupo sorrindo durante a experiência de cerâmica, luz natural", "center 32%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Segatta Neuropsicologia · Celebração 100 mil")}
@@ -191,15 +190,14 @@ vibe = f'''
 espacos = f'''
   <section class="slide">
 {head_simple("Os espaços")}
-    <span class="eyebrow orange">◆ Escolham o cenário</span>
-    <h2>Espaços para a <em>celebração</em></h2>
-    <p class="lead">Ateliês parceiros para receber a celebração, com estrutura completa para as experiências.</p>
-    <div class="exp3">
-      {excard("Cerâmica", "netas-atelie.jpg", "Ateliê de cerâmica com pessoas criando, luz natural", "Ateliê Signal", "Ateliê parceiro de cerâmica, com toda a estrutura para a experiência.", "center 50%")}
-      {excard("Cerâmica", "casa-aquario-atelie.jpg", "Ateliê criativo e acolhedor com pessoas", "Entre Mãos", "Outro ateliê parceiro de cerâmica, no mesmo padrão de qualidade.", "center 50%")}
-      {excard("Arranjos florais", "agora-mesa.jpg", "Cenário montado, mesa luminosa com flores e materiais", "Agora", "Espaço criativo e luminoso para a experiência de arranjos florais.", "center 50%")}
+    <span class="eyebrow orange">◆ Os espaços</span>
+    <h2>Onde a experiência <em>acontece</em></h2>
+    <p class="lead">A oficina acontece no ateliê parceiro Entre Mãos; o café e a confraternização podem ficar por conta do BETC Havas Café.</p>
+    <div class="exp3" style="grid-template-columns:1fr 1fr">
+      {excard("Cerâmica · oficina", "netas-atelie.jpg", "Ateliê de cerâmica com pessoas criando, luz natural", "Entre Mãos", "Ateliê parceiro de cerâmica, com toda a estrutura montada para o grupo.", "center 50%")}
+      {excard("Café &amp; confraternização", "betchavas3.jpg", "Café charmoso e arejado, com verde e luz natural", "BETC Havas Café", "Opção para o momento de café e confraternização — não é o espaço da oficina.", "center 50%")}
     </div>
-    <div class="bnote">◆ Todos são definidos conforme a data da sexta escolhida.</div>
+    <div class="bnote">◆ Endereços, disponibilidade e o uso do BETC (café e confraternização) seguem <b>a confirmar</b>.</div>
     {foot("Os espaços")}
   </section>'''
 
