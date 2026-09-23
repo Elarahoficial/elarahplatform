@@ -932,6 +932,16 @@
             <option value="repasse_urgente">Repasse urgente (≤48h ou vencido)</option>
             <option value="repasse_feito">Repasse feito</option>
           </select>
+          <!-- Aviso à parceira pela API oficial: "não saiu" lista as compras
+               pagas cujo aviso falhou ou nunca foi enviado (a lista vem da
+               edge function admin-reenviar-aviso-parceira). -->
+          <select id="bookings-filter-aviso" class="admin__analytics-select" aria-label="Filtrar por aviso à parceira">
+            <option value="">Aviso à parceira: todos</option>
+            <option value="nao_saiu">⚠ Aviso NÃO saiu pela Meta</option>
+          </select>
+          <button class="admin__add-btn" id="btn-reenviar-avisos-meta" type="button"
+                  style="display:none;background:#1a73e8;color:#fff;border:0;"
+                  title="Reenvia pela API oficial da Meta o aviso de todas as compras listadas">📤 Reenviar todos pela Meta</button>
           <select id="bookings-filter-origem" class="admin__analytics-select" aria-label="Filtrar por origem da venda">
             <option value="">Todas as origens</option>
             <option value="site">Só vendas pelo site</option>
