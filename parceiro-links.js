@@ -246,8 +246,14 @@
 
     carregarLogo(cfg);
 
+    // Parceiro sem instagram/whatsapp cadastrados: esconde a faixa em
+    // vez de deixar um vão vazio entre o nome e o selo da Elarah.
     var chips = document.getElementById('afa-chips');
-    if (chips) chips.innerHTML = chipsHTML(cfg);
+    if (chips) {
+      var html = chipsHTML(cfg);
+      chips.innerHTML = html;
+      chips.hidden = !html;
+    }
 
     var listEl = document.getElementById('afa-list');
     if (!listEl) return;

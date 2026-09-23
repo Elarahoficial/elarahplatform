@@ -1,0 +1,206 @@
+/* =============================================================
+   ELARAH — PÁGINA DE LINKS DE PARCEIRO ("link na bio")
+   -------------------------------------------------------------
+   Estrutura visual compartilhada por TODAS as páginas de parceiro
+   (atelie-flor-de-arte.html, stella-nery.html, ...). Mexer aqui
+   arruma/quebra todas de uma vez — que é o ponto: elas têm que ser
+   a mesma página com identidades diferentes.
+
+   O que muda de parceiro pra parceiro são só as variáveis de cor,
+   redefinidas num <style> curto dentro de cada HTML. Os nomes
+   seguem com o prefixo --afa- (do primeiro parceiro, Ateliê Flor
+   de Arte) pra não renomear classe por classe numa página que já
+   está no ar; leia como "cor de destaque", "cor suave" etc.:
+
+     --afa-wine    cor principal (títulos, nome do parceiro)
+     --afa-wine-d  versão mais escura (nome da experiência no card)
+     --afa-rose    cor de realce (hover, ícone do placeholder)
+     --afa-blush   fundo suave (selo de data, thumb sem foto)
+     --afa-sage    cor secundária do fundo decorativo
+     --afa-sand    cor terciária do fundo decorativo
+     --afa-cream   fundo da página
+     --afa-ink     texto principal
+     --afa-muted   texto secundário
+     --afa-line    bordas
+
+   O laranja da Elarah fica reservado pra AÇÃO DA ELARAH (botão de
+   reservar, contato de suporte) em todas as páginas — é o que
+   diferencia visualmente "isto é do parceiro" de "isto é a Elarah".
+
+   A lógica de montagem da lista está em parceiro-links.js.
+   ============================================================= */
+
+/* Paleta padrão (neutra). Cada página de parceiro sobrescreve o que
+   quiser num <style> próprio, depois deste arquivo. */
+:root {
+  --afa-wine:   #7A5C4B;
+  --afa-wine-d: #5E4436;
+  --afa-rose:   #C89B7B;
+  --afa-blush:  #F5E9DF;
+  --afa-sage:   #9BA88F;
+  --afa-sand:   #F3DEBE;
+  --afa-cream:  #FFFBF7;
+  --afa-ink:    #2B2422;
+  --afa-muted:  #7A6E6A;
+  --afa-line:   #F0E4DC;
+  /* Elarah — só no que é ação da Elarah (reservar, suporte) */
+  --elarah-orange: #F27623;
+  --elarah-orange-d: #D4600E;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { max-width: 100vw; overflow-x: hidden; }
+
+body {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--afa-ink);
+  background: var(--afa-cream);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* Fundo decorativo — ecoa as formas da identidade dela, bem suave
+   pra não competir com a leitura. pointer-events:none pra nunca
+   roubar clique dos cards. */
+.afa-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.afa-bg span { position: absolute; border-radius: 50%; display: block; }
+/* As manchas do fundo saem da paleta da página (não de cores fixas),
+   pra cada parceiro ter o próprio fundo sem tocar neste arquivo.
+   `opacity` no elemento inteiro equivale ao alfa que havia no rgba. */
+.afa-bg span:nth-child(1) { width: 240px; height: 240px; top: -120px; left: -120px; background: var(--afa-rose); opacity: .09; }
+.afa-bg span:nth-child(2) { width: 190px; height: 190px; top: 210px; right: -110px; background: var(--afa-sage); opacity: .09; }
+.afa-bg span:nth-child(3) { width: 320px; height: 320px; bottom: -160px; left: -130px; background: var(--afa-sand); opacity: .16; }
+.afa-bg span:nth-child(4) { width: 170px; height: 170px; bottom: 90px; right: -95px; background: var(--afa-rose); opacity: .08; }
+
+.afa { position: relative; z-index: 1; width: 100%; max-width: 560px; margin: 0 auto; padding: 32px 16px 56px; }
+
+/* ===== Cabeçalho do parceiro ===== */
+.afa__head { text-align: center; margin-bottom: 26px; }
+.afa__logo {
+  width: 132px; height: 132px; margin: 0 auto 16px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #FDEFF0 0%, var(--afa-blush) 62%, #F6D7D9 100%);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; box-shadow: 0 8px 26px rgba(140,42,44,.12);
+}
+.afa__logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.afa__logo-fallback {
+  font-family: 'DM Serif Display', Georgia, serif; color: var(--afa-wine);
+  font-size: 1.15rem; line-height: 1.15; letter-spacing: .3px; padding: 0 14px;
+}
+.afa__name {
+  font-family: 'DM Serif Display', Georgia, serif; color: var(--afa-wine);
+  font-size: clamp(1.7rem, 7vw, 2.15rem); line-height: 1.1; margin-bottom: 6px;
+}
+.afa__tag { color: var(--afa-muted); font-size: .95rem; margin-bottom: 16px; }
+
+.afa__chips { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.afa__chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 999px; text-decoration: none;
+  background: #fff; border: 1px solid var(--afa-line); color: var(--afa-wine);
+  font-size: .85rem; font-weight: 600; transition: .2s ease;
+}
+.afa__chip:hover { border-color: var(--afa-rose); transform: translateY(-1px); }
+.afa__chip svg { width: 15px; height: 15px; flex: none; }
+
+/* Selo "reserve pela Elarah" */
+.afa__badge {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 9px 16px 9px 14px; border-radius: 999px;
+  background: #fff; border: 1px solid var(--afa-line);
+  font-size: .8rem; color: var(--afa-muted); text-decoration: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.afa__badge img { height: 17px; width: auto; display: block; }
+
+/* ===== Lista de experiências ===== */
+.afa__section-title {
+  font-size: .76rem; text-transform: uppercase; letter-spacing: 1.2px;
+  color: var(--afa-muted); font-weight: 700; text-align: center;
+  margin: 30px 0 14px;
+}
+.afa__list { display: flex; flex-direction: column; gap: 12px; }
+
+.afa-card {
+  display: flex; align-items: center; gap: 13px; flex-wrap: wrap;
+  background: #fff; border: 1px solid var(--afa-line); border-radius: 16px;
+  padding: 12px; text-decoration: none; color: inherit;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04); transition: .2s ease;
+}
+.afa-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(140,42,44,.10); border-color: #EBD6D8; }
+.afa-card:focus-visible { outline: 3px solid var(--afa-rose); outline-offset: 2px; }
+.afa-card__thumb {
+  width: 74px; height: 74px; flex: none; border-radius: 12px; overflow: hidden;
+  background: var(--afa-blush); display: flex; align-items: center; justify-content: center;
+}
+.afa-card__thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.afa-card__thumb svg { width: 30px; height: 30px; color: var(--afa-rose); opacity: .75; }
+.afa-card__body { flex: 1; min-width: 0; }
+.afa-card__name {
+  display: block;
+  font-family: 'DM Serif Display', Georgia, serif; color: var(--afa-wine-d);
+  font-size: .98rem; line-height: 1.18; margin-bottom: 5px;
+}
+.afa-card__meta {
+  font-size: .78rem; color: var(--afa-muted);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 7px; margin-bottom: 5px;
+}
+.afa-card__price { display: block; font-size: .86rem; font-weight: 700; color: var(--afa-ink); white-space: nowrap; }
+.afa-card__price small { font-weight: 500; color: var(--afa-muted); font-size: .76rem; }
+.afa-card__cta {
+  flex: none; align-self: center;
+  padding: 9px 15px; border-radius: 999px; font-size: .8rem; font-weight: 700;
+  background: var(--elarah-orange); color: #fff; white-space: nowrap;
+}
+.afa-card:hover .afa-card__cta { background: var(--elarah-orange-d); }
+.afa-card__cta--outline { background: #fff; color: var(--afa-wine); border: 1px solid var(--afa-wine); }
+.afa-card:hover .afa-card__cta--outline { background: var(--afa-wine); color: #fff; }
+.afa-card__flag {
+  display: inline-block; padding: 1px 7px; border-radius: 6px;
+  background: var(--afa-blush); color: var(--afa-wine); font-size: .68rem; font-weight: 700;
+}
+.afa-card__flag--hot { background: #FDEBD8; color: var(--elarah-orange-d); }
+
+/* Skeleton de carregamento */
+.afa-skel { height: 98px; border-radius: 16px; background: linear-gradient(100deg, #fff 30%, #F7EFEA 50%, #fff 70%); background-size: 220% 100%; animation: afa-shine 1.3s linear infinite; border: 1px solid var(--afa-line); }
+@keyframes afa-shine { to { background-position: -220% 0; } }
+@media (prefers-reduced-motion: reduce) { .afa-skel { animation: none; } .afa-card { transition: none; } }
+
+.afa__msg { text-align: center; color: var(--afa-muted); font-size: .92rem; padding: 26px 10px; }
+.afa__msg a { color: var(--afa-wine); font-weight: 600; }
+
+.afa__all {
+  display: block; text-align: center; margin-top: 22px;
+  padding: 14px; border-radius: 14px; text-decoration: none;
+  border: 1px dashed #E3CFC2; color: var(--afa-wine); font-weight: 600; font-size: .9rem;
+  background: rgba(255,255,255,.6);
+}
+.afa__all:hover { border-color: var(--elarah-orange); color: var(--elarah-orange-d); }
+
+.afa__foot { text-align: center; margin-top: 26px; font-size: .78rem; color: var(--afa-muted); line-height: 1.7; }
+.afa__foot a { color: var(--afa-muted); }
+
+/* Canal de atendimento da Elarah (reserva, pagamento, remarcação).
+   Fica no rodapé pra não disputar com o contato do parceiro lá em
+   cima nem com o botão de reservar. */
+.afa__help {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-top: 26px; padding: 13px 16px; border-radius: 14px;
+  background: #fff; border: 1px solid var(--afa-line);
+  text-decoration: none; color: var(--afa-muted); font-size: .84rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,.04); transition: .2s ease;
+}
+.afa__help:hover { border-color: var(--elarah-orange); color: var(--elarah-orange-d); }
+.afa__help svg { width: 16px; height: 16px; flex: none; color: var(--elarah-orange); }
+.afa__help strong { color: var(--afa-ink); font-weight: 700; white-space: nowrap; }
+.afa__help:hover strong { color: var(--elarah-orange-d); }
+
+/* No celular o botao vira barra de largura total embaixo do card:
+   sobra largura pro nome e o preco para de quebrar no meio. */
+@media (max-width: 470px) {
+  .afa-card { gap: 11px; }
+  .afa-card__thumb { width: 66px; height: 66px; }
+  .afa-card__cta { order: 3; width: 100%; text-align: center; padding: 11px 15px; margin-top: 2px; }
+}
+
+[hidden] { display: none !important; }
