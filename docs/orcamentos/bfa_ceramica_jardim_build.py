@@ -1,5 +1,7 @@
-# Proposta Elarah · BFA (Images Matter) · Modelagem manual em ceramica + coffee break · O Jardim (deck) · 10 pax · 08-10/12
-# Base: portfolio_corporativo_jardim (experiencia + espaco + coffee + investimento). Editorial/neutro. Valor-alvo R$5.290 (a confirmar).
+# Proposta Elarah · BFA (Images Matter) · Programa em 2 experiencias:
+#   Exp 01 · Ceramics & Coffee (modelagem manual + coffee break · O Jardim · 10 pax · 08-10/12) — R$5.290
+#   Exp 02 · Pizza & Wine (gastronomica conduzida · 10 pax) — R$8.990 (R$899/pax)
+# Fotos reais priorizadas (evento corporativo, O Jardim, cozinha/gastronomia). Editorial/neutro, mesma identidade.
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
 
@@ -80,6 +82,20 @@ xcss = '''
   .incl2 ul{list-style:none;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:9px 26px}
   .incl2 ul li{position:relative;padding-left:20px;font-size:12.5px;color:var(--ink);line-height:1.35}
   .incl2 ul li span{position:absolute;left:0;top:1px;color:var(--orange)}
+  /* vibe · mosaico de fotos humanas */
+  .vibe{display:grid;grid-template-columns:1.35fr 1fr 1fr;grid-template-rows:188px 188px;gap:12px;margin-top:22px}
+  .vibe figure{margin:0;border-radius:14px;overflow:hidden;position:relative;border:1px solid rgba(38,51,42,.10);box-shadow:0 14px 32px -22px rgba(0,0,0,.4)}
+  .vibe img{width:100%;height:100%;object-fit:cover;display:block}
+  .vibe .big{grid-row:1 / span 2}
+  .vibe figcaption{position:absolute;left:0;right:0;bottom:0;padding:20px 12px 9px;color:#fff;font-size:10.5px;font-weight:600;letter-spacing:.02em;background:linear-gradient(to top,rgba(20,28,22,.8),transparent)}
+  /* marcador de experiência */
+  .expdiv{display:inline-flex;align-items:center;gap:9px;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;font-weight:700;color:var(--orange);border:1px solid rgba(169,102,63,.45);border-radius:999px;padding:6px 15px;margin-bottom:14px}
+  /* jornada de vinhos */
+  .wjourney{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+  .wj{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;padding:14px 18px;background:var(--card)}
+  .wj .dot{width:22px;height:22px;border-radius:50%;flex:0 0 auto;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
+  .wj b{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);display:block;line-height:1}
+  .wj span{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -111,12 +127,14 @@ def head_simple(kicker):
 
 PROOF = "Experiências já realizadas para times como <b>Compass</b>, <b>Natura</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)"
 
+# ============================ EXPERIÊNCIA 01 · CERAMICS & COFFEE ============================
+
 cover = f'''
   <section class="slide">
-{head_block("BFA · Creative Team Experience", "Images", "Matter", "Ceramics & Coffee")}
+{head_block("BFA · Creative Team Experience", "Images", "Matter", "Duas experiências")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Ceramics &amp; Coffee</span>
+        <span class="eyebrow">✦ Experiência 01 · Ceramics &amp; Coffee</span>
         <h1>Uma pausa criativa entre <em>argila, conversa e café</em></h1>
         <p class="lead">Um encontro tátil e sensorial para o <b>time da BFA</b>: <b>modelagem manual em cerâmica</b> e coffee break, em um <b>jardim reservado no meio da cidade</b>. Cada pessoa cria a própria peça — que depois é finalizada e devolvida pronta.</p>
         <div class="rule"></div>
@@ -126,9 +144,10 @@ cover = f'''
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip"><b>08–10 de dezembro</b> · a confirmar</span>
+          <span class="chip">Programa em <b>2 experiências</b></span>
         </div>
       </div>
-      <div class="cover-photo">{img("bfa-grupo1.webp", "Grupo em experiência de cerâmica numa mesa compartilhada ao ar livre", "center 38%")}</div>
+      <div class="cover-photo">{img("eventocorporativo.jpg", "Evento corporativo da Elarah, grupo reunido à mesa", "center 42%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("BFA · Images Matter")}
@@ -156,17 +175,18 @@ experiencia = f'''
 {head_simple("A experiência")}
     <span class="eyebrow orange">◆ Mão na massa</span>
     <h2>Modelagem manual em <em>cerâmica</em></h2>
-    <p class="lead">Cada participante recebe <b>argila</b> e a <b>orientação de uma ceramista</b> para criar a própria peça, na modelagem manual. Depois, as peças seguem para <b>acabamento, secagem e queima</b> — e são <b>devolvidas prontas</b>.</p>
+    <p class="lead">Cada participante recebe <b>argila</b> e a <b>orientação de uma ceramista</b> para criar a própria peça, no dia. Depois, as peças ficam com a profissional e seguem para <b>acabamento, esmaltação e queima</b> — e são <b>devolvidas prontas</b> ao grupo.</p>
     <div class="steps3">
-      <div class="st3"><span class="sn">01</span><h3>Modelar</h3><p>Cada pessoa cria a própria peça, no seu tempo, guiada pela ceramista.</p></div>
-      <div class="st3"><span class="sn">02</span><h3>Finalizar</h3><p>As peças seguem para acabamento, secagem e queima.</p></div>
-      <div class="st3"><span class="sn">03</span><h3>Receber</h3><p>Depois de prontas, são devolvidas ao grupo.</p></div>
+      <div class="st3"><span class="sn">01</span><h3>Modelar</h3><p>Os participantes fazem a peça no dia, acompanhados pela profissional.</p></div>
+      <div class="st3"><span class="sn">02</span><h3>Finalizar</h3><p>Ao final, as peças ficam com a profissional e seguem para acabamento, esmaltação e queima.</p></div>
+      <div class="st3"><span class="sn">03</span><h3>Receber</h3><p>Depois de finalizadas, as peças são devolvidas prontas aos participantes.</p></div>
     </div>
     <div class="gstrip">
       <figure>{img("ceramica-fria.jpg", "Mãos na argila, modelando uma peça", "center 45%")}<figcaption>Mãos na argila</figcaption></figure>
       <figure>{img("ceramica2.jpg", "Peças de cerâmica autorais em processo", "center 50%")}<figcaption>Peças em processo</figcaption></figure>
       <figure>{img("bfa-grupo2.webp", "Grupo criando junto numa grande mesa compartilhada ao ar livre", "center 40%")}<figcaption>Mesa compartilhada</figcaption></figure>
     </div>
+    <div class="bnote" style="margin-top:14px">◆ A peça <b>não é levada pronta no dia</b>: depois da finalização (acabamento, esmaltação e queima), ela é <b>devolvida pronta</b> ao grupo. 🌿</div>
     {foot("A experiência")}
   </section>'''
 
@@ -185,34 +205,26 @@ local = f'''
     {foot("O local")}
   </section>'''
 
-incluso = f'''
+vibe = f'''
   <section class="slide">
-{head_simple("O que está incluído")}
-    <span class="eyebrow orange">◆ Tudo pensado para o grupo</span>
-    <h2>O que está <em>incluído</em></h2>
-    <div class="cofrow">
-      <div class="cofphoto">{img("agora-ceramica.jpg", "Modelagem de cerâmica à mão", "center 45%")}</div>
-      <ul class="checks">
-        <li>Espaço reservado</li>
-        <li>Experiência de modelagem</li>
-        <li>Ceramista conduzindo</li>
-        <li>Argila e materiais</li>
-        <li>Condução da atividade</li>
-        <li>Acabamento e queima</li>
-        <li>Coffee break</li>
-        <li>Montagem e ambientação</li>
-        <li>Logística e devolução das peças</li>
-        <li>Produção e curadoria Elarah</li>
-      </ul>
+{head_simple("A vibe da experiência")}
+    <span class="eyebrow orange">◆ O clima do encontro</span>
+    <h2>A vibe da <em>experiência</em></h2>
+    <p class="lead">Criar junto muda o ritmo do encontro — uma pausa para conversar, rir e estar presente.</p>
+    <div class="vibe">
+      <figure class="big">{img("cover-corp.jpg", "Convidadas conversando em evento corporativo da Elarah", "center 35%")}</figure>
+      <figure>{img("vibe-conexao-corp.jpg", "Pessoas rindo e conversando", "center 40%")}</figure>
+      <figure>{img("vibe-criar-corp.jpg", "Mãos criando, com drinks na mesa", "center 55%")}</figure>
+      <figure>{img("corp-conexao.jpg", "Momento espontâneo de conexão entre o time", "center 40%")}</figure>
+      <figure>{img("mesa-montada-corp.jpg", "Grande mesa compartilhada montada", "center 55%")}</figure>
     </div>
-    <p class="fineprint">Experiência completa produzida pela Elarah — do espaço à devolução das peças prontas. Detalhes operacionais (duração, menu do coffee e prazo de devolução) a confirmar.</p>
-    {foot("O que está incluído")}
+    {foot("A vibe da experiência")}
   </section>'''
 
 investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
-    <span class="eyebrow orange">◆ Investimento</span>
+    <span class="eyebrow orange">◆ Investimento · Ceramics &amp; Coffee</span>
     <h2>Uma experiência completa, <em>produzida pela Elarah</em></h2>
     <p class="lead">O investimento reúne o melhor da experiência: <b>espaço reservado</b>, <b>coffee break</b> e <b>modelagem manual em cerâmica</b>, com <b>produção integral da Elarah</b>.</p>
     <div class="sum">
@@ -239,19 +251,102 @@ investimento = f'''
       </div>
     </div>
     <p class="fineprint">Composição comercial da proposta (valor por pessoa), para grupo de até 10 participantes. Valor sujeito à confirmação final de data, disponibilidade e fornecedores. Datas em avaliação: 08, 09 ou 10 de dezembro.</p>
-    {foot("Investimento")}
+    {foot("Investimento · Ceramics & Coffee")}
   </section>'''
+
+# ============================ EXPERIÊNCIA 02 · PIZZA & WINE ============================
+
+g_conceito = f'''
+  <section class="slide">
+{head_block("BFA · Experiência 02", "Pizza", "&amp; Wine", "Gastronomia & Vinho")}
+    <span class="expdiv">✦ Experiência 02 · Pizza &amp; Wine</span>
+    <h2>Uma noite de <em>pizza, vinho e conexão</em></h2>
+    <p class="lead">Uma experiência gastronômica em torno da pizza e do vinho: <b>três sabores</b>, diferentes <b>harmonizações</b> e uma noite feita para <b>provar, conversar e compartilhar</b>. Conduzida por um parceiro gastronômico, num fim de tarde/noite — social, leve e sofisticada.</p>
+    <div class="cgrid">
+      <figure class="cphoto">{img("jantar-vista.jpg", "Jantar intimista à noite, com vista da cidade", "center 45%")}</figure>
+      <div class="cpil">
+        <div class="cp"><span class="cn">01</span><h3>Recepção &amp; boas-vindas</h3><p>Chegada tranquila, com o grupo se acomodando para a noite.</p></div>
+        <div class="cp"><span class="cn">02</span><h3>Preparo conduzido</h3><p>O preparo das pizzas acontece conduzido por um parceiro gastronômico — acompanhado de perto pelo grupo.</p></div>
+        <div class="cp"><span class="cn">03</span><h3>Degustação &amp; harmonização</h3><p>Três sabores servidos em sequência, cada um com sua harmonização de vinho.</p></div>
+      </div>
+    </div>
+    {foot("Pizza & Wine · Experiência 02")}
+  </section>'''
+
+g_pizza = f'''
+  <section class="slide">
+{head_simple("Pizza & Wine")}
+    <span class="eyebrow orange">◆ Pizza &amp; harmonização</span>
+    <h2>Pizza em <em>três sabores</em>, uma jornada de vinhos</h2>
+    <p class="lead">Uma sequência pensada para provar aos poucos: <b>três sabores selecionados especialmente para a experiência</b>, cada um com uma harmonização diferente. A ideia é viver a jornada de sabores e conversar entre uma taça e outra.</p>
+    <div class="gstrip">
+      <figure>{img("pizza.jpg", "Pizza artesanal recém-saída do forno", "center 50%")}<figcaption>Três sabores</figcaption></figure>
+      <figure>{img("pizzanegroni.jpg", "Pizza com harmonização de bebida", "center 45%")}<figcaption>Sabor a sabor</figcaption></figure>
+      <figure>{img("vinhotintos.jpg", "Seleção de vinhos para harmonização", "center 45%")}<figcaption>Harmonização</figcaption></figure>
+    </div>
+    <div class="wjourney">
+      <div class="wj"><span class="dot" style="background:#E9D8A6"></span><div><b>Branco</b><span>Abertura leve</span></div></div>
+      <div class="wj"><span class="dot" style="background:#E0959E"></span><div><b>Rosé</b><span>Meio da jornada</span></div></div>
+      <div class="wj"><span class="dot" style="background:#6E1F2E"></span><div><b>Tinto</b><span>Final encorpado</span></div></div>
+    </div>
+    <div class="bnote" style="margin-top:14px">◆ Sequência de harmonização sugerida (branco · rosé · tinto). Sabores das pizzas e seleção final de vinhos <b>a confirmar</b> com o parceiro gastronômico. 🍷</div>
+    {foot("Pizza & Wine")}
+  </section>'''
+
+g_espaco = f'''
+  <section class="slide">
+{head_simple("O espaço & a vibe")}
+    <span class="eyebrow orange">◆ O espaço &amp; a vibe</span>
+    <h2>Um espaço preparado para <em>gastronomia</em></h2>
+    <p class="lead">Um ambiente montado para experiências gastronômicas, com <b>cozinha completa</b> e capacidade confortável para o grupo. O clima é de <b>jantar intimista</b> — mesa, taças e boa conversa.</p>
+    <div class="gstrip">
+      <figure>{img("espaço2.jpg", "Cozinha completa e equipada do espaço", "center 50%")}<figcaption>Cozinha completa</figcaption></figure>
+      <figure>{img("cozinha31-prato.jpg", "Preparo conduzido por profissional", "center 40%")}<figcaption>Preparo conduzido</figcaption></figure>
+      <figure>{img("drinkspetisco.jpg", "Taça de vinho e petiscos na mesa", "center 50%")}<figcaption>À mesa</figcaption></figure>
+    </div>
+    <div class="bnote" style="margin-top:16px">◆ O <b>espaço</b> e o <b>parceiro gastronômico</b> têm funções diferentes: o ambiente recebe o grupo e a condução da experiência é feita pelo parceiro. Espaço, endereço e formato final <b>a confirmar</b>. 🍕</div>
+    {foot("O espaço & a vibe")}
+  </section>'''
+
+g_investimento = f'''
+  <section class="slide">
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ Investimento · Pizza &amp; Wine</span>
+    <h2>Uma noite completa, <em>tudo incluso</em></h2>
+    <p class="lead">A experiência gastronômica completa — <b>pizza em três sabores</b>, <b>harmonização de vinhos</b> e condução por <b>parceiro gastronômico</b>, com produção da Elarah.</p>
+    <div class="priceband">
+      <div><span class="pl">Experiência completa · até 10 participantes</span><span class="pv">R$ 8.990</span></div>
+      <div class="side">R$ 899 por pessoa<br>pizza · harmonização de vinhos<br><b style="color:#fff;font-family:'DM Serif Display',serif">tudo incluso</b></div>
+    </div>
+    <div class="invbox" style="margin-top:16px">
+      <div class="incl incl2" style="flex:1;min-width:300px">
+        <span class="vt">O que a noite inclui</span>
+        <ul>
+          <li><span>✦</span>Pizza em três sabores</li>
+          <li><span>✦</span>Harmonização / degustação de vinhos</li>
+          <li><span>✦</span>Condução por parceiro gastronômico</li>
+          <li><span>✦</span>Espaço preparado para a experiência</li>
+          <li><span>✦</span>Serviço e estrutura</li>
+          <li><span>✦</span>Produção e curadoria Elarah</li>
+        </ul>
+      </div>
+    </div>
+    <p class="fineprint">Investimento único da experiência completa (valor por pessoa), para grupo de até 10 participantes. Espaço, parceiro gastronômico e seleção de vinhos a confirmar. Datas em avaliação: 08, 09 ou 10 de dezembro.</p>
+    {foot("Investimento · Pizza & Wine")}
+  </section>'''
+
+# ============================ FECHAMENTO ============================
 
 proximos = f'''
   <section class="slide">
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>Como <em>seguimos</em></h2>
-    <p class="lead">É só confirmar a data que a gente cuida de todo o resto.</p>
+    <p class="lead">Duas experiências para o time — <b>Ceramics &amp; Coffee</b> e <b>Pizza &amp; Wine</b>. Podem acontecer juntas ou em datas separadas: é só escolher que a gente cuida de todo o resto.</p>
     <div class="nextrow">
-      <div class="nx"><span class="nn">01</span><h3>Confirmamos a data</h3></div>
+      <div class="nx"><span class="nn">01</span><h3>Escolhem as experiências e a data</h3></div>
       <div class="nx"><span class="nn">02</span><h3>Reservamos espaço e parceiros</h3></div>
-      <div class="nx"><span class="nn">03</span><h3>A Elarah organiza toda a experiência</h3></div>
+      <div class="nx"><span class="nn">03</span><h3>A Elarah organiza tudo</h3></div>
       <div class="nx"><span class="nn">04</span><h3>O grupo chega e aproveita</h3></div>
     </div>
     <div class="quote" style="margin-top:26px">
@@ -262,7 +357,10 @@ proximos = f'''
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + conceito + experiencia + local + investimento + proximos + '\n\n</div>\n\n'
+deck = ('<div class="deck">\n'
+        + cover + conceito + experiencia + local + vibe + investimento
+        + g_conceito + g_pizza + g_espaco + g_investimento
+        + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-bfa-ceramica-jardim.html"
 open(out, "w", encoding="utf-8").write(html)
