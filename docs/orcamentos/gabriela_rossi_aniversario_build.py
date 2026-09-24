@@ -204,33 +204,33 @@ experiencias = f'''
       {xp("05", "charm-bolsa.jpg", "Berloque de bolsa personalizado", "Berloque de Bolsa", "Para levar um pouco desse dia", "Cada uma escolhe e combina charms para criar um acessório personalizado para a bolsa.", "R$ 259", "center 50%")}
       {xp("06", "perfumaria-oficina.jpg", "Criação de perfume natural", "Criando seu Perfume Natural", "Para encontrar uma fragrância só sua", "Uma jornada pelos aromas para cada convidada criar sua combinação pessoal e levar para casa.", "R$ 259", "center 45%")}
     </div>
-    <p class="fineprint">Valores por pessoa. Quer deixar completo? Veja o <b>plano Premium</b> a seguir — com coffee break e lembrancinha personalizada.</p>
+    <p class="fineprint">Valores por pessoa. Quer deixar completo? Dá pra somar um <b>brinde</b> — uma lembrancinha personalizada — a seguir.</p>
     {foot("A experiência")}
   </section>'''
 
-# ============================ 6 · O PLANO PREMIUM ============================
+# ============================ 6 · O BRINDE ESPECIAL ============================
 premium = f'''
   <section class="slide">
-{head_simple("Plano Premium")}
+{head_simple("O brinde")}
     <span class="eyebrow orange">◆ Quer deixar completo?</span>
-    <h2>O plano <em>Premium</em></h2>
-    <p class="lead">Qualquer experiência pode virar Premium: além da atividade, entram um <b>coffee break</b> lindo pra turma e uma <b>lembrancinha personalizada</b> pra cada uma levar pra casa. É só somar <b>R$ 120 por pessoa</b>. ☕🎁</p>
+    <h2>Um brinde <em>especial</em></h2>
+    <p class="lead">Qualquer experiência pode ganhar um brinde: uma <b>lembrancinha personalizada</b> pra cada uma levar pra casa e guardar de recordação. É só somar <b>R$ 129 por pessoa</b>. 🎁</p>
     <div class="invbox">
       <div style="flex:0 0 36%;min-width:220px;border-radius:18px;overflow:hidden;position:relative;min-height:250px;border:1px solid var(--line)">
         <img src="assets/lembrancinha-escova.jpg" alt="Lembrancinha personalizada numa caixa de presente" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 45%">
       </div>
       <div class="incl" style="flex:1;min-width:280px;display:flex;flex-direction:column;justify-content:center">
-        <span class="vt">O que vem no Premium</span>
+        <span class="vt">Como funciona o brinde</span>
         <ul>
           <li><span>✦</span>Tudo da experiência escolhida</li>
-          <li><span>✦</span><b>Coffee break</b> completo pra turma</li>
           <li><span>✦</span><b>Lembrancinha personalizada</b> pra cada uma</li>
+          <li><span>✦</span>À escolha: <b>escova gravada</b> ou <b>garrafa personalizada</b></li>
         </ul>
-        <span class="plusbadge">+ R$ 120 por pessoa</span>
+        <span class="plusbadge">+ R$ 129 por pessoa</span>
       </div>
     </div>
-    <p class="fineprint">A lembrancinha personalizada pode ser, por exemplo, uma escova gravada ou uma garrafa personalizada, conforme o estilo da comemoração.</p>
-    {foot("Plano Premium")}
+    <p class="fineprint">O brinde é opcional e pode ser personalizado conforme o estilo da comemoração.</p>
+    {foot("O brinde")}
   </section>'''
 
 # ============================ 7 · INVESTIMENTO (POR PESSOA E GRUPO) ============================
@@ -244,7 +244,7 @@ def brl(v):
 
 _rows = "\n".join(
     f'        <tr><td class="exp">{n}</td><td class="r">{brl(p)}</td>'
-    f'<td class="r">{brl(p * 9)}</td><td class="prem">{brl((p + 120) * 9)}</td></tr>'
+    f'<td class="prem">{brl(p * 9)}</td></tr>'
     for n, p in _exp)
 
 investimento = f'''
@@ -252,16 +252,16 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Por pessoa e por <em>grupo</em></h2>
-    <p class="lead">Cada experiência tem um valor por pessoa. Aqui está o total estimado para as 9 convidadas — na experiência e no plano completo, com coffee break e lembrancinha.</p>
+    <p class="lead">Cada experiência tem um valor por pessoa. Aqui está o total estimado para as 9 convidadas.</p>
     <table class="ptable">
       <thead>
-        <tr><th>Experiência</th><th class="r">Por pessoa</th><th class="r">Grupo de 9</th><th class="r">Grupo · Premium</th></tr>
+        <tr><th>Experiência</th><th class="r">Por pessoa</th><th class="r">Grupo de 9</th></tr>
       </thead>
       <tbody>
 {_rows}
       </tbody>
     </table>
-    <p class="fineprint">Grupo estimado para 9 convidadas. <b>Premium</b> = experiência + coffee break + lembrancinha personalizada (+R$ 120 por pessoa). Espaço e menu da casa à parte, conforme a opção escolhida. Data 24.10 sujeita à disponibilidade.</p>
+    <p class="fineprint">Grupo estimado para 9 convidadas. O <b>brinde</b> (lembrancinha personalizada) é opcional: +R$ 129 por pessoa. Espaço e menu da casa à parte, conforme a opção escolhida. Data 24.10 sujeita à disponibilidade.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -271,12 +271,12 @@ proximos = f'''
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>É só escolher a <em>combinação</em></h2>
-    <p class="lead">Agora é a parte boa: vocês escolhem o espaço e a experiência, decidem se querem o plano completo, e a gente cuida de todo o resto pra reservar a data.</p>
+    <p class="lead">Agora é a parte boa: vocês escolhem o espaço e a experiência, decidem se querem somar o brinde, e a gente cuida de todo o resto pra reservar a data.</p>
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham o espaço</h3><p>Casa Pretty, YUCAFÉ ou Sow Café.</p></div>
-      <div class="infocard"><div class="ico">2️⃣</div><h3>Escolham a experiência</h3><p>Uma das seis opções — essencial ou no plano completo (Premium).</p></div>
-      <div class="infocard"><div class="ico">3️⃣</div><h3>A gente cota e reserva</h3><p>Fechamos espaço, mesa, coffee break e lembrancinhas e seguramos a data.</p></div>
+      <div class="infocard"><div class="ico">2️⃣</div><h3>Escolham a experiência</h3><p>Uma das seis opções — com ou sem brinde personalizado.</p></div>
+      <div class="infocard"><div class="ico">3️⃣</div><h3>A gente cota e reserva</h3><p>Fechamos espaço, mesa e lembrancinhas e seguramos a data.</p></div>
     </div>
     <div class="cta2">
       <div class="q">Qual combinação mais <em>combina com vocês?</em></div>
