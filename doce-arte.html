@@ -122,14 +122,14 @@
       // Nome do fornecedor exatamente como está no cadastro da
       // experiência. A comparação ignora acento, maiúscula e espaço
       // sobrando, mas exige o nome INTEIRO — assim um parceiro futuro
-      // de nome parecido não cai nesta página. Aqui a dúvida é dupla:
-      // o cadastro pode estar na marca (Doce Arte) ou no nome dela
-      // (Giuliana). Listei as duas famílias; confirmar no admin qual
-      // está em uso e apagar o resto.
-      match: [
-        'Doce Arte', 'Doceria Doce Arte', 'Doce Arte Gastronomia',
-        'Giuliana', 'Giuliana Doce Arte', 'Doce Arte - Giuliana'
-      ],
+      // de nome parecido não cai nesta página.
+      //
+      // No admin as experiências dela estão em "Giuliana Gini" (nome
+      // da parceira), enquanto a página se apresenta como Doce Arte
+      // (marca). "Doce Arte" fica na lista porque é a própria marca
+      // dela: se algum cadastro futuro usar a marca em vez do nome,
+      // entra do mesmo jeito.
+      match: ['Giuliana Gini', 'Doce Arte'],
       // Escape hatch: IDs de experiências que devem entrar mesmo se o
       // campo "Fornecedor" estiver vazio/diferente no admin.
       idsExtra: [],
