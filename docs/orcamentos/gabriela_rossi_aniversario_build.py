@@ -55,6 +55,18 @@ xcss = '''
   .cta2 .q em{color:var(--orange-light,#CFA07E);font-style:italic}
   .cta2 .c{font-size:12.5px;color:rgba(255,255,255,.85);line-height:1.6;text-align:right}
   .cta2 .c b{color:#fff}
+  /* Premium */
+  .plusbadge{display:inline-block;background:var(--orange);color:#fff;border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;margin-top:16px}
+  /* Investimento · tabela */
+  .ptable{width:100%;border-collapse:collapse;margin-top:18px;font-size:13px;border-radius:14px;overflow:hidden;box-shadow:0 14px 32px -24px rgba(0,0,0,.32)}
+  .ptable th{background:var(--navy);color:#fff;text-align:left;padding:13px 18px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .ptable th.r{text-align:right}
+  .ptable td{padding:12px 18px;border-bottom:1px solid var(--line);color:var(--ink)}
+  .ptable tr:last-child td{border-bottom:none}
+  .ptable tr:nth-child(even) td{background:#FBF1EE}
+  .ptable td.exp{font-weight:600;color:var(--navy)}
+  .ptable td.r{text-align:right;color:var(--muted);font-weight:600}
+  .ptable td.prem{text-align:right;font-family:'DM Serif Display',serif;font-size:17px;color:var(--orange-dark)}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -92,13 +104,11 @@ def vcard(src, alt, kicker, name, phrase, itens, note, pos="center 50%"):
             f'<div class="vnote">{note}</div></div></div>')
 
 
-def xp(n, src, alt, name, tagline, desc, price, price2, pos="center 50%"):
-    add = (f'<div class="xadd"><em>Com um carinho a mais</em><br>'
-           f'experiência + lembrança · <b>{price2}</b> por pessoa</div>')
+def xp(n, src, alt, name, tagline, desc, price, pos="center 50%"):
     return (f'<div class="xp"><figure>{img(src, alt, pos)}</figure>'
             f'<div class="xb"><span class="xn">{n}</span><h3>{name}</h3>'
             f'<span class="xt">{tagline}</span><p>{desc}</p>'
-            f'<div class="xpr">{price}<small>por pessoa</small></div>{add}</div></div>')
+            f'<div class="xpr">{price}<small>por pessoa</small></div></div></div>')
 
 
 def vfig(src, alt, cap, pos="center 50%", opt=False):
@@ -171,9 +181,9 @@ onde = f'''
     <h2>Escolha onde <em>celebrar</em></h2>
     <p class="lead">Três atmosferas diferentes para viver o mesmo momento: intimista, leve e cheio de personalidade.</p>
     <div class="vgrid" style="grid-template-columns:repeat(3,1fr)">
-      {vcard("casa-pretty-real.jpg", "Casa Pretty — mesa posta e grupo reunido", "Intimista &amp; acolhedor", "Casa Pretty", "Um espaço acolhedor, intimista e cheio de personalidade — perfeito para uma mesa bonita e uma comemoração entre poucas pessoas.", ["Ambiente reservado e acolhedor", "Mesa posta para receber o grupo", "Possibilidade de menu completo"], "Sem cobrança de locação. Menu completo de R$ 120 a R$ 160 por pessoa, com entrada, prato principal e sobremesa, ou consumo direto do cardápio.", "center 45%")}
-      {vcard("yucafe-real.jpg", "YUCAFÉ Earth Based — terraço leve e cheio de verde", "Leve &amp; natural", "YUCAFÉ Earth Based", "Um café leve, natural e descontraído, com clima gostoso para uma comemoração mais espontânea.", ["Ambiente leve e contemporâneo", "Bom para grupos pequenos", "Combina com experiências criativas"], "Sem cobrança de locação. Cardápio e consumo sob confirmação.", "center 55%")}
-      {vcard("sowcafe-fachada.jpg", "Sow Café — fachada charmosa com luzes", "Charmoso &amp; aconchegante", "Sow Café", "Um espaço charmoso e acolhedor, com aquele clima de café que deixa o encontro mais leve e íntimo.", ["Atmosfera acolhedora", "Bom para grupos pequenos", "Conversa bem com experiências manuais"], "Condições de reserva e consumo sob confirmação.", "center 50%")}
+      {vcard("casa-pretty-real.jpg", "Casa Pretty — mesa posta e grupo reunido", "Intimista &amp; acolhedor", "Casa Pretty", "Um espaço charmoso e reservado, com mesa posta para receber o grupo e possibilidade de menu completo.", ["Ambiente reservado e acolhedor", "Mesa posta para receber o grupo", "Possibilidade de menu completo"], "Sem locação · menu de R$ 120 a R$ 160/pessoa", "center 45%")}
+      {vcard("yucafe-real.jpg", "YUCAFÉ Earth Based — terraço leve e cheio de verde", "Leve &amp; natural", "YUCAFÉ Earth Based", "Um café contemporâneo e descontraído, com clima gostoso para uma comemoração pequena e espontânea.", ["Ambiente leve e contemporâneo", "Bom para grupos pequenos", "Combina com experiências criativas"], "Sem locação · cardápio sob confirmação", "center 55%")}
+      {vcard("sowcafe-fachada.jpg", "Sow Café — fachada charmosa com luzes", "Charmoso &amp; aconchegante", "Sow Café", "Um espaço acolhedor e cheio de personalidade, ideal para grupos pequenos e experiências criativas.", ["Atmosfera acolhedora", "Bom para grupos pequenos", "Conversa bem com experiências manuais"], "Reserva e consumo sob confirmação", "center 50%")}
     </div>
     <p class="fineprint">Cada espaço tem a sua própria atmosfera — a gente ajuda vocês a escolher a que mais combina com a comemoração.</p>
     {foot("Onde celebrar")}
@@ -187,40 +197,97 @@ experiencias = f'''
     <h2>Escolha a <em>experiência</em></h2>
     <p class="lead">Seis jeitos diferentes de celebrar, criar e levar uma lembrança desse dia.</p>
     <div class="xpgrid">
-      {xp("01", "pintura-taca.jpg", "Pintura em taça personalizada", "Pintura em Taça", "Para criar &amp; brindar", "Cada uma personaliza sua própria taça e leva a criação como lembrança do encontro.", "R$ 229", "R$ 358", "center 50%")}
-      {xp("02", "buque.jpg", "Arranjo floral autoral", "Arranjos Florais", "Para florescer juntas", "Flores, cores e composição: cada uma cria seu próprio arranjo autoral para levar para casa.", "R$ 279", "R$ 408", "center 45%")}
-      {xp("03", "velaflor.jpg", "Vela flor e home spray", "Vela Flor &amp; Home Spray", "Para despertar os sentidos", "Uma experiência entre aromas, flores e criação, com peças feitas pelas próprias convidadas.", "R$ 269", "R$ 398", "center 50%")}
-      {xp("04", "foldingbook.jpg", "Folding book autoral", "Crie seu Folding Book", "Para guardar histórias", "Cada convidada cria um livro-objeto autoral, feito à mão e cheio de personalidade.", "R$ 249", "R$ 378", "center 50%")}
-      {xp("05", "charm-bolsa.jpg", "Berloque de bolsa personalizado", "Berloque de Bolsa", "Para levar um pouco desse dia", "Cada uma escolhe e combina charms para criar um acessório personalizado para a bolsa.", "R$ 259", "R$ 388", "center 50%")}
-      {xp("06", "perfumaria-oficina.jpg", "Criação de perfume natural", "Criando seu Perfume Natural", "Para encontrar uma fragrância só sua", "Uma jornada pelos aromas para cada convidada criar sua combinação pessoal e levar para casa.", "R$ 259", "R$ 388", "center 45%")}
+      {xp("01", "pintura-taca.jpg", "Pintura em taça personalizada", "Pintura em Taça", "Para criar &amp; brindar", "Cada uma personaliza sua própria taça e leva a criação como lembrança do encontro.", "R$ 229", "center 50%")}
+      {xp("02", "buque.jpg", "Arranjo floral autoral", "Arranjos Florais", "Para florescer juntas", "Flores, cores e composição: cada uma cria seu próprio arranjo autoral para levar para casa.", "R$ 279", "center 45%")}
+      {xp("03", "velaflor.jpg", "Vela flor e home spray", "Vela Flor &amp; Home Spray", "Para despertar os sentidos", "Uma experiência entre aromas, flores e criação, com peças feitas pelas próprias convidadas.", "R$ 269", "center 50%")}
+      {xp("04", "foldingbook.jpg", "Folding book autoral", "Crie seu Folding Book", "Para guardar histórias", "Cada convidada cria um livro-objeto autoral, feito à mão e cheio de personalidade.", "R$ 249", "center 50%")}
+      {xp("05", "charm-bolsa.jpg", "Berloque de bolsa personalizado", "Berloque de Bolsa", "Para levar um pouco desse dia", "Cada uma escolhe e combina charms para criar um acessório personalizado para a bolsa.", "R$ 259", "center 50%")}
+      {xp("06", "perfumaria-oficina.jpg", "Criação de perfume natural", "Criando seu Perfume Natural", "Para encontrar uma fragrância só sua", "Uma jornada pelos aromas para cada convidada criar sua combinação pessoal e levar para casa.", "R$ 259", "center 45%")}
     </div>
-    <p class="fineprint"><b>Com um carinho a mais</b> é a experiência com uma lembrança personalizada (adiciona R$ 129 por pessoa) — como uma escova personalizada ou uma garrafa gravada.</p>
+    <p class="fineprint">Valores por pessoa. Quer deixar completo? Veja o <b>plano Premium</b> a seguir — com coffee break e lembrancinha personalizada.</p>
     {foot("A experiência")}
   </section>'''
 
-# ============================ 6 · INVESTIMENTO & PRÓXIMOS PASSOS ============================
+# ============================ 6 · O PLANO PREMIUM ============================
+premium = f'''
+  <section class="slide">
+{head_simple("Plano Premium")}
+    <span class="eyebrow orange">◆ Quer deixar completo?</span>
+    <h2>O plano <em>Premium</em></h2>
+    <p class="lead">Qualquer experiência pode virar Premium: além da atividade, entram um <b>coffee break</b> lindo pra turma e uma <b>lembrancinha personalizada</b> pra cada uma levar pra casa. É só somar <b>R$ 120 por pessoa</b>. ☕🎁</p>
+    <div class="invbox">
+      <div style="flex:0 0 36%;min-width:220px;border-radius:18px;overflow:hidden;position:relative;min-height:250px;border:1px solid var(--line)">
+        <img src="assets/lembrancinha-escova.jpg" alt="Lembrancinha personalizada numa caixa de presente" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 45%">
+      </div>
+      <div class="incl" style="flex:1;min-width:280px;display:flex;flex-direction:column;justify-content:center">
+        <span class="vt">O que vem no Premium</span>
+        <ul>
+          <li><span>✦</span>Tudo da experiência escolhida</li>
+          <li><span>✦</span><b>Coffee break</b> completo pra turma</li>
+          <li><span>✦</span><b>Lembrancinha personalizada</b> pra cada uma</li>
+        </ul>
+        <span class="plusbadge">+ R$ 120 por pessoa</span>
+      </div>
+    </div>
+    <p class="fineprint">A lembrancinha personalizada pode ser, por exemplo, uma escova gravada ou uma garrafa personalizada, conforme o estilo da comemoração.</p>
+    {foot("Plano Premium")}
+  </section>'''
+
+# ============================ 7 · INVESTIMENTO (POR PESSOA E GRUPO) ============================
+_exp = [("Pintura em Taça", 229), ("Arranjos Florais", 279), ("Vela Flor &amp; Home Spray", 269),
+        ("Crie seu Folding Book", 249), ("Berloque de Bolsa", 259), ("Criando seu Perfume Natural", 259)]
+
+
+def brl(v):
+    return "R$ " + f"{v:,.0f}".replace(",", ".")
+
+
+_rows = "\n".join(
+    f'        <tr><td class="exp">{n}</td><td class="r">{brl(p)}</td>'
+    f'<td class="r">{brl(p * 9)}</td><td class="prem">{brl((p + 120) * 9)}</td></tr>'
+    for n, p in _exp)
+
+investimento = f'''
+  <section class="slide">
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ Investimento</span>
+    <h2>Por pessoa e por <em>grupo</em></h2>
+    <p class="lead">Cada experiência tem um valor por pessoa. Aqui está o total estimado para as 9 convidadas — na experiência e no plano completo, com coffee break e lembrancinha.</p>
+    <table class="ptable">
+      <thead>
+        <tr><th>Experiência</th><th class="r">Por pessoa</th><th class="r">Grupo de 9</th><th class="r">Grupo · Premium</th></tr>
+      </thead>
+      <tbody>
+{_rows}
+      </tbody>
+    </table>
+    <p class="fineprint">Grupo estimado para 9 convidadas. <b>Premium</b> = experiência + coffee break + lembrancinha personalizada (+R$ 120 por pessoa). Espaço e menu da casa à parte, conforme a opção escolhida. Data 24.10 sujeita à disponibilidade.</p>
+    {foot("Investimento")}
+  </section>'''
+
+# ============================ 8 · PRÓXIMOS PASSOS ============================
 proximos = f'''
   <section class="slide">
-{head_simple("Investimento & próximos passos")}
-    <span class="eyebrow orange">◆ Investimento &amp; próximos passos</span>
+{head_simple("Próximos passos")}
+    <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>É só escolher a <em>combinação</em></h2>
-    <p class="lead">O investimento final é a <b>experiência escolhida</b> (valor por pessoa) somada ao <b>espaço</b> e aos <b>opcionais</b> que fizerem sentido.</p>
+    <p class="lead">Agora é a parte boa: vocês escolhem o espaço e a experiência, decidem se querem o plano completo, e a gente cuida de todo o resto pra reservar a data.</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham o espaço</h3><p>Casa Pretty, Sow Café ou YUCAFÉ.</p></div>
-      <div class="infocard"><div class="ico">2️⃣</div><h3>Escolham a experiência</h3><p>Uma das seis opções — com ou sem lembrança personalizada.</p></div>
-      <div class="infocard"><div class="ico">3️⃣</div><h3>A gente cota e reserva</h3><p>Fechamos espaço, comidas, bebidas e opcionais e seguramos a data.</p></div>
+      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham o espaço</h3><p>Casa Pretty, YUCAFÉ ou Sow Café.</p></div>
+      <div class="infocard"><div class="ico">2️⃣</div><h3>Escolham a experiência</h3><p>Uma das seis opções — essencial ou no plano completo (Premium).</p></div>
+      <div class="infocard"><div class="ico">3️⃣</div><h3>A gente cota e reserva</h3><p>Fechamos espaço, mesa, coffee break e lembrancinhas e seguramos a data.</p></div>
     </div>
     <div class="cta2">
       <div class="q">Qual combinação mais <em>combina com vocês?</em></div>
       <div class="c">Nos conta a favorita — espaço + experiência — e ajustamos os detalhes pra reservar a data.<br><b>Elarah · Experiências</b> · WhatsApp +55 (11) 91445-5930 · @elarah.oficial</div>
     </div>
-    <p class="fineprint">Valores por pessoa das experiências conforme informado. Casa Pretty e YUCAFÉ não cobram locação; Sow Café e demais condições de consumo sob confirmação. Data 24.10 sujeita à disponibilidade de agenda.</p>
-    {foot("Investimento & próximos passos")}
+    <p class="fineprint">Valores por pessoa das experiências conforme informado; espaço e menu da casa à parte, conforme a opção escolhida. Data 24.10 sujeita à disponibilidade de agenda.</p>
+    {foot("Próximos passos")}
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + curadoria + mesa_posta + onde + experiencias + proximos
+        + cover + curadoria + mesa_posta + onde + experiencias + premium + investimento + proximos
         + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-gabriela-rossi-aniversario.html"

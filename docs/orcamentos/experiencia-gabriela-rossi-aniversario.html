@@ -219,6 +219,18 @@
   .cta2 .q em{color:var(--orange-light,#CFA07E);font-style:italic}
   .cta2 .c{font-size:12.5px;color:rgba(255,255,255,.85);line-height:1.6;text-align:right}
   .cta2 .c b{color:#fff}
+  /* Premium */
+  .plusbadge{display:inline-block;background:var(--orange);color:#fff;border-radius:999px;padding:9px 20px;font-weight:700;font-size:14px;margin-top:16px}
+  /* Investimento · tabela */
+  .ptable{width:100%;border-collapse:collapse;margin-top:18px;font-size:13px;border-radius:14px;overflow:hidden;box-shadow:0 14px 32px -24px rgba(0,0,0,.32)}
+  .ptable th{background:var(--navy);color:#fff;text-align:left;padding:13px 18px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .ptable th.r{text-align:right}
+  .ptable td{padding:12px 18px;border-bottom:1px solid var(--line);color:var(--ink)}
+  .ptable tr:last-child td{border-bottom:none}
+  .ptable tr:nth-child(even) td{background:#FBF1EE}
+  .ptable td.exp{font-weight:600;color:var(--navy)}
+  .ptable td.r{text-align:right;color:var(--muted);font-weight:600}
+  .ptable td.prem{text-align:right;font-family:'DM Serif Display',serif;font-size:17px;color:var(--orange-dark)}
 </style>
 <style>
   :root{
@@ -530,9 +542,9 @@
     <h2>Escolha onde <em>celebrar</em></h2>
     <p class="lead">Três atmosferas diferentes para viver o mesmo momento: intimista, leve e cheio de personalidade.</p>
     <div class="vgrid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="vcard"><div class="vph"><img src="assets/casa-pretty-real.jpg" alt="Casa Pretty — mesa posta e grupo reunido" style="object-position:center 45%"></div><div class="vb"><span class="vt">Intimista &amp; acolhedor</span><h3>Casa Pretty</h3><p class="vaddr">Um espaço acolhedor, intimista e cheio de personalidade — perfeito para uma mesa bonita e uma comemoração entre poucas pessoas.</p><ul><li>Ambiente reservado e acolhedor</li><li>Mesa posta para receber o grupo</li><li>Possibilidade de menu completo</li></ul><div class="vnote">Sem cobrança de locação. Menu completo de R$ 120 a R$ 160 por pessoa, com entrada, prato principal e sobremesa, ou consumo direto do cardápio.</div></div></div>
-      <div class="vcard"><div class="vph"><img src="assets/yucafe-real.jpg" alt="YUCAFÉ Earth Based — terraço leve e cheio de verde" style="object-position:center 55%"></div><div class="vb"><span class="vt">Leve &amp; natural</span><h3>YUCAFÉ Earth Based</h3><p class="vaddr">Um café leve, natural e descontraído, com clima gostoso para uma comemoração mais espontânea.</p><ul><li>Ambiente leve e contemporâneo</li><li>Bom para grupos pequenos</li><li>Combina com experiências criativas</li></ul><div class="vnote">Sem cobrança de locação. Cardápio e consumo sob confirmação.</div></div></div>
-      <div class="vcard"><div class="vph"><img src="assets/sowcafe-fachada.jpg" alt="Sow Café — fachada charmosa com luzes" style="object-position:center 50%"></div><div class="vb"><span class="vt">Charmoso &amp; aconchegante</span><h3>Sow Café</h3><p class="vaddr">Um espaço charmoso e acolhedor, com aquele clima de café que deixa o encontro mais leve e íntimo.</p><ul><li>Atmosfera acolhedora</li><li>Bom para grupos pequenos</li><li>Conversa bem com experiências manuais</li></ul><div class="vnote">Condições de reserva e consumo sob confirmação.</div></div></div>
+      <div class="vcard"><div class="vph"><img src="assets/casa-pretty-real.jpg" alt="Casa Pretty — mesa posta e grupo reunido" style="object-position:center 45%"></div><div class="vb"><span class="vt">Intimista &amp; acolhedor</span><h3>Casa Pretty</h3><p class="vaddr">Um espaço charmoso e reservado, com mesa posta para receber o grupo e possibilidade de menu completo.</p><ul><li>Ambiente reservado e acolhedor</li><li>Mesa posta para receber o grupo</li><li>Possibilidade de menu completo</li></ul><div class="vnote">Sem locação · menu de R$ 120 a R$ 160/pessoa</div></div></div>
+      <div class="vcard"><div class="vph"><img src="assets/yucafe-real.jpg" alt="YUCAFÉ Earth Based — terraço leve e cheio de verde" style="object-position:center 55%"></div><div class="vb"><span class="vt">Leve &amp; natural</span><h3>YUCAFÉ Earth Based</h3><p class="vaddr">Um café contemporâneo e descontraído, com clima gostoso para uma comemoração pequena e espontânea.</p><ul><li>Ambiente leve e contemporâneo</li><li>Bom para grupos pequenos</li><li>Combina com experiências criativas</li></ul><div class="vnote">Sem locação · cardápio sob confirmação</div></div></div>
+      <div class="vcard"><div class="vph"><img src="assets/sowcafe-fachada.jpg" alt="Sow Café — fachada charmosa com luzes" style="object-position:center 50%"></div><div class="vb"><span class="vt">Charmoso &amp; aconchegante</span><h3>Sow Café</h3><p class="vaddr">Um espaço acolhedor e cheio de personalidade, ideal para grupos pequenos e experiências criativas.</p><ul><li>Atmosfera acolhedora</li><li>Bom para grupos pequenos</li><li>Conversa bem com experiências manuais</li></ul><div class="vnote">Reserva e consumo sob confirmação</div></div></div>
     </div>
     <p class="fineprint">Cada espaço tem a sua própria atmosfera — a gente ajuda vocês a escolher a que mais combina com a comemoração.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Onde celebrar</span></div>
@@ -546,36 +558,85 @@
     <h2>Escolha a <em>experiência</em></h2>
     <p class="lead">Seis jeitos diferentes de celebrar, criar e levar uma lembrança desse dia.</p>
     <div class="xpgrid">
-      <div class="xp"><figure><img src="assets/pintura-taca.jpg" alt="Pintura em taça personalizada" style="object-position:center 50%"></figure><div class="xb"><span class="xn">01</span><h3>Pintura em Taça</h3><span class="xt">Para criar &amp; brindar</span><p>Cada uma personaliza sua própria taça e leva a criação como lembrança do encontro.</p><div class="xpr">R$ 229<small>por pessoa</small></div><div class="xadd"><em>Com um carinho a mais</em><br>experiência + lembrança · <b>R$ 358</b> por pessoa</div></div></div>
-      <div class="xp"><figure><img src="assets/buque.jpg" alt="Arranjo floral autoral" style="object-position:center 45%"></figure><div class="xb"><span class="xn">02</span><h3>Arranjos Florais</h3><span class="xt">Para florescer juntas</span><p>Flores, cores e composição: cada uma cria seu próprio arranjo autoral para levar para casa.</p><div class="xpr">R$ 279<small>por pessoa</small></div><div class="xadd"><em>Com um carinho a mais</em><br>experiência + lembrança · <b>R$ 408</b> por pessoa</div></div></div>
-      <div class="xp"><figure><img src="assets/velaflor.jpg" alt="Vela flor e home spray" style="object-position:center 50%"></figure><div class="xb"><span class="xn">03</span><h3>Vela Flor &amp; Home Spray</h3><span class="xt">Para despertar os sentidos</span><p>Uma experiência entre aromas, flores e criação, com peças feitas pelas próprias convidadas.</p><div class="xpr">R$ 269<small>por pessoa</small></div><div class="xadd"><em>Com um carinho a mais</em><br>experiência + lembrança · <b>R$ 398</b> por pessoa</div></div></div>
-      <div class="xp"><figure><img src="assets/foldingbook.jpg" alt="Folding book autoral" style="object-position:center 50%"></figure><div class="xb"><span class="xn">04</span><h3>Crie seu Folding Book</h3><span class="xt">Para guardar histórias</span><p>Cada convidada cria um livro-objeto autoral, feito à mão e cheio de personalidade.</p><div class="xpr">R$ 249<small>por pessoa</small></div><div class="xadd"><em>Com um carinho a mais</em><br>experiência + lembrança · <b>R$ 378</b> por pessoa</div></div></div>
-      <div class="xp"><figure><img src="assets/charm-bolsa.jpg" alt="Berloque de bolsa personalizado" style="object-position:center 50%"></figure><div class="xb"><span class="xn">05</span><h3>Berloque de Bolsa</h3><span class="xt">Para levar um pouco desse dia</span><p>Cada uma escolhe e combina charms para criar um acessório personalizado para a bolsa.</p><div class="xpr">R$ 259<small>por pessoa</small></div><div class="xadd"><em>Com um carinho a mais</em><br>experiência + lembrança · <b>R$ 388</b> por pessoa</div></div></div>
-      <div class="xp"><figure><img src="assets/perfumaria-oficina.jpg" alt="Criação de perfume natural" style="object-position:center 45%"></figure><div class="xb"><span class="xn">06</span><h3>Criando seu Perfume Natural</h3><span class="xt">Para encontrar uma fragrância só sua</span><p>Uma jornada pelos aromas para cada convidada criar sua combinação pessoal e levar para casa.</p><div class="xpr">R$ 259<small>por pessoa</small></div><div class="xadd"><em>Com um carinho a mais</em><br>experiência + lembrança · <b>R$ 388</b> por pessoa</div></div></div>
+      <div class="xp"><figure><img src="assets/pintura-taca.jpg" alt="Pintura em taça personalizada" style="object-position:center 50%"></figure><div class="xb"><span class="xn">01</span><h3>Pintura em Taça</h3><span class="xt">Para criar &amp; brindar</span><p>Cada uma personaliza sua própria taça e leva a criação como lembrança do encontro.</p><div class="xpr">R$ 229<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/buque.jpg" alt="Arranjo floral autoral" style="object-position:center 45%"></figure><div class="xb"><span class="xn">02</span><h3>Arranjos Florais</h3><span class="xt">Para florescer juntas</span><p>Flores, cores e composição: cada uma cria seu próprio arranjo autoral para levar para casa.</p><div class="xpr">R$ 279<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/velaflor.jpg" alt="Vela flor e home spray" style="object-position:center 50%"></figure><div class="xb"><span class="xn">03</span><h3>Vela Flor &amp; Home Spray</h3><span class="xt">Para despertar os sentidos</span><p>Uma experiência entre aromas, flores e criação, com peças feitas pelas próprias convidadas.</p><div class="xpr">R$ 269<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/foldingbook.jpg" alt="Folding book autoral" style="object-position:center 50%"></figure><div class="xb"><span class="xn">04</span><h3>Crie seu Folding Book</h3><span class="xt">Para guardar histórias</span><p>Cada convidada cria um livro-objeto autoral, feito à mão e cheio de personalidade.</p><div class="xpr">R$ 249<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/charm-bolsa.jpg" alt="Berloque de bolsa personalizado" style="object-position:center 50%"></figure><div class="xb"><span class="xn">05</span><h3>Berloque de Bolsa</h3><span class="xt">Para levar um pouco desse dia</span><p>Cada uma escolhe e combina charms para criar um acessório personalizado para a bolsa.</p><div class="xpr">R$ 259<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/perfumaria-oficina.jpg" alt="Criação de perfume natural" style="object-position:center 45%"></figure><div class="xb"><span class="xn">06</span><h3>Criando seu Perfume Natural</h3><span class="xt">Para encontrar uma fragrância só sua</span><p>Uma jornada pelos aromas para cada convidada criar sua combinação pessoal e levar para casa.</p><div class="xpr">R$ 259<small>por pessoa</small></div></div></div>
     </div>
-    <p class="fineprint"><b>Com um carinho a mais</b> é a experiência com uma lembrança personalizada (adiciona R$ 129 por pessoa) — como uma escova personalizada ou uma garrafa gravada.</p>
+    <p class="fineprint">Valores por pessoa. Quer deixar completo? Veja o <b>plano Premium</b> a seguir — com coffee break e lembrancinha personalizada.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Investimento & próximos passos</span></div>
+      <div class="head-right"><span class="kicker">Plano Premium</span></div>
     </div>
-    <span class="eyebrow orange">◆ Investimento &amp; próximos passos</span>
+    <span class="eyebrow orange">◆ Quer deixar completo?</span>
+    <h2>O plano <em>Premium</em></h2>
+    <p class="lead">Qualquer experiência pode virar Premium: além da atividade, entram um <b>coffee break</b> lindo pra turma e uma <b>lembrancinha personalizada</b> pra cada uma levar pra casa. É só somar <b>R$ 120 por pessoa</b>. ☕🎁</p>
+    <div class="invbox">
+      <div style="flex:0 0 36%;min-width:220px;border-radius:18px;overflow:hidden;position:relative;min-height:250px;border:1px solid var(--line)">
+        <img src="assets/lembrancinha-escova.jpg" alt="Lembrancinha personalizada numa caixa de presente" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 45%">
+      </div>
+      <div class="incl" style="flex:1;min-width:280px;display:flex;flex-direction:column;justify-content:center">
+        <span class="vt">O que vem no Premium</span>
+        <ul>
+          <li><span>✦</span>Tudo da experiência escolhida</li>
+          <li><span>✦</span><b>Coffee break</b> completo pra turma</li>
+          <li><span>✦</span><b>Lembrancinha personalizada</b> pra cada uma</li>
+        </ul>
+        <span class="plusbadge">+ R$ 120 por pessoa</span>
+      </div>
+    </div>
+    <p class="fineprint">A lembrancinha personalizada pode ser, por exemplo, uma escova gravada ou uma garrafa personalizada, conforme o estilo da comemoração.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Plano Premium</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Investimento</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Investimento</span>
+    <h2>Por pessoa e por <em>grupo</em></h2>
+    <p class="lead">Cada experiência tem um valor por pessoa. Aqui está o total estimado para as 9 convidadas — na experiência e no plano completo, com coffee break e lembrancinha.</p>
+    <table class="ptable">
+      <thead>
+        <tr><th>Experiência</th><th class="r">Por pessoa</th><th class="r">Grupo de 9</th><th class="r">Grupo · Premium</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="exp">Pintura em Taça</td><td class="r">R$ 229</td><td class="r">R$ 2.061</td><td class="prem">R$ 3.141</td></tr>
+        <tr><td class="exp">Arranjos Florais</td><td class="r">R$ 279</td><td class="r">R$ 2.511</td><td class="prem">R$ 3.591</td></tr>
+        <tr><td class="exp">Vela Flor &amp; Home Spray</td><td class="r">R$ 269</td><td class="r">R$ 2.421</td><td class="prem">R$ 3.501</td></tr>
+        <tr><td class="exp">Crie seu Folding Book</td><td class="r">R$ 249</td><td class="r">R$ 2.241</td><td class="prem">R$ 3.321</td></tr>
+        <tr><td class="exp">Berloque de Bolsa</td><td class="r">R$ 259</td><td class="r">R$ 2.331</td><td class="prem">R$ 3.411</td></tr>
+        <tr><td class="exp">Criando seu Perfume Natural</td><td class="r">R$ 259</td><td class="r">R$ 2.331</td><td class="prem">R$ 3.411</td></tr>
+      </tbody>
+    </table>
+    <p class="fineprint">Grupo estimado para 9 convidadas. <b>Premium</b> = experiência + coffee break + lembrancinha personalizada (+R$ 120 por pessoa). Espaço e menu da casa à parte, conforme a opção escolhida. Data 24.10 sujeita à disponibilidade.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Próximos passos</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>É só escolher a <em>combinação</em></h2>
-    <p class="lead">O investimento final é a <b>experiência escolhida</b> (valor por pessoa) somada ao <b>espaço</b> e aos <b>opcionais</b> que fizerem sentido.</p>
+    <p class="lead">Agora é a parte boa: vocês escolhem o espaço e a experiência, decidem se querem o plano completo, e a gente cuida de todo o resto pra reservar a data.</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham o espaço</h3><p>Casa Pretty, Sow Café ou YUCAFÉ.</p></div>
-      <div class="infocard"><div class="ico">2️⃣</div><h3>Escolham a experiência</h3><p>Uma das seis opções — com ou sem lembrança personalizada.</p></div>
-      <div class="infocard"><div class="ico">3️⃣</div><h3>A gente cota e reserva</h3><p>Fechamos espaço, comidas, bebidas e opcionais e seguramos a data.</p></div>
+      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham o espaço</h3><p>Casa Pretty, YUCAFÉ ou Sow Café.</p></div>
+      <div class="infocard"><div class="ico">2️⃣</div><h3>Escolham a experiência</h3><p>Uma das seis opções — essencial ou no plano completo (Premium).</p></div>
+      <div class="infocard"><div class="ico">3️⃣</div><h3>A gente cota e reserva</h3><p>Fechamos espaço, mesa, coffee break e lembrancinhas e seguramos a data.</p></div>
     </div>
     <div class="cta2">
       <div class="q">Qual combinação mais <em>combina com vocês?</em></div>
       <div class="c">Nos conta a favorita — espaço + experiência — e ajustamos os detalhes pra reservar a data.<br><b>Elarah · Experiências</b> · WhatsApp +55 (11) 91445-5930 · @elarah.oficial</div>
     </div>
-    <p class="fineprint">Valores por pessoa das experiências conforme informado. Casa Pretty e YUCAFÉ não cobram locação; Sow Café e demais condições de consumo sob confirmação. Data 24.10 sujeita à disponibilidade de agenda.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento & próximos passos</span></div>
+    <p class="fineprint">Valores por pessoa das experiências conforme informado; espaço e menu da casa à parte, conforme a opção escolhida. Data 24.10 sujeita à disponibilidade de agenda.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Próximos passos</span></div>
   </section>
 
 </div>
