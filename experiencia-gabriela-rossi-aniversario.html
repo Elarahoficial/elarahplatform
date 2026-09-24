@@ -192,25 +192,21 @@
   .gstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(32,16,22,.86),transparent)}
   .gstrip .pslot{min-height:158px}
 
-  /* opcionais · grade de 6 */
-  .optgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
-  .optc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
-  .optc .oi{font-size:20px}
-  .optc h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);margin:8px 0 4px;line-height:1.05}
-  .optc p{font-size:11.5px;color:var(--muted);line-height:1.45}
-  .optc .ov{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--orange-dark);margin-top:8px;text-transform:uppercase}
-  /* comparativo */
-  .cmp{width:100%;border-collapse:collapse;margin-top:20px}
-  .cmp th{text-align:left;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;padding:0 14px 11px;border-bottom:1px solid var(--line)}
-  .cmp td{padding:14px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
-  .cmp .op{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy);line-height:1.1}
-  .cmp .rg{font-size:11px;color:var(--muted)}
-  .cmp .pp{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);white-space:nowrap}
-  .cmp .tt{font-size:11.5px;color:var(--navy-soft);font-weight:600;white-space:nowrap}
-  .cmp .inc{font-size:11px;color:var(--muted);line-height:1.4}
-  .cmp .sc{font-style:italic;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px}
+  /* experiencias · 6 cards (2x3) */
+  .xpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+  .xp{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
+  .xp figure{margin:0;height:132px;overflow:hidden;position:relative}
+  .xp figure img{width:100%;height:100%;object-fit:cover;display:block}
+  .xp .xb{padding:13px 16px 15px;display:flex;flex-direction:column;flex:1}
+  .xp .xn{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .xp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);margin:3px 0 1px;line-height:1.06}
+  .xp .xt{font-size:10.5px;color:var(--orange-dark);font-weight:700;font-style:italic}
+  .xp p{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:7px;flex:1}
+  .xp .xpr{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin-top:9px;line-height:1}
+  .xp .xpr small{font-family:'DM Sans',sans-serif;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-left:3px}
+  /* CTA final */
   .cta2{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:22px;background:var(--navy);color:#fff;border-radius:18px;padding:24px 30px}
-  .cta2 .q{font-family:'DM Serif Display',serif;font-size:23px;line-height:1.1}
+  .cta2 .q{font-family:'DM Serif Display',serif;font-size:23px;line-height:1.15}
   .cta2 .q em{color:var(--orange-light,#CFA07E);font-style:italic}
   .cta2 .c{font-size:12.5px;color:rgba(255,255,255,.85);line-height:1.6;text-align:right}
   .cta2 .c b{color:#fff}
@@ -492,7 +488,7 @@
     <h2>Opções pensadas <em>pra vocês</em></h2>
     <p class="lead">Selecionamos as melhores opções pra celebrar perto da <b>região da Saúde</b> — pensando em um grupo de <b>9 amigas</b> e em formatos que unem <b>experiência criativa, comidas e bebidas</b>.</p>
     <div class="grid3" style="margin-top:26px">
-      <div class="infocard"><div class="ico">📍</div><h3>Perto de vocês</h3><p>Opções na região da Saúde e arredores fáceis de chegar.</p></div>
+      <div class="infocard"><div class="ico">📍</div><h3>Perto de vocês</h3><p>Espaços na região da Saúde e Vila Mariana, fáceis de chegar.</p></div>
       <div class="infocard"><div class="ico">🥂</div><h3>Feito pra 9</h3><p>Formatos pensados para um grupo de amigas celebrar junto.</p></div>
       <div class="infocard"><div class="ico">🎨</div><h3>Experiência + mesa</h3><p>Criar com as mãos, brindar e aproveitar comidas e bebidas.</p></div>
     </div>
@@ -501,73 +497,75 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Opções 1 & 2</span></div>
+      <div class="head-right"><span class="kicker">A mesa posta</span></div>
     </div>
-    <span class="eyebrow orange">◆ Opções 1 &amp; 2</span>
-    <h2>Duas formas de <em>celebrar</em></h2>
-    <p class="lead">Da cerâmica com vinho a um espaço charmoso pertinho, com experiência, comidas e bebidas.</p>
-    <div class="vgrid" style="grid-template-columns:repeat(2,1fr)">
-      <div class="vcard"><div class="vph"><img src="assets/netas-atelie.jpg" alt="Netas Ateliê — grupo em experiência de cerâmica" style="object-position:center 40%"><div class="vpr"><b>R$ 299</b><small>por pessoa</small></div></div><div class="vb"><span class="vt">Cerâmica + vinho</span><h3>Netas Ateliê</h3><p class="vaddr">Vila Mariana · vocês levam o próprio vinho 🍷</p><ul><li>Cerâmica guiada por artista</li><li>Vocês levam o vinho de vocês</li><li>Turma de 8 a 10 pessoas</li></ul></div></div>
-      <div class="vcard"><div class="vph"><img src="assets/mesa-montada-corp.jpg" alt="Casa Pretty — espaço preparado para a celebração" style="object-position:center 50%"><div class="vpr"><b style="font-size:15px">Sob cotação</b></div></div><div class="vb"><span class="vt">Espaço + experiência</span><h3>Casa Pretty</h3><p class="vaddr">Bosque da Saúde · pertinho de vocês</p><ul><li>Espaço próximo, na região da Saúde</li><li>Experiência + comidas e bebidas</li><li>Formato a definir com o grupo</li></ul></div></div>
+    <span class="eyebrow orange">◆ Antes de vocês chegarem</span>
+    <h2>A mesa posta, do jeito <em>Elarah</em></h2>
+    <p class="lead">Não é só a experiência: a gente cuida da mesa, dos materiais e dos detalhes para deixar tudo pronto para a turma aproveitar. A Elarah chega antes, organiza cada estação e deixa o ambiente com clima de comemoração — vocês só chegam, criam e curtem.</p>
+    <div class="vibe">
+      <figure><img src="assets/aniversario-mesa-real.jpg" alt="Mesa da comemoração posta com flores" style="object-position:center 50%"><figcaption>Mesa da comemoração</figcaption></figure>
+      <figure><img src="assets/buqueflor.jpg" alt="Flores e detalhes de ambientação" style="object-position:center 50%"><figcaption>Ambientação &amp; detalhes</figcaption></figure>
+      <figure><img src="assets/agora-mesa.jpg" alt="Mesa e materiais prontos para o grupo" style="object-position:center 50%"><figcaption>Tudo pronto pra turma</figcaption></figure>
+      <figure><img src="assets/vinhotintos.jpg" alt="Taças servidas para o brinde" style="object-position:center 45%"><figcaption>Um toque de aniversário</figcaption></figure>
+      <figure><img src="assets/perfumaria-oficina.jpg" alt="Estações da experiência montadas" style="object-position:center 45%"><figcaption>Estações preparadas</figcaption></figure>
+      <figure><img src="assets/ceramicacool.jpg" alt="Peças autorais finalizadas" style="object-position:center 50%"><figcaption>A criação vira lembrança</figcaption></figure>
     </div>
-    <p class="fineprint">Netas Ateliê: R$ 299 por pessoa (vocês levam o próprio vinho). Casa Pretty: valores <b>sob cotação</b>. Disponibilidade a confirmar para 24.10.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Opções 1 & 2</span></div>
+    <p class="fineprint">Ambientação, comidas, bebidas, flores, bolo e lembrancinhas podem ser personalizados conforme a opção escolhida e o orçamento.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A mesa posta</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Opções 3 & 4</span></div>
+      <div class="head-right"><span class="kicker">Onde celebrar</span></div>
     </div>
-    <span class="eyebrow orange">◆ Opções 3 &amp; 4</span>
-    <h2>Mais duas <em>opções</em></h2>
-    <p class="lead">Um ateliê com vinho já incluso ou a experiência Elarah levada até a região da Saúde — do jeito de vocês.</p>
-    <div class="vgrid" style="grid-template-columns:repeat(2,1fr)">
-      <div class="vcard"><div class="vph"><img src="assets/meu-outro-lado.jpg" alt="Ateliê Meu Outro Lado — espaço da experiência" style="object-position:center 50%"><div class="vpr"><b>R$ 359</b><small>por pessoa</small></div></div><div class="vb"><span class="vt">Cerâmica + vinho incluso</span><h3>Ateliê Meu Outro Lado</h3><p class="vaddr">Brooklin · vinho já incluso 🍷</p><ul><li>Experiência completa de cerâmica</li><li><b>Vinho já incluso</b> no valor</li><li>Turma de 8 a 10 pessoas</li></ul></div></div>
-      <div class="vcard hl"><div class="vph"><img src="assets/pinturatacavinho.jpg" alt="Pintura em taças conduzida pela Elarah" style="object-position:center 45%"><div class="vpr"><b style="font-size:15px">Sob cotação</b></div></div><div class="vb"><span class="vt">Elarah na Saúde · personalizável</span><h3>Experiência Elarah</h3><p class="vaddr">Levada a um espaço na região da Saúde</p><ul><li>Pintura em taças ou modelagem em argila</li><li><b>Personalizável</b> para o grupo</li><li>Espaço na região a combinar</li></ul></div></div>
+    <span class="eyebrow orange">◆ Onde celebrar</span>
+    <h2>Escolha onde <em>celebrar</em></h2>
+    <p class="lead">Três espaços próximos à região da Saúde, cada um com um jeito diferente de viver a experiência.</p>
+    <div class="vgrid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="vcard hl"><div class="vph"><img src="assets/em-casa-hero-1.jpg" alt="Casa Pretty — ambiente acolhedor e intimista" style="object-position:center 50%"><div class="vpr"><b style="font-size:14px">Sob confirmação</b></div></div><div class="vb"><span class="vt">Bosque da Saúde · o mais perto</span><h3>Casa Pretty</h3><p class="vaddr">Acolhedor e intimista, pertinho de vocês.</p><ul><li>Bosque da Saúde — o mais perto de vocês</li><li>Ambiente intimista, ótimo para 9 pessoas</li><li>Experiência + comidas e bebidas</li></ul></div></div>
+      <div class="vcard"><div class="vph"><img src="assets/sowcafe.jpg" alt="Sow Café — café charmoso e acolhedor" style="object-position:center 50%"><div class="vpr"><b style="font-size:14px">Sob confirmação</b></div></div><div class="vb"><span class="vt">Vila Mariana · perto da Saúde</span><h3>Sow Café</h3><p class="vaddr">Av. Conselheiro Rodrigues Alves, 256 · Vila Mariana.</p><ul><li>Perto da Saúde, fácil de chegar</li><li>Café charmoso para grupos pequenos</li><li>Experiência + comidas e bebidas</li></ul></div></div>
+      <div class="vcard"><div class="vph"><img src="assets/capa-croche-cafe.jpg" alt="YUCAFÉ Earth Based — café de proposta leve" style="object-position:center 50%"><div class="vpr"><b style="font-size:14px">Sob confirmação</b></div></div><div class="vb"><span class="vt">Vila Mariana</span><h3>YUCAFÉ Earth Based</h3><p class="vaddr">Café de proposta leve, para um aniversário intimista.</p><ul><li>Fácil acesso a partir da Saúde</li><li>Ambiente de café para grupo pequeno</li><li>Experiência + comidas e bebidas</li></ul></div></div>
     </div>
-    <p class="fineprint">Ateliê Meu Outro Lado (Brooklin): R$ 359 por pessoa, experiência e vinho inclusos. Experiência Elarah levada à região da Saúde: formato personalizável, valores <b>sob cotação</b>.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Opções 3 & 4</span></div>
+    <p class="fineprint">Condições de reserva e consumo <b>sob confirmação</b> para os três espaços, conforme disponibilidade em 24.10.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Onde celebrar</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Para completar</span></div>
+      <div class="head-right"><span class="kicker">A experiência</span></div>
     </div>
-    <span class="eyebrow orange">◆ Opcionais</span>
-    <h2>Pra deixar o aniversário <em>completo</em></h2>
-    <p class="lead">Some o que quiser a qualquer opção — tudo opcional e sob cotação. 🤍</p>
-    <div class="optgrid">
-      <div class="optc"><div class="oi">🍸</div><h3>Comidas &amp; bebidas</h3><p>Menu e drinks para o grupo.</p><div class="ov">Sob cotação</div></div>
-      <div class="optc"><div class="oi">🎂</div><h3>Bolo &amp; doces</h3><p>Bolo e mesa de doces.</p><div class="ov">Sob cotação</div></div>
-      <div class="optc"><div class="oi">🌸</div><h3>Flores</h3><p>Arranjos e decoração da mesa.</p><div class="ov">Sob cotação</div></div>
-      <div class="optc"><div class="oi">🎁</div><h3>Lembrancinhas</h3><p>Mimo personalizado pra cada convidada.</p><div class="ov">R$ 99 · por pessoa</div></div>
-      <div class="optc"><div class="oi">📸</div><h3>Foto profissional</h3><p>Registro da experiência, álbum digital.</p><div class="ov">R$ 450 · valor fixo</div></div>
-      <div class="optc"><div class="oi">✨</div><h3>Personalizações</h3><p>Detalhes com a cara de vocês.</p><div class="ov">Sob cotação</div></div>
+    <span class="eyebrow orange">◆ A experiência</span>
+    <h2>Escolha a <em>experiência</em></h2>
+    <p class="lead">Seis jeitos diferentes de celebrar, criar e levar uma lembrança desse dia.</p>
+    <div class="xpgrid">
+      <div class="xp"><figure><img src="assets/pintura-taca.jpg" alt="Pintura em taça personalizada" style="object-position:center 50%"></figure><div class="xb"><span class="xn">01</span><h3>Pintura em Taça</h3><span class="xt">Para criar &amp; brindar</span><p>Cada uma personaliza sua própria taça e leva a criação como lembrança do encontro.</p><div class="xpr">R$ 229<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/buque.jpg" alt="Arranjo floral autoral" style="object-position:center 45%"></figure><div class="xb"><span class="xn">02</span><h3>Arranjos Florais</h3><span class="xt">Para florescer juntas</span><p>Flores, cores e composição: cada uma cria seu próprio arranjo autoral para levar para casa.</p><div class="xpr">R$ 279<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/velaflor.jpg" alt="Vela flor e home spray" style="object-position:center 50%"></figure><div class="xb"><span class="xn">03</span><h3>Vela Flor &amp; Home Spray</h3><span class="xt">Para despertar os sentidos</span><p>Uma experiência entre aromas, flores e criação, com peças feitas pelas próprias convidadas.</p><div class="xpr">R$ 269<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/foldingbook.jpg" alt="Folding book autoral" style="object-position:center 50%"></figure><div class="xb"><span class="xn">04</span><h3>Crie seu Folding Book</h3><span class="xt">Para guardar histórias</span><p>Cada convidada cria um livro-objeto autoral, feito à mão e cheio de personalidade.</p><div class="xpr">R$ 249<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/charm-bolsa.jpg" alt="Berloque de bolsa personalizado" style="object-position:center 50%"></figure><div class="xb"><span class="xn">05</span><h3>Berloque de Bolsa</h3><span class="xt">Para levar um pouco desse dia</span><p>Cada uma escolhe e combina charms para criar um acessório personalizado para a bolsa.</p><div class="xpr">R$ 259<small>por pessoa</small></div></div></div>
+      <div class="xp"><figure><img src="assets/perfumaria-oficina.jpg" alt="Criação de perfume natural" style="object-position:center 45%"></figure><div class="xb"><span class="xn">06</span><h3>Criando seu Perfume Natural</h3><span class="xt">Para encontrar uma fragrância só sua</span><p>Uma jornada pelos aromas para cada convidada criar sua combinação pessoal e levar para casa.</p><div class="xpr">R$ 259<small>por pessoa</small></div></div></div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Para completar</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Investimento & próximos passos</span></div>
     </div>
-    <span class="eyebrow orange">◆ Investimento</span>
-    <h2>É só escolher a <em>favorita</em></h2>
-    <p class="lead">Um comparativo rápido das quatro opções, pra decidir com facilidade.</p>
-    <table class="cmp">
-      <thead><tr><th>Opção</th><th>Região</th><th>Por pessoa</th><th>Total · 9 pessoas</th><th>Principais inclusões</th></tr></thead>
-      <tbody>
-        <tr><td><span class="op">Netas Ateliê</span></td><td class="rg">Vila Mariana</td><td><span class="pp">R$ 299</span></td><td class="tt">R$ 2.691</td><td class="inc">Cerâmica guiada + vocês levam o vinho</td></tr>
-        <tr><td><span class="op">Casa Pretty</span></td><td class="rg">Bosque da Saúde</td><td><span class="sc">Sob cotação</span></td><td class="sc">Sob cotação</td><td class="inc">Espaço próximo + experiência + comidas e bebidas</td></tr>
-        <tr><td><span class="op">Meu Outro Lado</span></td><td class="rg">Brooklin</td><td><span class="pp">R$ 359</span></td><td class="tt">R$ 3.231</td><td class="inc">Cerâmica + vinho já incluso</td></tr>
-        <tr><td><span class="op">Experiência Elarah</span></td><td class="rg">Região da Saúde</td><td><span class="sc">Sob cotação</span></td><td class="sc">Sob cotação</td><td class="inc">Pintura em taças ou cerâmica · personalizável</td></tr>
-      </tbody>
-    </table>
-    <div class="cta2">
-      <div class="q">Qual opção mais <em>combina com vocês?</em></div>
-      <div class="c">Nos conta a favorita e ajustamos os detalhes pra reservar a data.<br><b>Elarah · Experiências</b> · WhatsApp +55 (11) 91445-5930 · @elarah.oficial</div>
+    <span class="eyebrow orange">◆ Investimento &amp; próximos passos</span>
+    <h2>É só escolher a <em>combinação</em></h2>
+    <p class="lead">O investimento final é a <b>experiência escolhida</b> (valor por pessoa) somada ao <b>espaço</b> e aos <b>opcionais</b> que fizerem sentido.</p>
+    <div class="rule"></div>
+    <div class="grid3">
+      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham o espaço</h3><p>Casa Pretty, Sow Café ou YUCAFÉ — perto da Saúde.</p></div>
+      <div class="infocard"><div class="ico">2️⃣</div><h3>Escolham a experiência</h3><p>Uma das seis opções, com valor por pessoa já definido.</p></div>
+      <div class="infocard"><div class="ico">3️⃣</div><h3>A gente cota e reserva</h3><p>Fechamos espaço, comidas, bebidas e opcionais e seguramos a data.</p></div>
     </div>
-    <p class="fineprint">Valores por pessoa conforme documentado pela Elarah para cada experiência; opções “sob cotação” dependem de confirmação de fornecedor e formato. Opcionais (comidas, bolo, flores, lembrancinhas, foto, personalizações) somados à parte. Data 24.10 e disponibilidade a confirmar.</p>
+    <div class="cta2">
+      <div class="q">Qual combinação mais <em>combina com vocês?</em></div>
+      <div class="c">Nos conta a favorita — espaço + experiência — e ajustamos os detalhes pra reservar a data.<br><b>Elarah · Experiências</b> · WhatsApp +55 (11) 91445-5930 · @elarah.oficial</div>
+    </div>
+    <p class="fineprint">Valores por pessoa das experiências conforme informado. Espaços com condições de reserva e consumo <b>sob confirmação</b>. Ambientação, comidas, bebidas, flores, bolo e lembrancinhas personalizáveis conforme a opção e o orçamento. Data 24.10 sujeita à disponibilidade de agenda.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento & próximos passos</span></div>
   </section>
 
