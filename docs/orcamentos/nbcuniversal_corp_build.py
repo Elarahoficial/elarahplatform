@@ -74,21 +74,28 @@ def head_simple(kicker):
 
 
 def expcard(n, src, alt, cat, name, desc, price, pos="center 50%"):
+    unit = '<small>por pessoa</small>' if price.strip().startswith("R$") else ''
+    prcls = "epr" if price.strip().startswith("R$") else "epr"
+    prstyle = '' if price.strip().startswith("R$") else ' style="font-size:12px;color:var(--muted)"'
     return (f'<div class="exp"><div class="eph"><span class="en">{n}</span>{img(src, alt, pos)}</div>'
             f'<div class="eb"><span class="ec">{cat}</span><h3>{name}</h3><p>{desc}</p>'
-            f'<div class="epr">{price}<small>por pessoa</small></div></div></div>')
+            f'<div class="{prcls}"{prstyle}>{price}{unit}</div></div></div>')
 
 
 def bexp(tag, name, desc, feats, pp, total, src, alt, pos="center 50%"):
     lis = "".join(f'<li><span class="st">✦</span>{f}</li>' for f in feats)
+    if total:
+        price = (f'<div class="bprice"><span class="pp">{pp}</span><span class="ppu">por pessoa</span>'
+                 f'<span class="tt">{total} · 15 pessoas</span></div>')
+    else:
+        price = (f'<div class="bprice"><span class="pp" style="font-size:18px">{pp}</span></div>')
     return (f'<div class="bfeat"><div class="bphoto">{img(src, alt, pos)}</div>'
             f'<div class="bbody"><span class="btag">{tag}</span><h3>{name}</h3>'
             f'<p class="bdesc">{desc}</p><ul class="feat">{lis}</ul>'
-            f'<div class="bprice"><span class="pp">{pp}</span><span class="ppu">por pessoa</span>'
-            f'<span class="tt">{total} · 15 pessoas</span></div></div></div>')
+            f'{price}</div></div>')
 
 
-PROOF = "Experiências corporativas já realizadas para times como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)"
+PROOF = "Experiências corporativas já realizadas para times de grandes empresas como <b>Compass</b> e <b>Hidratei</b>"
 
 # ============================ 1 · CAPA ============================
 cover = f'''
@@ -98,7 +105,7 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Experiência corporativa · NBCUniversal</span>
         <h1>Uma curadoria criativa <em>para o time</em></h1>
-        <p class="lead">Quatro experiências autorais para reunir o time em torno de algo feito à mão — <b>tufting</b>, <b>cerâmica</b>, <b>perfumaria</b> e <b>gastronomia interativa</b>. Cada um cria com as próprias mãos.</p>
+        <p class="lead">Uma seleção de quatro experiências criativas para reunir o time — <b>tufting</b>, <b>cerâmica</b>, <b>perfumaria</b> e <b>gastronomia interativa</b>.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>15</b> participantes</span>
@@ -118,11 +125,11 @@ curadoria = f'''
 {head_simple("A curadoria")}
     <span class="eyebrow orange">◆ Quatro experiências</span>
     <h2>A <em>curadoria</em></h2>
-    <p class="lead">Quatro formatos criativos e contemporâneos, conduzidos por profissionais, com materiais e estrutura da Elarah. É só o time escolher a favorita.</p>
+    <p class="lead">Quatro formatos criativos e contemporâneos, conduzidos por profissionais, com materiais, condução e estrutura necessários inclusos. É só o time escolher a favorita.</p>
     <div class="menu">
-      {expcard("1", "tufting12.jpg", "Máquina de tufting criando uma peça colorida", "Têxtil", "Tufting", "Com a máquina de tufting, cada um cria o próprio tapete ou quadro autoral.", "R$ 589", "center 50%")}
+      {expcard("1", "tufting12.jpg", "Máquina de tufting criando uma peça colorida", "Têxtil", "Tufting", "Com a máquina de tufting, cada um cria o próprio tapete ou quadro autoral.", "Sob confirmação", "center 50%")}
       {expcard("2", "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "Cerâmica", "Modelagem à mão", "Cada um molda a própria peça em cerâmica, do bowl ao vaso.", "R$ 499", "center 50%")}
-      {expcard("3", "perfumaria-corp.jpg", "Bancada de perfumaria com essências e ervas", "Perfumaria", "Criação de fragrância", "Cada um explora notas e cria a própria fragrância para levar.", "R$ 289", "center 50%")}
+      {expcard("3", "perfumaria-oficina.jpg", "Bancada de perfumaria com essências e ervas", "Perfumaria", "Criação de fragrância", "Cada um explora notas e cria a própria fragrância para levar.", "R$ 289", "center 50%")}
       {expcard("4", "cozinha31-prato.jpg", "Prato finalizado em experiência gastronômica", "Gastronomia", "Gastronomia interativa", "O time cozinha um menu com um chef e finaliza degustando junto.", "R$ 599", "center 50%")}
     </div>
     <p class="fineprint">Valores por pessoa, com experiência, materiais, condução e estrutura inclusos. Investimento final conforme o espaço escolhido.</p>
@@ -135,12 +142,13 @@ tufting = f'''
 {head_simple("Tufting")}
     <span class="eyebrow orange">◆ Experiência 01 · Têxtil</span>
     <h2>Tufting <em>autoral</em></h2>
-    {bexp("2h30–3h · São Paulo (a definir)", "Tufting",
+    {bexp("4h a 5h · Av. Brigadeiro Faria Lima, 1572 · São Paulo", "Tufting",
           "Com a máquina de tufting, cada participante desenha e preenche a própria peça em fios coloridos — uma criação têxtil moderna e cheia de personalidade.",
           ["Cada um cria o próprio <b>tapete ou quadro</b> e leva para casa",
-           "Máquina de tufting, fios e materiais inclusos",
-           "Condução por profissional + estrutura"],
-          "R$ 589", "R$ 8.835", "tufting-cereja.jpg", "Pessoa criando uma peça de tufting num bastidor", "center 40%")}
+           "Duração conforme o tamanho da peça (4h, 4h30 ou 5h)",
+           "Máquina de tufting, fios e condução inclusos"],
+          "Formato corporativo sob confirmação", "", "tufting-cereja.jpg", "Pessoa criando uma peça de tufting num bastidor", "center 40%")}
+    <p class="fineprint">Duração, formato e valor do tufting <b>sob confirmação</b> com o espaço parceiro (Av. Brigadeiro Faria Lima, 1572).</p>
     {foot("Tufting")}
   </section>'''
 
@@ -170,7 +178,7 @@ perfumaria = f'''
           ["Cada um cria e leva o <b>próprio frasco</b> de perfume",
            "Perfumista, essências e insumos inclusos",
            "Frasco e materiais + estrutura"],
-          "R$ 289", "R$ 4.335", "perfumaria-oficina.jpg", "Bancada de perfumaria com essências para criar uma fragrância", "center 45%")}
+          "R$ 289", "R$ 4.335", "perfumaria-corp.jpg", "Essências, frascos e ervas para a criação de fragrância", "center 50%")}
     {foot("Perfumaria")}
   </section>'''
 
@@ -185,7 +193,7 @@ gastronomia = f'''
           ["O time cozinha com um <b>chef</b> e degusta o menu completo",
            "Ingredientes, preparo e degustação inclusos",
            "Espaço equipado, utensílios e receitas em digital"],
-          "R$ 599", "R$ 8.985", "corp-grupo.jpg", "Time cozinhando junto numa experiência gastronômica", "center 50%")}
+          "R$ 599", "R$ 8.985", "aula-grupo.jpg", "Grupo diverso cozinhando junto com um chef", "center 50%")}
     {foot("Gastronomia interativa")}
   </section>'''
 
@@ -201,7 +209,7 @@ investimento = f'''
         <tr><th>Experiência</th><th class="r">Por pessoa</th><th class="r">Total · 15 pessoas</th></tr>
       </thead>
       <tbody>
-        <tr><td class="nm">Tufting<span>criação têxtil na máquina de tufting</span></td><td class="pp">R$ 589</td><td class="tt">R$ 8.835</td></tr>
+        <tr><td class="nm">Tufting<span>criação têxtil na máquina de tufting</span></td><td class="pp" style="font-size:13px;color:var(--muted)">Sob confirmação</td><td class="tt" style="color:var(--muted)">—</td></tr>
         <tr><td class="nm">Cerâmica · modelagem à mão<span>peça autoral, com queima e acabamento</span></td><td class="pp">R$ 499</td><td class="tt">R$ 7.485</td></tr>
         <tr><td class="nm">Criação de fragrância<span>perfume autoral para levar</span></td><td class="pp">R$ 289</td><td class="tt">R$ 4.335</td></tr>
         <tr><td class="nm">Gastronomia interativa<span>menu de três tempos com chef</span></td><td class="pp">R$ 599</td><td class="tt">R$ 8.985</td></tr>
@@ -209,9 +217,9 @@ investimento = f'''
     </table>
     <div class="optline">
       <span class="o">◆ Opcionais: <b>registro fotográfico profissional</b> R$ 450 (total)</span>
-      <span class="o"><b>lembrancinha personalizada</b> R$ 99 por pessoa</span>
+      <span class="o"><b>brindes / personalização</b> sob consulta</span>
     </div>
-    <p class="fineprint">Valores por pessoa e totais para 15 participantes, com experiência, materiais, condução e estrutura inclusos. Espaço final, duração da cerâmica e disponibilidade na 1ª semana de novembro <b>sob confirmação</b>.</p>
+    <p class="fineprint">Valores por pessoa e totais para 15 participantes, com condução, materiais e estrutura necessários inclusos. Tufting, espaço final, duração e disponibilidade na 1ª semana de novembro <b>sob confirmação</b>.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -221,11 +229,11 @@ proximos = f'''
 {head_simple("Como funciona & próximos passos")}
     <span class="eyebrow orange">◆ Simples e sob medida</span>
     <h2>É só <em>reunir o time</em></h2>
-    <p class="lead">A Elarah cuida de toda a produção — da curadoria à execução — para o time só chegar e criar.</p>
+    <p class="lead">A Elarah coordena toda a experiência — da curadoria à produção — para o time só chegar e criar.</p>
     <div class="steps">
       <div class="step"><div class="num">1</div><h3>Escolham a experiência</h3><p>Tufting, cerâmica, perfumaria ou gastronomia — a que mais combina com o time.</p></div>
       <div class="step"><div class="num">2</div><h3>Reservamos espaço e data</h3><p>Recomendamos e reservamos o espaço em São Paulo, na 1ª semana de novembro.</p></div>
-      <div class="step"><div class="num">3</div><h3>A gente produz tudo</h3><p>Profissional, materiais e estrutura. Cada um cria — e leva — a própria peça.</p></div>
+      <div class="step"><div class="num">3</div><h3>A gente coordena tudo</h3><p>Cada experiência é produzida com profissional, materiais e estrutura necessários.</p></div>
     </div>
     <div class="addon">
       <span class="plus">✦</span>
@@ -246,7 +254,7 @@ proximos = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — experiência criativa à escolha (tufting, cerâmica, perfumaria ou gastronomia interativa) para 15 participantes, na 1ª semana de novembro, em São Paulo. Valores por pessoa: Tufting R$ 589 · Cerâmica R$ 499 · Perfumaria R$ 289 · Gastronomia interativa R$ 599. Espaço e disponibilidade sob confirmação.</p>
+    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — experiência criativa à escolha (tufting, cerâmica, perfumaria ou gastronomia interativa) para 15 participantes, na 1ª semana de novembro, em São Paulo. Valores por pessoa: Cerâmica R$ 499 · Perfumaria R$ 289 · Gastronomia interativa R$ 599; Tufting sob confirmação. Espaço, formato do tufting e disponibilidade sob confirmação.</p>
     {foot("Como funciona & próximos passos")}
   </section>'''
 
