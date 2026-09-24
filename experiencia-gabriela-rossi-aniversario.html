@@ -192,12 +192,12 @@
   .gstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(32,16,22,.86),transparent)}
   .gstrip .pslot{min-height:158px}
 
-  /* capa · linha discreta */
-  .cline{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:22px;font-weight:600}
-  /* espacos · badge + nota */
-  .vbadge{position:absolute;top:12px;right:12px;background:var(--navy);color:#fff;border-radius:999px;padding:6px 13px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
-  .vnote{margin-top:auto;padding-top:13px;margin-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--navy);font-weight:600;line-height:1.4}
-  .vnote span{display:block;font-size:10px;color:var(--muted);font-weight:400;margin-top:3px}
+  /* capa · chips maiores e celebrativos */
+  .chips .chip{font-size:13px;padding:9px 18px}
+  /* mesa posta · badge opcional sobre a foto */
+  .vibe .vopt{position:absolute;top:11px;left:11px;background:rgba(255,255,255,.93);color:var(--navy);border-radius:999px;padding:4px 12px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;box-shadow:0 4px 12px -6px rgba(0,0,0,.45);z-index:2}
+  /* espacos · atmosfera + nota comercial discreta */
+  .vnote{margin-top:auto;padding-top:13px;margin-top:14px;border-top:1px solid var(--line);font-size:10px;color:var(--muted);font-weight:400;line-height:1.5}
   /* experiencias · 6 cards (2x3) */
   .xpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
   .xp{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
@@ -475,10 +475,14 @@
       <div>
         <span class="eyebrow">✦ Um aniversário Elarah</span>
         <h1>Um dia para <em>guardar na memória</em></h1>
-        <p class="lead">Entre conversas, criações e pequenos detalhes, uma celebração pensada para viver sem pressa.</p>
-        <p class="cline">Gabriela Rossi · 24.10 · 9 convidadas</p>
+        <p class="lead">Entre conversas, criações e pequenos detalhes, <b>uma celebração pensada para viver sem pressa.</b> ✨</p>
+        <div class="chips">
+          <span class="chip">📍 São Paulo, SP</span>
+          <span class="chip">🎉 24.10</span>
+          <span class="chip">👭 9 convidadas</span>
+        </div>
       </div>
-      <div class="cover-photo"><img src="assets/ceramica-meninas.jpg" alt="Amigas rindo numa experiência criativa" style="object-position:center 30%"></div>
+      <div class="cover-photo"><img src="assets/pintura-grupo.jpg" alt="Amigas celebrando juntas numa experiência criativa ao ar livre" style="object-position:center 22%"></div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Aniversário · Gabriela Rossi</span></div>
@@ -489,12 +493,12 @@
       <div class="head-right"><span class="kicker">Curadoria Elarah</span></div>
     </div>
     <span class="eyebrow orange">◆ Curadoria Elarah</span>
-    <h2>Opções pensadas <em>pra vocês</em></h2>
-    <p class="lead">Um grupo pequeno de amigas pede um formato próprio: espaços intimistas na <b>região da Saúde</b>, uma experiência para criar junto e uma mesa cuidada para aproveitar com calma.</p>
+    <h2>Pensamos em cada detalhe <em>pra vocês</em></h2>
+    <p class="lead">Para um aniversário assim, a gente imaginou um encontro leve, bonito e cheio de pequenos momentos para guardar: um espaço gostoso, uma experiência feita juntas e uma mesa pronta para celebrar sem pressa.</p>
     <div class="grid3" style="margin-top:26px">
-      <div class="infocard"><div class="ico">📍</div><h3>Perto de vocês</h3><p>Espaços intimistas na Saúde e Vila Mariana, fáceis de chegar.</p></div>
-      <div class="infocard"><div class="ico">🎨</div><h3>Para criar junto</h3><p>Uma experiência feita com as mãos, para viver e guardar de lembrança.</p></div>
-      <div class="infocard"><div class="ico">🥂</div><h3>Mesa cuidada</h3><p>Comidas, bebidas e cada detalhe deixados prontos pela Elarah.</p></div>
+      <div class="infocard"><div class="ico">📍</div><h3>Perto de vocês</h3><p>Espaços charmosos, próximos à região da Saúde, escolhidos para o grupo ficar à vontade.</p></div>
+      <div class="infocard"><div class="ico">🎨</div><h3>Criar juntas</h3><p>Uma experiência para colocar a mão na massa, conversar, rir e levar um pedacinho desse dia pra casa.</p></div>
+      <div class="infocard"><div class="ico">🥂</div><h3>Tudo pronto para celebrar</h3><p>Mesa, comida, detalhes e atmosfera pensados para vocês só chegarem e aproveitarem.</p></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Curadoria Elarah</span></div>
   </section>
@@ -505,16 +509,16 @@
     </div>
     <span class="eyebrow orange">◆ Antes de vocês chegarem</span>
     <h2>A mesa posta, do jeito <em>Elarah</em></h2>
-    <p class="lead">A gente chega antes, organiza cada estação e deixa o ambiente com clima de comemoração. Vocês só chegam, criam e curtem.</p>
+    <p class="lead">A gente chega antes, prepara cada detalhe e deixa tudo com clima de comemoração. Quando vocês chegam, a mesa já está pronta, as estações organizadas e o momento começa leve — é só criar, conversar e curtir juntas. ✨</p>
     <div class="vibe">
       <figure><img src="assets/aniversario-mesa-real.jpg" alt="Mesa da comemoração posta com flores" style="object-position:center 50%"><figcaption>Mesa da comemoração</figcaption></figure>
       <figure><img src="assets/buqueflor.jpg" alt="Flores e detalhes de ambientação" style="object-position:center 50%"><figcaption>Ambientação &amp; detalhes</figcaption></figure>
       <figure><img src="assets/agora-mesa.jpg" alt="Mesa e materiais prontos para o grupo" style="object-position:center 50%"><figcaption>Tudo pronto pra turma</figcaption></figure>
-      <figure><img src="assets/cheesecakes.jpg" alt="Bolo e doces para o momento do aniversário" style="object-position:center 50%"><figcaption>Um toque de aniversário</figcaption></figure>
+      <figure><img src="assets/cheesecakes.jpg" alt="Bolo e doces para o momento do aniversário" style="object-position:center 50%"><span class="vopt">Opcional</span><figcaption>Um toque de aniversário</figcaption></figure>
       <figure><img src="assets/perfumaria-oficina.jpg" alt="Estações da experiência montadas" style="object-position:center 45%"><figcaption>Estações preparadas</figcaption></figure>
       <figure><img src="assets/ceramicacool.jpg" alt="Peças autorais finalizadas" style="object-position:center 50%"><figcaption>A criação vira lembrança</figcaption></figure>
     </div>
-    <p class="fineprint">Ambientação, comidas, bebidas, flores, bolo e lembrancinhas podem ser personalizados conforme a opção escolhida e o orçamento.</p>
+    <p class="fineprint">Flores, bolo, lembrancinhas, comidas e bebidas podem ser personalizados conforme o estilo da comemoração.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A mesa posta</span></div>
   </section>
   <section class="slide">
@@ -524,13 +528,13 @@
     </div>
     <span class="eyebrow orange">◆ Onde celebrar</span>
     <h2>Escolha onde <em>celebrar</em></h2>
-    <p class="lead">Três espaços próximos à região da Saúde, cada um com um jeito diferente de viver a experiência.</p>
+    <p class="lead">Três atmosferas diferentes para viver o mesmo momento: intimista, leve e cheio de personalidade.</p>
     <div class="vgrid" style="grid-template-columns:repeat(3,1fr)">
-      <div class="vcard hl"><div class="vph"><img src="assets/em-casa-hero-1.jpg" alt="Casa Pretty — ambiente acolhedor e intimista" style="object-position:center 50%"><div class="vbadge">Sem locação</div></div><div class="vb"><span class="vt">Bosque da Saúde · o mais perto</span><h3>Casa Pretty</h3><p class="vaddr">Espaço intimista, com mesa posta para receber o grupo.</p><ul><li>Sem cobrança de locação do espaço</li><li>Menu completo: entrada, principal e sobremesa (R$ 120 a R$ 160/pessoa)</li><li>Ou apenas reserva da mesa + consumo do cardápio da casa</li></ul><div class="vnote">Experiência + mesa posta + menu da casa<span>Menu completo a partir de R$ 120 por pessoa.</span></div></div></div>
-      <div class="vcard"><div class="vph"><img src="assets/capa-croche-cafe.jpg" alt="YUCAFÉ Earth Based — café de proposta leve" style="object-position:center 50%"><div class="vbadge">Sem locação</div></div><div class="vb"><span class="vt">Vila Mariana</span><h3>YUCAFÉ Earth Based</h3><p class="vaddr">Café de proposta leve e natural, para um aniversário intimista.</p><ul><li>Sem cobrança de locação do espaço</li><li>Ambiente de café para grupo pequeno</li><li>Fácil acesso a partir da Saúde</li></ul><div class="vnote">Cardápio e consumo sob confirmação.</div></div></div>
-      <div class="vcard"><div class="vph"><img src="assets/sowcafe.jpg" alt="Sow Café — café charmoso e acolhedor" style="object-position:center 50%"><div class="vbadge">Sob confirmação</div></div><div class="vb"><span class="vt">Vila Mariana</span><h3>Sow Café</h3><p class="vaddr">Av. Conselheiro Rodrigues Alves, 256 · charmoso e acolhedor.</p><ul><li>Perto da Saúde, fácil de chegar</li><li>Café charmoso para grupos pequenos</li><li>Ambiente acolhedor para a turma</li></ul><div class="vnote">Condições de reserva e consumo sob confirmação.</div></div></div>
+      <div class="vcard"><div class="vph"><img src="assets/casa-pretty-real.jpg" alt="Casa Pretty — mesa posta e grupo reunido" style="object-position:center 45%"></div><div class="vb"><span class="vt">Intimista &amp; acolhedor</span><h3>Casa Pretty</h3><p class="vaddr">Um espaço acolhedor, intimista e cheio de personalidade — perfeito para uma mesa bonita e uma comemoração entre poucas pessoas.</p><ul><li>Ambiente reservado e acolhedor</li><li>Mesa posta para receber o grupo</li><li>Possibilidade de menu completo</li></ul><div class="vnote">Sem cobrança de locação. Menu completo de R$ 120 a R$ 160 por pessoa, com entrada, prato principal e sobremesa, ou consumo direto do cardápio.</div></div></div>
+      <div class="vcard"><div class="vph"><img src="assets/yucafe-real.jpg" alt="YUCAFÉ Earth Based — terraço leve e cheio de verde" style="object-position:center 55%"></div><div class="vb"><span class="vt">Leve &amp; natural</span><h3>YUCAFÉ Earth Based</h3><p class="vaddr">Um café leve, natural e descontraído, com clima gostoso para uma comemoração mais espontânea.</p><ul><li>Ambiente leve e contemporâneo</li><li>Bom para grupos pequenos</li><li>Combina com experiências criativas</li></ul><div class="vnote">Sem cobrança de locação. Cardápio e consumo sob confirmação.</div></div></div>
+      <div class="vcard"><div class="vph"><img src="assets/sowcafe-fachada.jpg" alt="Sow Café — fachada charmosa com luzes" style="object-position:center 50%"></div><div class="vb"><span class="vt">Charmoso &amp; aconchegante</span><h3>Sow Café</h3><p class="vaddr">Um espaço charmoso e acolhedor, com aquele clima de café que deixa o encontro mais leve e íntimo.</p><ul><li>Atmosfera acolhedora</li><li>Bom para grupos pequenos</li><li>Conversa bem com experiências manuais</li></ul><div class="vnote">Condições de reserva e consumo sob confirmação.</div></div></div>
     </div>
-    <p class="fineprint">Casa Pretty e YUCAFÉ não cobram locação de espaço. Valores de menu e demais condições de consumo e reserva conforme confirmação para a data de 24.10.</p>
+    <p class="fineprint">Cada espaço tem a sua própria atmosfera — a gente ajuda vocês a escolher a que mais combina com a comemoração.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Onde celebrar</span></div>
   </section>
   <section class="slide">

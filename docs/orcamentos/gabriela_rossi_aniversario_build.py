@@ -28,12 +28,12 @@ for a, b in reps.items():
     head = head.replace(a, b)
 
 xcss = '''
-  /* capa · linha discreta */
-  .cline{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:22px;font-weight:600}
-  /* espacos · badge + nota */
-  .vbadge{position:absolute;top:12px;right:12px;background:var(--navy);color:#fff;border-radius:999px;padding:6px 13px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
-  .vnote{margin-top:auto;padding-top:13px;margin-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--navy);font-weight:600;line-height:1.4}
-  .vnote span{display:block;font-size:10px;color:var(--muted);font-weight:400;margin-top:3px}
+  /* capa · chips maiores e celebrativos */
+  .chips .chip{font-size:13px;padding:9px 18px}
+  /* mesa posta · badge opcional sobre a foto */
+  .vibe .vopt{position:absolute;top:11px;left:11px;background:rgba(255,255,255,.93);color:var(--navy);border-radius:999px;padding:4px 12px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;box-shadow:0 4px 12px -6px rgba(0,0,0,.45);z-index:2}
+  /* espacos · atmosfera + nota comercial discreta */
+  .vnote{margin-top:auto;padding-top:13px;margin-top:14px;border-top:1px solid var(--line);font-size:10px;color:var(--muted);font-weight:400;line-height:1.5}
   /* experiencias · 6 cards (2x3) */
   .xpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
   .xp{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
@@ -84,15 +84,12 @@ def head_simple(kicker):
     </div>'''
 
 
-def vcard(src, alt, badge, kicker, name, addr, itens, note, notesub="", pos="center 50%", hl=False):
-    cls = "vcard hl" if hl else "vcard"
-    bd = f'<div class="vbadge">{badge}</div>'
+def vcard(src, alt, kicker, name, phrase, itens, note, pos="center 50%"):
     lis = "".join(f"<li>{i}</li>" for i in itens)
-    ns = f'<span>{notesub}</span>' if notesub else ''
-    nt = f'<div class="vnote">{note}{ns}</div>'
-    return (f'<div class="{cls}"><div class="vph">{img(src, alt, pos)}{bd}</div>'
+    return (f'<div class="vcard"><div class="vph">{img(src, alt, pos)}</div>'
             f'<div class="vb"><span class="vt">{kicker}</span><h3>{name}</h3>'
-            f'<p class="vaddr">{addr}</p><ul>{lis}</ul>{nt}</div></div>')
+            f'<p class="vaddr">{phrase}</p><ul>{lis}</ul>'
+            f'<div class="vnote">{note}</div></div></div>')
 
 
 def xp(n, src, alt, name, tagline, desc, price, price2, pos="center 50%"):
@@ -104,8 +101,9 @@ def xp(n, src, alt, name, tagline, desc, price, price2, pos="center 50%"):
             f'<div class="xpr">{price}<small>por pessoa</small></div>{add}</div></div>')
 
 
-def vfig(src, alt, cap, pos="center 50%"):
-    return f'<figure>{img(src, alt, pos)}<figcaption>{cap}</figcaption></figure>'
+def vfig(src, alt, cap, pos="center 50%", opt=False):
+    badge = '<span class="vopt">Opcional</span>' if opt else ''
+    return f'<figure>{img(src, alt, pos)}{badge}<figcaption>{cap}</figcaption></figure>'
 
 
 PROOF = "Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)"
@@ -118,10 +116,14 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Um aniversário Elarah</span>
         <h1>Um dia para <em>guardar na memória</em></h1>
-        <p class="lead">Entre conversas, criações e pequenos detalhes, uma celebração pensada para viver sem pressa.</p>
-        <p class="cline">Gabriela Rossi · 24.10 · 9 convidadas</p>
+        <p class="lead">Entre conversas, criações e pequenos detalhes, <b>uma celebração pensada para viver sem pressa.</b> ✨</p>
+        <div class="chips">
+          <span class="chip">📍 São Paulo, SP</span>
+          <span class="chip">🎉 24.10</span>
+          <span class="chip">👭 9 convidadas</span>
+        </div>
       </div>
-      <div class="cover-photo">{img("ceramica-meninas.jpg", "Amigas rindo numa experiência criativa", "center 30%")}</div>
+      <div class="cover-photo">{img("pintura-grupo.jpg", "Amigas celebrando juntas numa experiência criativa ao ar livre", "center 22%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Aniversário · Gabriela Rossi")}
@@ -132,12 +134,12 @@ curadoria = f'''
   <section class="slide">
 {head_simple("Curadoria Elarah")}
     <span class="eyebrow orange">◆ Curadoria Elarah</span>
-    <h2>Opções pensadas <em>pra vocês</em></h2>
-    <p class="lead">Um grupo pequeno de amigas pede um formato próprio: espaços intimistas na <b>região da Saúde</b>, uma experiência para criar junto e uma mesa cuidada para aproveitar com calma.</p>
+    <h2>Pensamos em cada detalhe <em>pra vocês</em></h2>
+    <p class="lead">Para um aniversário assim, a gente imaginou um encontro leve, bonito e cheio de pequenos momentos para guardar: um espaço gostoso, uma experiência feita juntas e uma mesa pronta para celebrar sem pressa.</p>
     <div class="grid3" style="margin-top:26px">
-      <div class="infocard"><div class="ico">📍</div><h3>Perto de vocês</h3><p>Espaços intimistas na Saúde e Vila Mariana, fáceis de chegar.</p></div>
-      <div class="infocard"><div class="ico">🎨</div><h3>Para criar junto</h3><p>Uma experiência feita com as mãos, para viver e guardar de lembrança.</p></div>
-      <div class="infocard"><div class="ico">🥂</div><h3>Mesa cuidada</h3><p>Comidas, bebidas e cada detalhe deixados prontos pela Elarah.</p></div>
+      <div class="infocard"><div class="ico">📍</div><h3>Perto de vocês</h3><p>Espaços charmosos, próximos à região da Saúde, escolhidos para o grupo ficar à vontade.</p></div>
+      <div class="infocard"><div class="ico">🎨</div><h3>Criar juntas</h3><p>Uma experiência para colocar a mão na massa, conversar, rir e levar um pedacinho desse dia pra casa.</p></div>
+      <div class="infocard"><div class="ico">🥂</div><h3>Tudo pronto para celebrar</h3><p>Mesa, comida, detalhes e atmosfera pensados para vocês só chegarem e aproveitarem.</p></div>
     </div>
     {foot("Curadoria Elarah")}
   </section>'''
@@ -148,16 +150,16 @@ mesa_posta = f'''
 {head_simple("A mesa posta")}
     <span class="eyebrow orange">◆ Antes de vocês chegarem</span>
     <h2>A mesa posta, do jeito <em>Elarah</em></h2>
-    <p class="lead">A gente chega antes, organiza cada estação e deixa o ambiente com clima de comemoração. Vocês só chegam, criam e curtem.</p>
+    <p class="lead">A gente chega antes, prepara cada detalhe e deixa tudo com clima de comemoração. Quando vocês chegam, a mesa já está pronta, as estações organizadas e o momento começa leve — é só criar, conversar e curtir juntas. ✨</p>
     <div class="vibe">
       {vfig("aniversario-mesa-real.jpg", "Mesa da comemoração posta com flores", "Mesa da comemoração", "center 50%")}
       {vfig("buqueflor.jpg", "Flores e detalhes de ambientação", "Ambientação &amp; detalhes", "center 50%")}
       {vfig("agora-mesa.jpg", "Mesa e materiais prontos para o grupo", "Tudo pronto pra turma", "center 50%")}
-      {vfig("cheesecakes.jpg", "Bolo e doces para o momento do aniversário", "Um toque de aniversário", "center 50%")}
+      {vfig("cheesecakes.jpg", "Bolo e doces para o momento do aniversário", "Um toque de aniversário", "center 50%", opt=True)}
       {vfig("perfumaria-oficina.jpg", "Estações da experiência montadas", "Estações preparadas", "center 45%")}
       {vfig("ceramicacool.jpg", "Peças autorais finalizadas", "A criação vira lembrança", "center 50%")}
     </div>
-    <p class="fineprint">Ambientação, comidas, bebidas, flores, bolo e lembrancinhas podem ser personalizados conforme a opção escolhida e o orçamento.</p>
+    <p class="fineprint">Flores, bolo, lembrancinhas, comidas e bebidas podem ser personalizados conforme o estilo da comemoração.</p>
     {foot("A mesa posta")}
   </section>'''
 
@@ -167,13 +169,13 @@ onde = f'''
 {head_simple("Onde celebrar")}
     <span class="eyebrow orange">◆ Onde celebrar</span>
     <h2>Escolha onde <em>celebrar</em></h2>
-    <p class="lead">Três espaços próximos à região da Saúde, cada um com um jeito diferente de viver a experiência.</p>
+    <p class="lead">Três atmosferas diferentes para viver o mesmo momento: intimista, leve e cheio de personalidade.</p>
     <div class="vgrid" style="grid-template-columns:repeat(3,1fr)">
-      {vcard("em-casa-hero-1.jpg", "Casa Pretty — ambiente acolhedor e intimista", "Sem locação", "Bosque da Saúde · o mais perto", "Casa Pretty", "Espaço intimista, com mesa posta para receber o grupo.", ["Sem cobrança de locação do espaço", "Menu completo: entrada, principal e sobremesa (R$ 120 a R$ 160/pessoa)", "Ou apenas reserva da mesa + consumo do cardápio da casa"], "Experiência + mesa posta + menu da casa", "Menu completo a partir de R$ 120 por pessoa.", "center 50%", hl=True)}
-      {vcard("capa-croche-cafe.jpg", "YUCAFÉ Earth Based — café de proposta leve", "Sem locação", "Vila Mariana", "YUCAFÉ Earth Based", "Café de proposta leve e natural, para um aniversário intimista.", ["Sem cobrança de locação do espaço", "Ambiente de café para grupo pequeno", "Fácil acesso a partir da Saúde"], "Cardápio e consumo sob confirmação.", "", "center 50%")}
-      {vcard("sowcafe.jpg", "Sow Café — café charmoso e acolhedor", "Sob confirmação", "Vila Mariana", "Sow Café", "Av. Conselheiro Rodrigues Alves, 256 · charmoso e acolhedor.", ["Perto da Saúde, fácil de chegar", "Café charmoso para grupos pequenos", "Ambiente acolhedor para a turma"], "Condições de reserva e consumo sob confirmação.", "", "center 50%")}
+      {vcard("casa-pretty-real.jpg", "Casa Pretty — mesa posta e grupo reunido", "Intimista &amp; acolhedor", "Casa Pretty", "Um espaço acolhedor, intimista e cheio de personalidade — perfeito para uma mesa bonita e uma comemoração entre poucas pessoas.", ["Ambiente reservado e acolhedor", "Mesa posta para receber o grupo", "Possibilidade de menu completo"], "Sem cobrança de locação. Menu completo de R$ 120 a R$ 160 por pessoa, com entrada, prato principal e sobremesa, ou consumo direto do cardápio.", "center 45%")}
+      {vcard("yucafe-real.jpg", "YUCAFÉ Earth Based — terraço leve e cheio de verde", "Leve &amp; natural", "YUCAFÉ Earth Based", "Um café leve, natural e descontraído, com clima gostoso para uma comemoração mais espontânea.", ["Ambiente leve e contemporâneo", "Bom para grupos pequenos", "Combina com experiências criativas"], "Sem cobrança de locação. Cardápio e consumo sob confirmação.", "center 55%")}
+      {vcard("sowcafe-fachada.jpg", "Sow Café — fachada charmosa com luzes", "Charmoso &amp; aconchegante", "Sow Café", "Um espaço charmoso e acolhedor, com aquele clima de café que deixa o encontro mais leve e íntimo.", ["Atmosfera acolhedora", "Bom para grupos pequenos", "Conversa bem com experiências manuais"], "Condições de reserva e consumo sob confirmação.", "center 50%")}
     </div>
-    <p class="fineprint">Casa Pretty e YUCAFÉ não cobram locação de espaço. Valores de menu e demais condições de consumo e reserva conforme confirmação para a data de 24.10.</p>
+    <p class="fineprint">Cada espaço tem a sua própria atmosfera — a gente ajuda vocês a escolher a que mais combina com a comemoração.</p>
     {foot("Onde celebrar")}
   </section>'''
 
