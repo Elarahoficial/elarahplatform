@@ -256,6 +256,21 @@
   .ophduo{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--line);border-bottom:1px solid var(--line);aspect-ratio:1/1}
   .ophduo .sq{overflow:hidden;position:relative;background:#eee}
   .ophduo .sq img{width:100%;height:100%;object-fit:cover;display:block}
+  /* investimento · 3 pacotes */
+  .subline{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-top:12px}
+  .pkgs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px;align-items:stretch}
+  .pkg{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 22px 20px;display:flex;flex-direction:column;box-shadow:0 16px 40px -30px rgba(0,0,0,.32);position:relative}
+  .pkg.hl{border:1.8px solid var(--orange);box-shadow:0 22px 48px -26px rgba(0,0,0,.4)}
+  .pkg .pkbadge{position:absolute;top:-11px;left:50%;transform:translateX(-50%);white-space:nowrap;background:var(--orange);color:#fff;font-size:8px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:5px 13px;border-radius:999px}
+  .pkg .pkn{font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .pkg .pkt{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.4;min-height:34px}
+  .pkg .pkp{font-family:'DM Serif Display',serif;font-size:33px;color:var(--navy);line-height:1;margin-top:16px}
+  .pkg .pku{font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:5px}
+  .pkg .pktot{font-size:12px;color:var(--navy);font-weight:700;margin-top:7px}
+  .pkg .pkstep{font-size:10px;color:var(--muted);margin-top:6px;font-style:italic;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .pkg ul{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:7px;flex:1}
+  .pkg ul li{position:relative;padding-left:17px;font-size:11px;color:var(--ink);line-height:1.4}
+  .pkg ul li::before{content:"\2726";position:absolute;left:0;top:1px;color:var(--orange);font-size:9px}
 </style>
 <style>
   :root{
@@ -528,17 +543,24 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">As experiências</span></div>
+      <div class="head-right"><span class="kicker">A experiência</span></div>
     </div>
-    <span class="eyebrow orange">◆ Três experiências</span>
-    <h2>Escolham como <em>celebrar</em></h2>
-    <p class="lead">Três experiências criativas para reunir o time, <b>colocar a mão na massa e comemorar juntos</b> — todas conduzidas por profissionais, com materiais e produção da Elarah.</p>
-    <div class="exp3">
-      <div class="exc"><figure><img src="assets/ceramicafamiliamais12.jpg" alt="Pessoas sorrindo enquanto criam cerâmica" style="object-position:center 40%"><span class="exchip">Sugestão Elarah</span></figure><div class="exb"><span class="exn">Experiência 01</span><h3>Cerâmica</h3><p>Modelagem à mão, guiada por ceramista, com todo o material incluso.</p></div></div>
-      <div class="exc"><figure><img src="assets/perfumaria-apre.jpg" alt="Pessoas experimentando aromas na bancada de perfumaria botânica" style="object-position:center 45%"></figure><div class="exb"><span class="exn">Experiência 02</span><h3>Perfumaria Botânica</h3><p>Uma experiência sensorial para explorar aromas e criar um perfume botânico autoral.</p></div></div>
-      <div class="exc"><figure><img src="assets/aniversario-mesa-real.jpg" alt="Grupo montando arranjos florais juntos à mesa" style="object-position:center 50%"></figure><div class="exb"><span class="exn">Experiência 03</span><h3>Arranjos florais</h3><p>Uma experiência criativa para montar um arranjo autoral e levar a criação para casa.</p></div></div>
+    <span class="eyebrow orange">◆ A experiência</span>
+    <h2>Cerâmica, a experiência <em>escolhida</em></h2>
+    <p class="lead">Uma tarde para o time reunir, <b>colocar a mão na massa e comemorar junto</b> — conduzida por ceramista, com todos os materiais e a produção da Elarah.</p>
+    <div class="bfeat">
+      <div class="bphoto"><img src="assets/ceramicafamiliamais12.jpg" alt="Pessoas sorrindo enquanto criam cerâmica juntas" style="object-position:center 40%"></div>
+      <div class="bbody">
+        <span class="btag">Escolha da Segatta</span>
+        <h3>Cerâmica</h3>
+        <ul class="feat">
+          <li><span class="st">✦</span><b>Modelagem à mão</b>, guiada por ceramista.</li>
+          <li><span class="st">✦</span>Todos os <b>materiais inclusos</b> e a queima das peças.</li>
+          <li><span class="st">✦</span>Cada um leva <b>a própria peça</b> de recordação.</li>
+        </ul>
+      </div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>As experiências</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -584,23 +606,19 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Os espaços</span></div>
+      <div class="head-right"><span class="kicker">O espaço</span></div>
     </div>
-    <span class="eyebrow orange">◆ Os espaços</span>
+    <span class="eyebrow orange">◆ O espaço</span>
     <h2>Onde a experiência <em>acontece</em></h2>
-    <p class="lead">Dois espaços parceiros para a celebração — um intimista e versátil, outro criativo e acolhedor.</p>
-    <div class="exp3" style="grid-template-columns:1fr 1fr">
-      <div class="exc"><figure><img src="assets/netas-atelie.jpg" alt="Ateliê intimista com pessoas em experiência criativa, luz natural" style="object-position:center 50%"><span class="exchip">3 experiências</span></figure>
-        <div class="exb"><span class="exn">Perdizes · o mais versátil</span><h3>Entre Mãos</h3>
-          <p>Um espaço intimista e versátil para receber Cerâmica, Perfumaria Botânica ou Arranjos florais.</p>
-          <div class="exptags"><span>Cerâmica</span><span>Perfumaria Botânica</span><span>Arranjos florais</span></div></div></div>
-      <div class="exc"><figure><img src="assets/agora-hero.jpg" alt="Espaço Agora Intu preparado para a experiência, com participantes" style="object-position:center 45%"><span class="exchip">2 experiências</span></figure>
-        <div class="exb"><span class="exn">Pinheiros</span><h3>Agora Intu</h3>
-          <p>Espaço criativo e acolhedor para receber Cerâmica ou Arranjos florais.</p>
-          <div class="exptags"><span>Cerâmica</span><span>Arranjos florais</span></div></div></div>
+    <p class="lead">Um espaço intimista e acolhedor em Perdizes, reservado para o time da Segatta viver a experiência com calma.</p>
+    <div class="exp3" style="grid-template-columns:1fr;max-width:560px;margin:22px auto 0">
+      <div class="exc"><figure><img src="assets/netas-atelie.jpg" alt="Ateliê Entre Mãos, intimista, com pessoas em experiência criativa e luz natural" style="object-position:center 50%"><span class="exchip">Cerâmica</span></figure>
+        <div class="exb"><span class="exn">Perdizes · o espaço escolhido</span><h3>Entre Mãos</h3>
+          <p>Um ateliê acolhedor e cheio de luz, preparado para receber a experiência de cerâmica do começo ao fim.</p>
+          <div class="exptags"><span>Espaço reservado</span><span>Ambientação</span><span>Comidinhas &amp; bebidas</span></div></div></div>
     </div>
-    <div class="bnote">◆ Endereços e disponibilidade <b>a confirmar</b>.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Os espaços</span></div>
+    <div class="bnote">◆ Endereço e horário <b>confirmados</b>: 02/10, das 16h às 19h30.</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O espaço</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -608,30 +626,55 @@
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Escolham o espaço e a <em>experiência</em></h2>
-    <p class="lead">Duas formas de viver esse encontro, com tudo já organizado pela Elarah — experiência, materiais, espaço e comidinhas incluídas.</p>
-    <div class="invblocks">
-      <div class="invb">
-        <span class="ibsp">Entre Mãos · Perdizes</span>
-        <div class="ibsub">Experiência + espaço + comidinhas e bebidas</div>
-        <div class="ibrows">
-          <div class="invrow"><span class="ie">Cerâmica</span><span class="iv"><span class="pp">R$ 439</span><span class="ppu">por pessoa</span><span class="tg">R$ 3.512 · grupo de 8</span></span></div>
-          <div class="invrow"><span class="ie">Perfumaria Botânica</span><span class="iv"><span class="pp">R$ 509</span><span class="ppu">por pessoa</span><span class="tg">R$ 4.072 · grupo de 8</span></span></div>
-          <div class="invrow"><span class="ie">Arranjos florais</span><span class="iv"><span class="pp">R$ 399</span><span class="ppu">por pessoa</span><span class="tg">R$ 3.192 · grupo de 8</span></span></div>
-        </div>
-        <p class="ibnote">Inclui espaço, materiais, condução da experiência, lanchinho, sucos, café e chá.</p>
+    <h2>Escolham como <em>completar</em> essa experiência</h2>
+    <div class="subline">02/10 · 16h às 19h30 · Entre Mãos, Perdizes</div>
+    <p class="lead">A experiência de cerâmica já está escolhida. Agora vocês podem seguir com o formato original ou complementar o encontro com um mimo personalizado e registro profissional.</p>
+    <div class="pkgs">
+      <div class="pkg">
+        <span class="pkn">01 · Experiência</span>
+        <div class="pkt">Cerâmica no Entre Mãos</div>
+        <div class="pkp">R$ 439</div>
+        <div class="pku">por pessoa</div>
+        <div class="pktot">R$ 3.512 · grupo de 8</div>
+        <div class="pkstep">O formato escolhido pela Segatta.</div>
+        <ul>
+          <li>Experiência de cerâmica + materiais</li>
+          <li>Condução + assistente</li>
+          <li>Espaço reservado</li>
+          <li>Lanchinho, sucos, café e chá</li>
+        </ul>
       </div>
-      <div class="invb">
-        <span class="ibsp">Agora Intu · Pinheiros</span>
-        <div class="ibsub">Experiência + espaço exclusivo + finger food</div>
-        <div class="ibrows">
-          <div class="invrow"><span class="ie">Cerâmica</span><span class="iv"><span class="pp">R$ 539</span><span class="ppu">por pessoa</span><span class="tg">R$ 4.312 · grupo de 8</span></span></div>
-          <div class="invrow"><span class="ie">Arranjos florais</span><span class="iv"><span class="pp">R$ 509</span><span class="ppu">por pessoa</span><span class="tg">R$ 4.072 · grupo de 8</span></span></div>
-        </div>
-        <p class="ibnote">Inclui espaço exclusivo, materiais, condução da experiência, café, chá, água e 5 bites quentes e frios servidos ao longo do encontro.</p>
+      <div class="pkg hl">
+        <span class="pkbadge">Mais escolhido</span>
+        <span class="pkn">02 · Premium</span>
+        <div class="pkt">Experiência + mimo personalizado</div>
+        <div class="pkp">R$ 568</div>
+        <div class="pku">por pessoa</div>
+        <div class="pktot">R$ 4.544 · grupo de 8</div>
+        <div class="pkstep">Experiência + R$ 129/pessoa do mimo.</div>
+        <ul>
+          <li>Tudo do pacote Experiência</li>
+          <li>1 mimo personalizado por participante</li>
+          <li>Garrafinha, vela ou home spray</li>
+          <li>Com a identidade da Segatta</li>
+        </ul>
+      </div>
+      <div class="pkg">
+        <span class="pkn">03 · Completo</span>
+        <div class="pkt">Experiência + mimo + registro profissional</div>
+        <div class="pkp">R$ 605,38</div>
+        <div class="pku">por pessoa</div>
+        <div class="pktot">R$ 4.843 · grupo de 8</div>
+        <div class="pkstep">Premium + R$ 299 do registro em vídeo.</div>
+        <ul>
+          <li>Tudo do pacote Premium</li>
+          <li>Registro profissional em vídeo</li>
+          <li>Vídeo editado entregue depois</li>
+          <li>A memória do encontro pra guardar</li>
+        </ul>
       </div>
     </div>
-    <p class="fineprint">Valores finais para 8 participantes, já considerando toda a composição da experiência.</p>
+    <p class="fineprint">Valores para 8 participantes.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
@@ -644,9 +687,9 @@
     <p class="lead">A Elarah cuida de toda a produção pro encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolham a experiência, o espaço e o plano</h3><p>A gente reserva o espaço pro time da Segatta e confirma a sexta-feira de outubro.</p></div>
-      <div class="step"><div class="num">2</div><h3>A gente leva tudo</h3><p>Profissional, todo o material e a estrutura. Chegamos antes, montamos e desmontamos no fim.</p></div>
-      <div class="step"><div class="num">3</div><h3>Cada um leva a sua criação</h3><p>Cada participante sai com a própria peça, perfume ou arranjo, conforme a experiência escolhida.</p></div>
+      <div class="step"><div class="num">1</div><h3>Escolham o pacote</h3><p>Experiência, Premium ou Completo — a data e o espaço já estão confirmados: 02/10, no Entre Mãos.</p></div>
+      <div class="step"><div class="num">2</div><h3>A gente leva tudo</h3><p>Ceramista, todo o material e a estrutura. Chegamos antes, montamos e desmontamos no fim.</p></div>
+      <div class="step"><div class="num">3</div><h3>Cada um leva a sua criação</h3><p>Cada participante sai com a própria peça de cerâmica e uma lembrança desse encontro.</p></div>
     </div>
     <div class="addon">
       <span class="plus">✦</span>
@@ -657,7 +700,7 @@
     </div>
     <div class="cta">
       <h2>Bora <em>reunir o time?</em> ✦</h2>
-      <p>Vi, me confirma a experiência, o espaço e o plano que fazem mais sentido, que eu reservo a agenda e organizo cada detalhe.</p>
+      <p>Vi, me confirma o pacote que faz mais sentido, que eu deixo tudo organizado pro dia 02/10.</p>
       <div class="cta-actions">
         <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Vi%20a%20proposta%20da%20Segatta%20e%20quero%20fechar%20os%20detalhes." target="_blank" rel="noopener">💬 Falar no WhatsApp</a>
         <div class="contact-links">
@@ -667,7 +710,7 @@
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiência da Elarah para a celebração dos 100 mil da Segatta Neuropsicologia — cerca de 8 pessoas, em uma sexta-feira de outubro (a definir), em São Paulo. Experiências à escolha: Cerâmica, Perfumaria Botânica ou Arranjos florais, no Entre Mãos (Perdizes) ou no Agora Intu (Pinheiros). Perfumaria Botânica: R$ 416 por pessoa no plano Experiência; demais valores a confirmar. Espaço, alimentação e condições comerciais a confirmar. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiência da Elarah para a celebração dos 100 mil da Segatta Neuropsicologia — experiência de Cerâmica no Entre Mãos (Perdizes), em 02/10, das 16h às 19h30, para 8 participantes. Pacote Experiência R$ 439 por pessoa (R$ 3.512 · grupo de 8); Premium R$ 568 por pessoa (R$ 4.544), com mimo personalizado; Completo R$ 605,38 por pessoa (R$ 4.843), com mimo e registro profissional em vídeo. Valores para 8 participantes.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Como funciona & contato</span></div>
   </section>
 
