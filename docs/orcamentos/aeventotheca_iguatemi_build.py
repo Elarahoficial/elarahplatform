@@ -87,6 +87,25 @@ xcss = '''
   .invt3 .ppl{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);white-space:nowrap}
   .invt3 .val{font-family:'DM Serif Display',serif;font-size:20px;color:var(--orange-dark);white-space:nowrap}
   .invt3 .ph{color:var(--muted);letter-spacing:.12em;font-family:'DM Serif Display',serif}
+  /* investimento · total */
+  .invtotal{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;background:var(--navy);color:#fff;border-radius:16px;padding:20px 30px}
+  .invtotal .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:rgba(255,255,255,.82)}
+  .invtotal .v{font-family:'DM Serif Display',serif;font-size:32px;color:#fff;line-height:1}
+  /* para levar (bloco de valor) */
+  .levar{margin-top:20px;background:rgba(176,141,76,.07);border:1px solid var(--line);border-radius:16px;padding:17px 22px}
+  .levar .lk{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-bottom:12px}
+  .levar .litems{display:flex;flex-wrap:wrap;gap:9px}
+  .levar .li{font-size:11.5px;color:var(--navy);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-weight:600}
+  .levar .li b{color:var(--orange-dark)}
+  /* contemplado agrupado */
+  .inclgrp{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr;gap:11px 20px}
+  .inclgrp .gt{font-size:9px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .inclgrp p{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:2px}
+  /* duas criacoes (duo) */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .duo .d{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 15px}
+  .duo .d .dt{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy)}
+  .duo .d p{font-size:10.5px;color:var(--muted);line-height:1.35;margin-top:3px}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -194,45 +213,79 @@ visao = f'''
     <h2>O dia em <em>dois momentos</em></h2>
     <p class="lead">Dois momentos para <b>sair do automático</b>, <b>descobrir</b> algo novo e <b>compartilhar</b> uma boa experiência.</p>
     <div class="daygrid">
-      {daycard("11h", "LACES · Iguatemi Campinas", "Criação de Sais de Banho", "De manhã, uma experiência sensorial.", "<b>15 pessoas</b>", "sais-composicao.jpg", "Sais de banho com ervas e flores secas, em composição", "center 50%")}
-      {daycard("17h", "Piselli · Iguatemi Campinas", "Chás, ervas &amp; blends", "No fim da tarde, aromas e sabores.", "<b>10 pessoas</b>", "cha-ervas-selecao.jpg", "Ervas soltas em potes para a experiência de chás e blends", "center 45%")}
+      {daycard("11h", "LACES · Iguatemi Campinas", "Sais para escalda-pés", "Oficina de sais para escalda-pés da primavera.", "<b>15 pessoas</b> · 1h30", "sais-composicao.jpg", "Sais, ervas e óleos para a composição do escalda-pés", "center 50%")}
+      {daycard("17h", "Piselli · Iguatemi Campinas", "Chás, ervas &amp; blends", "Oficina de chás, ervas e criação de blends.", "<b>10 pessoas</b>", "cha-ervas-selecao.jpg", "Ervas soltas em potes para a criação de blends", "center 45%")}
     </div>
     {foot("Visão geral do dia")}
   </section>'''
 
-# ============================ 3 · EXPERIÊNCIA LACES — SAIS ============================
+# ============================ 3 · EXPERIÊNCIA LACES — SAIS ESCALDA-PÉS ============================
 expLACES = f'''
   <section class="slide">
-{head_simple("Experiência LACES · Sais de banho")}
-    <span class="eyebrow orange">◆ <b>11h</b> · LACES · Iguatemi Campinas · <b>15 pessoas</b></span>
-    <h2>Criação de <em>sais de banho</em></h2>
-    {exbig("11h · LACES · 15 pessoas", "Criação de Sais de Banho",
-           "Uma experiência sensorial em torno de aromas, texturas e criação — pensada para um momento leve e personalizado ao grupo.",
-           ["Condução por profissional",
-            "Materiais e insumos da experiência",
-            "Montagem, operação e produção do dia",
-            "Deslocamento"],
-           "sais-grupo.jpg", "Grupo criando os próprios sais de banho",
-           "laces-espaco.jpg", "Interior da loja LACES, com plantas e madeira", "LACES · Iguatemi Campinas",
-           "center 55%", "center 50%")}
-    {foot("Experiência LACES · Sais de banho")}
+{head_simple("Experiência LACES · Sais para escalda-pés")}
+    <span class="eyebrow orange">◆ <b>11h</b> · LACES · Iguatemi Campinas · <b>15 pessoas</b> · <b>1h30</b></span>
+    <h2>Oficina de Sais para Escalda-pés <em>da Primavera</em></h2>
+    <div class="exbig">
+      <div class="exphotos">
+        <div class="exmain">{img("sais-grupo.jpg", "Grupo criando a própria composição de sais e ervas", "center 55%")}</div>
+        <div class="exthumb">{img("laces-espaco.jpg", "Interior da loja LACES, com plantas e madeira", "center 50%")}<div class="cap">LACES · Iguatemi Campinas</div></div>
+      </div>
+      <div class="exbody">
+        <p class="exc">Uma pausa sensorial inspirada na primavera — aromas, ervas, sais e texturas se encontram em uma criação individual. Cada participante conhece os elementos e desenvolve a própria composição para escalda-pés, com o acompanhamento da profissional.</p>
+        <div class="inclgrp">
+          <div class="g"><div class="gt">Condução</div><p>Profissional especializada durante toda a experiência.</p></div>
+          <div class="g"><div class="gt">Materiais</div><p>Sais, óleos essenciais, ervas e utensílios da criação.</p></div>
+          <div class="g"><div class="gt">Personalização</div><p>Frasco individual, rótulo e tag para nomear.</p></div>
+          <div class="g"><div class="gt">Produção</div><p>Preparação, operação e logística até Campinas.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="levar">
+      <div class="lk">Para levar com você</div>
+      <div class="litems">
+        <span class="li">Sua composição individual</span>
+        <span class="li"><b>Frasco de vidro 80 ml</b></span>
+        <span class="li">Rótulo personalizado</span>
+        <span class="li">Tag para nome ou intenção</span>
+        <span class="li"><b>Chá relaxante</b> de presente</span>
+      </div>
+    </div>
+    {foot("Experiência LACES · Sais para escalda-pés")}
   </section>'''
 
-# ============================ 4 · EXPERIÊNCIA PISELLI — CHÁS ============================
+# ============================ 4 · EXPERIÊNCIA PISELLI — CHÁS & BLENDS ============================
 expPiselli = f'''
   <section class="slide">
 {head_simple("Experiência Piselli · Chás & blends")}
     <span class="eyebrow orange">◆ <b>17h</b> · Piselli · Iguatemi Campinas · <b>10 pessoas</b></span>
-    <h2>Chás, ervas &amp; <em>blends</em></h2>
-    {exbig("17h · Piselli · 10 pessoas", "Chás, ervas &amp; blends",
-           "Uma experiência em torno do universo dos chás, ervas e blends — clima de encontro, mesa e novos sabores.",
-           ["Condução por profissional",
-            "Ervas e insumos da experiência",
-            "Operação e produção do dia",
-            "Deslocamento"],
-           "cha-blend-funil.jpg", "Blend de ervas e xícaras servidas sobre a mesa",
-           "piselli-mesa.jpg", "Mesa redonda de mármore posta no Piselli", "Piselli · Iguatemi Campinas",
-           "center 45%", "center 50%")}
+    <h2>Oficina de Chás, Ervas &amp; <em>Blends</em></h2>
+    <div class="exbig">
+      <div class="exphotos">
+        <div class="exmain">{img("cha-blend-funil.jpg", "Criação de um blend de ervas, com xícaras servidas", "center 45%")}</div>
+        <div class="exthumb">{img("piselli-mesa.jpg", "Mesa redonda de mármore posta no Piselli", "center 50%")}<div class="cap">Piselli · Iguatemi Campinas</div></div>
+      </div>
+      <div class="exbody">
+        <p class="exc">Uma experiência de descoberta em torno das ervas — aromas, sabores, cores e combinações. Com a orientação da tea expert, cada participante explora os ingredientes e cria os próprios blends para levar.</p>
+        <div class="duo">
+          <div class="d"><div class="dt">Relaxar</div><p>Um blend autoral de perfil mais acolhedor.</p></div>
+          <div class="d"><div class="dt">Energizar</div><p>Um blend autoral para um momento estimulante.</p></div>
+        </div>
+        <div class="inclgrp">
+          <div class="g"><div class="gt">Condução</div><p>Tea expert e curadoria das ervas.</p></div>
+          <div class="g"><div class="gt">Materiais</div><p>Ingredientes dos dois blends, potes e utensílios.</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="levar">
+      <div class="lk">Da mesa para casa</div>
+      <div class="litems">
+        <span class="li"><b>2 blends</b> criados por você</span>
+        <span class="li">2 frascos de vidro 60 ml</span>
+        <span class="li">Infusor tipo bolinha</span>
+        <span class="li"><b>Caixa</b> para os itens</span>
+        <span class="li">Guia impresso de preparo</span>
+      </div>
+    </div>
     {foot("Experiência Piselli · Chás & blends")}
   </section>'''
 
@@ -243,17 +296,21 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>As duas <em>experiências</em></h2>
-    <p class="lead">Cada experiência com participantes, valor por pessoa e total.</p>
+    <p class="lead">Cada experiência com valor por pessoa e investimento total.</p>
     <table class="invt3">
       <thead>
-        <tr><th class="l">Experiência</th><th>Participantes</th><th>Preço por pessoa</th><th>Preço total</th></tr>
+        <tr><th class="l">Experiência</th><th>Valor por pessoa</th><th>Investimento total</th></tr>
       </thead>
       <tbody>
-        <tr><td class="nm">Sais de Banho<span>11h · LACES</span></td><td class="ppl">15 pessoas</td><td class="val">{PH}</td><td class="val">{PH}</td></tr>
-        <tr><td class="nm">Chás &amp; Blends<span>17h · Piselli</span></td><td class="ppl">10 pessoas</td><td class="val">{PH}</td><td class="val">{PH}</td></tr>
+        <tr><td class="nm">Oficina de Sais para Escalda-pés<span>11h · LACES · 15 pessoas · 1h30</span></td><td class="val">R$ 329,27</td><td class="val">R$ 4.939</td></tr>
+        <tr><td class="nm">Oficina de Chás, Ervas &amp; Blends<span>17h · Piselli · 10 pessoas</span></td><td class="val">R$ 391,90</td><td class="val">R$ 3.919</td></tr>
       </tbody>
     </table>
-    <p class="phnote">Investimentos finais apresentados após a definição do formato escolhido.</p>
+    <div class="invtotal">
+      <span class="lbl">Investimento total · duas experiências</span>
+      <span class="v">R$ 8.858</span>
+    </div>
+    <p class="phnote">Valores contemplam materiais, condução, preparação e logística da experiência.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -263,16 +320,16 @@ proximos = f'''
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>Como <em>seguimos</em></h2>
-    <p class="lead">Um caminho simples até a reserva da data — cuidamos de cada etapa com vocês.</p>
+    <p class="lead">Um caminho simples até a produção — cuidamos de cada etapa com vocês.</p>
     {steps4([
-        ("Aprovação", "Aprovada a proposta, seguimos com os detalhes."),
-        ("Confirmação", "Confirmamos a data — 02.10, no Iguatemi Campinas."),
-        ("Ajustes finais", "Alinhamos cada detalhe das duas experiências."),
-        ("Produção", "Cuidamos da produção de cada momento."),
+        ("Aprovação", "Aprovada a proposta, seguimos em frente."),
+        ("Alinhamento", "Alinhamos os detalhes com a profissional."),
+        ("Ajustes finais", "Fechamos cada detalhe das duas experiências."),
+        ("Produção", "Cuidamos da produção dos dois momentos."),
     ])}
     <div class="cta">
       <h2>Má, <em>seguimos juntas?</em> ✦</h2>
-      <p>Aprovado o formato, alinhamos cada detalhe e reservamos o dia <b>02.10</b> no Iguatemi Campinas.</p>
+      <p>Com a proposta aprovada, alinhamos os últimos detalhes com a profissional e seguimos com a produção dos dois momentos.</p>
       <div class="cta-actions">
         <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Sobre%20a%20proposta%20das%20experi%C3%AAncias%20no%20Iguatemi%20Campinas." target="_blank" rel="noopener">💬 Falar no WhatsApp</a>
         <div class="contact-links">
@@ -282,7 +339,7 @@ proximos = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiências da Elarah para a Aeventotheca (a/c Marina Dias) — 02.10, no Iguatemi Campinas: Sais de Banho às 11h na LACES (15 pessoas) e Chás, ervas &amp; blends às 17h no Piselli (10 pessoas). Investimentos finais apresentados após a definição do formato escolhido.</p>
+    <p class="fineprint">Proposta de experiências da Elarah para a Aeventotheca (a/c Marina Dias) — 02.10, no Iguatemi Campinas: Oficina de Sais para Escalda-pés da Primavera às 11h na LACES (15 pessoas · 1h30), R$ 329,27 por pessoa · R$ 4.939; Oficina de Chás, Ervas e Criação de Blends às 17h no Piselli (10 pessoas), R$ 391,90 por pessoa · R$ 3.919. Investimento total R$ 8.858. Valores contemplam materiais, condução, preparação e logística das experiências.</p>
     {foot("Próximos passos")}
   </section>'''
 
