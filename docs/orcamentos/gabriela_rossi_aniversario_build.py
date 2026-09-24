@@ -162,7 +162,7 @@ mesa_posta = f'''
     <h2>A mesa posta, do jeito <em>Elarah</em></h2>
     <p class="lead">A gente chega antes, prepara cada detalhe e deixa tudo com clima de comemoração. Quando vocês chegam, a mesa já está pronta, as estações organizadas e o momento começa leve — é só criar, conversar e curtir juntas. ✨</p>
     <div class="vibe">
-      {vfig("aniversario-mesa-real.jpg", "Mesa da comemoração posta com flores", "Mesa da comemoração", "center 50%")}
+      {vfig("mesa-cafe-comemoracao.jpg", "Mesa da comemoração num café, com o grupo reunido", "Mesa da comemoração", "center 45%")}
       {vfig("buqueflor.jpg", "Flores e detalhes de ambientação", "Ambientação &amp; detalhes", "center 50%")}
       {vfig("agora-mesa.jpg", "Mesa e materiais prontos para o grupo", "Tudo pronto pra turma", "center 50%")}
       {vfig("cheesecakes.jpg", "Bolo e doces para o momento do aniversário", "Um toque de aniversário", "center 50%", opt=True)}
@@ -214,7 +214,7 @@ premium = f'''
 {head_simple("O brinde")}
     <span class="eyebrow orange">◆ Quer deixar completo?</span>
     <h2>Um brinde <em>especial</em></h2>
-    <p class="lead">Qualquer experiência pode ganhar um brinde: uma <b>lembrancinha personalizada</b> pra cada uma levar pra casa e guardar de recordação. É só somar <b>R$ 129 por pessoa</b>. 🎁</p>
+    <p class="lead">Qualquer experiência pode ganhar um brinde: uma <b>lembrancinha personalizada</b> pra cada uma levar pra casa e guardar de recordação. É só somar <b>R$ 139 por pessoa</b>. 🎁</p>
     <div class="invbox">
       <div style="flex:0 0 36%;min-width:220px;border-radius:18px;overflow:hidden;position:relative;min-height:250px;border:1px solid var(--line)">
         <img src="assets/lembrancinha-escova.jpg" alt="Lembrancinha personalizada numa caixa de presente" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 45%">
@@ -226,7 +226,7 @@ premium = f'''
           <li><span>✦</span><b>Lembrancinha personalizada</b> pra cada uma</li>
           <li><span>✦</span>À escolha: <b>escova gravada</b> ou <b>garrafa personalizada</b></li>
         </ul>
-        <span class="plusbadge">+ R$ 129 por pessoa</span>
+        <span class="plusbadge">+ R$ 139 por pessoa</span>
       </div>
     </div>
     <p class="fineprint">O brinde é opcional e pode ser personalizado conforme o estilo da comemoração.</p>
@@ -261,7 +261,7 @@ investimento = f'''
 {_rows}
       </tbody>
     </table>
-    <p class="fineprint">Grupo estimado para 9 convidadas. O <b>brinde</b> (lembrancinha personalizada) é opcional: +R$ 129 por pessoa. Espaço e menu da casa à parte, conforme a opção escolhida. Data 24.10 sujeita à disponibilidade.</p>
+    <p class="fineprint">Grupo estimado para 9 convidadas. O <b>brinde</b> (lembrancinha personalizada) é opcional: +R$ 139 por pessoa. Espaço e menu da casa à parte, conforme a opção escolhida. Data 24.10 sujeita à disponibilidade.</p>
     {foot("Investimento")}
   </section>'''
 
