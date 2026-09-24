@@ -1277,6 +1277,12 @@
           <label style="margin-left:12px;font-size:.78rem;color:#666;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;" title="Esconde as experiências que estão ocultas no site">
             <input type="checkbox" id="cotacao-so-ativas"> só experiências ativas
           </label>
+          <select id="cotacao-local" title="Filtra pelo lugar onde o parceiro atende — marque direto nos cards" style="margin-left:12px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:.8rem;font-family:inherit;background:#fff;color:#444;cursor:pointer;">
+            <option value="">📍 Onde atende: todos</option>
+            <option value="sem_espaco">🚗 Sem espaço (vai até o local)</option>
+            <option value="com_espaco">🏠 Com espaço / ateliê</option>
+            <option value="nao_informado">❔ Ainda não informado</option>
+          </select>
           <button type="button" id="cotacao-copiar-btn" style="margin-left:auto;padding:7px 14px;border:none;background:var(--orange,#f0a05e);color:#fff;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;font-family:inherit;" title="Copia a lista em texto pra colar no orçamento ou no WhatsApp">📋 Copiar lista</button>
         </div>
         <div id="cotacao-results" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;padding:16px;">

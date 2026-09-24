@@ -12243,7 +12243,40 @@
     instrucoes_template: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
     instrucoes_variaveis: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
     instrucoes_link: 'sql/elarah_experiences_instrucoes_pos_compra.sql',
+    local_atendimento: 'sql/elarah_fornecedores_local_atendimento.sql',
   };
+
+  // Onde o parceiro atende (fornecedores_metadata.local_atendimento).
+  // É o que a Cotação usa pra separar quem tem ateliê de quem precisa
+  // ir até um café/bar/espaço. null = ainda não informado.
+  const FORN_LOCAL_ATENDIMENTO = [
+    { v: 'espaco_proprio', l: 'Tem espaço',      icon: '🏠', c: '#3068a8' },
+    { v: 'vai_ate_local',  l: 'Vai até o local', icon: '🚗', c: '#b0561e' },
+    { v: 'ambos',          l: 'Os dois',         icon: '🔁', c: '#6b4fa0' },
+  ];
+
+  // Grava só o local_atendimento (upsert parcial — não mexe no resto da
+  // ficha). Usado pela marcação rápida nos cards da Cotação.
+  async function saveFornecedorLocalAtendimento(fornecedorNome, valor) {
+    const s = window.supabaseClient;
+    if (!s) return { ok: false, error: 'Supabase client indisponível' };
+    const key = fornecedorKey(fornecedorNome);
+    if (!key) return { ok: false, error: 'Nome do fornecedor vazio' };
+    const { error } = await s.from('fornecedores_metadata').upsert(
+      {
+        fornecedor_key: key,
+        fornecedor_nome: fornecedorNome,
+        local_atendimento: valor || null,
+      },
+      { onConflict: 'fornecedor_key' }
+    );
+    if (error) {
+      console.error('[Admin] saveFornecedorLocalAtendimento error', error);
+      return { ok: false, error: error.message, colunaFaltante: fornColunaFaltante(error.message) };
+    }
+    fornecedoresMetaCache = null;
+    return { ok: true };
+  }
   // Extrai o nome da coluna da mensagem do PostgREST:
   // "Could not find the 'instrucoes_link' column of 'fornecedores_metadata'
   //  in the schema cache".
@@ -12270,6 +12303,9 @@
         .upsert(row, { onConflict: 'fornecedor_key' });
       if (!error) {
         fornecedoresMetaCache = null;
+        // A Cotação cruza a ficha (categoria, onde atende…) — refaz na
+        // próxima vez que a aba abrir.
+        try { _cotacaoData = null; } catch (_) {}
         return { ok: true, ignoradas };
       }
       const col = fornColunaFaltante(error.message);
@@ -12484,6 +12520,17 @@
           field('Nome do contato', '<input type="text" id="forn-f-contato" value="' + val('nome_contato') + '" style="' + inputStyle + '">') +
           field('Tipo de parceria (pode marcar mais de uma)', '<div id="forn-f-tipo-chips"></div>') +
           field('Data de entrada', '<input type="date" id="forn-f-data" value="' + val('data_entrada') + '" style="' + inputStyle + '">') +
+          field('Onde atende',
+            '<select id="forn-f-local" style="' + inputStyle + '">' +
+              '<option value="">Não informado</option>' +
+              FORN_LOCAL_ATENDIMENTO.map(o =>
+                '<option value="' + o.v + '"' + (meta.local_atendimento === o.v ? ' selected' : '') + '>' +
+                escapeHtml(o.icon + ' ' + (o.v === 'espaco_proprio' ? 'Tem espaço próprio / ateliê'
+                  : o.v === 'vai_ate_local' ? 'Sem espaço — vai até o local'
+                  : 'Tem espaço e também vai até o local')) +
+                '</option>'
+              ).join('') +
+            '</select>') +
           '<div style="grid-column:1/-1;">' +
             field('Chave Pix (pra repasse)',
               '<input type="text" id="forn-f-pix" value="' + val('pix') + '" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória" style="' + inputStyle + '">') +
@@ -12754,6 +12801,7 @@
         nome_contato: trimOrNull('#forn-f-contato'),
         tipo_parceria: tipoWidget.getValue() || null,
         data_entrada: overlay.querySelector('#forn-f-data').value || null,
+        local_atendimento: overlay.querySelector('#forn-f-local').value || null,
         pix: trimOrNull('#forn-f-pix'),
         instrucoes_pos_compra: trimOrNull('#forn-f-instrucoes'),
         instrucoes_template: trimOrNull('#forn-f-instr-template'),
@@ -15298,7 +15346,7 @@
 
   let _cotacaoData = null;      // cache do cruzamento (invalidado no ↻)
   let _cotacaoExpandidos = new Set();  // fornecedores com a lista aberta
-  let _cotacaoState = { categoria: '', catTerm: '', term: '', soAtivas: false };
+  let _cotacaoState = { categoria: '', catTerm: '', term: '', soAtivas: false, local: '' };
   let _cotacaoWired = false;
 
   // Categorias de uma experiência. Usa a fonte única do ElarahData
@@ -15554,6 +15602,44 @@
       : entry.exps.slice();
   }
 
+  // Filtro "Onde atende". Quem faz os dois entra tanto em "sem espaço"
+  // (vai até o café/bar) quanto em "com espaço".
+  function cotacaoLocalBate(entry, filtro) {
+    if (!filtro) return true;
+    if (entry.semFornecedor) return false;
+    const v = entry.meta && entry.meta.local_atendimento;
+    if (filtro === 'sem_espaco') return v === 'vai_ate_local' || v === 'ambos';
+    if (filtro === 'com_espaco') return v === 'espaco_proprio' || v === 'ambos';
+    if (filtro === 'nao_informado') return !v;
+    return true;
+  }
+
+  // Marcação rápida no card: grava na ficha do parceiro e atualiza o
+  // cache local (o mesmo parceiro aparece em várias categorias).
+  async function cotacaoSetLocal(fornKey, fornNome, valor) {
+    const res = await saveFornecedorLocalAtendimento(fornNome, valor);
+    if (!res.ok) {
+      alert('Não consegui salvar onde o parceiro atende.\n' + (res.error || '') +
+        (res.colunaFaltante === 'local_atendimento'
+          ? '\n\nRode sql/elarah_fornecedores_local_atendimento.sql no SQL Editor do Supabase.'
+          : ''));
+      return false;
+    }
+    let novoMeta = null;
+    if (_cotacaoData) {
+      _cotacaoData.cats.forEach(bucket => {
+        const entry = bucket.fornecedores.get(fornKey);
+        if (!entry) return;
+        if (!entry.meta) {
+          novoMeta = novoMeta || { fornecedor_key: fornKey, fornecedor_nome: fornNome };
+          entry.meta = novoMeta;
+        }
+        entry.meta.local_atendimento = valor || null;
+      });
+    }
+    return true;
+  }
+
   // Fornecedores da categoria selecionada, já filtrados pela busca e
   // pelo toggle, ordenados por quem tem mais experiência na categoria.
   function cotacaoFornecedoresFiltrados() {
@@ -15568,6 +15654,7 @@
       // Com "só ativas" ligado, some quem ficou sem nenhuma experiência
       // visível — mas mantém quem nunca teve (cadastro só na metadata).
       if (_cotacaoState.soAtivas && entry.exps.length && !entry.expsVisiveis.length) return false;
+      if (!cotacaoLocalBate(entry, _cotacaoState.local)) return false;
       if (!termo) return true;
       const meta = entry.meta;
       const hay = [
@@ -15777,8 +15864,21 @@
       return;
     }
 
+    // Com o filtro "Onde atende" ligado, o número do chip passa a contar
+    // só quem bate — e categoria sem ninguém fica apagadinha.
+    const filtroLocal = _cotacaoState.local;
+    const qtdLocal = (c) => {
+      if (!filtroLocal) return c.fornecedores;
+      const bucket = _cotacaoData.cats.get(c.key);
+      let n = 0;
+      if (bucket) bucket.fornecedores.forEach(f => { if (cotacaoLocalBate(f, filtroLocal)) n++; });
+      return n;
+    };
+
     wrap.innerHTML = lista.map(c => {
       const ativa = c.key === _cotacaoState.categoria;
+      const qtd = qtdLocal(c);
+      const apagada = filtroLocal && !qtd && !ativa;
       return '<button type="button" class="cotacao-cat-chip" data-cat="' + escapeHtml(c.key) + '" ' +
         'style="padding:7px 13px;border-radius:20px;cursor:pointer;font-family:inherit;font-size:.82rem;' +
         'font-weight:600;white-space:nowrap;' +
@@ -15788,14 +15888,15 @@
           // tracejada: dá pra ver de longe o que não é categoria do site.
           : (c.soFicha
             ? 'border:1px dashed #d9b36a;background:#fffdf7;color:#8a6d2f;'
-            : 'border:1px solid #e2e2e2;background:#fff;color:#444;')) + '" ' +
+            : 'border:1px solid #e2e2e2;background:#fff;color:#444;')) +
+        (apagada ? 'opacity:.4;' : '') + '" ' +
         'title="' + escapeHtml(
           c.fornecedores + ' fornecedor(es) · ' + c.experiencias + ' experiência(s)' +
           (c.soFicha ? ' — só na ficha de parceiro, não é categoria do site' : '')
         ) + '">' +
         (c.soFicha ? '⚠ ' : '') +
         escapeHtml(c.nome) +
-        '<span style="margin-left:7px;font-weight:700;opacity:.75;">' + c.fornecedores + '</span>' +
+        '<span style="margin-left:7px;font-weight:700;opacity:.75;">' + qtd + '</span>' +
       '</button>';
     }).join('');
 
@@ -15887,14 +15988,17 @@
 
     if (countEl) {
       countEl.textContent = lista.length + ' fornecedor' + (lista.length === 1 ? '' : 'es') +
-        (_cotacaoState.term.trim() ? ' (filtrado)' : '');
+        (_cotacaoState.term.trim() || _cotacaoState.local ? ' (filtrado)' : '');
     }
 
     if (!lista.length) {
       grid.innerHTML = '<div class="admin__table-empty" style="grid-column:1/-1;">' +
         (_cotacaoState.term.trim()
           ? 'Nenhum fornecedor de ' + escapeHtml(catNome) + ' pra "' + escapeHtml(_cotacaoState.term.trim()) + '".'
-          : 'Nenhum fornecedor em ' + escapeHtml(catNome) + ' ainda.') +
+          : (_cotacaoState.local
+            ? 'Nenhum fornecedor de ' + escapeHtml(catNome) + ' com esse filtro de local. ' +
+              'Troque pra "todos" e marque nos cards onde cada um atende.'
+            : 'Nenhum fornecedor em ' + escapeHtml(catNome) + ' ainda.')) +
         '</div>';
       return;
     }
@@ -15997,9 +16101,29 @@
               'cursor:pointer;font-size:.76rem;font-family:inherit;">Cadastro</button>' +
           '</div>';
 
+      // Onde atende: 3 pílulas pequenas — mostram o que está marcado e
+      // já servem pra marcar/trocar ali mesmo (clicar na ativa desmarca).
+      const localAtual = meta && meta.local_atendimento;
+      const localHtml = entry.semFornecedor ? '' :
+        '<div style="margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:5px;">' +
+          '<span style="font-size:.72rem;color:' + (localAtual ? '#888' : '#b07b00') + ';margin-right:2px;">' +
+            (localAtual ? 'Onde atende:' : 'Onde atende? marque:') + '</span>' +
+          FORN_LOCAL_ATENDIMENTO.map(o => {
+            const on = localAtual === o.v;
+            return '<button type="button" class="cotacao-local-set" data-forn-key="' + escapeHtml(entry.key) + '" ' +
+              'data-forn-nome="' + escapeHtml(entry.nome) + '" data-v="' + o.v + '" ' +
+              'title="' + (on ? 'Clique pra desmarcar' : 'Marcar: ' + escapeHtml(o.l)) + '" ' +
+              'style="padding:3px 9px;border-radius:12px;cursor:pointer;font-family:inherit;font-size:.72rem;' +
+              (on
+                ? 'border:1px solid ' + o.c + ';background:' + o.c + ';color:#fff;font-weight:600;'
+                : 'border:1px solid #e6e6e6;background:#fafafa;color:#777;') + '">' +
+              o.icon + ' ' + escapeHtml(o.l) + '</button>';
+          }).join('') +
+        '</div>';
+
       return '<div style="border:1px solid #eee;border-radius:10px;padding:14px 16px;background:#fff;' +
         'box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;">' +
-        head + linhas.join('') + faixa + expsHtml + acoes +
+        head + linhas.join('') + faixa + expsHtml + localHtml + acoes +
       '</div>';
     }).join('');
 
@@ -16017,6 +16141,19 @@
           : '▼ ver mais (' + (btn.dataset.resto || '') + ')';
         if (abrindo) _cotacaoExpandidos.add(btn.dataset.fornKey);
         else _cotacaoExpandidos.delete(btn.dataset.fornKey);
+      });
+    });
+
+    // Marcar onde o parceiro atende direto no card.
+    grid.querySelectorAll('.cotacao-local-set').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const entry = lista.find(f => f.key === btn.dataset.fornKey);
+        const atual = entry && entry.meta && entry.meta.local_atendimento;
+        const novo = atual === btn.dataset.v ? null : btn.dataset.v;
+        btn.closest('div').querySelectorAll('.cotacao-local-set').forEach(b => { b.disabled = true; });
+        await cotacaoSetLocal(btn.dataset.fornKey, btn.dataset.fornNome, novo);
+        renderCotacaoCategorias();
+        renderCotacaoResultados();
       });
     });
 
@@ -16049,6 +16186,8 @@
       (indice ? indice + ') ' : '') + entry.nome,
       [meta && meta.bairro, meta && meta.cidade].filter(Boolean).join(' · '),
       meta && meta.whatsapp ? 'WhatsApp: ' + meta.whatsapp : '',
+      ({ espaco_proprio: 'Tem espaço próprio', vai_ate_local: 'Sem espaço, vai até o local',
+         ambos: 'Tem espaço e vai até o local' })[meta && meta.local_atendimento] || '',
     ].filter(Boolean).join(' — ');
     const exps = (entry.expsVisiveis || cotacaoExpsVisiveis(entry));
     if (!exps.length) {
@@ -16099,6 +16238,15 @@
     if (soAtivas) {
       soAtivas.addEventListener('change', () => {
         _cotacaoState.soAtivas = !!soAtivas.checked;
+        renderCotacaoCategorias();
+        renderCotacaoResultados();
+      });
+    }
+
+    const local = document.getElementById('cotacao-local');
+    if (local) {
+      local.addEventListener('change', () => {
+        _cotacaoState.local = local.value || '';
         renderCotacaoCategorias();
         renderCotacaoResultados();
       });
