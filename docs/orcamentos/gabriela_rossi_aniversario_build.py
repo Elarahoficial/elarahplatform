@@ -1,14 +1,14 @@
 # Proposta Elarah · Aniversario Gabriela Rossi · 24/10 · 9 mulheres · Regiao Saude (SP)
-# Curadoria pronta pra decidir: 4 opcoes (Netas / Casa Pretty / Meu Outro Lado / Elarah na Saude) + opcionais + comparativo.
-# Reaproveita paleta vinho/terracota e componente .vcard do build vinho_ceramica_aniversario.
-# Valores documentados Elarah: Netas R$299 · Meu Outro Lado R$359 · foto R$450 · lembrancinha R$99. Demais: sob cotacao.
+# 6 slides: Capa · Curadoria · A mesa posta · Escolha onde celebrar (3 espacos) · Escolha a experiencia (6) · Proximos passos.
+# Espacos perto da Saude: Casa Pretty (Bosque da Saude) / Sow Cafe (Vila Mariana, un. Cons. Rodrigues Alves) / YUCAFE (Vila Mariana).
+# Condicoes dos espacos: "sob confirmacao" (nada inventado). Experiencias com valor/pessoa informado pela cliente.
+# Paleta vinho/terracota. Reaproveita .vibe, .vcard, componentes Elarah.
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
 
 head = open(S + "/head.html", encoding="utf-8").read()
 tail = open(S + "/tail.html", encoding="utf-8").read()
 
-# paleta vinho + terracota (mesma do vinho_ceramica_aniversario)
 reps = {
     "--orange:#B08D4C;": "--orange:#B87351;",
     "--orange-dark:#8A6D34;": "--orange-dark:#8E5236;",
@@ -28,25 +28,21 @@ for a, b in reps.items():
     head = head.replace(a, b)
 
 xcss = '''
-  /* opcionais · grade de 6 */
-  .optgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
-  .optc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
-  .optc .oi{font-size:20px}
-  .optc h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);margin:8px 0 4px;line-height:1.05}
-  .optc p{font-size:11.5px;color:var(--muted);line-height:1.45}
-  .optc .ov{font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--orange-dark);margin-top:8px;text-transform:uppercase}
-  /* comparativo */
-  .cmp{width:100%;border-collapse:collapse;margin-top:20px}
-  .cmp th{text-align:left;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;padding:0 14px 11px;border-bottom:1px solid var(--line)}
-  .cmp td{padding:14px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
-  .cmp .op{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy);line-height:1.1}
-  .cmp .rg{font-size:11px;color:var(--muted)}
-  .cmp .pp{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);white-space:nowrap}
-  .cmp .tt{font-size:11.5px;color:var(--navy-soft);font-weight:600;white-space:nowrap}
-  .cmp .inc{font-size:11px;color:var(--muted);line-height:1.4}
-  .cmp .sc{font-style:italic;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px}
+  /* experiencias · 6 cards (2x3) */
+  .xpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+  .xp{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
+  .xp figure{margin:0;height:132px;overflow:hidden;position:relative}
+  .xp figure img{width:100%;height:100%;object-fit:cover;display:block}
+  .xp .xb{padding:13px 16px 15px;display:flex;flex-direction:column;flex:1}
+  .xp .xn{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .xp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);margin:3px 0 1px;line-height:1.06}
+  .xp .xt{font-size:10.5px;color:var(--orange-dark);font-weight:700;font-style:italic}
+  .xp p{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:7px;flex:1}
+  .xp .xpr{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin-top:9px;line-height:1}
+  .xp .xpr small{font-family:'DM Sans',sans-serif;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-left:3px}
+  /* CTA final */
   .cta2{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:22px;background:var(--navy);color:#fff;border-radius:18px;padding:24px 30px}
-  .cta2 .q{font-family:'DM Serif Display',serif;font-size:23px;line-height:1.1}
+  .cta2 .q{font-family:'DM Serif Display',serif;font-size:23px;line-height:1.15}
   .cta2 .q em{color:var(--orange-light,#CFA07E);font-style:italic}
   .cta2 .c{font-size:12.5px;color:rgba(255,255,255,.85);line-height:1.6;text-align:right}
   .cta2 .c b{color:#fff}
@@ -79,21 +75,24 @@ def head_simple(kicker):
     </div>'''
 
 
-def vcard(src, alt, price, kicker, name, addr, itens, pos="center 50%", hl=False, pricesmall=False):
+def vcard(src, alt, price, kicker, name, addr, itens, pos="center 50%", hl=False):
     cls = "vcard hl" if hl else "vcard"
-    if pricesmall:
-        pr = f'<div class="vpr"><b style="font-size:15px">{price}</b></div>'
-    else:
-        pr = f'<div class="vpr"><b>{price}</b><small>por pessoa</small></div>'
+    pr = f'<div class="vpr"><b style="font-size:14px">{price}</b></div>'
     lis = "".join(f"<li>{i}</li>" for i in itens)
     return (f'<div class="{cls}"><div class="vph">{img(src, alt, pos)}{pr}</div>'
             f'<div class="vb"><span class="vt">{kicker}</span><h3>{name}</h3>'
             f'<p class="vaddr">{addr}</p><ul>{lis}</ul></div></div>')
 
 
-def optc(icon, title, desc, val):
-    return (f'<div class="optc"><div class="oi">{icon}</div><h3>{title}</h3>'
-            f'<p>{desc}</p><div class="ov">{val}</div></div>')
+def xp(n, src, alt, name, tagline, desc, price, pos="center 50%"):
+    return (f'<div class="xp"><figure>{img(src, alt, pos)}</figure>'
+            f'<div class="xb"><span class="xn">{n}</span><h3>{name}</h3>'
+            f'<span class="xt">{tagline}</span><p>{desc}</p>'
+            f'<div class="xpr">{price}<small>por pessoa</small></div></div></div>')
+
+
+def vfig(src, alt, cap, pos="center 50%"):
+    return f'<figure>{img(src, alt, pos)}<figcaption>{cap}</figcaption></figure>'
 
 
 PROOF = "Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)"
@@ -128,87 +127,89 @@ curadoria = f'''
     <h2>Opções pensadas <em>pra vocês</em></h2>
     <p class="lead">Selecionamos as melhores opções pra celebrar perto da <b>região da Saúde</b> — pensando em um grupo de <b>9 amigas</b> e em formatos que unem <b>experiência criativa, comidas e bebidas</b>.</p>
     <div class="grid3" style="margin-top:26px">
-      <div class="infocard"><div class="ico">📍</div><h3>Perto de vocês</h3><p>Opções na região da Saúde e arredores fáceis de chegar.</p></div>
+      <div class="infocard"><div class="ico">📍</div><h3>Perto de vocês</h3><p>Espaços na região da Saúde e Vila Mariana, fáceis de chegar.</p></div>
       <div class="infocard"><div class="ico">🥂</div><h3>Feito pra 9</h3><p>Formatos pensados para um grupo de amigas celebrar junto.</p></div>
       <div class="infocard"><div class="ico">🎨</div><h3>Experiência + mesa</h3><p>Criar com as mãos, brindar e aproveitar comidas e bebidas.</p></div>
     </div>
     {foot("Curadoria Elarah")}
   </section>'''
 
-# ============================ 3 · OPÇÕES 1 & 2 ============================
-opcoes12 = f'''
+# ============================ 3 · A MESA POSTA ============================
+mesa_posta = f'''
   <section class="slide">
-{head_simple("Opções 1 & 2")}
-    <span class="eyebrow orange">◆ Opções 1 &amp; 2</span>
-    <h2>Duas formas de <em>celebrar</em></h2>
-    <p class="lead">Da cerâmica com vinho a um espaço charmoso pertinho, com experiência, comidas e bebidas.</p>
-    <div class="vgrid" style="grid-template-columns:repeat(2,1fr)">
-      {vcard("netas-atelie.jpg", "Netas Ateliê — grupo em experiência de cerâmica", "R$ 299", "Cerâmica + vinho", "Netas Ateliê", "Vila Mariana · vocês levam o próprio vinho 🍷", ["Cerâmica guiada por artista", "Vocês levam o vinho de vocês", "Turma de 8 a 10 pessoas"], "center 40%")}
-      {vcard("mesa-montada-corp.jpg", "Casa Pretty — espaço preparado para a celebração", "Sob cotação", "Espaço + experiência", "Casa Pretty", "Bosque da Saúde · pertinho de vocês", ["Espaço próximo, na região da Saúde", "Experiência + comidas e bebidas", "Formato a definir com o grupo"], "center 50%", pricesmall=True)}
+{head_simple("A mesa posta")}
+    <span class="eyebrow orange">◆ Antes de vocês chegarem</span>
+    <h2>A mesa posta, do jeito <em>Elarah</em></h2>
+    <p class="lead">Não é só a experiência: a gente cuida da mesa, dos materiais e dos detalhes para deixar tudo pronto para a turma aproveitar. A Elarah chega antes, organiza cada estação e deixa o ambiente com clima de comemoração — vocês só chegam, criam e curtem.</p>
+    <div class="vibe">
+      {vfig("aniversario-mesa-real.jpg", "Mesa da comemoração posta com flores", "Mesa da comemoração", "center 50%")}
+      {vfig("buqueflor.jpg", "Flores e detalhes de ambientação", "Ambientação &amp; detalhes", "center 50%")}
+      {vfig("agora-mesa.jpg", "Mesa e materiais prontos para o grupo", "Tudo pronto pra turma", "center 50%")}
+      {vfig("vinhotintos.jpg", "Taças servidas para o brinde", "Um toque de aniversário", "center 45%")}
+      {vfig("perfumaria-oficina.jpg", "Estações da experiência montadas", "Estações preparadas", "center 45%")}
+      {vfig("ceramicacool.jpg", "Peças autorais finalizadas", "A criação vira lembrança", "center 50%")}
     </div>
-    <p class="fineprint">Netas Ateliê: R$ 299 por pessoa (vocês levam o próprio vinho). Casa Pretty: valores <b>sob cotação</b>. Disponibilidade a confirmar para 24.10.</p>
-    {foot("Opções 1 & 2")}
+    <p class="fineprint">Ambientação, comidas, bebidas, flores, bolo e lembrancinhas podem ser personalizados conforme a opção escolhida e o orçamento.</p>
+    {foot("A mesa posta")}
   </section>'''
 
-# ============================ 4 · OPÇÕES 3 & 4 ============================
-opcoes34 = f'''
+# ============================ 4 · ESCOLHA ONDE CELEBRAR ============================
+onde = f'''
   <section class="slide">
-{head_simple("Opções 3 & 4")}
-    <span class="eyebrow orange">◆ Opções 3 &amp; 4</span>
-    <h2>Mais duas <em>opções</em></h2>
-    <p class="lead">Um ateliê com vinho já incluso ou a experiência Elarah levada até a região da Saúde — do jeito de vocês.</p>
-    <div class="vgrid" style="grid-template-columns:repeat(2,1fr)">
-      {vcard("meu-outro-lado.jpg", "Ateliê Meu Outro Lado — espaço da experiência", "R$ 359", "Cerâmica + vinho incluso", "Ateliê Meu Outro Lado", "Brooklin · vinho já incluso 🍷", ["Experiência completa de cerâmica", "<b>Vinho já incluso</b> no valor", "Turma de 8 a 10 pessoas"], "center 50%")}
-      {vcard("pinturatacavinho.jpg", "Pintura em taças conduzida pela Elarah", "Sob cotação", "Elarah na Saúde · personalizável", "Experiência Elarah", "Levada a um espaço na região da Saúde", ["Pintura em taças ou modelagem em argila", "<b>Personalizável</b> para o grupo", "Espaço na região a combinar"], "center 45%", hl=True, pricesmall=True)}
+{head_simple("Onde celebrar")}
+    <span class="eyebrow orange">◆ Onde celebrar</span>
+    <h2>Escolha onde <em>celebrar</em></h2>
+    <p class="lead">Três espaços próximos à região da Saúde, cada um com um jeito diferente de viver a experiência.</p>
+    <div class="vgrid" style="grid-template-columns:repeat(3,1fr)">
+      {vcard("em-casa-hero-1.jpg", "Casa Pretty — ambiente acolhedor e intimista", "Sob confirmação", "Bosque da Saúde · o mais perto", "Casa Pretty", "Acolhedor e intimista, pertinho de vocês.", ["Bosque da Saúde — o mais perto de vocês", "Ambiente intimista, ótimo para 9 pessoas", "Experiência + comidas e bebidas"], "center 50%", hl=True)}
+      {vcard("sowcafe.jpg", "Sow Café — café charmoso e acolhedor", "Sob confirmação", "Vila Mariana · perto da Saúde", "Sow Café", "Av. Conselheiro Rodrigues Alves, 256 · Vila Mariana.", ["Perto da Saúde, fácil de chegar", "Café charmoso para grupos pequenos", "Experiência + comidas e bebidas"], "center 50%")}
+      {vcard("capa-croche-cafe.jpg", "YUCAFÉ Earth Based — café de proposta leve", "Sob confirmação", "Vila Mariana", "YUCAFÉ Earth Based", "Café de proposta leve, para um aniversário intimista.", ["Fácil acesso a partir da Saúde", "Ambiente de café para grupo pequeno", "Experiência + comidas e bebidas"], "center 50%")}
     </div>
-    <p class="fineprint">Ateliê Meu Outro Lado (Brooklin): R$ 359 por pessoa, experiência e vinho inclusos. Experiência Elarah levada à região da Saúde: formato personalizável, valores <b>sob cotação</b>.</p>
-    {foot("Opções 3 & 4")}
+    <p class="fineprint">Condições de reserva e consumo <b>sob confirmação</b> para os três espaços, conforme disponibilidade em 24.10.</p>
+    {foot("Onde celebrar")}
   </section>'''
 
-# ============================ 5 · DEIXAR COMPLETO ============================
-completo = f'''
+# ============================ 5 · ESCOLHA A EXPERIÊNCIA ============================
+experiencias = f'''
   <section class="slide">
-{head_simple("Para completar")}
-    <span class="eyebrow orange">◆ Opcionais</span>
-    <h2>Pra deixar o aniversário <em>completo</em></h2>
-    <p class="lead">Some o que quiser a qualquer opção — tudo opcional e sob cotação. 🤍</p>
-    <div class="optgrid">
-      {optc("🍸", "Comidas &amp; bebidas", "Menu e drinks para o grupo.", "Sob cotação")}
-      {optc("🎂", "Bolo &amp; doces", "Bolo e mesa de doces.", "Sob cotação")}
-      {optc("🌸", "Flores", "Arranjos e decoração da mesa.", "Sob cotação")}
-      {optc("🎁", "Lembrancinhas", "Mimo personalizado pra cada convidada.", "R$ 99 · por pessoa")}
-      {optc("📸", "Foto profissional", "Registro da experiência, álbum digital.", "R$ 450 · valor fixo")}
-      {optc("✨", "Personalizações", "Detalhes com a cara de vocês.", "Sob cotação")}
+{head_simple("A experiência")}
+    <span class="eyebrow orange">◆ A experiência</span>
+    <h2>Escolha a <em>experiência</em></h2>
+    <p class="lead">Seis jeitos diferentes de celebrar, criar e levar uma lembrança desse dia.</p>
+    <div class="xpgrid">
+      {xp("01", "pintura-taca.jpg", "Pintura em taça personalizada", "Pintura em Taça", "Para criar &amp; brindar", "Cada uma personaliza sua própria taça e leva a criação como lembrança do encontro.", "R$ 229", "center 50%")}
+      {xp("02", "buque.jpg", "Arranjo floral autoral", "Arranjos Florais", "Para florescer juntas", "Flores, cores e composição: cada uma cria seu próprio arranjo autoral para levar para casa.", "R$ 279", "center 45%")}
+      {xp("03", "velaflor.jpg", "Vela flor e home spray", "Vela Flor &amp; Home Spray", "Para despertar os sentidos", "Uma experiência entre aromas, flores e criação, com peças feitas pelas próprias convidadas.", "R$ 269", "center 50%")}
+      {xp("04", "foldingbook.jpg", "Folding book autoral", "Crie seu Folding Book", "Para guardar histórias", "Cada convidada cria um livro-objeto autoral, feito à mão e cheio de personalidade.", "R$ 249", "center 50%")}
+      {xp("05", "charm-bolsa.jpg", "Berloque de bolsa personalizado", "Berloque de Bolsa", "Para levar um pouco desse dia", "Cada uma escolhe e combina charms para criar um acessório personalizado para a bolsa.", "R$ 259", "center 50%")}
+      {xp("06", "perfumaria-oficina.jpg", "Criação de perfume natural", "Criando seu Perfume Natural", "Para encontrar uma fragrância só sua", "Uma jornada pelos aromas para cada convidada criar sua combinação pessoal e levar para casa.", "R$ 259", "center 45%")}
     </div>
-    {foot("Para completar")}
+    {foot("A experiência")}
   </section>'''
 
-# ============================ 6 · INVESTIMENTO + PRÓXIMOS PASSOS ============================
-investimento = f'''
+# ============================ 6 · INVESTIMENTO & PRÓXIMOS PASSOS ============================
+proximos = f'''
   <section class="slide">
 {head_simple("Investimento & próximos passos")}
-    <span class="eyebrow orange">◆ Investimento</span>
-    <h2>É só escolher a <em>favorita</em></h2>
-    <p class="lead">Um comparativo rápido das quatro opções, pra decidir com facilidade.</p>
-    <table class="cmp">
-      <thead><tr><th>Opção</th><th>Região</th><th>Por pessoa</th><th>Total · 9 pessoas</th><th>Principais inclusões</th></tr></thead>
-      <tbody>
-        <tr><td><span class="op">Netas Ateliê</span></td><td class="rg">Vila Mariana</td><td><span class="pp">R$ 299</span></td><td class="tt">R$ 2.691</td><td class="inc">Cerâmica guiada + vocês levam o vinho</td></tr>
-        <tr><td><span class="op">Casa Pretty</span></td><td class="rg">Bosque da Saúde</td><td><span class="sc">Sob cotação</span></td><td class="sc">Sob cotação</td><td class="inc">Espaço próximo + experiência + comidas e bebidas</td></tr>
-        <tr><td><span class="op">Meu Outro Lado</span></td><td class="rg">Brooklin</td><td><span class="pp">R$ 359</span></td><td class="tt">R$ 3.231</td><td class="inc">Cerâmica + vinho já incluso</td></tr>
-        <tr><td><span class="op">Experiência Elarah</span></td><td class="rg">Região da Saúde</td><td><span class="sc">Sob cotação</span></td><td class="sc">Sob cotação</td><td class="inc">Pintura em taças ou cerâmica · personalizável</td></tr>
-      </tbody>
-    </table>
-    <div class="cta2">
-      <div class="q">Qual opção mais <em>combina com vocês?</em></div>
-      <div class="c">Nos conta a favorita e ajustamos os detalhes pra reservar a data.<br><b>Elarah · Experiências</b> · WhatsApp +55 (11) 91445-5930 · @elarah.oficial</div>
+    <span class="eyebrow orange">◆ Investimento &amp; próximos passos</span>
+    <h2>É só escolher a <em>combinação</em></h2>
+    <p class="lead">O investimento final é a <b>experiência escolhida</b> (valor por pessoa) somada ao <b>espaço</b> e aos <b>opcionais</b> que fizerem sentido.</p>
+    <div class="rule"></div>
+    <div class="grid3">
+      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham o espaço</h3><p>Casa Pretty, Sow Café ou YUCAFÉ — perto da Saúde.</p></div>
+      <div class="infocard"><div class="ico">2️⃣</div><h3>Escolham a experiência</h3><p>Uma das seis opções, com valor por pessoa já definido.</p></div>
+      <div class="infocard"><div class="ico">3️⃣</div><h3>A gente cota e reserva</h3><p>Fechamos espaço, comidas, bebidas e opcionais e seguramos a data.</p></div>
     </div>
-    <p class="fineprint">Valores por pessoa conforme documentado pela Elarah para cada experiência; opções “sob cotação” dependem de confirmação de fornecedor e formato. Opcionais (comidas, bolo, flores, lembrancinhas, foto, personalizações) somados à parte. Data 24.10 e disponibilidade a confirmar.</p>
+    <div class="cta2">
+      <div class="q">Qual combinação mais <em>combina com vocês?</em></div>
+      <div class="c">Nos conta a favorita — espaço + experiência — e ajustamos os detalhes pra reservar a data.<br><b>Elarah · Experiências</b> · WhatsApp +55 (11) 91445-5930 · @elarah.oficial</div>
+    </div>
+    <p class="fineprint">Valores por pessoa das experiências conforme informado. Espaços com condições de reserva e consumo <b>sob confirmação</b>. Ambientação, comidas, bebidas, flores, bolo e lembrancinhas personalizáveis conforme a opção e o orçamento. Data 24.10 sujeita à disponibilidade de agenda.</p>
     {foot("Investimento & próximos passos")}
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + curadoria + opcoes12 + opcoes34 + completo + investimento
+        + cover + curadoria + mesa_posta + onde + experiencias + proximos
         + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-gabriela-rossi-aniversario.html"
