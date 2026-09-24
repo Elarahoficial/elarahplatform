@@ -59,6 +59,34 @@ xcss = '''
   /* nota discreta / placeholder */
   .phnote{margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.5;border-left:2px solid var(--line);padding-left:14px}
   .phnote b{color:var(--navy-soft)}
+  /* slide de experiencia consolidado */
+  .exbig{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:18px;align-items:stretch}
+  .exphotos{display:flex;flex-direction:column;gap:12px}
+  .exmain{flex:1;border-radius:18px;overflow:hidden;position:relative;min-height:300px;border:1px solid var(--line)}
+  .exmain img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .exthumb{height:118px;border-radius:14px;overflow:hidden;position:relative;border:1px solid var(--line)}
+  .exthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .exthumb .cap{position:absolute;left:0;right:0;bottom:0;padding:18px 12px 8px;background:linear-gradient(to top,rgba(28,36,30,.88),transparent);color:#fff;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .exbody{display:flex;flex-direction:column;justify-content:center}
+  .extag{align-self:flex-start;background:var(--navy);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:6px 14px;border-radius:999px;margin-bottom:13px}
+  .exbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:27px;color:var(--navy);line-height:1.05}
+  .exbody .exc{font-size:13px;color:var(--muted);line-height:1.55;margin-top:11px}
+  .exincl{margin-top:18px;padding-top:15px;border-top:1px solid var(--line)}
+  .exincl .il{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-bottom:9px}
+  .exincl ul{list-style:none;display:flex;flex-direction:column;gap:7px}
+  .exincl li{position:relative;padding-left:18px;font-size:11.5px;color:var(--ink);line-height:1.4}
+  .exincl li::before{content:"\\2726";position:absolute;left:0;top:1px;color:var(--orange);font-size:10px}
+  /* investimento · 3 colunas */
+  .invt3{width:100%;border-collapse:collapse;margin-top:20px;border-radius:16px;overflow:hidden;box-shadow:0 16px 34px -24px rgba(0,0,0,.3)}
+  .invt3 th{background:var(--navy);color:#fff;text-align:right;padding:14px 20px;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700}
+  .invt3 th.l{text-align:left}
+  .invt3 td{padding:20px;border-bottom:1px solid var(--line);background:var(--card);vertical-align:middle;text-align:right}
+  .invt3 tr:last-child td{border-bottom:none}
+  .invt3 .nm{text-align:left;font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);line-height:1.1}
+  .invt3 .nm span{display:block;font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;margin-top:4px;font-weight:600}
+  .invt3 .ppl{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);white-space:nowrap}
+  .invt3 .val{font-family:'DM Serif Display',serif;font-size:20px;color:var(--orange-dark);white-space:nowrap}
+  .invt3 .ph{color:var(--muted);letter-spacing:.12em;font-family:'DM Serif Display',serif}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -101,6 +129,20 @@ def bfeat(tag, title, feats, src, alt, pos="center 50%"):
             f'<ul class="feat">{lis}</ul></div></div>')
 
 
+def exbig(tag, title, concept, itens, main_src, main_alt, thumb_src, thumb_alt, thumb_cap,
+          main_pos="center 50%", thumb_pos="center 50%"):
+    lis = "".join(f"<li>{i}</li>" for i in itens)
+    return (f'<div class="exbig">'
+            f'<div class="exphotos">'
+            f'<div class="exmain">{img(main_src, main_alt, main_pos)}</div>'
+            f'<div class="exthumb">{img(thumb_src, thumb_alt, thumb_pos)}<div class="cap">{thumb_cap}</div></div>'
+            f'</div>'
+            f'<div class="exbody"><span class="extag">{tag}</span><h3>{title}</h3>'
+            f'<p class="exc">{concept}</p>'
+            f'<div class="exincl"><div class="il">O que está contemplado</div><ul>{lis}</ul></div>'
+            f'</div></div>')
+
+
 def steps4(items):
     st = "".join(f'<div class="step"><div class="num">{i+1}</div><h3>{t}</h3><p>{d}</p></div>'
                  for i, (t, d) in enumerate(items))
@@ -120,7 +162,7 @@ def incl(src, alt, title, items, pos="center 50%", cap=""):
             f'<ul>{lis}</ul></div></div>')
 
 
-PROOF = "Experiências corporativas já realizadas para times como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)"
+PROOF = "Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)"
 
 # ============================ 1 · CAPA ============================
 cover = f'''
@@ -129,8 +171,8 @@ cover = f'''
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Duas experiências · um dia</span>
-        <h1>Dois momentos, <em>uma curadoria</em></h1>
-        <p class="lead">Duas experiências sensoriais, um só dia — pensadas para <b>descobrir</b>, <b>experimentar</b> e <b>compartilhar</b>. ✨</p>
+        <h1>Duas experiências. <em>Um mesmo dia.</em></h1>
+        <p class="lead">Dois momentos sensoriais no mesmo dia — para <b>descobrir</b>, <b>experimentar</b> e <b>compartilhar</b>. ✨</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip">🗓️ <b>02.10</b></span>
@@ -158,102 +200,40 @@ visao = f'''
     {foot("Visão geral do dia")}
   </section>'''
 
-# ============================ 3 · EXPERIÊNCIA 1 — SAIS ============================
-exp1 = f'''
+# ============================ 3 · EXPERIÊNCIA LACES — SAIS ============================
+expLACES = f'''
   <section class="slide">
-{head_simple("Experiência 1 · Sais de banho")}
-    <span class="eyebrow orange">◆ <b>11h</b> · LACES · <b>15 pessoas</b></span>
+{head_simple("Experiência LACES · Sais de banho")}
+    <span class="eyebrow orange">◆ <b>11h</b> · LACES · Iguatemi Campinas · <b>15 pessoas</b></span>
     <h2>Criação de <em>sais de banho</em></h2>
-    <p class="lead">Uma experiência sensorial em torno de <b>aromas</b>, <b>texturas</b> e criação, pensada para proporcionar um momento leve e personalizado ao grupo.</p>
-    {bfeat("11h · LACES · 15 pessoas", "Sais de banho",
-           ["Um momento sensorial de aromas e texturas",
-            "Pensada para o grupo experimentar com calma",
-            "Uma pausa leve, criativa e personalizada"],
-           "sais-grupo.jpg", "Grupo reunido criando os próprios sais de banho", "center 55%")}
-    {foot("Experiência 1 · Sais de banho")}
+    {exbig("11h · LACES · 15 pessoas", "Criação de Sais de Banho",
+           "Uma experiência sensorial em torno de aromas, texturas e criação — pensada para um momento leve e personalizado ao grupo.",
+           ["Condução por profissional",
+            "Materiais e insumos da experiência",
+            "Montagem, operação e produção do dia",
+            "Deslocamento"],
+           "sais-grupo.jpg", "Grupo criando os próprios sais de banho",
+           "laces-espaco.jpg", "Interior da loja LACES, com plantas e madeira", "LACES · Iguatemi Campinas",
+           "center 55%", "center 50%")}
+    {foot("Experiência LACES · Sais de banho")}
   </section>'''
 
-# ============================ 4 · COMO ACONTECE — SAIS ============================
-como1 = f'''
+# ============================ 4 · EXPERIÊNCIA PISELLI — CHÁS ============================
+expPiselli = f'''
   <section class="slide">
-{head_simple("Como acontece · Sais")}
-    <span class="eyebrow orange">◆ Como a experiência acontece</span>
-    <h2>Explorar, criar &amp; <em>levar</em></h2>
-    <p class="lead">Do primeiro aroma à composição pronta para levar, o grupo é conduzido por quatro momentos.</p>
-    {steps4([
-        ("Explorar", "O primeiro contato acontece pelo aroma, pela textura e pela descoberta dos elementos disponíveis."),
-        ("Escolher", "Cada convidada encontra as combinações que mais conversam com as suas preferências."),
-        ("Criar", "As escolhas ganham forma em uma composição única, feita à mão."),
-        ("Levar", "A criação é finalizada para seguir com cada participante para casa."),
-    ])}
-    <p class="phnote">A curadoria final de aromas e elementos é desenhada com cuidado para o grupo e para o dia.</p>
-    {foot("Como acontece · Sais")}
-  </section>'''
-
-# ============================ 5 · O QUE ESTÁ CONTEMPLADO — SAIS ============================
-cont1 = f'''
-  <section class="slide">
-{head_simple("O que está contemplado · Sais")}
-    <span class="eyebrow orange">◆ O que está contemplado</span>
-    <h2>Tudo pensado para a experiência <em>acontecer</em></h2>
-    <p class="lead">Cuidamos de cada detalhe — da chegada ao encontro — para o grupo viver o momento com fluidez.</p>
-    {incl("laces-espaco.jpg", "Interior da loja LACES, com plantas e madeira", "No cuidado da Elarah",
-          ["Curadoria e condução da experiência",
-           "Materiais e insumos da experiência",
-           "Montagem, operação e produção do dia",
-           "Deslocamento"],
-          "center 50%", cap="LACES · Iguatemi Campinas")}
-    <p class="phnote">Na LACES, montamos uma <b>ativação dentro da loja</b>, pensada para receber o grupo.</p>
-    {foot("O que está contemplado · Sais")}
-  </section>'''
-
-# ============================ 6 · EXPERIÊNCIA 2 — CHÁS ============================
-exp2 = f'''
-  <section class="slide">
-{head_simple("Experiência 2 · Chás & blends")}
-    <span class="eyebrow orange">◆ <b>17h</b> · Piselli · <b>10 pessoas</b></span>
+{head_simple("Experiência Piselli · Chás & blends")}
+    <span class="eyebrow orange">◆ <b>17h</b> · Piselli · Iguatemi Campinas · <b>10 pessoas</b></span>
     <h2>Chás, ervas &amp; <em>blends</em></h2>
-    <p class="lead">Uma experiência em torno do universo dos <b>chás</b>, <b>ervas</b> e <b>blends</b>, pensada para estimular descoberta, troca e novos sabores.</p>
-    {bfeat("17h · Piselli · 10 pessoas", "Chás, ervas &amp; blends",
-           ["Uma imersão no universo dos chás e ervas",
-            "Aromas, combinações e novos sabores",
-            "Uma pausa para descobrir e trocar, em torno da mesa"],
-           "cha-blend-funil.jpg", "Blend de ervas e xícaras servidas sobre a mesa", "center 45%")}
-    {foot("Experiência 2 · Chás & blends")}
-  </section>'''
-
-# ============================ 7 · COMO ACONTECE — CHÁS ============================
-como2 = f'''
-  <section class="slide">
-{head_simple("Como acontece · Chás")}
-    <span class="eyebrow orange">◆ Como a experiência acontece</span>
-    <h2>Descobrir, criar &amp; <em>degustar</em></h2>
-    <p class="lead">Dos primeiros aromas à combinação servida, o grupo é conduzido por quatro momentos — sempre em torno da mesa.</p>
-    {steps4([
-        ("Descobrir", "Conhecer diferentes ervas, aromas e notas, uma a uma."),
-        ("Explorar", "Experimentar combinações e perceber como cada ingrediente transforma o resultado."),
-        ("Criar", "Construir uma composição própria, conforme o formato final escolhido."),
-        ("Degustar", "Finalizar em torno da mesa, com preparo, prova e troca."),
-    ])}
-    <p class="phnote">A etapa de criação de blend é desenhada conforme o formato final da experiência.</p>
-    {foot("Como acontece · Chás")}
-  </section>'''
-
-# ============================ 8 · O QUE ESTÁ CONTEMPLADO — CHÁS ============================
-cont2 = f'''
-  <section class="slide">
-{head_simple("O que está contemplado · Chás")}
-    <span class="eyebrow orange">◆ O que está contemplado</span>
-    <h2>Da curadoria <em>à mesa</em></h2>
-    <p class="lead">Cuidamos de cada detalhe para o grupo aproveitar o encontro com tranquilidade.</p>
-    {incl("piselli-mesa.jpg", "Mesa redonda de mármore posta no Piselli, com bancos e plantas", "No cuidado da Elarah",
-          ["Curadoria e condução da experiência",
-           "Ervas e insumos da experiência",
-           "Operação e produção do dia",
-           "Deslocamento"],
-          "center 50%", cap="Piselli · Iguatemi Campinas")}
-    <p class="phnote">No <b>Piselli</b>, o encontro acontece em torno da mesa — a estrutura do restaurante já acomoda o grupo.</p>
-    {foot("O que está contemplado · Chás")}
+    {exbig("17h · Piselli · 10 pessoas", "Chás, ervas &amp; blends",
+           "Uma experiência em torno do universo dos chás, ervas e blends — clima de encontro, mesa e novos sabores.",
+           ["Condução por profissional",
+            "Ervas e insumos da experiência",
+            "Operação e produção do dia",
+            "Deslocamento"],
+           "cha-blend-funil.jpg", "Blend de ervas e xícaras servidas sobre a mesa",
+           "piselli-mesa.jpg", "Mesa redonda de mármore posta no Piselli", "Piselli · Iguatemi Campinas",
+           "center 45%", "center 50%")}
+    {foot("Experiência Piselli · Chás & blends")}
   </section>'''
 
 # ============================ 9 · INVESTIMENTO ============================
@@ -263,12 +243,14 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>As duas <em>experiências</em></h2>
-    <p class="lead">Cada experiência com o seu valor, e o total do dia.</p>
-    <table class="invt">
+    <p class="lead">Cada experiência com participantes, valor por pessoa e total.</p>
+    <table class="invt3">
+      <thead>
+        <tr><th class="l">Experiência</th><th>Participantes</th><th>Preço por pessoa</th><th>Preço total</th></tr>
+      </thead>
       <tbody>
-        <tr><td class="nm">Sais de Banho<span>11h · LACES · 15 pessoas</span></td><td class="vl">{PH}</td></tr>
-        <tr><td class="nm">Chás &amp; Blends<span>17h · Piselli · 10 pessoas</span></td><td class="vl">{PH}</td></tr>
-        <tr class="tot"><td class="nm">Investimento total<span>as duas experiências · 02.10</span></td><td class="vl">{PH}</td></tr>
+        <tr><td class="nm">Sais de Banho<span>11h · LACES</span></td><td class="ppl">15 pessoas</td><td class="val">{PH}</td><td class="val">{PH}</td></tr>
+        <tr><td class="nm">Chás &amp; Blends<span>17h · Piselli</span></td><td class="ppl">10 pessoas</td><td class="val">{PH}</td><td class="val">{PH}</td></tr>
       </tbody>
     </table>
     <p class="phnote">Investimentos finais apresentados após a definição do formato escolhido.</p>
@@ -305,7 +287,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + visao + exp1 + cont1 + exp2 + cont2 + investimento + proximos
+        + cover + visao + expLACES + expPiselli + investimento + proximos
         + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-aeventotheca-iguatemi.html"

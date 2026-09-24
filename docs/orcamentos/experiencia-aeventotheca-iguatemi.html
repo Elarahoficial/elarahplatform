@@ -225,6 +225,34 @@
   /* nota discreta / placeholder */
   .phnote{margin-top:14px;font-size:11.5px;color:var(--muted);line-height:1.5;border-left:2px solid var(--line);padding-left:14px}
   .phnote b{color:var(--navy-soft)}
+  /* slide de experiencia consolidado */
+  .exbig{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:18px;align-items:stretch}
+  .exphotos{display:flex;flex-direction:column;gap:12px}
+  .exmain{flex:1;border-radius:18px;overflow:hidden;position:relative;min-height:300px;border:1px solid var(--line)}
+  .exmain img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .exthumb{height:118px;border-radius:14px;overflow:hidden;position:relative;border:1px solid var(--line)}
+  .exthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .exthumb .cap{position:absolute;left:0;right:0;bottom:0;padding:18px 12px 8px;background:linear-gradient(to top,rgba(28,36,30,.88),transparent);color:#fff;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+  .exbody{display:flex;flex-direction:column;justify-content:center}
+  .extag{align-self:flex-start;background:var(--navy);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:6px 14px;border-radius:999px;margin-bottom:13px}
+  .exbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:27px;color:var(--navy);line-height:1.05}
+  .exbody .exc{font-size:13px;color:var(--muted);line-height:1.55;margin-top:11px}
+  .exincl{margin-top:18px;padding-top:15px;border-top:1px solid var(--line)}
+  .exincl .il{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-bottom:9px}
+  .exincl ul{list-style:none;display:flex;flex-direction:column;gap:7px}
+  .exincl li{position:relative;padding-left:18px;font-size:11.5px;color:var(--ink);line-height:1.4}
+  .exincl li::before{content:"\2726";position:absolute;left:0;top:1px;color:var(--orange);font-size:10px}
+  /* investimento · 3 colunas */
+  .invt3{width:100%;border-collapse:collapse;margin-top:20px;border-radius:16px;overflow:hidden;box-shadow:0 16px 34px -24px rgba(0,0,0,.3)}
+  .invt3 th{background:var(--navy);color:#fff;text-align:right;padding:14px 20px;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700}
+  .invt3 th.l{text-align:left}
+  .invt3 td{padding:20px;border-bottom:1px solid var(--line);background:var(--card);vertical-align:middle;text-align:right}
+  .invt3 tr:last-child td{border-bottom:none}
+  .invt3 .nm{text-align:left;font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);line-height:1.1}
+  .invt3 .nm span{display:block;font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.05em;color:var(--muted);text-transform:uppercase;margin-top:4px;font-weight:600}
+  .invt3 .ppl{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);white-space:nowrap}
+  .invt3 .val{font-family:'DM Serif Display',serif;font-size:20px;color:var(--orange-dark);white-space:nowrap}
+  .invt3 .ph{color:var(--muted);letter-spacing:.12em;font-family:'DM Serif Display',serif}
 </style>
 <style>
   :root{
@@ -480,8 +508,8 @@
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Duas experiências · um dia</span>
-        <h1>Dois momentos, <em>uma curadoria</em></h1>
-        <p class="lead">Duas experiências sensoriais, um só dia — pensadas para <b>descobrir</b>, <b>experimentar</b> e <b>compartilhar</b>. ✨</p>
+        <h1>Duas experiências. <em>Um mesmo dia.</em></h1>
+        <p class="lead">Dois momentos sensoriais no mesmo dia — para <b>descobrir</b>, <b>experimentar</b> e <b>compartilhar</b>. ✨</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip">🗓️ <b>02.10</b></span>
@@ -491,7 +519,7 @@
       </div>
       <div class="cover-photo"><img src="assets/aev-capa-duas.jpg" alt="Duas mulheres sorrindo e sentindo aromas numa experiência sensorial" style="object-position:center 30%"></div>
     </div>
-    <div class="proof proof--wide"><span class="star">★</span> Experiências corporativas já realizadas para times como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
+    <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b> e <b>Hidratei</b> · visto no <b>Mais Você</b> (Globo)</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Proposta · Aeventotheca</span></div>
   </section>
   <section class="slide">
@@ -511,48 +539,22 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Experiência 1 · Sais de banho</span></div>
+      <div class="head-right"><span class="kicker">Experiência LACES · Sais de banho</span></div>
     </div>
-    <span class="eyebrow orange">◆ <b>11h</b> · LACES · <b>15 pessoas</b></span>
+    <span class="eyebrow orange">◆ <b>11h</b> · LACES · Iguatemi Campinas · <b>15 pessoas</b></span>
     <h2>Criação de <em>sais de banho</em></h2>
-    <p class="lead">Uma experiência sensorial em torno de <b>aromas</b>, <b>texturas</b> e criação, pensada para proporcionar um momento leve e personalizado ao grupo.</p>
-    <div class="bfeat"><div class="bphoto"><img src="assets/sais-grupo.jpg" alt="Grupo reunido criando os próprios sais de banho" style="object-position:center 55%"></div><div class="bbody"><span class="btag">11h · LACES · 15 pessoas</span><h3>Sais de banho</h3><ul class="feat"><li><span class="st">✦</span>Um momento sensorial de aromas e texturas</li><li><span class="st">✦</span>Pensada para o grupo experimentar com calma</li><li><span class="st">✦</span>Uma pausa leve, criativa e personalizada</li></ul></div></div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 1 · Sais de banho</span></div>
+    <div class="exbig"><div class="exphotos"><div class="exmain"><img src="assets/sais-grupo.jpg" alt="Grupo criando os próprios sais de banho" style="object-position:center 55%"></div><div class="exthumb"><img src="assets/laces-espaco.jpg" alt="Interior da loja LACES, com plantas e madeira" style="object-position:center 50%"><div class="cap">LACES · Iguatemi Campinas</div></div></div><div class="exbody"><span class="extag">11h · LACES · 15 pessoas</span><h3>Criação de Sais de Banho</h3><p class="exc">Uma experiência sensorial em torno de aromas, texturas e criação — pensada para um momento leve e personalizado ao grupo.</p><div class="exincl"><div class="il">O que está contemplado</div><ul><li>Condução por profissional</li><li>Materiais e insumos da experiência</li><li>Montagem, operação e produção do dia</li><li>Deslocamento</li></ul></div></div></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência LACES · Sais de banho</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O que está contemplado · Sais</span></div>
+      <div class="head-right"><span class="kicker">Experiência Piselli · Chás & blends</span></div>
     </div>
-    <span class="eyebrow orange">◆ O que está contemplado</span>
-    <h2>Tudo pensado para a experiência <em>acontecer</em></h2>
-    <p class="lead">Cuidamos de cada detalhe — da chegada ao encontro — para o grupo viver o momento com fluidez.</p>
-    <div class="invbox"><div style="flex:0 0 40%;min-width:250px;border-radius:18px;overflow:hidden;position:relative;min-height:280px;border:1px solid var(--line)"><img src="assets/laces-espaco.jpg" alt="Interior da loja LACES, com plantas e madeira" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 50%"><div style="position:absolute;left:0;right:0;bottom:0;padding:22px 14px 11px;background:linear-gradient(to top,rgba(28,36,30,.85),transparent);color:#fff;font-size:10.5px;letter-spacing:.06em;font-weight:600">LACES · Iguatemi Campinas</div></div><div class="incl" style="flex:1;min-width:290px;display:flex;flex-direction:column;justify-content:center"><span class="vt" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)">No cuidado da Elarah</span><ul><li><span>✦</span>Curadoria e condução da experiência</li><li><span>✦</span>Materiais e insumos da experiência</li><li><span>✦</span>Montagem, operação e produção do dia</li><li><span>✦</span>Deslocamento</li></ul></div></div>
-    <p class="phnote">Na LACES, montamos uma <b>ativação dentro da loja</b>, pensada para receber o grupo.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>O que está contemplado · Sais</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Experiência 2 · Chás & blends</span></div>
-    </div>
-    <span class="eyebrow orange">◆ <b>17h</b> · Piselli · <b>10 pessoas</b></span>
+    <span class="eyebrow orange">◆ <b>17h</b> · Piselli · Iguatemi Campinas · <b>10 pessoas</b></span>
     <h2>Chás, ervas &amp; <em>blends</em></h2>
-    <p class="lead">Uma experiência em torno do universo dos <b>chás</b>, <b>ervas</b> e <b>blends</b>, pensada para estimular descoberta, troca e novos sabores.</p>
-    <div class="bfeat"><div class="bphoto"><img src="assets/cha-blend-funil.jpg" alt="Blend de ervas e xícaras servidas sobre a mesa" style="object-position:center 45%"></div><div class="bbody"><span class="btag">17h · Piselli · 10 pessoas</span><h3>Chás, ervas &amp; blends</h3><ul class="feat"><li><span class="st">✦</span>Uma imersão no universo dos chás e ervas</li><li><span class="st">✦</span>Aromas, combinações e novos sabores</li><li><span class="st">✦</span>Uma pausa para descobrir e trocar, em torno da mesa</li></ul></div></div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência 2 · Chás & blends</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O que está contemplado · Chás</span></div>
-    </div>
-    <span class="eyebrow orange">◆ O que está contemplado</span>
-    <h2>Da curadoria <em>à mesa</em></h2>
-    <p class="lead">Cuidamos de cada detalhe para o grupo aproveitar o encontro com tranquilidade.</p>
-    <div class="invbox"><div style="flex:0 0 40%;min-width:250px;border-radius:18px;overflow:hidden;position:relative;min-height:280px;border:1px solid var(--line)"><img src="assets/piselli-mesa.jpg" alt="Mesa redonda de mármore posta no Piselli, com bancos e plantas" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 50%"><div style="position:absolute;left:0;right:0;bottom:0;padding:22px 14px 11px;background:linear-gradient(to top,rgba(28,36,30,.85),transparent);color:#fff;font-size:10.5px;letter-spacing:.06em;font-weight:600">Piselli · Iguatemi Campinas</div></div><div class="incl" style="flex:1;min-width:290px;display:flex;flex-direction:column;justify-content:center"><span class="vt" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)">No cuidado da Elarah</span><ul><li><span>✦</span>Curadoria e condução da experiência</li><li><span>✦</span>Ervas e insumos da experiência</li><li><span>✦</span>Operação e produção do dia</li><li><span>✦</span>Deslocamento</li></ul></div></div>
-    <p class="phnote">No <b>Piselli</b>, o encontro acontece em torno da mesa — a estrutura do restaurante já acomoda o grupo.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>O que está contemplado · Chás</span></div>
+    <div class="exbig"><div class="exphotos"><div class="exmain"><img src="assets/cha-blend-funil.jpg" alt="Blend de ervas e xícaras servidas sobre a mesa" style="object-position:center 45%"></div><div class="exthumb"><img src="assets/piselli-mesa.jpg" alt="Mesa redonda de mármore posta no Piselli" style="object-position:center 50%"><div class="cap">Piselli · Iguatemi Campinas</div></div></div><div class="exbody"><span class="extag">17h · Piselli · 10 pessoas</span><h3>Chás, ervas &amp; blends</h3><p class="exc">Uma experiência em torno do universo dos chás, ervas e blends — clima de encontro, mesa e novos sabores.</p><div class="exincl"><div class="il">O que está contemplado</div><ul><li>Condução por profissional</li><li>Ervas e insumos da experiência</li><li>Operação e produção do dia</li><li>Deslocamento</li></ul></div></div></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiência Piselli · Chás & blends</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -561,12 +563,14 @@
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>As duas <em>experiências</em></h2>
-    <p class="lead">Cada experiência com o seu valor, e o total do dia.</p>
-    <table class="invt">
+    <p class="lead">Cada experiência com participantes, valor por pessoa e total.</p>
+    <table class="invt3">
+      <thead>
+        <tr><th class="l">Experiência</th><th>Participantes</th><th>Preço por pessoa</th><th>Preço total</th></tr>
+      </thead>
       <tbody>
-        <tr><td class="nm">Sais de Banho<span>11h · LACES · 15 pessoas</span></td><td class="vl"><span class="ph">R$ ______</span></td></tr>
-        <tr><td class="nm">Chás &amp; Blends<span>17h · Piselli · 10 pessoas</span></td><td class="vl"><span class="ph">R$ ______</span></td></tr>
-        <tr class="tot"><td class="nm">Investimento total<span>as duas experiências · 02.10</span></td><td class="vl"><span class="ph">R$ ______</span></td></tr>
+        <tr><td class="nm">Sais de Banho<span>11h · LACES</span></td><td class="ppl">15 pessoas</td><td class="val"><span class="ph">R$ ______</span></td><td class="val"><span class="ph">R$ ______</span></td></tr>
+        <tr><td class="nm">Chás &amp; Blends<span>17h · Piselli</span></td><td class="ppl">10 pessoas</td><td class="val"><span class="ph">R$ ______</span></td><td class="val"><span class="ph">R$ ______</span></td></tr>
       </tbody>
     </table>
     <p class="phnote">Investimentos finais apresentados após a definição do formato escolhido.</p>
