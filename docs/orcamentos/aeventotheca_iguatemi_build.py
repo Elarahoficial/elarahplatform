@@ -136,9 +136,10 @@ def head_simple(kicker):
 
 
 def daycard(time, venue, name, sub, ppl, src, alt, pos="center 50%"):
+    subhtml = f'<p class="dsub">{sub}</p>' if sub else ''
     return (f'<div class="daycard"><div class="dph"><span class="dtime">{time}</span>{img(src, alt, pos)}</div>'
             f'<div class="db"><span class="dvenue">{venue}</span><h3>{name}</h3>'
-            f'<p class="dsub">{sub}</p><div class="dppl">{ppl}</div></div></div>')
+            f'{subhtml}<div class="dppl">{ppl}</div></div></div>')
 
 
 def bfeat(tag, title, feats, src, alt, pos="center 50%"):
@@ -189,15 +190,8 @@ cover = f'''
 {head_block("Proposta para Aeventotheca", "Iguatemi", "Campinas", "02.10")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Duas experiências · um dia</span>
-        <h1>Duas experiências. <em>Um mesmo dia.</em></h1>
-        <p class="lead">Dois momentos sensoriais no mesmo dia — para <b>descobrir</b>, <b>experimentar</b> e <b>compartilhar</b>. ✨</p>
-        <div class="rule"></div>
-        <div class="chips">
-          <span class="chip">🗓️ <b>02.10</b></span>
-          <span class="chip">📍 Iguatemi Campinas</span>
-          <span class="chip"><b>Duas</b> experiências</span>
-        </div>
+        <span class="eyebrow">✦ Experiências sensoriais</span>
+        <h1>Um dia de pausa, criação <em>e descoberta.</em></h1>
       </div>
       <div class="cover-photo">{img("aev-capa-duas.jpg", "Duas mulheres sorrindo e sentindo aromas numa experiência sensorial", "center 30%")}</div>
     </div>
@@ -208,15 +202,14 @@ cover = f'''
 # ============================ 2 · VISÃO GERAL DO DIA ============================
 visao = f'''
   <section class="slide">
-{head_simple("Visão geral do dia")}
-    <span class="eyebrow orange">◆ 02.10 · Iguatemi Campinas</span>
-    <h2>O dia em <em>dois momentos</em></h2>
-    <p class="lead">Dois momentos para <b>sair do automático</b>, <b>descobrir</b> algo novo e <b>compartilhar</b> uma boa experiência.</p>
+{head_simple("Programação")}
+    <span class="eyebrow orange">◆ Iguatemi Campinas</span>
+    <h2>Programação <em>· 02.10</em></h2>
     <div class="daygrid">
-      {daycard("11h", "LACES · Iguatemi Campinas", "Sais para escalda-pés", "Oficina de sais para escalda-pés da primavera.", "<b>15 pessoas</b> · 1h30", "sais-composicao.jpg", "Sais, ervas e óleos para a composição do escalda-pés", "center 50%")}
-      {daycard("17h", "Piselli · Iguatemi Campinas", "Chás, ervas &amp; blends", "Oficina de chás, ervas e criação de blends.", "<b>10 pessoas</b>", "cha-ervas-selecao.jpg", "Ervas soltas em potes para a criação de blends", "center 45%")}
+      {daycard("11h", "LACES", "Sais para escalda-pés", "", "<b>15 pessoas</b> · 1h30", "sais-composicao.jpg", "Sais, ervas e óleos para a composição do escalda-pés", "center 50%")}
+      {daycard("17h", "Piselli", "Chás, ervas &amp; blends", "", "<b>10 pessoas</b>", "cha-ervas-selecao.jpg", "Ervas soltas em potes para a criação de blends", "center 45%")}
     </div>
-    {foot("Visão geral do dia")}
+    {foot("Programação")}
   </section>'''
 
 # ============================ 3 · EXPERIÊNCIA LACES — SAIS ESCALDA-PÉS ============================
@@ -295,8 +288,8 @@ investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>As duas <em>experiências</em></h2>
-    <p class="lead">Cada experiência com valor por pessoa e investimento total.</p>
+    <h2>Experiências <em>completas</em></h2>
+    <p class="lead">Com condução, materiais, personalização, preparação e logística inclusos.</p>
     <table class="invt3">
       <thead>
         <tr><th class="l">Experiência</th><th>Valor por pessoa</th><th>Investimento total</th></tr>
@@ -307,10 +300,9 @@ investimento = f'''
       </tbody>
     </table>
     <div class="invtotal">
-      <span class="lbl">Investimento total · duas experiências</span>
+      <span class="lbl">Investimento total</span>
       <span class="v">R$ 8.858</span>
     </div>
-    <p class="phnote">Valores contemplam materiais, condução, preparação e logística da experiência.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -320,16 +312,15 @@ proximos = f'''
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>Como <em>seguimos</em></h2>
-    <p class="lead">Um caminho simples até a produção — cuidamos de cada etapa com vocês.</p>
     {steps4([
         ("Aprovação", "Aprovada a proposta, seguimos em frente."),
         ("Alinhamento", "Alinhamos os detalhes com a profissional."),
-        ("Ajustes finais", "Fechamos cada detalhe das duas experiências."),
-        ("Produção", "Cuidamos da produção dos dois momentos."),
+        ("Ajustes finais", "Fechamos os últimos detalhes com a profissional."),
+        ("Produção", "Cuidamos de toda a produção."),
     ])}
     <div class="cta">
       <h2>Má, <em>seguimos juntas?</em> ✦</h2>
-      <p>Com a proposta aprovada, alinhamos os últimos detalhes com a profissional e seguimos com a produção dos dois momentos.</p>
+      <p>Com a proposta aprovada, alinhamos os últimos detalhes com a profissional e seguimos para a produção.</p>
       <div class="cta-actions">
         <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Sobre%20a%20proposta%20das%20experi%C3%AAncias%20no%20Iguatemi%20Campinas." target="_blank" rel="noopener">💬 Falar no WhatsApp</a>
         <div class="contact-links">
