@@ -35,7 +35,11 @@ xcss = '''
   .daycard .db{padding:20px 24px 24px;flex:1;display:flex;flex-direction:column}
   .daycard .dvenue{font-size:10px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
   .daycard h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:23px;color:var(--navy);line-height:1.06;margin:5px 0 0}
+  .daycard .dsub{font-size:12.5px;color:var(--navy-soft);line-height:1.45;margin-top:9px;font-style:italic}
   .daycard .dppl{font-size:11.5px;letter-spacing:.03em;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;margin-top:14px}
+  /* legenda de espaço (contexto do local) */
+  .vcap{margin-top:12px;font-size:11px;letter-spacing:.02em;color:var(--muted);line-height:1.5}
+  .vcap b{color:var(--orange-dark);letter-spacing:.06em;text-transform:uppercase;font-size:10px}
   /* 4 etapas */
   .steps.s4{grid-template-columns:repeat(4,1fr);gap:14px}
   .steps.s4 .step{padding:20px 18px}
@@ -84,10 +88,10 @@ def head_simple(kicker):
     </div>'''
 
 
-def daycard(time, venue, name, ppl, src, alt, pos="center 50%"):
+def daycard(time, venue, name, sub, ppl, src, alt, pos="center 50%"):
     return (f'<div class="daycard"><div class="dph"><span class="dtime">{time}</span>{img(src, alt, pos)}</div>'
             f'<div class="db"><span class="dvenue">{venue}</span><h3>{name}</h3>'
-            f'<div class="dppl">{ppl}</div></div></div>')
+            f'<p class="dsub">{sub}</p><div class="dppl">{ppl}</div></div></div>')
 
 
 def bfeat(tag, title, feats, src, alt, pos="center 50%"):
@@ -123,7 +127,7 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Duas experiências · um dia</span>
         <h1>Dois momentos, <em>uma curadoria</em></h1>
-        <p class="lead">Preparamos dois encontros sensoriais e autorais para o mesmo dia — cada convidado cria e leva a própria composição. Cuidamos de cada detalhe; vocês recebem o grupo. ✨</p>
+        <p class="lead">Duas formas de criar presença. Entre aromas, texturas, ervas e sabores, desenhamos experiências que transformam a pausa em descoberta — e deixam algo para levar. ✨</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip">🗓️ <b>02.10</b></span>
@@ -131,7 +135,7 @@ cover = f'''
           <span class="chip"><b>Duas</b> experiências</span>
         </div>
       </div>
-      <div class="cover-photo">{img("perfumaria-oficina.jpg", "Mesa sensorial de criação, com aromas e elementos botânicos", "center 50%")}</div>
+      <div class="cover-photo">{img("florseca.jpg", "Ervas e flores secas dispostas com cuidado editorial", "center 50%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Proposta · Aeventotheca")}
@@ -143,10 +147,10 @@ visao = f'''
 {head_simple("Visão geral do dia")}
     <span class="eyebrow orange">◆ 02.10 · Iguatemi Campinas</span>
     <h2>O dia em <em>dois momentos</em></h2>
-    <p class="lead">Duas experiências sensoriais no mesmo dia, cada uma no seu espaço e com o seu grupo.</p>
+    <p class="lead">Um dia que começa com as mãos na criação e termina em torno da mesa.</p>
     <div class="daygrid">
-      {daycard("11h", "LACES", "Criação de Sais de Banho", "12–15 pessoas", "saboneteroxo.jpg", "Sais e elementos botânicos para criação", "center 50%")}
-      {daycard("17h", "Piselli", "Chás, ervas &amp; blends", "10 pessoas", "cerimoniadocha2.jpg", "Preparo sensorial de chás e blends", "center 50%")}
+      {daycard("11h", "LACES · Iguatemi Campinas", "Criação de Sais de Banho", "De manhã, criar com as mãos.", "12–15 pessoas", "sais-grupo.jpg", "Grupo criando os próprios sais de banho, com sais e ervas", "center 60%")}
+      {daycard("17h", "Piselli · Iguatemi Campinas", "Chás, ervas &amp; blends", "No fim da tarde, descobrir aromas e sabores.", "10 pessoas", "cha-blend-funil.jpg", "Mãos compondo um blend de ervas em torno da mesa", "center 45%")}
     </div>
     {foot("Visão geral do dia")}
   </section>'''
@@ -157,12 +161,13 @@ exp1 = f'''
 {head_simple("Experiência 1 · Sais de banho")}
     <span class="eyebrow orange">◆ 11h · LACES · 12–15 pessoas</span>
     <h2>Criação de <em>sais de banho</em></h2>
-    <p class="lead">Uma experiência sensorial e mão na massa: cada participante compõe a própria mistura e leva o produto ao final.</p>
-    {bfeat("Experiência sensorial", "Sais de banho autorais",
-           ["Aromas e elementos botânicos para explorar e sentir",
-            "Cada convidado cria a sua própria composição",
-            "Todos levam o produto pronto ao final"],
-           "saboneteroxo.jpg", "Sais e composições botânicas dispostos na mesa", "center 50%")}
+    <p class="lead">Entre sais, ervas, aromas e texturas, cada convidada constrói uma composição própria — escolhida, misturada e finalizada por ela. Um pequeno ritual de criação que continua em casa.</p>
+    {bfeat("11h · LACES", "Sais de banho autorais",
+           ["O aroma e a textura guiam cada escolha",
+            "Uma composição única, misturada à mão",
+            "O produto final segue para casa com cada uma"],
+           "sais-composicao.jpg", "Mãos compondo sais de banho com ervas e flores secas", "center 50%")}
+    <p class="vcap"><b>LACES · Iguatemi Campinas</b> &nbsp;·&nbsp; uma ativação criativa montada dentro da loja, só para o grupo.</p>
     {foot("Experiência 1 · Sais de banho")}
   </section>'''
 
@@ -172,14 +177,14 @@ como1 = f'''
 {head_simple("Como acontece · Sais")}
     <span class="eyebrow orange">◆ Como a experiência acontece</span>
     <h2>Explorar, criar &amp; <em>levar</em></h2>
-    <p class="lead">Conduzimos o grupo por quatro etapas — do primeiro contato com os aromas até a composição pronta pra levar.</p>
+    <p class="lead">Do primeiro aroma à composição pronta para levar, o grupo é conduzido por quatro momentos.</p>
     {steps4([
-        ("Explorar", "Apresentamos aromas e elementos botânicos para o grupo sentir e reconhecer."),
-        ("Escolher", "Cada convidado seleciona as notas e texturas que mais têm a ver com ele."),
-        ("Criar", "Mãos na massa: a composição ganha forma, textura e aroma próprios."),
-        ("Finalizar", "Embalamos o produto para cada um levar a sua criação."),
+        ("Explorar", "O primeiro contato acontece pelo aroma, pela textura e pela descoberta dos elementos disponíveis."),
+        ("Escolher", "Cada convidada encontra as combinações que mais conversam com as suas preferências."),
+        ("Criar", "As escolhas ganham forma em uma composição única, feita à mão."),
+        ("Levar", "A criação é finalizada para seguir com cada participante para casa."),
     ])}
-    <p class="phnote">A curadoria final de aromas e elementos botânicos é definida junto ao fornecedor. <b>Formato e insumos a confirmar.</b></p>
+    <p class="phnote">A curadoria final de aromas e elementos é desenhada com cuidado para o grupo e para o dia.</p>
     {foot("Como acontece · Sais")}
   </section>'''
 
@@ -188,16 +193,16 @@ cont1 = f'''
   <section class="slide">
 {head_simple("O que está contemplado · Sais")}
     <span class="eyebrow orange">◆ O que está contemplado</span>
-    <h2>Tudo pronto para <em>criar</em></h2>
-    <p class="lead">Cuidamos da experiência de ponta a ponta, para o grupo só chegar e criar.</p>
-    {incl("perfumaria-oficina.jpg", "Mesa montada com insumos e materiais da experiência", "Incluso na experiência",
-          ["Condução por profissional",
+    <h2>Cuidamos do cenário. <em>Elas cuidam da criação.</em></h2>
+    <p class="lead">Desenhamos a experiência para que cada detalhe — da chegada ao produto final — aconteça com fluidez.</p>
+    {incl("sais-grupo.jpg", "Grupo reunido criando os próprios sais de banho", "No cuidado da Elarah",
+          ["Curadoria e condução da experiência",
            "Materiais e insumos da criação",
            "Embalagem do produto final",
-           "Montagem e desmontagem",
-           "Deslocamento e estrutura operacional"],
-          "center 50%")}
-    <p class="phnote">A LACES não dispõe de mobiliário para a dinâmica — podemos prever <b>estrutura/mobiliário complementar</b>, com os itens a confirmar conforme a necessidade do espaço.</p>
+           "Montagem, desmontagem e operação",
+           "Deslocamento e produção do dia"],
+          "center 55%")}
+    <p class="phnote">Na LACES, montamos uma <b>ativação dentro da loja</b> — e podemos prever a estrutura complementar necessária para a dinâmica.</p>
     {foot("O que está contemplado · Sais")}
   </section>'''
 
@@ -207,12 +212,13 @@ exp2 = f'''
 {head_simple("Experiência 2 · Chás & blends")}
     <span class="eyebrow orange">◆ 17h · Piselli · 10 pessoas</span>
     <h2>Chás, ervas &amp; <em>blends</em></h2>
-    <p class="lead">Uma imersão sensorial em aromas e combinações — com descoberta, preparo e degustação.</p>
-    {bfeat("Experiência sensorial", "Uma imersão em chás &amp; blends",
-           ["Descoberta de aromas, ervas e combinações",
-            "Preparo e degustação conduzidos",
-            "Uma etapa de criação de blend autoral"],
-           "cerimoniadocha2.jpg", "Preparo sensorial de chá, com mãos em cena", "center 50%")}
+    <p class="lead">Folhas, aromas e diferentes combinações entram em cena para uma pausa guiada pela curiosidade. O grupo explora ingredientes, descobre afinidades e transforma a experiência em sabor.</p>
+    {bfeat("17h · Piselli", "Uma mesa de aromas &amp; sabores",
+           ["Ervas e combinações para descobrir e sentir",
+            "Preparo e degustação em torno da mesa",
+            "Uma composição própria para provar e levar"],
+           "cha-blend-funil.jpg", "Mãos compondo um blend de ervas, com xícaras servidas", "center 45%")}
+    <p class="vcap"><b>Piselli · Iguatemi Campinas</b> &nbsp;·&nbsp; um encontro em torno da mesa, no clima acolhedor do restaurante.</p>
     {foot("Experiência 2 · Chás & blends")}
   </section>'''
 
@@ -222,14 +228,14 @@ como2 = f'''
 {head_simple("Como acontece · Chás")}
     <span class="eyebrow orange">◆ Como a experiência acontece</span>
     <h2>Descobrir, criar &amp; <em>degustar</em></h2>
-    <p class="lead">Conduzimos o grupo por quatro etapas — dos primeiros aromas à combinação preparada e degustada.</p>
+    <p class="lead">Dos primeiros aromas à combinação servida, o grupo é conduzido por quatro momentos — sempre em torno da mesa.</p>
     {steps4([
-        ("Descobrir", "Abrimos a experiência apresentando ervas e aromas para o grupo reconhecer."),
-        ("Explorar", "O grupo combina notas e descobre afinidades entre os ingredientes."),
-        ("Criar", "Cada convidado compõe a própria combinação, conforme a curadoria final."),
-        ("Degustar", "Fechamos com o preparo e a degustação das criações."),
+        ("Descobrir", "Conhecer diferentes ervas, aromas e notas, uma a uma."),
+        ("Explorar", "Experimentar combinações e perceber como cada ingrediente transforma o resultado."),
+        ("Criar", "Construir uma composição própria, conforme o formato final escolhido."),
+        ("Degustar", "Finalizar em torno da mesa, com preparo, prova e troca."),
     ])}
-    <p class="phnote">A etapa de criação/personalização de blend depende do fornecedor. <b>Formato final a confirmar.</b></p>
+    <p class="phnote">A etapa de criação de blend é desenhada conforme o formato final da experiência.</p>
     {foot("Como acontece · Chás")}
   </section>'''
 
@@ -238,15 +244,15 @@ cont2 = f'''
   <section class="slide">
 {head_simple("O que está contemplado · Chás")}
     <span class="eyebrow orange">◆ O que está contemplado</span>
-    <h2>Tudo pronto para <em>degustar</em></h2>
-    <p class="lead">Cuidamos da experiência de ponta a ponta, para o grupo aproveitar cada aroma.</p>
-    {incl("perfumariadecor.jpg", "Vidros, ervas e composições botânicas sobre a mesa", "Incluso na experiência",
-          ["Condução por profissional",
-           "Insumos e utensílios da experiência",
+    <h2>Da curadoria <em>à mesa</em></h2>
+    <p class="lead">Desenhamos cada etapa para o grupo apenas sentar, descobrir e provar.</p>
+    {incl("cha-ervas-selecao.jpg", "Ervas soltas em potes e a seleção de um blend sobre a mesa", "No cuidado da Elarah",
+          ["Curadoria e condução da experiência",
+           "Ervas, insumos e utensílios",
            "Preparo e degustação",
-           "Deslocamento e estrutura operacional"],
-          "center 50%")}
-    <p class="phnote">O <b>Piselli</b> já acomoda o grupo com mesas e cadeiras — sem necessidade de mobiliário extra.</p>
+           "Operação e produção do dia"],
+          "center 45%")}
+    <p class="phnote">No <b>Piselli</b>, o encontro acontece em torno da mesa — a estrutura do restaurante já acomoda o grupo.</p>
     {foot("O que está contemplado · Chás")}
   </section>'''
 
@@ -257,7 +263,7 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>As duas <em>experiências</em></h2>
-    <p class="lead">Cada experiência com o seu valor, e o total do dia. Valores em cotação junto aos fornecedores.</p>
+    <p class="lead">Cada experiência com o seu valor, e o total do dia.</p>
     <table class="invt">
       <tbody>
         <tr><td class="nm">Sais de Banho<span>11h · LACES · 12–15 pessoas</span></td><td class="vl">{PH}</td></tr>
@@ -265,7 +271,7 @@ investimento = f'''
         <tr class="tot"><td class="nm">Investimento total<span>as duas experiências · 02.10</span></td><td class="vl">{PH}</td></tr>
       </tbody>
     </table>
-    <p class="phnote">Valores a confirmar após a cotação dos fornecedores. Estrutura complementar da LACES, quando necessária, entra no fechamento. <b>Campos editáveis nesta versão.</b></p>
+    <p class="phnote">Investimentos finais apresentados após a definição do formato escolhido.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -278,13 +284,13 @@ proximos = f'''
     <p class="lead">Um caminho simples até a reserva da data — cuidamos de cada etapa com vocês.</p>
     {steps4([
         ("Formato", "Alinhamos o formato das duas experiências."),
-        ("Aprovação", "Aprovada a proposta, avançamos com a cotação."),
-        ("Confirmação", "Confirmamos fornecedores e disponibilidade."),
-        ("Reserva", "Ajustes finais e reserva da data — 02.10."),
+        ("Aprovação", "Com a proposta aprovada, seguimos com os detalhes."),
+        ("Data", "Confirmamos a data — 02.10, no Iguatemi Campinas."),
+        ("Produção", "Ajustes finais e produção de cada momento."),
     ])}
     <div class="cta">
       <h2>Seguimos <em>juntos?</em> ✦</h2>
-      <p>Aprovado o formato, cotamos os fornecedores, alinhamos os detalhes e reservamos o dia 02.10 no Iguatemi Campinas.</p>
+      <p>Aprovado o formato, alinhamos cada detalhe e reservamos o dia 02.10 no Iguatemi Campinas.</p>
       <div class="cta-actions">
         <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Sobre%20a%20proposta%20das%20experi%C3%AAncias%20no%20Iguatemi%20Campinas." target="_blank" rel="noopener">💬 Falar no WhatsApp</a>
         <div class="contact-links">
@@ -294,7 +300,7 @@ proximos = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiências da Elarah para a Aeventotheca (a/c Marina Dias) — dois momentos no dia 02.10, no Shopping Iguatemi Campinas: Criação de Sais de Banho às 11h na LACES (12–15 pessoas) e Chás, ervas &amp; blends às 17h no Piselli (10 pessoas). Formato, insumos, estrutura complementar e valores a confirmar após a cotação dos fornecedores. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
+    <p class="fineprint">Proposta de experiências da Elarah para a Aeventotheca (a/c Marina Dias) — dois momentos no dia 02.10, no Shopping Iguatemi Campinas: Criação de Sais de Banho às 11h na LACES (12–15 pessoas) e Chás, ervas &amp; blends às 17h no Piselli (10 pessoas). Formato e estrutura de cada experiência desenhados conforme o dia; investimentos finais apresentados após a definição do formato escolhido. Proposta válida mediante confirmação de data e disponibilidade de agenda.</p>
     {foot("Próximos passos")}
   </section>'''
 
