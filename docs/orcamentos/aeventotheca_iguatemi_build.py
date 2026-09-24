@@ -192,8 +192,9 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Experiências sensoriais</span>
         <h1>Um dia de pausa, criação <em>e descoberta.</em></h1>
+        <p class="lead">Entre aromas, texturas e sabores, um convite para desacelerar, criar e levar um pouco da experiência para casa.</p>
       </div>
-      <div class="cover-photo">{img("aev-capa-duas.jpg", "Duas mulheres sorrindo e sentindo aromas numa experiência sensorial", "center 30%")}</div>
+      <div class="cover-photo">{img("libbs-s2-conversa.jpg", "Mulheres reunidas, sorrindo e conversando durante um encontro", "center 40%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Proposta · Aeventotheca")}
@@ -202,14 +203,15 @@ cover = f'''
 # ============================ 2 · VISÃO GERAL DO DIA ============================
 visao = f'''
   <section class="slide">
-{head_simple("Programação")}
-    <span class="eyebrow orange">◆ Iguatemi Campinas</span>
-    <h2>Programação <em>· 02.10</em></h2>
+{head_simple("O dia")}
+    <span class="eyebrow orange">◆ 02.10 · Iguatemi Campinas</span>
+    <h2>Do criar ao <em>saborear</em></h2>
+    <p class="lead">Pela manhã, uma pausa de criação entre aromas, ervas e texturas. No fim da tarde, a experiência muda de ritmo e chega à mesa — com chás, combinações e novos sabores.</p>
     <div class="daygrid">
       {daycard("11h", "LACES", "Sais para escalda-pés", "", "<b>15 pessoas</b> · 1h30", "sais-composicao.jpg", "Sais, ervas e óleos para a composição do escalda-pés", "center 50%")}
       {daycard("17h", "Piselli", "Chás, ervas &amp; blends", "", "<b>10 pessoas</b>", "cha-ervas-selecao.jpg", "Ervas soltas em potes para a criação de blends", "center 45%")}
     </div>
-    {foot("Programação")}
+    {foot("O dia")}
   </section>'''
 
 # ============================ 3 · EXPERIÊNCIA LACES — SAIS ESCALDA-PÉS ============================
@@ -224,7 +226,7 @@ expLACES = f'''
         <div class="exthumb">{img("laces-espaco.jpg", "Interior da loja LACES, com plantas e madeira", "center 50%")}<div class="cap">LACES · Iguatemi Campinas</div></div>
       </div>
       <div class="exbody">
-        <p class="exc">Uma pausa sensorial inspirada na primavera — aromas, ervas, sais e texturas se encontram em uma criação individual. Cada participante conhece os elementos e desenvolve a própria composição para escalda-pés, com o acompanhamento da profissional.</p>
+        <p class="exc">Uma pausa para criar com calma. Inspirada na primavera, a experiência convida o grupo a explorar aromas, ervas, sais e texturas em uma criação individual, leve e pessoal — e cada participante leva consigo algo feito por ela.</p>
         <div class="inclgrp">
           <div class="g"><div class="gt">Condução</div><p>Profissional especializada durante toda a experiência.</p></div>
           <div class="g"><div class="gt">Materiais</div><p>Sais, óleos essenciais, ervas e utensílios da criação.</p></div>
@@ -254,11 +256,11 @@ expPiselli = f'''
     <h2>Oficina de Chás, Ervas &amp; <em>Blends</em></h2>
     <div class="exbig">
       <div class="exphotos">
-        <div class="exmain">{img("cha-blend-funil.jpg", "Criação de um blend de ervas, com xícaras servidas", "center 45%")}</div>
+        <div class="exmain">{img("aev-capa-duas.jpg", "Mulheres à mesa, conversando e experimentando aromas de chás", "center 35%")}</div>
         <div class="exthumb">{img("piselli-mesa.jpg", "Mesa redonda de mármore posta no Piselli", "center 50%")}<div class="cap">Piselli · Iguatemi Campinas</div></div>
       </div>
       <div class="exbody">
-        <p class="exc">Uma experiência de descoberta em torno das ervas — aromas, sabores, cores e combinações. Com a orientação da tea expert, cada participante explora os ingredientes e cria os próprios blends para levar.</p>
+        <p class="exc">Uma pausa no fim da tarde para descobrir ervas, combinações e novos sabores. Com a orientação da tea expert, o grupo explora ingredientes, cria os próprios blends e transforma a mesa em espaço de troca e descoberta.</p>
         <div class="duo">
           <div class="d"><div class="dt">Relaxar</div><p>Um blend autoral de perfil mais acolhedor.</p></div>
           <div class="d"><div class="dt">Energizar</div><p>Um blend autoral para um momento estimulante.</p></div>
@@ -289,7 +291,7 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Experiências <em>completas</em></h2>
-    <p class="lead">Com condução, materiais, personalização, preparação e logística inclusos.</p>
+    <p class="lead">Cada detalhe pensado para o grupo viver a experiência com leveza — da condução aos materiais, da personalização ao que cada uma leva para casa.</p>
     <table class="invt3">
       <thead>
         <tr><th class="l">Experiência</th><th>Valor por pessoa</th><th>Investimento total</th></tr>
@@ -312,6 +314,7 @@ proximos = f'''
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>Como <em>seguimos</em></h2>
+    <p class="lead">Com tudo aprovado, seguimos para transformar o planejamento em experiência.</p>
     {steps4([
         ("Aprovação", "Aprovada a proposta, seguimos em frente."),
         ("Alinhamento", "Alinhamos os detalhes com a profissional."),
