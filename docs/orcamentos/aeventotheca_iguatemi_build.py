@@ -194,7 +194,7 @@ cover = f'''
         <h1>Um dia de pausa, criação <em>e descoberta.</em></h1>
         <p class="lead">Entre aromas, texturas e sabores, um convite para desacelerar, criar e levar um pouco da experiência para casa.</p>
       </div>
-      <div class="cover-photo">{img("libbs-s2-conversa.jpg", "Mulheres reunidas, sorrindo e conversando durante um encontro", "center 40%")}</div>
+      <div class="cover-photo">{img("aev-capa-duas.jpg", "Duas mulheres sorrindo e sentindo aromas numa experiência sensorial", "center 30%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Proposta · Aeventotheca")}
@@ -256,7 +256,7 @@ expPiselli = f'''
     <h2>Oficina de Chás, Ervas &amp; <em>Blends</em></h2>
     <div class="exbig">
       <div class="exphotos">
-        <div class="exmain">{img("aev-capa-duas.jpg", "Mulheres à mesa, conversando e experimentando aromas de chás", "center 35%")}</div>
+        <div class="exmain">{img("cha-blend-funil.jpg", "Criação de um blend de ervas, com xícaras servidas", "center 45%")}</div>
         <div class="exthumb">{img("piselli-mesa.jpg", "Mesa redonda de mármore posta no Piselli", "center 50%")}<div class="cap">Piselli · Iguatemi Campinas</div></div>
       </div>
       <div class="exbody">
@@ -297,13 +297,13 @@ investimento = f'''
         <tr><th class="l">Experiência</th><th>Valor por pessoa</th><th>Investimento total</th></tr>
       </thead>
       <tbody>
-        <tr><td class="nm">Oficina de Sais para Escalda-pés<span>11h · LACES · 15 pessoas · 1h30</span></td><td class="val">R$ 329,27</td><td class="val">R$ 4.939</td></tr>
-        <tr><td class="nm">Oficina de Chás, Ervas &amp; Blends<span>17h · Piselli · 10 pessoas</span></td><td class="val">R$ 391,90</td><td class="val">R$ 3.919</td></tr>
+        <tr><td class="nm">Oficina de Sais para Escalda-pés<span>11h · LACES · 15 pessoas · 1h30</span></td><td class="val">R$ 329</td><td class="val">R$ 4.935</td></tr>
+        <tr><td class="nm">Oficina de Chás, Ervas &amp; Blends<span>17h · Piselli · 10 pessoas</span></td><td class="val">R$ 399</td><td class="val">R$ 3.990</td></tr>
       </tbody>
     </table>
     <div class="invtotal">
       <span class="lbl">Investimento total</span>
-      <span class="v">R$ 8.858</span>
+      <span class="v">R$ 8.925</span>
     </div>
     {foot("Investimento")}
   </section>'''
@@ -333,7 +333,7 @@ proximos = f'''
         </div>
       </div>
     </div>
-    <p class="fineprint">Proposta de experiências da Elarah para a Aeventotheca (a/c Marina Dias) — 02.10, no Iguatemi Campinas: Oficina de Sais para Escalda-pés da Primavera às 11h na LACES (15 pessoas · 1h30), R$ 329,27 por pessoa · R$ 4.939; Oficina de Chás, Ervas e Criação de Blends às 17h no Piselli (10 pessoas), R$ 391,90 por pessoa · R$ 3.919. Investimento total R$ 8.858. Valores contemplam materiais, condução, preparação e logística das experiências.</p>
+    <p class="fineprint">Proposta de experiências da Elarah para a Aeventotheca (a/c Marina Dias) — 02.10, no Iguatemi Campinas: Oficina de Sais para Escalda-pés da Primavera às 11h na LACES (15 pessoas · 1h30), R$ 329 por pessoa · R$ 4.935; Oficina de Chás, Ervas e Criação de Blends às 17h no Piselli (10 pessoas), R$ 399 por pessoa · R$ 3.990. Investimento total R$ 8.925. Valores contemplam materiais, condução, preparação e logística das experiências.</p>
     {foot("Próximos passos")}
   </section>'''
 
