@@ -281,7 +281,7 @@ experiencias = f'''
       {mcard("01", "Tufting", "A mais autoral", "Com a pistola de tufting, cada participante desenvolve a própria criação em fios, cores e composição.", "R$ 899", "tufting12.jpg", "Pistola de tufting criando uma peça colorida", "center 50%")}
       {mcard("02", "Cerâmica", "Modelagem à mão", "Cada participante molda a própria peça à mão, guiado por uma ceramista, no seu ritmo.", "R$ 489", "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}
       {mcard("03", "Criação de fragrâncias", "Aromas", "Cada participante explora diferentes notas e desenvolve a própria fragrância para levar.", "R$ 359", "nbc-aromas-criacao.jpg", "Duas participantes criando a própria fragrância", "center 30%")}
-      {mcard("04", "Encontro gastronômico", "Harmonização", "O grupo participa do preparo com um chef e termina em torno da mesa, com harmonização e celebração.", "R$ 899", "nbc-gastronomia-pizza.jpg", "Participantes preparando a própria refeição com um chef", "center 40%")}
+      {mcard("04", "Encontro gastronômico", "Preparo com chef", "O grupo participa do preparo com um chef e termina em torno da mesa, com sabores e celebração.", "R$ 899", "nbc-gastronomia-pizza.jpg", "Participantes preparando a própria refeição com um chef", "center 40%")}
     </div>
     <div class="bnote" style="margin-top:16px">◆ Nossa principal sugestão para a NBCUniversal é o <b>Tufting</b> — uma experiência visual, criativa e mão na massa, em que cada participante desenvolve a própria peça do começo ao fim.</div>
     {foot("As experiências")}
@@ -341,23 +341,25 @@ CURFOOT = '''<div class="curfoot">
       <div class="cf2">Espaços sujeitos à disponibilidade. Condições de reserva, locação ou consumo variam conforme o local e são confirmadas antes do fechamento.</div>
     </div>'''
 
+DISC = '<p class="fineprint" style="margin-top:12px">Espaços sujeitos à disponibilidade. Condições de reserva, locação ou consumo variam conforme o local e são confirmadas antes do fechamento.</p>'
+
 # ============================ 6 · CURADORIA I ============================
 c_ladob = cc(
-    "Lado B Studio", "Faria Lima",
-    "tufting6.jpg", "Grupo criando as próprias peças de tufting no estúdio",
-    "Criativo, contemporâneo e preparado especialmente para experiências manuais.",
-    pos="center 42%", selo="★ Nossa sugestão para Tufting", big=True,
+    "Lado B", "Faria Lima",
+    "tufting6.jpg", "Grupo sorrindo com as próprias criações de tufting no estúdio",
+    "Criativo, contemporâneo e pensado para experiências mais imersivas.",
+    pos="center 40%", selo="★ Sugestão Elarah para Tufting",
 )
 c_entremaos = cc(
     "Entremãos", "Perdizes",
-    "netas-atelie.jpg", "Ateliê intimista e acolhedor, com luz natural",
-    "Um espaço intimista e acolhedor para experiências criativas em grupo.",
+    "netas-atelie.jpg", "Grupo reunido à mesa no ateliê Entre Mãos, com luz natural",
+    "Um espaço intimista e acolhedor para encontros criativos.",
     pos="center 50%",
 )
-c_sterna = cc(
-    "Sterna Café", "Faria Lima",
-    "sowcafe.jpg", "Café urbano e acolhedor",
-    "Uma opção urbana e prática para encontros mais leves e próximos.",
+c_spicy = cc(
+    "Spicy", "Pinheiros",
+    "pizza-brinde.jpg", "Grupo reunido à mesa, com comida e brinde",
+    "Um cenário gastronômico para reunir o grupo em torno da cozinha e da mesa.",
     pos="center 50%",
 )
 espacos1 = f'''
@@ -365,36 +367,27 @@ espacos1 = f'''
 {head_simple("Nossa curadoria de espaços")}
     <span class="eyebrow orange">Nossa curadoria de espaços</span>
     <h2>Diferentes cenários para <em>diferentes experiências</em></h2>
-    <p class="lead">De ateliês criativos a jardins, cafés e espaços gastronômicos, selecionamos diferentes possibilidades em São Paulo para receber o time. A escolha final acontece de acordo com a experiência, a região e o clima que vocês querem para o encontro.</p>
-    <p class="curphrase">Esses são alguns dos espaços que selecionamos para este briefing — e podemos ampliar a curadoria de acordo com a preferência do time.</p>
-    <div class="curhero">
+    <p class="lead">Selecionamos espaços em diferentes regiões de São Paulo para receber o time — de ateliês criativos a cafés, jardins e espaços gastronômicos. Estas são algumas das possibilidades que fazem sentido para este briefing.</p>
+    <div class="cur3">
       {c_ladob}
-      <div class="curcol">
-        {c_entremaos}
-        {c_sterna}
-      </div>
+      {c_entremaos}
+      {c_spicy}
     </div>
-    {CURFOOT}
+    {DISC}
     {foot("Curadoria de espaços · I")}
   </section>'''
 
 # ============================ 7 · CURADORIA II ============================
 c_jardim = cc(
     "O Jardim", "Campo Belo",
-    "ojardim1.jpg", "Jardim arborizado com verde e luz natural",
+    "ojardim1.jpg", "Café-jardim arborizado, com mesas ao ar livre e muito verde",
     "Verde, luz natural e uma atmosfera mais aberta para desacelerar da rotina.",
     pos="center 50%",
 )
-c_spicy = cc(
-    "Spicy Gabriel", "Pinheiros",
-    "pizza-brinde.jpg", "Mesa posta com comida e brinde, em clima de celebração",
-    "Um cenário gastronômico para criar, compartilhar e terminar o encontro à mesa.",
-    pos="center 50%",
-)
-c_atelie = cc(
-    "Ateliê parceiro", "Perdizes",
-    "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica",
-    "Um ambiente dedicado à criação manual, especialmente interessante para a experiência de cerâmica.",
+c_sterna = cc(
+    "Sterna Café", "Faria Lima",
+    "sowcafe.jpg", "Café urbano e acolhedor, bem localizado",
+    "Uma opção urbana e prática para encontros leves e bem localizados.",
     pos="center 50%",
 )
 espacos2 = f'''
@@ -402,13 +395,43 @@ espacos2 = f'''
 {head_simple("Nossa curadoria de espaços")}
     <span class="eyebrow orange">Nossa curadoria de espaços</span>
     <h2>Mais cenários <em>para o encontro</em></h2>
-    <div class="cur3">
+    <div class="cur2">
       {c_jardim}
-      {c_spicy}
-      {c_atelie}
+      {c_sterna}
     </div>
-    {CURFOOT}
+    <p class="curmore">◆ Temos outros parceiros e podemos <b>ampliar a curadoria</b> de acordo com a experiência, a região e a preferência do time.</p>
+    {DISC}
     {foot("Curadoria de espaços · II")}
+  </section>'''
+
+# ============================ 8 · COMPLEMENTOS · MIMO + REGISTRO ============================
+adicionais = f'''
+  <section class="slide">
+{head_simple("Complementos")}
+    <span class="eyebrow orange">Complementos</span>
+    <h2>Para deixar a experiência <em>ainda mais completa</em></h2>
+    <p class="lead">Dois complementos opcionais que aprofundam o encontro e deixam uma lembrança do dia.</p>
+    <div class="adg">
+      <div class="ad">
+        <div class="aph">{img("brinde-corp.jpg", "Mimo personalizado para o time", "center 50%")}</div>
+        <div class="abody">
+          <span class="alab">Complemento 01</span>
+          <h3>Mimo personalizado</h3>
+          <p>Um detalhe personalizado para complementar a experiência e acompanhar o time depois do encontro.</p>
+          <div class="aval">R$ 139 <small>por pessoa</small></div>
+        </div>
+      </div>
+      <div class="ad">
+        <div class="aph">{img("mimos-registro-itau.jpg", "Registro espontâneo de uma experiência corporativa", "center 35%")}</div>
+        <div class="abody">
+          <span class="alab">Complemento 02</span>
+          <h3>Registro fotográfico</h3>
+          <p>Cobertura fotográfica do encontro, com registros espontâneos da experiência e do time.</p>
+          <div class="aval">R$ 450 <small>total</small></div>
+        </div>
+      </div>
+    </div>
+    {foot("Complementos")}
   </section>'''
 
 # ============================ 9 · INVESTIMENTO ============================
@@ -473,13 +496,13 @@ proximos = f'''
       Heloisa, nos conta qual experiência faz mais sentido para o time e seguimos com a confirmação de disponibilidade e os próximos passos.<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — turma privada de 15 pessoas, na 1ª semana de novembro, em São Paulo. Sugestão principal: Tufting no Lado B Studio (Faria Lima), R$ 899 por pessoa. Demais experiências: Cerâmica R$ 489 por pessoa; Criação de fragrâncias R$ 359 por pessoa; Encontro gastronômico (harmonização) R$ 899 por pessoa. Cada experiência inclui profissional, materiais e estrutura necessários. Adicionais: registro fotográfico sob consulta; brindes e personalização a partir de R$ 139 por pessoa; espaços sob consulta e disponibilidade. Emissão de nota fiscal e condições de pagamento alinhadas com o financeiro. Proposta válida mediante confirmação de data, disponibilidade de agenda e definição da experiência.</p>
+    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — turma privada de 15 pessoas, na 1ª semana de novembro, em São Paulo. Sugestão principal: Tufting no Lado B Studio (Faria Lima), R$ 899 por pessoa. Demais experiências: Cerâmica R$ 489 por pessoa; Criação de fragrâncias R$ 359 por pessoa; Encontro gastronômico R$ 899 por pessoa. Cada experiência inclui profissional, materiais e estrutura necessários. Complementos: mimo personalizado R$ 139 por pessoa; registro fotográfico R$ 450 total; espaços sob consulta e disponibilidade. Emissão de nota fiscal e condições de pagamento alinhadas com o financeiro. Proposta válida mediante confirmação de data, disponibilidade de agenda e definição da experiência.</p>
     {foot("Próximos passos")}
   </section>'''
 
 deck = ('<div class="deck">\n'
         + cover + conceito + atmosfera_slide + experiencias + sugestao
-        + espacos1 + espacos2 + investimento + proximos + '\n\n</div>\n\n')
+        + espacos1 + espacos2 + adicionais + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-corporativa-nbcuniversal.html"
 open(out, "w", encoding="utf-8").write(html)
