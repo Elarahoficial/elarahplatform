@@ -87,8 +87,39 @@ def foot(right):
     return f'<div class="slide__foot"><span>Elarah · Experiências</span><span>{right}</span></div>'
 
 
-# mapa de placeholders -> arquivos reais aprovados do banco (preenchido apos curadoria de fotos)
-ALIAS = {}
+# mapa de placeholders -> arquivos reais aprovados do banco (curadoria de fotos, grupo misto/sem marca)
+ALIAS = {
+    "COVER.jpg": "bfa-grupo2.webp",
+    "UNI_CRIAR.jpg": "ceramicamodelagem.jpg",
+    "UNI_SENTIR.jpg": "perfumaria-oficina.jpg",
+    "UNI_PROVAR.jpg": "pizza.jpg",
+    "UNI_BRINDAR.jpg": "curadoria-vinhos.jpg",
+    "CR_ceramica.jpg": "ceramicamodelagem.jpg",
+    "CR_tacas.jpg": "pinturatacavinho.jpg",
+    "CR_tufting.jpg": "tufting1.jpg",
+    "CR_folding.jpg": "foldingbook.jpg",
+    "CR_colagem.jpg": "colagem.jpg",
+    "CR_tela.jpg": "capa-homens-pintando.jpg",
+    "AR_hero.jpg": "vela-aromatica-real.jpg",
+    "GA_pizza.jpg": "pizza.jpg",
+    "GA_massa.jpg": "massamolho.jpg",
+    "GA_choco.jpg": "bologanache.jpg",
+    "GA_cafe.jpg": "mesa-cafe-comemoracao.jpg",
+    "GA_aula.jpg": "aula-grupo.jpg",
+    "GA_mesa.jpg": "menu-coffee.jpg",
+    "DR_vinho.jpg": "harmonizacaoqueijos.jpg",
+    "DR_drinks.jpg": "drinkspetisco.jpg",
+    "DR_mesa.jpg": "jantar-vista.jpg",
+    "VN_raus.jpg": "yucafe-real.jpg",
+    "VN_salabar.jpg": "bar-do-cofre.jpg",
+    "VN_cardeal.jpg": "casa-aquario-lounge.jpg",
+    "VN_sterna.jpg": "sterna-painel.webp",
+    "CB_ceravinho.jpg": "bfa-grupo1.webp",
+    "CB_aromadrinks.jpg": "veladrink.jpg",
+    "CB_pinturabar.jpg": "tintaevinhocool.jpg",
+    "CB_gastrovinho.jpg": "pizzanegroni.jpg",
+    "PZ_hero.jpg": "brinde-corp.jpg",
+}
 
 
 def img(src, alt, pos="center 50%"):
@@ -226,7 +257,7 @@ drinks = f'''
     <span class="eyebrow orange">Brindar</span>
     <h2>Para quem prefere <em>comemorar brindando</em></h2>
     <div class="gstrip">
-      <figure>{img("DR_vinho.jpg", "Degustação de vinhos", "center 50%")}<figcaption>Degustação de vinhos</figcaption></figure>
+      <figure>{img("DR_vinho.jpg", "Degustação e harmonização", "center 50%")}<figcaption>Degustação &amp; harmonização</figcaption></figure>
       <figure>{img("DR_drinks.jpg", "Workshop de drinks", "center 50%")}<figcaption>Workshop de drinks</figcaption></figure>
       <figure>{img("DR_mesa.jpg", "Vinho e gastronomia à mesa", "center 50%")}<figcaption>Vinho + gastronomia</figcaption></figure>
     </div>
