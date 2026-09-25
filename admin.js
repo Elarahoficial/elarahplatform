@@ -7476,6 +7476,7 @@
       restEl.textContent = '∞';
     }
     if (s.id) row.dataset.slotId = s.id;
+    row.querySelector('.admin__horario-input').addEventListener('input', autoPreencherDuracao);
     if (isRec) {
       row.dataset.recurrence = '1';
       row.querySelector('.admin__horario-input').disabled = true;
@@ -7499,6 +7500,38 @@
       }
     });
     horariosList.appendChild(row);
+  }
+
+  // Duração automática: lê o 1º horário com início e fim (ex.: "19h00 – 22h30",
+  // "19:00-22:30", "10h às 12h") e preenche "Duração" (ex.: "3h30"). Só
+  // sobrescreve se o campo está vazio ou ainda tem o valor que ele mesmo
+  // preencheu — duração digitada à mão não é apagada.
+  function duracaoDeHorario(txt) {
+    var m = String(txt || '').match(/(\d{1,2})\s*(?:[h:]\s*(\d{2})?)?\s*(?:-|–|—|às|as|a|até|ate)\s*(\d{1,2})\s*(?:[h:]\s*(\d{2})?)?/i);
+    if (!m) return '';
+    var ini = (+m[1]) * 60 + (+(m[2] || 0));
+    var fim = (+m[3]) * 60 + (+(m[4] || 0));
+    if (+m[1] > 23 || +m[3] > 23 || +(m[2] || 0) > 59 || +(m[4] || 0) > 59) return '';
+    var min = fim - ini;
+    if (min <= 0) min += 24 * 60; // vira a meia-noite (ex.: 22h – 01h)
+    if (min <= 0 || min >= 24 * 60) return '';
+    var h = Math.floor(min / 60), r = min % 60;
+    if (!h) return r + 'min';
+    return h + 'h' + (r ? String(r).padStart(2, '0') : '');
+  }
+
+  function autoPreencherDuracao() {
+    var el = document.getElementById('exp-duracao');
+    if (!el || !horariosList) return;
+    var dur = '';
+    horariosList.querySelectorAll('.admin__horario-input').forEach(function (i) {
+      if (!dur) dur = duracaoDeHorario(i.value);
+    });
+    if (!dur) return;
+    var atual = el.value.trim();
+    if (atual && atual !== el.dataset.auto) return;
+    el.value = dur;
+    el.dataset.auto = dur;
   }
 
   function renderHorarioRows(slots) {
@@ -7705,6 +7738,7 @@
           : '';
       }
       document.getElementById('exp-duracao').value = exp.duracao || '';
+      delete document.getElementById('exp-duracao').dataset.auto;
       document.getElementById('exp-bairro').value = exp.bairro || '';
       document.getElementById('exp-preco').value = exp.preco || '';
       document.getElementById('exp-endereco').value = exp.endereco || '';
