@@ -105,6 +105,15 @@ xcss = '''
   .add .an{font-size:9px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
   .add h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy);margin:4px 0 4px;line-height:1.08}
   .add span{font-size:11px;color:var(--muted);line-height:1.4}
+  /* conceito estilo Itau: 3 cards foto em cima + texto */
+  .pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 38px -26px rgba(0,0,0,.34)}
+  .pcard .pphoto{aspect-ratio:4/5;overflow:hidden;background:#eee}
+  .pcard .pphoto img{width:100%;height:100%;object-fit:cover;display:block}
+  .pcard .pbody{padding:18px 20px 20px}
+  .pcard .pbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.14;margin:0 0 7px;text-wrap:balance;min-height:2.3em}
+  .pcard .pbody p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+  .pcard .pbody p b{color:var(--navy);font-weight:700}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -197,20 +206,18 @@ conceito = f'''
     <span class="eyebrow orange">O que o time leva junto</span>
     <h2>Conexão que <em>acontece sozinha</em></h2>
     <p class="lead">Sem quebra-gelo forçado. A conexão surge quando o time senta na mesma mesa para criar algo com as próprias mãos — <b>sem hierarquia, sem quem sabe mais e quem sabe menos.</b></p>
-    <div class="bfeat">
-      <div class="bphoto">{img("corp-criativo.jpg", "Grupo diverso conversando enquanto cria junto", "center 62%")}</div>
-      <div class="bbody">
-        <span class="btag">Criar</span>
-        <h3>Criar abre espaço para conversar</h3>
-        <p>Com as mãos ocupadas, a conversa acontece sem esforço. Áreas diferentes se misturam sozinhas — sem roteiro e sem pressão.</p>
+    <div class="pgrid">
+      <div class="pcard">
+        <div class="pphoto">{img("capa-itau-oficina.jpg", "Time conversando enquanto cria, de mão na massa", "center 42%")}</div>
+        <div class="pbody"><h3>Conversa que não rola no escritório</h3><p>Algumas horas lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div>
       </div>
-    </div>
-    <div class="bfeat">
-      <div class="bphoto">{img("pizza-brinde.jpg", "Grupo reunido em torno da mesa, com comida e brinde", "center 50%")}</div>
-      <div class="bbody">
-        <span class="btag">À mesa</span>
-        <h3>Na mesma mesa, a conversa muda</h3>
-        <p>Compartilhar uma mesa cria outro ritmo para o encontro — mais leve, próximo e espontâneo.</p>
+      <div class="pcard">
+        <div class="pphoto">{img("corp-criativo.jpg", "Time inteiro de mão na massa, criando junto", "center 45%")}</div>
+        <div class="pbody"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa ter experiência. <b>Liderança e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div>
+      </div>
+      <div class="pcard">
+        <div class="pphoto">{img("ceramica2.jpg", "As peças criadas no encontro, que ficam depois", "center 50%")}</div>
+        <div class="pbody"><h3>Fica depois do dia</h3><p>O que foi criado continua depois do encontro — <b>seja como peça individual ou como memória coletiva</b> do time.</p></div>
       </div>
     </div>
     {foot("O conceito")}
