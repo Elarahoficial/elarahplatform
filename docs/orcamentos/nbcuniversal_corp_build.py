@@ -129,13 +129,38 @@ xcss = '''
   .curcol{display:grid;grid-template-rows:1fr 1fr;gap:18px;min-height:0}
   .curhero .ccbig .cnm{font-size:23px}
   .curhero .cc{min-height:0}
-  /* slide 7: 3 iguais */
+  /* curadoria I: 3 iguais */
   .cur3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px;height:540px}
   .cur3 .cc{min-height:0}
+  /* curadoria II: 2 espacos, fotos maiores */
+  .cur2{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:16px;height:560px}
+  .cur2 .cc{min-height:0}
+  .cur2 .cnm{font-size:24px}
+  .cur2 .cds{font-size:12px}
+  .curmore{font-size:12px;color:var(--navy);line-height:1.5;margin-top:15px}
+  .curmore b{color:var(--navy)}
   /* rodape rede de parceiros */
   .curfoot{margin-top:15px}
   .curfoot .cf1{font-size:11.5px;color:var(--navy);line-height:1.5}
   .curfoot .cf2{font-size:9.5px;color:var(--muted);line-height:1.45;margin-top:5px}
+  /* slide adicionais: 2 complementos editoriais (foto grande + texto) */
+  .adg{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:18px;height:600px}
+  .ad{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.42);display:flex;flex-direction:column;background:var(--card)}
+  .ad .aph{flex:1;min-height:0;overflow:hidden}
+  .ad .aph img{width:100%;height:100%;object-fit:cover;display:block}
+  .ad .abody{padding:20px 26px 24px}
+  .ad .alab{font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ad h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:25px;color:var(--navy);line-height:1.05;margin:6px 0 8px}
+  .ad p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+  .ad .aval{margin-top:13px;padding-top:12px;border-top:1px solid var(--line);font-family:'DM Serif Display',serif;font-size:24px;color:var(--orange-dark);line-height:1}
+  .ad .aval small{font-family:'DM Sans';font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-left:6px}
+  /* investimento · 4a coluna "opcao mais completa" */
+  .itable4 th.l,.itable4 td.rl{width:32%}
+  .itable4 th,.itable4 td{padding:14px 12px}
+  .itable4 .val,.itable4 .tot{font-size:20px}
+  .itable4 thead th small{display:block;font-size:8px;letter-spacing:.02em;text-transform:none;color:var(--muted);font-weight:600;margin-top:3px;line-height:1.3}
+  .itable4 .cpl b{font-family:'DM Serif Display',serif;font-weight:400;font-size:21px;color:var(--orange-dark);display:block;line-height:1}
+  .itable4 .cpl span{font-size:9px;color:var(--muted);display:block;margin-top:3px;letter-spacing:.02em}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -393,42 +418,41 @@ investimento = f'''
     <span class="eyebrow orange">Investimento</span>
     <h2>Escolha a experiência que <em>combina com o time</em></h2>
     <p class="lead">Quatro formatos, diferentes maneiras de criar, compartilhar e sair da rotina. Valores por pessoa para turma privada de 15 participantes, com profissional, materiais e estrutura já inclusos.</p>
-    <table class="itable">
+    <table class="itable itable4">
       <thead><tr>
         <th class="l">Experiência</th>
         <th>Por pessoa</th>
         <th>Total · 15 pessoas</th>
+        <th>Opção mais completa<small>experiência + mimo + registro</small></th>
       </tr></thead>
       <tbody>
         <tr>
-          <td class="rl"><b>Criação de fragrâncias</b><span>fragrância autoral para levar</span></td>
+          <td class="rl"><b>Criação de fragrâncias</b></td>
           <td class="val">R$ 359</td>
           <td class="tot">R$ 5.385</td>
+          <td class="cpl"><b>R$ 528</b><span>por pessoa · R$ 7.920 total</span></td>
         </tr>
         <tr>
-          <td class="rl"><b>Cerâmica</b><span>modelagem à mão, com queima e acabamento</span></td>
+          <td class="rl"><b>Cerâmica</b></td>
           <td class="val">R$ 489</td>
           <td class="tot">R$ 7.335</td>
+          <td class="cpl"><b>R$ 658</b><span>por pessoa · R$ 9.870 total</span></td>
         </tr>
         <tr class="hl">
-          <td class="rl"><b>Tufting</b><span>criação autoral em fios e cores · ★ Sugestão Elarah</span></td>
+          <td class="rl"><b>Tufting</b><span>★ Sugestão Elarah</span></td>
           <td class="val">R$ 899</td>
           <td class="tot">R$ 13.485</td>
+          <td class="cpl"><b>R$ 1.068</b><span>por pessoa · R$ 16.020 total</span></td>
         </tr>
         <tr>
-          <td class="rl"><b>Encontro gastronômico</b> · harmonização<span>preparo participativo e experiência à mesa</span></td>
+          <td class="rl"><b>Encontro gastronômico</b></td>
           <td class="val">R$ 899</td>
           <td class="tot">R$ 13.485</td>
+          <td class="cpl"><b>R$ 1.068</b><span>por pessoa · R$ 16.020 total</span></td>
         </tr>
       </tbody>
     </table>
-    <div class="addhead">Para deixar a experiência ainda mais completa</div>
-    <div class="adds">
-      <div class="add"><span class="an">Registro fotográfico</span><h4>Fotos do encontro</h4><span>Valor sob consulta</span></div>
-      <div class="add"><span class="an">Brindes &amp; personalização</span><h4>Lembrança do dia</h4><span>A partir de R$ 139 por pessoa</span></div>
-      <div class="add"><span class="an">Espaços</span><h4>Cenário da experiência</h4><span>Sob consulta e disponibilidade</span></div>
-    </div>
-    <p class="fineprint">Os espaços apresentados estão sujeitos à disponibilidade na data escolhida. Eventuais condições de reserva, locação ou consumo são confirmadas de acordo com o local e o formato da experiência. Valores por pessoa, para 15 participantes, na 1ª semana de novembro. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro da NBCUniversal.</p>
+    <p class="fineprint">A <b>opção mais completa</b> reúne a experiência escolhida, o <b>mimo personalizado</b> e o <b>registro fotográfico</b> do encontro. Os espaços estão sujeitos à disponibilidade e podem ter condições específicas de reserva, locação ou consumo, confirmadas de acordo com o local escolhido. Valores por pessoa, para 15 participantes, na 1ª semana de novembro. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro da NBCUniversal.</p>
     {foot("Investimento")}
   </section>'''
 
