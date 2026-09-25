@@ -232,11 +232,11 @@ experiencias = f'''
     <p class="lead">Pensadas para quem nunca fez, funcionam bem em grupo e convidam todo mundo a participar — cada uma à sua maneira.</p>
     <div class="mcards">
       {mcard("01", "Tufting", "A mais autoral", "Com a pistola de tufting, cada participante desenvolve a própria criação em fios, cores e composição.", "R$ 899", "tufting12.jpg", "Pistola de tufting criando uma peça colorida", "center 50%")}
-      {mcard("02", "Cerâmica", "Modelagem à mão", "Cada participante molda a própria peça à mão, guiado por uma ceramista, no seu ritmo.", "R$ 499", "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}
-      {mcard("03", "Criação de fragrâncias", "Aromas", "Cada participante explora diferentes notas e desenvolve a própria fragrância para levar.", "R$ 359", "perfumaria-corp.jpg", "Essências e frascos para criação de fragrância", "center 50%")}
-      {mcard("04", "Gastronomia", "Harmonização", "O grupo participa do preparo com um chef e termina em torno da mesa, com harmonização e celebração.", "R$ 899", "aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%")}
+      {mcard("02", "Cerâmica", "Modelagem à mão", "Cada participante molda a própria peça à mão, guiado por uma ceramista, no seu ritmo.", "R$ 489", "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}
+      {mcard("03", "Criação de fragrâncias", "Aromas", "Cada participante explora diferentes notas e desenvolve a própria fragrância para levar.", "R$ 359", "nbc-aromas-criacao.jpg", "Duas participantes criando a própria fragrância", "center 30%")}
+      {mcard("04", "Encontro gastronômico", "Harmonização", "O grupo participa do preparo com um chef e termina em torno da mesa, com harmonização e celebração.", "R$ 899", "nbc-gastronomia-pizza.jpg", "Participantes preparando a própria refeição com um chef", "center 40%")}
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Nossa recomendação principal para a NBCUniversal é o <b>Tufting</b> — a mais autoral e visual das quatro, com cada participante criando a própria peça do começo ao fim. 🎨</div>
+    <div class="bnote" style="margin-top:16px">◆ Nossa principal sugestão para a NBCUniversal é o <b>Tufting</b> — uma experiência visual, criativa e mão na massa, em que cada participante desenvolve a própria peça do começo ao fim.</div>
     {foot("As experiências")}
   </section>'''
 
@@ -251,8 +251,8 @@ atmosfera_slide = atmosfera(
         ("ceramica-fria.jpg", "Mãos modelando cerâmica", "center 45%", "Mãos ocupadas"),
         ("perfumaria-oficina.jpg", "Bancada de perfumaria com essências", "center 50%", "Um outro ritmo"),
         ("bfa-grupo1.webp", "O time reunido à mesa", "center 40%", "Mesa compartilhada"),
-        ("mimos-registro-itau.jpg", "Grupo corporativo diverso conversando e celebrando", "center 45%", "Conversa boa"),
-        ("aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%", "Tempo juntos"),
+        ("nbc-mesa-grupo.webp", "Grupo reunido à mesa, conversando e celebrando", "center 55%", "Conversa boa"),
+        ("nbc-conversa.jpg", "Pessoas conversando e rindo juntas em um encontro", "center 30%", "Tempo juntos"),
     ],
     "Tudo incluso",
     "profissional que conduz · materiais e estrutura · montagem e desmontagem · produção Elarah",
@@ -265,7 +265,7 @@ sugestao = f'''
 {head_simple("Sugestão Elarah")}
     <span class="selo">★ Sugestão Elarah</span>
     <h2 style="margin-top:12px">Tufting no <em>Lado B</em></h2>
-    <p class="lead">Uma experiência criativa, visual e completamente mão na massa. No Lado B Studio, o time aprende a técnica do tufting do zero e desenvolve a própria peça usando fios, cores e a pistola de tufting — criatividade, concentração e troca de um jeito leve e espontâneo.</p>
+    <p class="lead">Uma experiência criativa, visual e completamente <b>mão na massa</b>, em que o time aprende a técnica do tufting do zero e desenvolve a <b>própria peça</b> com fios, cores e composição — um processo que mistura <b>criatividade, concentração e troca</b> de forma leve e espontânea.</p>
     <div class="cgrid">
       <figure class="cphoto">{img("tufting1.jpg", "Participante criando uma peça de tufting no ateliê", "center 45%")}</figure>
       <div class="cpil">
@@ -275,7 +275,7 @@ sugestao = f'''
         <div class="cp"><span class="cn">04 · Finalização</span><p>Uma criação autoral do começo ao fim, feita por cada participante.</p></div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Lado B Studio</b> · estúdio especializado em artes manuais e Tufting · Av. Brigadeiro Faria Lima, 1572. Experiência para iniciantes, com acompanhamento profissional e materiais inclusos. <b>A partir de R$ 899 por pessoa · formato corporativo sob confirmação.</b></div>
+    <div class="bnote" style="margin-top:16px">◆ <b>Lado B Studio</b> · estúdio especializado em artes manuais e Tufting · Av. Brigadeiro Faria Lima, 1572. Experiência para iniciantes, com acompanhamento profissional e materiais inclusos.</div>
     {foot("Sugestão Elarah · Tufting")}
   </section>'''
 
@@ -387,8 +387,8 @@ investimento = f'''
         </tr>
         <tr>
           <td class="rl"><b>Cerâmica</b><span>modelagem à mão, com queima e acabamento</span></td>
-          <td class="val">R$ 499</td>
-          <td class="tot">R$ 7.485</td>
+          <td class="val">R$ 489</td>
+          <td class="tot">R$ 7.335</td>
         </tr>
         <tr class="hl">
           <td class="rl"><b>Tufting</b><span>criação autoral em fios e cores · ★ Sugestão Elarah</span></td>
@@ -396,7 +396,7 @@ investimento = f'''
           <td class="tot">R$ 13.485</td>
         </tr>
         <tr>
-          <td class="rl"><b>Gastronomia</b> · harmonização<span>preparo participativo e experiência à mesa</span></td>
+          <td class="rl"><b>Encontro gastronômico</b> · harmonização<span>preparo participativo e experiência à mesa</span></td>
           <td class="val">R$ 899</td>
           <td class="tot">R$ 13.485</td>
         </tr>
@@ -429,7 +429,7 @@ proximos = f'''
       Heloisa, nos conta qual experiência faz mais sentido para o time e seguimos com a confirmação de disponibilidade e os próximos passos.<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — turma privada de 15 pessoas, na 1ª semana de novembro, em São Paulo. Sugestão principal: Tufting no Lado B Studio (Faria Lima), R$ 899 por pessoa. Demais experiências: Cerâmica R$ 499 por pessoa; Criação de fragrâncias R$ 359 por pessoa; Gastronomia interativa (harmonização) R$ 899 por pessoa. Cada experiência inclui profissional, materiais e estrutura necessários. Adicionais: registro fotográfico sob consulta; brindes e personalização a partir de R$ 139 por pessoa; espaços sob consulta e disponibilidade. Emissão de nota fiscal e condições de pagamento alinhadas com o financeiro. Proposta válida mediante confirmação de data, disponibilidade de agenda e definição da experiência.</p>
+    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — turma privada de 15 pessoas, na 1ª semana de novembro, em São Paulo. Sugestão principal: Tufting no Lado B Studio (Faria Lima), R$ 899 por pessoa. Demais experiências: Cerâmica R$ 489 por pessoa; Criação de fragrâncias R$ 359 por pessoa; Encontro gastronômico (harmonização) R$ 899 por pessoa. Cada experiência inclui profissional, materiais e estrutura necessários. Adicionais: registro fotográfico sob consulta; brindes e personalização a partir de R$ 139 por pessoa; espaços sob consulta e disponibilidade. Emissão de nota fiscal e condições de pagamento alinhadas com o financeiro. Proposta válida mediante confirmação de data, disponibilidade de agenda e definição da experiência.</p>
     {foot("Próximos passos")}
   </section>'''
 
