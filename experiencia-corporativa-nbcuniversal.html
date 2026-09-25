@@ -274,6 +274,28 @@
   .pcard .pbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.14;margin:0 0 7px;text-wrap:balance;min-height:2.3em}
   .pcard .pbody p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
   .pcard .pbody p b{color:var(--navy);font-weight:700}
+  /* curadoria de espacos: foto grande + nome + bairro + frase (75/25) */
+  .curphrase{font-size:11.5px;color:var(--navy-soft);font-style:italic;line-height:1.5;margin:8px 0 0}
+  .cc{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.42);display:flex;flex-direction:column;background:var(--card)}
+  .cc .cph{flex:1;min-height:0;overflow:hidden}
+  .cc .cph img{width:100%;height:100%;object-fit:cover;display:block}
+  .cc .ctx{padding:14px 17px 16px}
+  .cc .cnm{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);line-height:1.05}
+  .cc .cbr{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:4px}
+  .cc .cds{font-size:11px;color:var(--muted);line-height:1.46;margin-top:8px}
+  .cc .csel{position:absolute;top:13px;left:13px;background:var(--orange-dark);color:#fff;font-size:7.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:5px 11px;border-radius:999px;z-index:2;box-shadow:0 6px 16px -6px rgba(0,0,0,.5)}
+  /* slide 6: hero (Lado B grande) + 2 empilhados */
+  .curhero{display:grid;grid-template-columns:1.38fr 1fr;gap:18px;margin-top:14px;height:560px}
+  .curcol{display:grid;grid-template-rows:1fr 1fr;gap:18px;min-height:0}
+  .curhero .ccbig .cnm{font-size:23px}
+  .curhero .cc{min-height:0}
+  /* slide 7: 3 iguais */
+  .cur3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px;height:540px}
+  .cur3 .cc{min-height:0}
+  /* rodape rede de parceiros */
+  .curfoot{margin-top:15px}
+  .curfoot .cf1{font-size:11.5px;color:var(--navy);line-height:1.5}
+  .curfoot .cf2{font-size:9.5px;color:var(--muted);line-height:1.45;margin-top:5px}
 </style>
 <style>
   :root{
@@ -628,79 +650,60 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Os espaços</span></div>
+      <div class="head-right"><span class="kicker">Nossa curadoria de espaços</span></div>
     </div>
-    <span class="eyebrow orange">Os espaços</span>
-    <h2>Onde a experiência <em>acontece</em></h2>
-    <p class="lead">Cada espaço é escolhido conforme a experiência, a região e o ritmo do encontro. Para o Tufting, nossa sugestão é o Lado B Studio.</p>
-    <div class="duo b60">
-      <div class="sp">
-      <div class="sphead">
-        <div class="spn">Lado B Studio<small>Faria Lima · São Paulo</small></div>
-        <span class="spsel">★ Sugestão Elarah para Tufting</span>
-      </div>
-      <div class="spgrid">
-        <figure><img src="assets/tufting6.jpg" alt="Grupo reunido com as próprias criações de tufting" style="object-position:center 40%"></figure>
-        <figure><img src="assets/tufting1.jpg" alt="Participante criando a própria peça de tufting" style="object-position:center 45%"></figure>
-        <figure><img src="assets/tufting17.jpg" alt="Participante diante da parede de peças de tufting" style="object-position:center 45%"></figure>
-      </div>
-      <p>Um ateliê criativo no coração de São Paulo, dedicado às artes manuais e ao Tufting — preparado para receber o grupo em uma experiência imersiva e mão na massa.</p>
+    <span class="eyebrow orange">Nossa curadoria de espaços</span>
+    <h2>Diferentes cenários para <em>diferentes experiências</em></h2>
+    <p class="lead">De ateliês criativos a jardins, cafés e espaços gastronômicos, selecionamos diferentes possibilidades em São Paulo para receber o time. A escolha final acontece de acordo com a experiência, a região e o clima que vocês querem para o encontro.</p>
+    <p class="curphrase">Esses são alguns dos espaços que selecionamos para este briefing — e podemos ampliar a curadoria de acordo com a preferência do time.</p>
+    <div class="curhero">
+      <div class="cc ccbig">
+      <span class="csel">★ Nossa sugestão para Tufting</span><div class="cph"><img src="assets/tufting6.jpg" alt="Grupo criando as próprias peças de tufting no estúdio" style="object-position:center 42%"></div>
+      <div class="ctx"><div class="cnm">Lado B Studio</div><div class="cbr">Faria Lima</div><div class="cds">Criativo, contemporâneo e preparado especialmente para experiências manuais.</div></div>
     </div>
-      <div class="sp">
-      <div class="sphead">
-        <div class="spn">Entremãos<small>Perdizes · São Paulo</small></div>
-        
-      </div>
-      <div class="spgrid">
-        <figure><img src="assets/netas-atelie.jpg" alt="Ateliê de cerâmica intimista, com luz natural" style="object-position:center 50%"></figure>
-        <figure><img src="assets/ceramicamodelagem.jpg" alt="Mãos modelando uma peça de cerâmica" style="object-position:center 50%"></figure>
-        <figure><img src="assets/ceramicacool.jpg" alt="Peças de cerâmica finalizadas" style="object-position:center 50%"></figure>
-      </div>
-      <p>Um ateliê acolhedor em Perdizes, com clima intimista e luz natural — cenário ideal para a experiência de cerâmica, no ritmo de cada participante.</p>
+      <div class="curcol">
+        <div class="cc">
+      <div class="cph"><img src="assets/netas-atelie.jpg" alt="Ateliê intimista e acolhedor, com luz natural" style="object-position:center 50%"></div>
+      <div class="ctx"><div class="cnm">Entremãos</div><div class="cbr">Perdizes</div><div class="cds">Um espaço intimista e acolhedor para experiências criativas em grupo.</div></div>
     </div>
+        <div class="cc">
+      <div class="cph"><img src="assets/sowcafe.jpg" alt="Café urbano e acolhedor" style="object-position:center 50%"></div>
+      <div class="ctx"><div class="cnm">Sterna Café</div><div class="cbr">Faria Lima</div><div class="cds">Uma opção urbana e prática para encontros mais leves e próximos.</div></div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Espaços sujeitos à consulta e disponibilidade na data escolhida.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Os espaços · I</span></div>
+      </div>
+    </div>
+    <div class="curfoot">
+      <div class="cf1">A Elarah trabalha com uma rede de espaços parceiros em diferentes regiões de São Paulo. A seleção final é feita de acordo com a experiência, a localização e a preferência do grupo.</div>
+      <div class="cf2">Espaços sujeitos à disponibilidade. Condições de reserva, locação ou consumo variam conforme o local e são confirmadas antes do fechamento.</div>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Curadoria de espaços · I</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Os espaços</span></div>
+      <div class="head-right"><span class="kicker">Nossa curadoria de espaços</span></div>
     </div>
-    <span class="eyebrow orange">A curadoria de espaços</span>
-    <h2>O cenário também faz parte da <em>experiência</em></h2>
-    <p class="lead">De ateliês criativos a jardins, cafés e espaços gastronômicos, selecionamos o cenário de acordo com a experiência, a região e o ritmo que o encontro pede.</p>
-    <div class="duo b50">
-      <div class="sp">
-      <div class="sphead">
-        <div class="spn">Spicy Gabriel<small>São Paulo <i>· bairro a confirmar</i></small></div>
-        
-      </div>
-      <div class="spgrid">
-        <figure><img src="assets/aula-grupo.jpg" alt="Grupo diverso cozinhando junto com um chef" style="object-position:center 50%"></figure>
-        <figure><img src="assets/pizza-brinde.jpg" alt="Mesa posta com comida e brinde" style="object-position:center 50%"></figure>
-        <figure><img src="assets/vinhotintos.jpg" alt="Taças e vinhos servidos para o encontro" style="object-position:center 45%"></figure>
-      </div>
-      <p>Um encontro em torno da cozinha e da mesa — preparo participativo com chef, sabores e celebração. Um formato mais gastronômico, feito para aproveitar o tempo junto.</p>
+    <span class="eyebrow orange">Nossa curadoria de espaços</span>
+    <h2>Mais cenários <em>para o encontro</em></h2>
+    <div class="cur3">
+      <div class="cc">
+      <div class="cph"><img src="assets/ojardim1.jpg" alt="Jardim arborizado com verde e luz natural" style="object-position:center 50%"></div>
+      <div class="ctx"><div class="cnm">O Jardim</div><div class="cbr">Campo Belo</div><div class="cds">Verde, luz natural e uma atmosfera mais aberta para desacelerar da rotina.</div></div>
     </div>
-      <div class="sp">
-      <div class="sphead">
-        <div class="spn">O Jardim<small>São Paulo <i>· bairro a confirmar</i></small></div>
-        
-      </div>
-      <div class="spgrid">
-        <figure><img src="assets/ojardim1.jpg" alt="Jardim arborizado com deck e verde ao redor" style="object-position:center 50%"></figure>
-        <figure><img src="assets/natura-mesa.jpg" alt="Grupo reunido à mesa em meio ao verde" style="object-position:center 50%"></figure>
-        <figure><img src="assets/ojardim4.jpg" alt="Espaço ao ar livre cercado de verde e luz natural" style="object-position:center 50%"></figure>
-      </div>
-      <p>Um café-ateliê cercado de verde e luz natural, com mesa compartilhada ao ar livre — um cenário mais leve e espontâneo para o encontro.</p>
+      <div class="cc">
+      <div class="cph"><img src="assets/pizza-brinde.jpg" alt="Mesa posta com comida e brinde, em clima de celebração" style="object-position:center 50%"></div>
+      <div class="ctx"><div class="cnm">Spicy Gabriel</div><div class="cbr">Pinheiros</div><div class="cds">Um cenário gastronômico para criar, compartilhar e terminar o encontro à mesa.</div></div>
+    </div>
+      <div class="cc">
+      <div class="cph"><img src="assets/ceramicamodelagem.jpg" alt="Mãos modelando uma peça de cerâmica" style="object-position:center 50%"></div>
+      <div class="ctx"><div class="cnm">Ateliê parceiro</div><div class="cbr">Perdizes</div><div class="cds">Um ambiente dedicado à criação manual, especialmente interessante para a experiência de cerâmica.</div></div>
     </div>
     </div>
-    <div class="optline" style="margin-top:14px">
-      <span class="o">◆ Outras possibilidades: <b>Sterna Café · Faria Lima</b> &nbsp;·&nbsp; <b>Ateliê parceiro · Perdizes</b></span>
+    <div class="curfoot">
+      <div class="cf1">A Elarah trabalha com uma rede de espaços parceiros em diferentes regiões de São Paulo. A seleção final é feita de acordo com a experiência, a localização e a preferência do grupo.</div>
+      <div class="cf2">Espaços sujeitos à disponibilidade. Condições de reserva, locação ou consumo variam conforme o local e são confirmadas antes do fechamento.</div>
     </div>
-    <p class="fineprint" style="margin-top:10px">Espaços sujeitos à consulta, disponibilidade e condições específicas de reserva ou consumo.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Os espaços · II</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Curadoria de espaços · II</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">

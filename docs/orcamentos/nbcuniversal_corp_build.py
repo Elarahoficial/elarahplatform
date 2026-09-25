@@ -114,6 +114,28 @@ xcss = '''
   .pcard .pbody h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.14;margin:0 0 7px;text-wrap:balance;min-height:2.3em}
   .pcard .pbody p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
   .pcard .pbody p b{color:var(--navy);font-weight:700}
+  /* curadoria de espacos: foto grande + nome + bairro + frase (75/25) */
+  .curphrase{font-size:11.5px;color:var(--navy-soft);font-style:italic;line-height:1.5;margin:8px 0 0}
+  .cc{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.42);display:flex;flex-direction:column;background:var(--card)}
+  .cc .cph{flex:1;min-height:0;overflow:hidden}
+  .cc .cph img{width:100%;height:100%;object-fit:cover;display:block}
+  .cc .ctx{padding:14px 17px 16px}
+  .cc .cnm{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);line-height:1.05}
+  .cc .cbr{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:4px}
+  .cc .cds{font-size:11px;color:var(--muted);line-height:1.46;margin-top:8px}
+  .cc .csel{position:absolute;top:13px;left:13px;background:var(--orange-dark);color:#fff;font-size:7.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:5px 11px;border-radius:999px;z-index:2;box-shadow:0 6px 16px -6px rgba(0,0,0,.5)}
+  /* slide 6: hero (Lado B grande) + 2 empilhados */
+  .curhero{display:grid;grid-template-columns:1.38fr 1fr;gap:18px;margin-top:14px;height:560px}
+  .curcol{display:grid;grid-template-rows:1fr 1fr;gap:18px;min-height:0}
+  .curhero .ccbig .cnm{font-size:23px}
+  .curhero .cc{min-height:0}
+  /* slide 7: 3 iguais */
+  .cur3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px;height:540px}
+  .cur3 .cc{min-height:0}
+  /* rodape rede de parceiros */
+  .curfoot{margin-top:15px}
+  .curfoot .cf1{font-size:11.5px;color:var(--navy);line-height:1.5}
+  .curfoot .cf2{font-size:9.5px;color:var(--muted);line-height:1.45;margin-top:5px}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -279,91 +301,89 @@ sugestao = f'''
     {foot("Sugestão Elarah · Tufting")}
   </section>'''
 
-# ---- helper: bloco de um espaço (nome · bairro + selo opcional + 3 fotos + texto) ----
-def spblock(name, bairro, photos, body, selo=None):
-    figs = "\n        ".join(
-        f'<figure>{img(src, alt, pos)}</figure>' for src, alt, pos in photos)
-    sel = f'<span class="spsel">{selo}</span>' if selo else ''
-    return f'''<div class="sp">
-      <div class="sphead">
-        <div class="spn">{name}<small>{bairro}</small></div>
-        {sel}
-      </div>
-      <div class="spgrid">
-        {figs}
-      </div>
-      <p>{body}</p>
+# ---- helper: card de espaço (foto grande + nome + bairro + frase) ----
+def cc(name, region, src, alt, body, pos="center 50%", selo=None, big=False):
+    sel = f'<span class="csel">{selo}</span>' if selo else ''
+    cls = "cc ccbig" if big else "cc"
+    return f'''<div class="{cls}">
+      {sel}<div class="cph">{img(src, alt, pos)}</div>
+      <div class="ctx"><div class="cnm">{name}</div><div class="cbr">{region}</div><div class="cds">{body}</div></div>
     </div>'''
 
 
-# ============================ 6 · ESPAÇOS I · LADO B + ENTREMÃOS ============================
-lado_b = spblock(
-    "Lado B Studio", "Faria Lima · São Paulo",
-    [
-        ("tufting6.jpg", "Grupo reunido com as próprias criações de tufting", "center 40%"),
-        ("tufting1.jpg", "Participante criando a própria peça de tufting", "center 45%"),
-        ("tufting17.jpg", "Participante diante da parede de peças de tufting", "center 45%"),
-    ],
-    "Um ateliê criativo no coração de São Paulo, dedicado às artes manuais e ao Tufting — preparado para receber o grupo em uma experiência imersiva e mão na massa.",
-    selo="★ Sugestão Elarah para Tufting",
+CURFOOT = '''<div class="curfoot">
+      <div class="cf1">A Elarah trabalha com uma rede de espaços parceiros em diferentes regiões de São Paulo. A seleção final é feita de acordo com a experiência, a localização e a preferência do grupo.</div>
+      <div class="cf2">Espaços sujeitos à disponibilidade. Condições de reserva, locação ou consumo variam conforme o local e são confirmadas antes do fechamento.</div>
+    </div>'''
+
+# ============================ 6 · CURADORIA I ============================
+c_ladob = cc(
+    "Lado B Studio", "Faria Lima",
+    "tufting6.jpg", "Grupo criando as próprias peças de tufting no estúdio",
+    "Criativo, contemporâneo e preparado especialmente para experiências manuais.",
+    pos="center 42%", selo="★ Nossa sugestão para Tufting", big=True,
 )
-entremaos = spblock(
-    "Entremãos", "Perdizes · São Paulo",
-    [
-        ("netas-atelie.jpg", "Ateliê de cerâmica intimista, com luz natural", "center 50%"),
-        ("ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%"),
-        ("ceramicacool.jpg", "Peças de cerâmica finalizadas", "center 50%"),
-    ],
-    "Um ateliê acolhedor em Perdizes, com clima intimista e luz natural — cenário ideal para a experiência de cerâmica, no ritmo de cada participante.",
+c_entremaos = cc(
+    "Entremãos", "Perdizes",
+    "netas-atelie.jpg", "Ateliê intimista e acolhedor, com luz natural",
+    "Um espaço intimista e acolhedor para experiências criativas em grupo.",
+    pos="center 50%",
+)
+c_sterna = cc(
+    "Sterna Café", "Faria Lima",
+    "sowcafe.jpg", "Café urbano e acolhedor",
+    "Uma opção urbana e prática para encontros mais leves e próximos.",
+    pos="center 50%",
 )
 espacos1 = f'''
   <section class="slide">
-{head_simple("Os espaços")}
-    <span class="eyebrow orange">Os espaços</span>
-    <h2>Onde a experiência <em>acontece</em></h2>
-    <p class="lead">Cada espaço é escolhido conforme a experiência, a região e o ritmo do encontro. Para o Tufting, nossa sugestão é o Lado B Studio.</p>
-    <div class="duo b60">
-      {lado_b}
-      {entremaos}
+{head_simple("Nossa curadoria de espaços")}
+    <span class="eyebrow orange">Nossa curadoria de espaços</span>
+    <h2>Diferentes cenários para <em>diferentes experiências</em></h2>
+    <p class="lead">De ateliês criativos a jardins, cafés e espaços gastronômicos, selecionamos diferentes possibilidades em São Paulo para receber o time. A escolha final acontece de acordo com a experiência, a região e o clima que vocês querem para o encontro.</p>
+    <p class="curphrase">Esses são alguns dos espaços que selecionamos para este briefing — e podemos ampliar a curadoria de acordo com a preferência do time.</p>
+    <div class="curhero">
+      {c_ladob}
+      <div class="curcol">
+        {c_entremaos}
+        {c_sterna}
+      </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Espaços sujeitos à consulta e disponibilidade na data escolhida.</div>
-    {foot("Os espaços · I")}
+    {CURFOOT}
+    {foot("Curadoria de espaços · I")}
   </section>'''
 
-# ============================ 7 · ESPAÇOS II · SPICY GABRIEL + O JARDIM ============================
-spicy = spblock(
-    "Spicy Gabriel", "São Paulo <i>· bairro a confirmar</i>",
-    [
-        ("aula-grupo.jpg", "Grupo diverso cozinhando junto com um chef", "center 50%"),
-        ("pizza-brinde.jpg", "Mesa posta com comida e brinde", "center 50%"),
-        ("vinhotintos.jpg", "Taças e vinhos servidos para o encontro", "center 45%"),
-    ],
-    "Um encontro em torno da cozinha e da mesa — preparo participativo com chef, sabores e celebração. Um formato mais gastronômico, feito para aproveitar o tempo junto.",
+# ============================ 7 · CURADORIA II ============================
+c_jardim = cc(
+    "O Jardim", "Campo Belo",
+    "ojardim1.jpg", "Jardim arborizado com verde e luz natural",
+    "Verde, luz natural e uma atmosfera mais aberta para desacelerar da rotina.",
+    pos="center 50%",
 )
-jardim = spblock(
-    "O Jardim", "São Paulo <i>· bairro a confirmar</i>",
-    [
-        ("ojardim1.jpg", "Jardim arborizado com deck e verde ao redor", "center 50%"),
-        ("natura-mesa.jpg", "Grupo reunido à mesa em meio ao verde", "center 50%"),
-        ("ojardim4.jpg", "Espaço ao ar livre cercado de verde e luz natural", "center 50%"),
-    ],
-    "Um café-ateliê cercado de verde e luz natural, com mesa compartilhada ao ar livre — um cenário mais leve e espontâneo para o encontro.",
+c_spicy = cc(
+    "Spicy Gabriel", "Pinheiros",
+    "pizza-brinde.jpg", "Mesa posta com comida e brinde, em clima de celebração",
+    "Um cenário gastronômico para criar, compartilhar e terminar o encontro à mesa.",
+    pos="center 50%",
+)
+c_atelie = cc(
+    "Ateliê parceiro", "Perdizes",
+    "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica",
+    "Um ambiente dedicado à criação manual, especialmente interessante para a experiência de cerâmica.",
+    pos="center 50%",
 )
 espacos2 = f'''
   <section class="slide">
-{head_simple("Os espaços")}
-    <span class="eyebrow orange">A curadoria de espaços</span>
-    <h2>O cenário também faz parte da <em>experiência</em></h2>
-    <p class="lead">De ateliês criativos a jardins, cafés e espaços gastronômicos, selecionamos o cenário de acordo com a experiência, a região e o ritmo que o encontro pede.</p>
-    <div class="duo b50">
-      {spicy}
-      {jardim}
+{head_simple("Nossa curadoria de espaços")}
+    <span class="eyebrow orange">Nossa curadoria de espaços</span>
+    <h2>Mais cenários <em>para o encontro</em></h2>
+    <div class="cur3">
+      {c_jardim}
+      {c_spicy}
+      {c_atelie}
     </div>
-    <div class="optline" style="margin-top:14px">
-      <span class="o">◆ Outras possibilidades: <b>Sterna Café · Faria Lima</b> &nbsp;·&nbsp; <b>Ateliê parceiro · Perdizes</b></span>
-    </div>
-    <p class="fineprint" style="margin-top:10px">Espaços sujeitos à consulta, disponibilidade e condições específicas de reserva ou consumo.</p>
-    {foot("Os espaços · II")}
+    {CURFOOT}
+    {foot("Curadoria de espaços · II")}
   </section>'''
 
 # ============================ 9 · INVESTIMENTO ============================
