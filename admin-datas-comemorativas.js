@@ -295,7 +295,11 @@
   // =============================================================
   // UI do painel
   // =============================================================
-  var S = { ano: new Date().getFullYear(), cat: '', rel: 1, busca: '' };
+  // vista: 'lista' (linhas com a ideia) ou 'calendario' (grade de jan a dez,
+  // dias com data comemorativa pintados num círculo). A escolha fica no
+  // navegador de quem usa.
+  var S = { ano: new Date().getFullYear(), cat: '', rel: 1, busca: '', vista: 'lista', diaSel: '' };
+  try { if (localStorage.getItem('elarah_dc_vista') === 'calendario') S.vista = 'calendario'; } catch (e) { /* sem storage */ }
   var WD = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
   var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -363,6 +367,14 @@
         }).join('') + '</div></section>';
     }
 
+    el('dc-stats').innerHTML = '<strong>' + lista.length + '</strong> datas em ' + S.ano +
+      ' · <strong>' + lista.filter(function (e) { return e.rel === 3; }).length + '</strong> quentes (★★★)';
+
+    if (S.vista === 'calendario') {
+      root.innerHTML = radarHtml + calendarioHtml(lista, hoje);
+      return;
+    }
+
     var porMes = {};
     lista.forEach(function (e, i) {
       var m = e.dt.getMonth();
@@ -378,9 +390,92 @@
       '</section>';
     }
 
-    el('dc-stats').innerHTML = '<strong>' + lista.length + '</strong> datas em ' + S.ano +
-      ' · <strong>' + lista.filter(function (e) { return e.rel === 3; }).length + '</strong> quentes (★★★)';
     root.innerHTML = radarHtml + (mesesHtml || '<p class="dc-vazio">Nenhuma data encontrada.</p>');
+  }
+
+  // ---------- Vista calendário ----------
+  // Índices (em _visiveis) das datas de cada dia, pra montar os círculos
+  // e o detalhe do dia clicado.
+  function indicePorDia(lista) {
+    var m = {};
+    lista.forEach(function (e, i) { (m[e.ymd] = m[e.ymd] || []).push(i); });
+    return m;
+  }
+
+  function legendaHtml() {
+    return '<div class="dc-legenda">' +
+      Object.keys(CATS).map(function (k) {
+        return '<span><i style="background:' + CATS[k].bg + ';border-color:' + CATS[k].fg + ';"></i>' + esc(CATS[k].label) + '</span>';
+      }).join('') +
+      '<span><i style="background:#5C2426;border-color:#5C2426;"></i>Círculo cheio = data quente ★★★</span>' +
+    '</div>';
+  }
+
+  function detalheDiaHtml(ymdStr, idxs, hoje) {
+    if (!ymdStr || !idxs || !idxs.length) {
+      return '<p class="dc-detalhe-dica">Toque num dia colorido pra ver as datas.</p>';
+    }
+    return idxs.map(function (i) { return linha(_visiveis[i], i, hoje); }).join('');
+  }
+
+  function calendarioHtml(lista, hoje) {
+    var porDiaIdx = indicePorDia(lista);
+    var hojeYmd = ymd(hoje);
+    var html = legendaHtml() + '<div class="dc-cal">';
+    for (var m = 0; m < 12; m++) {
+      var primeiro = new Date(S.ano, m, 1);
+      var nDias = new Date(S.ano, m + 1, 0).getDate();
+      var cels = '';
+      for (var v = 0; v < primeiro.getDay(); v++) cels += '<span class="dc-dia dc-dia--vazio"></span>';
+      for (var d = 1; d <= nDias; d++) {
+        var dt = new Date(S.ano, m, d);
+        var key = ymd(dt);
+        var idxs = porDiaIdx[key];
+        var cls = 'dc-dia';
+        var style = '';
+        var title = '';
+        if (idxs) {
+          var top = _visiveis[idxs[0]]; // já vem ordenado por relevância dentro do dia
+          var c = CATS[top.cat];
+          cls += ' dc-dia--tem' + (top.rel === 3 ? ' dc-dia--quente' : '');
+          style = ' style="--dc-bg:' + c.bg + ';--dc-fg:' + c.fg + ';"';
+          title = idxs.map(function (i) { return _visiveis[i].nome; }).join(' · ');
+        }
+        if (dt < hoje) cls += ' dc-dia--passou';
+        if (key === hojeYmd) cls += ' dc-dia--hoje';
+        if (key === S.diaSel) cls += ' dc-dia--sel';
+        cels += idxs
+          ? '<button type="button" class="' + cls + '"' + style + ' data-ymd="' + key + '" title="' + esc(title) + '">' + d +
+              (idxs.length > 1 ? '<b>' + idxs.length + '</b>' : '') + '</button>'
+          : '<span class="' + cls + '">' + d + '</span>';
+      }
+      var selNoMes = S.diaSel && S.diaSel.slice(0, 7) === key.slice(0, 7) ? S.diaSel : '';
+      html += '<section class="dc-mes dc-mes--cal" id="dc-mes-' + m + '">' +
+        '<div class="dc-mes-head"><h3>' + MESES[m] + '</h3><span>' + esc(MESES_CAMPANHA[m + 1]) + '</span></div>' +
+        '<div class="dc-grade">' +
+          WD.map(function (w) { return '<span class="dc-wd">' + w.charAt(0).toUpperCase() + '</span>'; }).join('') +
+          cels +
+        '</div>' +
+        '<div class="dc-detalhe" id="dc-det-' + m + '">' + detalheDiaHtml(selNoMes, porDiaIdx[selNoMes], hoje) + '</div>' +
+      '</section>';
+    }
+    return html + '</div>';
+  }
+
+  function selecionarDia(ymdStr) {
+    S.diaSel = S.diaSel === ymdStr ? '' : ymdStr;
+    // Atualiza só o mês clicado (sem re-render geral, pra não pular a rolagem).
+    var root = el('dc-root');
+    root.querySelectorAll('.dc-dia--sel').forEach(function (b) { b.classList.remove('dc-dia--sel'); });
+    root.querySelectorAll('.dc-detalhe').forEach(function (det) {
+      det.innerHTML = detalheDiaHtml('', null);
+    });
+    if (!S.diaSel) return;
+    var btn = root.querySelector('.dc-dia[data-ymd="' + S.diaSel + '"]');
+    if (btn) btn.classList.add('dc-dia--sel');
+    var mes = parseInt(S.diaSel.slice(5, 7), 10) - 1;
+    var det = el('dc-det-' + mes);
+    if (det) det.innerHTML = detalheDiaHtml(S.diaSel, indicePorDia(_visiveis)[S.diaSel], hoje0());
   }
 
   function abrirNoCronograma(e) {
@@ -450,7 +545,23 @@
       var sec = el('dc-mes-' + new Date().getMonth());
       if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
+    function pintarVista() {
+      el('dc-vistas').querySelectorAll('.dc-vista').forEach(function (b) {
+        b.classList.toggle('dc-vista--on', b.dataset.vista === S.vista);
+      });
+    }
+    pintarVista();
+    el('dc-vistas').addEventListener('click', function (ev) {
+      var b = ev.target.closest('.dc-vista');
+      if (!b || b.dataset.vista === S.vista) return;
+      S.vista = b.dataset.vista;
+      try { localStorage.setItem('elarah_dc_vista', S.vista); } catch (e) { /* sem storage */ }
+      pintarVista();
+      render();
+    });
     el('dc-root').addEventListener('click', function (ev) {
+      var dia = ev.target.closest('.dc-dia[data-ymd]');
+      if (dia) { selecionarDia(dia.dataset.ymd); return; }
       var b = ev.target.closest('.dc-add');
       if (!b) return;
       var e = _visiveis[parseInt(b.dataset.idx, 10)];

@@ -2533,6 +2533,10 @@
       </div>
 
       <div class="dc-toolbar">
+        <div id="dc-vistas" class="dc-vistas" role="tablist" aria-label="Modo de visualização">
+          <button type="button" class="dc-vista" data-vista="lista">📋 Lista</button>
+          <button type="button" class="dc-vista" data-vista="calendario">📅 Calendário</button>
+        </div>
         <select id="dc-ano" aria-label="Ano"></select>
         <input type="search" id="dc-busca" placeholder="Buscar (ex.: amigo, cachaça, feriado)…" aria-label="Buscar data">
         <select id="dc-rel" aria-label="Relevância">
@@ -2593,6 +2597,35 @@
         .dc-row { flex-wrap:wrap; }
         .dc-corpo { flex-basis:calc(100% - 64px); }
         .dc-add { margin-left:64px; }
+      }
+      /* Alternador Lista / Calendário */
+      .dc-vistas { display:flex; border:1.5px solid #ddd; border-radius:8px; overflow:hidden; }
+      .dc-vista { padding:8px 12px; border:none; background:#fff; font-family:inherit; font-size:.85rem; font-weight:600; color:#666; cursor:pointer; }
+      .dc-vista + .dc-vista { border-left:1.5px solid #ddd; }
+      .dc-vista--on { background:#5C2426; color:#fff; }
+      /* Vista calendário: jan→dez, dias com data pintados em círculo */
+      .dc-legenda { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:.75rem; color:#666; margin-bottom:14px; }
+      .dc-legenda span { display:inline-flex; align-items:center; gap:5px; }
+      .dc-legenda i { width:12px; height:12px; border-radius:50%; border:2px solid; display:inline-block; }
+      .dc-cal { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:14px; align-items:start; }
+      .dc-mes--cal { margin-bottom:0; }
+      .dc-grade { display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; padding:12px; justify-items:center; }
+      .dc-wd { font-size:.68rem; font-weight:700; color:#aaa; padding-bottom:2px; }
+      .dc-dia { position:relative; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.85rem; color:#555; border:2px solid transparent; background:transparent; font-family:inherit; padding:0; }
+      .dc-dia--vazio { visibility:hidden; }
+      .dc-dia--tem { background:var(--dc-bg); border-color:var(--dc-fg); color:var(--dc-fg); font-weight:700; cursor:pointer; }
+      .dc-dia--quente { background:var(--dc-fg); color:#fff; }
+      .dc-dia--tem:hover { transform:scale(1.1); }
+      .dc-dia--passou { opacity:.4; }
+      .dc-dia--hoje { box-shadow:0 0 0 2px #fff, 0 0 0 4px #f0a05e; opacity:1; }
+      .dc-dia--sel { box-shadow:0 0 0 2px #fff, 0 0 0 4px #1a1a1a; opacity:1; }
+      .dc-dia b { position:absolute; top:-5px; right:-5px; min-width:16px; height:16px; border-radius:8px; background:#1a1a1a; color:#fff; font-size:.6rem; line-height:16px; text-align:center; }
+      .dc-detalhe { border-top:1px solid #f0e8de; }
+      .dc-detalhe .dc-row { padding:10px 12px; }
+      .dc-detalhe-dica { margin:0; padding:8px 12px; font-size:.75rem; color:#aaa; font-style:italic; }
+      @media (max-width:600px) {
+        .dc-cal { grid-template-columns:1fr; }
+        .dc-dia { width:40px; height:40px; }
       }
       /* Selo de data comemorativa no cabeçalho do dia (Cronograma) */
       .cal-dc-badge { display:inline-block; margin-left:8px; font-size:.7rem; font-weight:600; padding:2px 8px; border-radius:999px; background:#fff1dc; color:#9a5a00; }
@@ -4921,7 +4954,7 @@
 <script src="admin-searchable-select.js?v=1"></script>
 <script src="admin-conversas.js?v=2"></script>
 <script src="admin-acessos.js?v=3"></script>
-<script src="admin-datas-comemorativas.js?v=1"></script>
+<script src="admin-datas-comemorativas.js?v=2"></script>
 <script src="admin.js?v=246"></script>
 
 <!-- ==========================================================
