@@ -12,9 +12,7 @@
 // As datas móveis (Carnaval, Páscoa, Mães, Pais, Black Friday…) são
 // calculadas pro ano escolhido — o calendário serve pra qualquer ano.
 //
-// O botão "+ Cronograma" abre o modal do Calendário Editorial já com
-// a data e a ideia preenchidas; e o próprio Cronograma mostra as
-// datas comemorativas no cabeçalho de cada dia.
+// (O botão "+ Cronograma" saiu junto com a aba Cronograma do menu.)
 // =============================================================
 (function () {
   'use strict';
@@ -340,7 +338,6 @@
           (e.rel >= 2 ? '<span class="dc-ante">divulgar a partir de ' + ddmm(e.inicio) + '</span>' : '') + '</div>' +
         '<div class="dc-ideia">💡 ' + esc(e.ideia) + '</div>' +
       '</div>' +
-      '<button type="button" class="dc-add" data-idx="' + idx + '" title="Criar conteúdo no Cronograma com essa data">+ Cronograma</button>' +
     '</div>';
   }
 
@@ -478,19 +475,6 @@
     if (det) det.innerHTML = detalheDiaHtml(S.diaSel, indicePorDia(_visiveis)[S.diaSel], hoje0());
   }
 
-  function abrirNoCronograma(e) {
-    if (typeof window._adminCalNovoConteudo !== 'function') {
-      alert('Cronograma indisponível. Abra a aba Cronograma uma vez e tente de novo.');
-      return;
-    }
-    window._adminCalNovoConteudo({
-      data: e.ymd,
-      ideia: e.nome,
-      legenda: '',
-      observacao: '[data comemorativa] ' + e.ideia
-    });
-  }
-
   function baixarCsv() {
     var linhas = [['Data', 'Dia da semana', 'Data comemorativa', 'Categoria', 'Relevância (1-3)', 'Começar a divulgar', 'Ideia pra Elarah']];
     filtrada().forEach(function (e) {
@@ -561,11 +545,7 @@
     });
     el('dc-root').addEventListener('click', function (ev) {
       var dia = ev.target.closest('.dc-dia[data-ymd]');
-      if (dia) { selecionarDia(dia.dataset.ymd); return; }
-      var b = ev.target.closest('.dc-add');
-      if (!b) return;
-      var e = _visiveis[parseInt(b.dataset.idx, 10)];
-      if (e) abrirNoCronograma(e);
+      if (dia) selecionarDia(dia.dataset.ymd);
     });
   }
 
