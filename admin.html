@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 140;
+      var EXPECTED = 141;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -292,11 +292,11 @@
         <span>Novidades</span>
       </button>
 
-      <!-- Calendário Editorial voltou pro menu: a reorganização de
-           set/26 tirou a entrada e o painel virou inalcançável (só
-           existia no DOM). É o cronograma de conteúdo, então mora
-           em Comunicação, ao lado de Novidades. -->
-      <button class="admin__nav-item" data-panel="calendario-editorial">
+      <!-- Cronograma (Calendário Editorial) saiu do menu a pedido da
+           admin (set/26): o planejamento passou pra aba Datas
+           Comemorativas. Botão fica escondido no DOM, como os outros
+           painéis arquivados — o painel e os dados continuam lá. -->
+      <button class="admin__nav-item" data-panel="calendario-editorial" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
           <line x1="16" y1="2" x2="16" y2="6"/>
@@ -344,7 +344,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.83 · 2026-09-25 (Pós-compra dentro de Feedbacks)
+        Admin v.84 · 2026-09-25 (Cronograma sai do menu)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2597,13 +2597,10 @@
       .dc-stars { color:#e08a2e; font-size:.85rem; letter-spacing:1px; }
       .dc-ante { font-size:.72rem; color:#a4663b; }
       .dc-ideia { font-size:.85rem; color:#555; line-height:1.4; }
-      .dc-add { flex-shrink:0; padding:6px 10px; border:1.5px solid #f0a05e; background:#fff; color:#a4663b; border-radius:8px; font-family:inherit; font-size:.75rem; font-weight:700; cursor:pointer; white-space:nowrap; }
-      .dc-add:hover { background:#f0a05e; color:#fff; }
       .dc-vazio { color:#aaa; font-style:italic; font-size:.85rem; padding:12px 16px; margin:0; }
       @media (max-width:600px) {
         .dc-row { flex-wrap:wrap; }
         .dc-corpo { flex-basis:calc(100% - 64px); }
-        .dc-add { margin-left:64px; }
       }
       /* Alternador Lista / Calendário */
       .dc-vistas { display:flex; border:1.5px solid #ddd; border-radius:8px; overflow:hidden; }
@@ -4961,7 +4958,7 @@
 <script src="admin-searchable-select.js?v=1"></script>
 <script src="admin-conversas.js?v=2"></script>
 <script src="admin-acessos.js?v=3"></script>
-<script src="admin-datas-comemorativas.js?v=2"></script>
+<script src="admin-datas-comemorativas.js?v=3"></script>
 <script src="admin.js?v=246"></script>
 
 <!-- ==========================================================
