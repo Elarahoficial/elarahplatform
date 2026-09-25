@@ -1269,6 +1269,27 @@
     }
   }
 
+  // Atualiza SÓ a coluna duracao. updateExperience manda a linha inteira
+  // (campos ausentes viram vazio), então não serve pra correção em lote.
+  async function updateExperienceDuracao(id, duracao) {
+    const s = sb();
+    if (!s || !id) return false;
+    try {
+      const { data: updated, error } = await s.from(TABLE)
+        .update({ duracao: String(duracao || '').trim() })
+        .eq('id', id).select('id').maybeSingle();
+      if (error || !updated) {
+        console.error('[Elarah] updateExperienceDuracao falhou para id=' + id, error);
+        return false;
+      }
+      invalidateCache();
+      return true;
+    } catch (e) {
+      console.error('[Elarah] updateExperienceDuracao exceção:', e);
+      return false;
+    }
+  }
+
   // Motivo da última falha de exclusão, em português, pra UI conseguir
   // dizer o que houve em vez de simplesmente não fazer nada. É
   // sobrescrito a cada chamada de deleteExperience.
@@ -2147,6 +2168,7 @@
     getExperienceById,
     addExperience,
     updateExperience,
+    updateExperienceDuracao,
     deleteExperience,
     getLastDeleteError,
     duplicateExperience,

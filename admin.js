@@ -7520,6 +7520,65 @@
     return h + 'h' + (r ? String(r).padStart(2, '0') : '');
   }
 
+  // "3h30", "3h 30min", "3 horas", "90min", "1h30min" → minutos (ou null).
+  function minutosDeDuracao(txt) {
+    var t = String(txt || '').toLowerCase().replace(/\s+/g, '');
+    var m = t.match(/^(\d{1,2})(?:h|hr|hrs|hora|horas)(?:(\d{1,2})(?:min|m)?)?$/) ;
+    if (m) return (+m[1]) * 60 + (+(m[2] || 0));
+    m = t.match(/^(\d{1,3})(?:min|minutos|m)$/);
+    if (m) return +m[1];
+    return null;
+  }
+
+  // Varre todas as experiências e corrige a Duração que não bate com o
+  // 1º horário (início – fim). Mostra a lista e pede confirmação antes.
+  async function corrigirDuracoesEmLote(btn) {
+    if (!window.ElarahData || !ElarahData.updateExperienceDuracao) {
+      alert('Recarregue a página (Ctrl+Shift+R) e tente de novo.');
+      return;
+    }
+    var label = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Conferindo…'; }
+    try {
+      var all = await ElarahData.getAllExperiences();
+      var erradas = [];
+      (all || []).forEach(function (e) {
+        if (!e || !e.id || String(e.id).indexOf('seed_') === 0) return;
+        var h = (Array.isArray(e.horarios) && e.horarios[0]) || e.horario || '';
+        var certa = duracaoDeHorario(h);
+        if (!certa) return;
+        var atual = String(e.duracao || '').trim();
+        if (minutosDeDuracao(atual) === minutosDeDuracao(certa)) return;
+        erradas.push({ exp: e, horario: h, atual: atual, certa: certa });
+      });
+      if (!erradas.length) {
+        alert('Tudo certo: todas as durações batem com o horário.');
+        return;
+      }
+      var lista = erradas.slice(0, 40).map(function (x) {
+        return '• ' + (x.exp.nome || x.exp.id) + (x.exp.data ? ' (' + x.exp.data + ')' : '') +
+          ': ' + x.horario + ' → "' + (x.atual || 'vazio') + '" vira "' + x.certa + '"';
+      }).join('\n');
+      if (erradas.length > 40) lista += '\n… e mais ' + (erradas.length - 40);
+      if (!confirm(erradas.length + ' experiência(s) com duração diferente do horário:\n\n' + lista + '\n\nCorrigir todas?')) return;
+      var ok = 0, falhas = [];
+      for (var i = 0; i < erradas.length; i++) {
+        if (btn) btn.textContent = 'Corrigindo ' + (i + 1) + '/' + erradas.length + '…';
+        var x = erradas[i];
+        if (await ElarahData.updateExperienceDuracao(x.exp.id, x.certa)) ok++;
+        else falhas.push(x.exp.nome || x.exp.id);
+      }
+      alert(ok + ' duração(ões) corrigida(s).' +
+        (falhas.length ? '\n\nNão consegui salvar: ' + falhas.join(', ') + '\n(confira se você está logada como admin)' : ''));
+      renderExperiences();
+    } catch (err) {
+      console.error('[Elarah] corrigirDuracoesEmLote:', err);
+      alert('Erro ao corrigir durações: ' + (err && err.message ? err.message : err));
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = label; }
+    }
+  }
+
   function autoPreencherDuracao() {
     var el = document.getElementById('exp-duracao');
     if (!el || !horariosList) return;
@@ -8939,6 +8998,12 @@
     if (btn && !btn._wired) {
       btn._wired = true;
       btn.addEventListener('click', function () { renderExperiences(); });
+    }
+
+    const fixDurBtn = document.getElementById('btn-fix-duracoes');
+    if (fixDurBtn && !fixDurBtn._wired) {
+      fixDurBtn._wired = true;
+      fixDurBtn.addEventListener('click', function () { corrigirDuracoesEmLote(fixDurBtn); });
     }
 
     // Wire do input de busca (idempotente). Re-renderiza a cada
