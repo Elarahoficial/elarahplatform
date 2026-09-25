@@ -220,6 +220,19 @@
   .datecall .di{font-size:17px;line-height:1.2}
   .datecall p{font-size:12.5px;color:var(--navy);line-height:1.5;margin:0}
   .datecall p b{color:var(--orange-dark)}
+  /* investimento padrao Elarah · valor da experiencia */
+  .phero{display:grid;grid-template-columns:.95fr 1.05fr;gap:38px;margin-top:20px;align-items:center}
+  .phero{align-items:stretch}
+  .pheroph{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.42);height:430px}
+  .pval{display:flex;flex-direction:column;justify-content:center}
+  .pheroph img{width:100%;height:100%;object-fit:cover;display:block}
+  .pval .pct{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .pval .pbig{font-family:'DM Serif Display',serif;font-size:70px;color:var(--navy);line-height:.92;margin:8px 0 2px}
+  .pval .pper{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .pval .pgrp{font-family:'DM Serif Display',serif;font-size:24px;color:var(--orange-dark);margin:16px 0 0;line-height:1.1}
+  .pval .pgrp small{display:block;font-family:-apple-system,sans-serif;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:4px}
+  .pval .pnote{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.55;max-width:44ch}
+  .pval .pnote b{color:var(--navy)}
 </style>
 <style>
   :root{
@@ -548,39 +561,24 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Os planos</span></div>
+      <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ A experiência + o menu</span>
-    <h2>Escolham o <em>plano</em></h2>
-    <div class="foodrow">
-      <div class="foodsq"><img src="assets/menu-coffee.jpg" alt="Finger food e doces do menu" style="object-position:center 42%"></div>
-      <p class="lead">A experiência de cerâmica no Agora — <strong>espaço exclusivo só de vocês</strong>, o momento de criar e o café — por <strong>R$ 494 por pessoa</strong>. É só escolher o menu que completa a comemoração:</p>
-    </div>
-    <div class="tiers">
-      <div class="tier">
-        <span class="tname">Tábua de boas-vindas</span>
-        <span class="tprice">R$ 585</span>
-        <span class="tbase">base R$ 494 + R$ 91</span>
-        <p>Queijos, embutidos, pães artesanais, conservas e frutas.</p>
-      </div>
-      <div class="tier hl">
-        <span class="tag">Mais escolhido</span>
-        <span class="tname">Finger food</span>
-        <span class="tprice">R$ 637</span>
-        <span class="tbase">base R$ 494 + R$ 143</span>
-        <p>5 bites quentes e frios, servidos ao longo do encontro.</p>
-      </div>
-      <div class="tier">
-        <span class="tname">Menu completo</span>
-        <span class="tprice">R$ 689</span>
-        <span class="tbase">base R$ 494 + R$ 195</span>
-        <p>Finger food + doce da casa + café.</p>
+    <span class="eyebrow orange">◆ Investimento · só a experiência</span>
+    <h2>A experiência de <em>cerâmica</em></h2>
+    <div class="phero">
+      <div class="pheroph"><img src="assets/agora-mesa.jpg" alt="Mesa de cerâmica montada no Agora" style="object-position:center 50%"></div>
+      <div class="pval">
+        <span class="pct">Cerâmica no Agora · Pinheiros</span>
+        <div class="pbig">R$ 494</div>
+        <span class="pper">por pessoa</span>
+        <div class="pgrp">R$ 2.470<small>o grupo de 5 amigas · só a experiência</small></div>
+        <p class="pnote">Inclui espaço exclusivo, ceramista conduzindo, todos os materiais, queima, ambientação e café, chá e água. <b>Sem alimentação</b> — os menus abaixo são opcionais, à parte.</p>
       </div>
     </div>
-    <p class="subh">Ainda dá pra somar</p>
-    <p class="addons"><b>Welcome drink</b> R$ 52/pessoa — espumante ou drink autoral sem álcool + água aromatizada. &nbsp;·&nbsp; <b>Serviço de bebidas</b> R$ 32,50/pessoa — vocês levam as bebidas e o espaço cuida de taças, gelo e serviço.</p>
-    <p class="fineprint">Valores por pessoa, turma privada de 5, no Agora (Pinheiros). Base R$ 494 (espaço exclusivo só do grupo, a experiência de cerâmica e o café) — R$ 2.470 para as 5 — + menu à escolha: Tábua R$ 91, Finger food R$ 143 ou Menu completo R$ 195 por pessoa. Add-ons: welcome drink R$ 52 · serviço de bebidas R$ 32,50 por pessoa. Aniversário em 26/09, a partir das 17:30. Data e horário sujeitos à disponibilidade de agenda, com confirmação imediata devido à proximidade da data.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Os planos</span></div>
+    <p class="subh">Opcionais de alimentação · à parte, por pessoa</p>
+    <p class="addons"><b>Tábua de boas-vindas</b> R$ 91 &nbsp;·&nbsp; <b>Finger food</b> R$ 143 &nbsp;·&nbsp; <b>Menu completo</b> R$ 195 &nbsp;·&nbsp; <b>Welcome drink</b> R$ 52 &nbsp;·&nbsp; <b>Serviço de bebidas</b> R$ 32,50</p>
+    <p class="fineprint">Valor da experiência de cerâmica, turma privada de 5, no Agora (Pinheiros): <b>R$ 494 por pessoa · R$ 2.470 para o grupo</b> — inclui espaço exclusivo, ceramista, materiais, queima, ambientação e café, chá e água, <b>sem alimentação</b>. Opcionais de alimentação, à parte, por pessoa: tábua R$ 91 · finger food R$ 143 · menu completo R$ 195 · welcome drink R$ 52 · serviço de bebidas R$ 32,50. Aniversário em 26/09, a partir das 17:30. Data e horário sujeitos à disponibilidade de agenda, com confirmação imediata devido à proximidade da data.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
