@@ -151,8 +151,8 @@ cover = f'''
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Experiência corporativa privada</span>
-        <h1>Uma experiência criativa para reunir o time da <em>NBCUniversal</em></h1>
-        <p class="lead">Uma pausa na programação para criar, conversar e compartilhar um momento diferente da rotina, de forma leve e espontânea — criando boas memórias juntos.</p>
+        <h1>O time junto, <em>em outro ritmo</em></h1>
+        <p class="lead">Uma pausa na programação para criar, conversar e sair do automático — um encontro leve, espontâneo, feito de trocas e boas memórias juntos.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>15</b> participantes</span>
@@ -162,7 +162,7 @@ cover = f'''
           <span class="chip">São Paulo</span>
         </div>
       </div>
-      <div class="cover-photo">{img("capa-itau-oficina.jpg", "Grupo corporativo diverso vivendo uma experiência criativa juntos", "center 45%")}</div>
+      <div class="cover-photo">{img("eventocorporativo.jpg", "Grupo corporativo diverso reunido em um encontro à mesa", "center 42%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Corporativo · NBCUniversal")}
@@ -207,7 +207,7 @@ experiencias = f'''
       {mcard("03", "Perfumaria", "Criação de fragrância", "Cada participante explora diferentes notas e desenvolve a própria fragrância para levar.", "R$ 289", "perfumaria-corp.jpg", "Essências e frascos para criação de fragrância", "center 50%")}
       {mcard("04", "Gastronomia interativa", "Em torno da cozinha", "O grupo participa do preparo com um chef e termina a experiência à mesa, celebrando junto.", "R$ 599", "aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%")}
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Nossa recomendação principal para a NBCUniversal é o <b>Tufting no Lado B</b> — a mais autoral e visual das quatro, com o time criando a própria peça do começo ao fim. 🎨</div>
+    <div class="bnote" style="margin-top:16px">◆ Nossa recomendação principal para a NBCUniversal é o <b>Tufting</b> — a mais autoral e visual das quatro, com cada participante criando a própria peça do começo ao fim. 🎨</div>
     {foot("As experiências")}
   </section>'''
 
@@ -235,18 +235,18 @@ sugestao = f'''
   <section class="slide">
 {head_simple("Sugestão Elarah")}
     <span class="selo">★ Sugestão Elarah</span>
-    <h2 style="margin-top:12px">Nossa sugestão: Tufting no <em>Lado B</em></h2>
-    <p class="lead">Uma experiência criativa, visual e totalmente participativa. No Lado B Studio, o time aprende a técnica do tufting do zero e desenvolve a própria peça com fios, cores e a pistola de tufting — criatividade e concentração num clima leve e espontâneo.</p>
+    <h2 style="margin-top:12px">Nossa sugestão: <em>Tufting</em></h2>
+    <p class="lead">Uma experiência criativa, visual e totalmente participativa. Cada participante aprende a técnica do tufting do zero e desenvolve a própria peça com fios, cores e a pistola de tufting — criatividade e concentração num clima leve e espontâneo.</p>
     <div class="cgrid">
       <figure class="cphoto">{img("tufting1.jpg", "Participante criando uma peça de tufting no ateliê", "center 45%")}</figure>
       <div class="cpil">
-        <div class="cp"><span class="cn">01 · Introdução à técnica</span><p>O grupo conhece a pistola de tufting e o funcionamento da atividade.</p></div>
+        <div class="cp"><span class="cn">01 · Introdução à técnica</span><p>A pistola de tufting e o funcionamento da atividade, do zero.</p></div>
         <div class="cp"><span class="cn">02 · Desenho &amp; cores</span><p>Cada participante escolhe o próprio desenho, as cores e a composição.</p></div>
         <div class="cp"><span class="cn">03 · Mãos à obra</span><p>A criação acontece com acompanhamento profissional o tempo todo.</p></div>
         <div class="cp"><span class="cn">04 · Finalização</span><p>Uma criação autoral do começo ao fim, feita por cada participante.</p></div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Lado B Studio</b> · Faria Lima, São Paulo · especializado em artes manuais e Tufting, com toda a estrutura para a atividade. Experiência para iniciantes, materiais inclusos. <b>Duração e formato corporativo sob confirmação.</b></div>
+    <div class="bnote" style="margin-top:16px">◆ Experiência para iniciantes, com acompanhamento profissional do começo ao fim e todos os materiais inclusos. <b>Duração e formato corporativo sob confirmação.</b></div>
     {foot("Sugestão Elarah · Tufting")}
   </section>'''
 
@@ -294,8 +294,8 @@ gastronomia = f'''
     <p class="lead">Um encontro em torno da cozinha, com o grupo participando do preparo e terminando a experiência à mesa — conversa, sabores e celebração.</p>
     <div class="gstrip">
       {gfig("aula-grupo.jpg", "Grupo diverso cozinhando junto com um chef", "Mão na cozinha", "center 50%")}
-      {gfig("entradachef.jpg", "Prato finalizado da experiência gastronômica", "Os sabores", "center 50%")}
-      {gfig("bfa-grupo1.webp", "Grupo reunido à mesa celebrando", "À mesa", "center 40%")}
+      {gfig("pizza-brinde.jpg", "Mesa posta com pizzas e brinde de vinho", "À mesa", "center 50%")}
+      {gfig("vinhotintos.jpg", "Taças e vinhos servidos para o encontro", "Para brindar", "center 45%")}
     </div>
     <div class="bnote" style="margin-top:16px">◆ <b>Spicy Gabriel · São Paulo</b> · chef, preparo participativo, serviço e experiência à mesa. Um formato mais lifestyle, feito para aproveitar o tempo junto.</div>
     {foot("Gastronomia · Spicy Gabriel")}
@@ -367,7 +367,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + conceito + experiencias + atmosfera_slide + sugestao + espaco
+        + cover + conceito + experiencias + sugestao + espaco
         + ceramica + gastronomia + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-corporativa-nbcuniversal.html"
