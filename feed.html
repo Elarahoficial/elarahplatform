@@ -10,8 +10,10 @@
        MODO FEED — Visualização de experiências pra gravação
        -----------------------------------------------------
        Página standalone (chamada do admin) que mostra TODAS as
-       experiências num grid contínuo, sem categorias/filtros.
-       Visual idêntico aos cards da home.
+       experiências num grid contínuo. Visual idêntico aos cards da
+       home. Filtro de categoria no topo: o <select id="filter-categoria">
+       é preenchido e aplicado pelo próprio script.js (mesmo filtro da
+       home); a escolha fica na URL (?categoria=) pra sobreviver ao F5.
 
        Reusa: styles.css, experiences-data.js, script.js (todo
        o card render + auto-fill de telefone/profile).
@@ -46,6 +48,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
       gap: 12px;
     }
     .feed-toolbar__brand {
@@ -56,6 +59,7 @@
     }
     .feed-toolbar__actions {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       align-items: center;
     }
@@ -70,9 +74,26 @@
       cursor: pointer;
       font-family: inherit;
       text-decoration: none;
+      white-space: nowrap;
       display: inline-flex;
       align-items: center;
       gap: 6px;
+    }
+    .feed-toolbar__select {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: .85rem;
+      font-weight: 600;
+      color: #444;
+      font-family: inherit;
+      cursor: pointer;
+      max-width: 220px;
+    }
+    .feed-toolbar__select:focus {
+      outline: none;
+      border-color: #f0a05e;
     }
     .feed-toolbar__btn:hover {
       border-color: #f0a05e;
@@ -116,6 +137,9 @@
 <div class="feed-toolbar">
   <div class="feed-toolbar__brand">Modo Feed · Elarah</div>
   <div class="feed-toolbar__actions">
+    <select class="feed-toolbar__select" id="filter-categoria" aria-label="Filtrar por categoria">
+      <option value="">Todas as categorias</option>
+    </select>
     <button type="button" class="feed-toolbar__btn" id="feed-shuffle">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
       Embaralhar
@@ -164,6 +188,21 @@
     }
   });
   if (grid) observer.observe(grid, { childList: true });
+
+  // Categoria: o script.js já filtra ao trocar o <select>. Aqui só
+  // guardamos a escolha na URL (?categoria=), que o script.js lê ao
+  // carregar — assim o F5 não perde o filtro.
+  var catSelect = document.getElementById('filter-categoria');
+  if (catSelect) {
+    catSelect.addEventListener('change', function () {
+      try {
+        var url = new URL(window.location.href);
+        if (catSelect.value) url.searchParams.set('categoria', catSelect.value);
+        else url.searchParams.delete('categoria');
+        window.history.replaceState({}, '', url.pathname + url.search);
+      } catch (e) { /* sem URL API: filtro funciona, só não persiste */ }
+    });
+  }
 
   // Embaralhar: troca a flag e re-renderiza via hook exposto.
   // Cada clique re-shuffle (ordem nova).
