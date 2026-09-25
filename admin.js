@@ -12460,6 +12460,39 @@
     return { getValue: getValue };
   }
 
+  // Chips de "onde atende" no cadastro do parceiro — mesmo visual do
+  // tipo de parceria, mas escolha única.
+  function mountLocalAtendimentoChips(container, initial) {
+    let selected = initial || '';
+    const labels = {
+      espaco_proprio: '🏠 Tem espaço próprio / ateliê',
+      vai_ate_local: '🚗 Sem espaço — vai até o local',
+      ambos: '🔁 Tem espaço e também vai até o local',
+    };
+    function render() {
+      container.innerHTML = FORN_LOCAL_ATENDIMENTO.map(o => {
+        const on = selected === o.v;
+        return '<button type="button" data-local-v="' + o.v + '" ' +
+          'style="padding:6px 12px;border-radius:13px;cursor:pointer;font-size:.82rem;' +
+          'font-family:inherit;border:1px solid ' + (on ? 'var(--orange,#f0a05e)' : '#ddd') + ';' +
+          'background:' + (on ? 'var(--orange,#f0a05e)' : '#fff') + ';' +
+          'color:' + (on ? '#fff' : '#666') + ';font-weight:' + (on ? '600' : '400') + ';white-space:nowrap;">' +
+          (on ? '✓ ' : '') + escapeHtml(labels[o.v] || o.l) + '</button>';
+      }).join('');
+      container.querySelectorAll('[data-local-v]').forEach(b => {
+        b.addEventListener('click', () => {
+          selected = selected === b.dataset.localV ? '' : b.dataset.localV;
+          render();
+        });
+      });
+    }
+    container.style.display = 'flex';
+    container.style.flexWrap = 'wrap';
+    container.style.gap = '6px';
+    render();
+    return { getValue: () => selected };
+  }
+
   // Modal de cadastro/edição de fornecedor. `meta` = linha de
   // fornecedores_metadata (ou objeto parcial { fornecedor_nome }).
   // `isNew` = true abre em modo cadastro (nome editável).
@@ -12520,17 +12553,9 @@
           field('Nome do contato', '<input type="text" id="forn-f-contato" value="' + val('nome_contato') + '" style="' + inputStyle + '">') +
           field('Tipo de parceria (pode marcar mais de uma)', '<div id="forn-f-tipo-chips"></div>') +
           field('Data de entrada', '<input type="date" id="forn-f-data" value="' + val('data_entrada') + '" style="' + inputStyle + '">') +
-          field('Onde atende',
-            '<select id="forn-f-local" style="' + inputStyle + '">' +
-              '<option value="">Não informado</option>' +
-              FORN_LOCAL_ATENDIMENTO.map(o =>
-                '<option value="' + o.v + '"' + (meta.local_atendimento === o.v ? ' selected' : '') + '>' +
-                escapeHtml(o.icon + ' ' + (o.v === 'espaco_proprio' ? 'Tem espaço próprio / ateliê'
-                  : o.v === 'vai_ate_local' ? 'Sem espaço — vai até o local'
-                  : 'Tem espaço e também vai até o local')) +
-                '</option>'
-              ).join('') +
-            '</select>') +
+          '<div style="grid-column:1/-1;">' +
+            field('Onde atende (clique pra marcar)', '<div id="forn-f-local-chips"></div>') +
+          '</div>' +
           '<div style="grid-column:1/-1;">' +
             field('Chave Pix (pra repasse)',
               '<input type="text" id="forn-f-pix" value="' + val('pix') + '" placeholder="CPF/CNPJ, e-mail, telefone ou chave aleatória" style="' + inputStyle + '">') +
@@ -12617,6 +12642,11 @@
     // Chips multi-seleção do tipo de parceria (Elarah / By Elarah / Elarah em casa).
     const tipoWidget = mountTipoParceriaChips(
       overlay.querySelector('#forn-f-tipo-chips'), meta.tipo_parceria
+    );
+
+    // Onde atende: escolha única em chips (clicar no marcado desmarca).
+    const localWidget = mountLocalAtendimentoChips(
+      overlay.querySelector('#forn-f-local-chips'), meta.local_atendimento
     );
 
     const close = () => { overlay.remove(); };
@@ -12801,7 +12831,7 @@
         nome_contato: trimOrNull('#forn-f-contato'),
         tipo_parceria: tipoWidget.getValue() || null,
         data_entrada: overlay.querySelector('#forn-f-data').value || null,
-        local_atendimento: overlay.querySelector('#forn-f-local').value || null,
+        local_atendimento: localWidget.getValue() || null,
         pix: trimOrNull('#forn-f-pix'),
         instrucoes_pos_compra: trimOrNull('#forn-f-instrucoes'),
         instrucoes_template: trimOrNull('#forn-f-instr-template'),
