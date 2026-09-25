@@ -152,7 +152,7 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Experiência corporativa privada</span>
         <h1>O time junto, <em>em outro ritmo</em></h1>
-        <p class="lead">Uma pausa na programação para criar, conversar e sair do automático — um encontro leve, espontâneo, feito de trocas e boas memórias juntos.</p>
+        <p class="lead">Uma pausa na programação para criar, conversar e <b>sair do automático</b> — um encontro leve, espontâneo, feito de trocas e <b>boas memórias juntos</b>.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>15</b> participantes</span>
@@ -176,7 +176,7 @@ conceito = f'''
     <h2>Conexão que <em>acontece sozinha</em></h2>
     <p class="lead">Sem quebra-gelo forçado. A conexão surge quando o time senta na mesma mesa para criar algo com as próprias mãos — <b>sem hierarquia, sem quem sabe mais e quem sabe menos.</b></p>
     <div class="bfeat">
-      <div class="bphoto">{img("corp-criativo.jpg", "Grupo diverso conversando enquanto cria junto", "center 45%")}</div>
+      <div class="bphoto">{img("corp-criativo.jpg", "Grupo diverso conversando enquanto cria junto", "center 62%")}</div>
       <div class="bbody">
         <span class="btag">Criar</span>
         <h3>Criar abre espaço para conversar</h3>
@@ -202,10 +202,10 @@ experiencias = f'''
     <h2>Quatro experiências <em>para conectar</em></h2>
     <p class="lead">Pensadas para quem nunca fez, funcionam bem em grupo e convidam todo mundo a participar — cada uma à sua maneira.</p>
     <div class="mcards">
-      {mcard("01", "Tufting", "A mais autoral", "Com a pistola de tufting, cada participante desenvolve a própria criação em fios, cores e composição.", "Sob confirmação", "tufting12.jpg", "Pistola de tufting criando uma peça colorida", "center 50%", sc=True)}
-      {mcard("02", "Cerâmica", "Modelagem à mão", "Cada participante molda a própria peça à mão, guiado por uma ceramista, no seu ritmo.", "R$ 499", "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}
-      {mcard("03", "Perfumaria", "Criação de fragrância", "Cada participante explora diferentes notas e desenvolve a própria fragrância para levar.", "R$ 289", "perfumaria-corp.jpg", "Essências e frascos para criação de fragrância", "center 50%")}
-      {mcard("04", "Gastronomia interativa", "Em torno da cozinha", "O grupo participa do preparo com um chef e termina a experiência à mesa, celebrando junto.", "R$ 599", "aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%")}
+      {mcard("01", "Tufting", "A mais autoral", "Com a pistola de tufting, cada participante desenvolve a própria criação em fios, cores e composição.", "R$ 899", "tufting12.jpg", "Pistola de tufting criando uma peça colorida", "center 50%")}
+      {mcard("02", "Cerâmica", "Modelagem à mão", "Cada participante molda a própria peça à mão, guiado por uma ceramista, no seu ritmo.", "R$ 469", "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}
+      {mcard("03", "Aromas", "Criação de fragrância", "Cada participante explora diferentes notas e desenvolve a própria fragrância para levar.", "Sob confirmação", "perfumaria-corp.jpg", "Essências e frascos para criação de fragrância", "center 50%", sc=True)}
+      {mcard("04", "Gastronomia", "Harmonização", "O grupo participa do preparo com um chef e termina em torno da mesa, com harmonização e celebração.", "R$ 899", "aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%")}
     </div>
     <div class="bnote" style="margin-top:16px">◆ Nossa recomendação principal para a NBCUniversal é o <b>Tufting</b> — a mais autoral e visual das quatro, com cada participante criando a própria peça do começo ao fim. 🎨</div>
     {foot("As experiências")}
@@ -218,12 +218,12 @@ atmosfera_slide = atmosfera(
     "Experiências que mudam o <em>ritmo do dia</em>",
     "Uma pausa para sair do automático, criar, conversar e viver algo diferente da rotina.",
     [
-        ("tuftingpacote8.jpg", "Participante criando uma peça de tufting", "center 45%", "Tufting"),
-        ("ceramica-fria.jpg", "Mãos modelando cerâmica", "center 45%", "Cerâmica"),
-        ("perfumaria-oficina.jpg", "Bancada de perfumaria com essências", "center 50%", "Perfumaria"),
-        ("aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%", "Gastronomia"),
+        ("tuftingpacote8.jpg", "Participante criando uma peça de tufting", "center 45%", "Criar junto"),
+        ("ceramica-fria.jpg", "Mãos modelando cerâmica", "center 45%", "Mãos ocupadas"),
+        ("perfumaria-oficina.jpg", "Bancada de perfumaria com essências", "center 50%", "Um outro ritmo"),
+        ("aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%", "Mesa compartilhada"),
         ("mimos-registro-itau.jpg", "Grupo corporativo diverso conversando e celebrando", "center 45%", "Conversa boa"),
-        ("bfa-grupo1.webp", "O time reunido à mesa", "center 40%", "À mesa"),
+        ("bfa-grupo1.webp", "O time reunido à mesa", "center 40%", "Tempo juntos"),
     ],
     "Tudo incluso",
     "profissional que conduz · materiais e estrutura · montagem e desmontagem · produção Elarah",
@@ -235,8 +235,8 @@ sugestao = f'''
   <section class="slide">
 {head_simple("Sugestão Elarah")}
     <span class="selo">★ Sugestão Elarah</span>
-    <h2 style="margin-top:12px">Nossa sugestão: <em>Tufting</em></h2>
-    <p class="lead">Uma experiência criativa, visual e totalmente participativa. Cada participante aprende a técnica do tufting do zero e desenvolve a própria peça com fios, cores e a pistola de tufting — criatividade e concentração num clima leve e espontâneo.</p>
+    <h2 style="margin-top:12px">Tufting no <em>Lado B</em></h2>
+    <p class="lead">Uma experiência criativa, visual e completamente mão na massa. No Lado B Studio, o time aprende a técnica do tufting do zero e desenvolve a própria peça usando fios, cores e a pistola de tufting — criatividade, concentração e troca de um jeito leve e espontâneo.</p>
     <div class="cgrid">
       <figure class="cphoto">{img("tufting1.jpg", "Participante criando uma peça de tufting no ateliê", "center 45%")}</figure>
       <div class="cpil">
@@ -246,7 +246,7 @@ sugestao = f'''
         <div class="cp"><span class="cn">04 · Finalização</span><p>Uma criação autoral do começo ao fim, feita por cada participante.</p></div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Experiência para iniciantes, com acompanhamento profissional do começo ao fim e todos os materiais inclusos. <b>Duração e formato corporativo sob confirmação.</b></div>
+    <div class="bnote" style="margin-top:16px">◆ <b>Lado B Studio</b> · estúdio especializado em artes manuais e Tufting · Av. Brigadeiro Faria Lima, 1572. Experiência para iniciantes, com acompanhamento profissional e materiais inclusos. <b>A partir de R$ 899 por pessoa · formato corporativo sob confirmação.</b></div>
     {foot("Sugestão Elarah · Tufting")}
   </section>'''
 
@@ -272,17 +272,17 @@ espaco = atmosfera(
 # ============================ 7 · CERÂMICA · PERDIZES ============================
 ceramica = f'''
   <section class="slide">
-{head_simple("Cerâmica · Perdizes")}
+{head_simple("Cerâmica · ateliês")}
     <span class="eyebrow orange">Experiência · Cerâmica</span>
-    <h2>Cerâmica em ateliê em <em>Perdizes</em></h2>
+    <h2>Cerâmica em <em>ateliê parceiro</em></h2>
     <p class="lead">Uma experiência de modelagem à mão em um ateliê preparado para receber o grupo — com ceramista, materiais e toda a estrutura para cada participante desenvolver a própria peça.</p>
     <div class="gstrip">
       {gfig("netas-atelie.jpg", "Ateliê de cerâmica intimista, com luz natural", "O ateliê", "center 50%")}
       {gfig("ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "Modelagem à mão", "center 50%")}
       {gfig("ceramicacool.jpg", "Peças de cerâmica finalizadas", "As peças", "center 50%")}
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Ateliê parceiro · Perdizes, São Paulo</b> · ceramista, argila e materiais, acabamento e queima inclusos. As peças são finalizadas no ateliê e devolvidas depois de prontas.</div>
-    {foot("Cerâmica · Perdizes")}
+    <div class="bnote" style="margin-top:16px">◆ Podemos realizar a cerâmica em diferentes ateliês parceiros — <b>Perdizes</b>, <b>Entremãos</b> ou <b>O Jardim</b> — conforme a experiência, a região e a preferência do time. Ceramista, materiais, acabamento e queima inclusos; peças finalizadas e devolvidas depois de prontas.</div>
+    {foot("Cerâmica · ateliês")}
   </section>'''
 
 # ============================ 8 · GASTRONOMIA · SPICY GABRIEL ============================
@@ -301,6 +301,25 @@ gastronomia = f'''
     {foot("Gastronomia · Spicy Gabriel")}
   </section>'''
 
+# ============================ 8B · CURADORIA DE ESPAÇOS ============================
+espacos_curadoria = atmosfera(
+    "A curadoria de espaços",
+    "A curadoria de espaços",
+    "O cenário também faz parte da <em>experiência</em>",
+    "Selecionamos o espaço de acordo com a experiência, a região e o perfil do encontro — de ateliês criativos a cafés, jardins e ambientes privativos. Mais aberto ou mais intimista, em ateliê ou à mesa, a curadoria se adapta ao que fizer mais sentido para o time.",
+    [
+        ("tufting13.jpg", "Ateliê de tufting com parede de fios coloridos", "center 50%", "Lado B · Faria Lima"),
+        ("netas-atelie.jpg", "Ateliê de cerâmica com luz natural", "center 50%", "Ateliê · Perdizes"),
+        ("casa-aquario-atelie.jpg", "Ateliê criativo e intimista", "center 50%", "Entremãos"),
+        ("ojardim1.jpg", "Jardim com deck e verde ao redor", "center 50%", "O Jardim"),
+        ("sowcafe.jpg", "Café urbano e acolhedor", "center 50%", "Sterna Café · Faria Lima"),
+        ("pizza-brinde.jpg", "Mesa de gastronomia com brinde", "center 50%", "Spicy Gabriel"),
+    ],
+    "Curadoria Elarah",
+    "experiência + espaço + atmosfera, escolhidos conforme a região e a preferência do time",
+    "A curadoria de espaços",
+)
+
 # ============================ 9 · INVESTIMENTO ============================
 investimento = f'''
   <section class="slide">
@@ -317,23 +336,23 @@ investimento = f'''
       <tbody>
         <tr class="hl">
           <td class="rl"><b>Tufting</b> · Lado B<span>criação autoral em fios e cores · ★ Sugestão Elarah</span></td>
+          <td class="val">A partir de R$ 899</td>
+          <td class="tot">R$ 13.485</td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Cerâmica</b> · ateliê parceiro<span>modelagem à mão, com queima e acabamento</span></td>
+          <td class="val">A partir de R$ 469</td>
+          <td class="tot">R$ 7.035</td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Aromas</b> · criação de fragrância<span>fragrância autoral para levar</span></td>
           <td class="sc">Sob confirmação</td>
           <td class="sc">—</td>
         </tr>
         <tr>
-          <td class="rl"><b>Cerâmica</b> · Perdizes<span>modelagem à mão, com queima e acabamento</span></td>
-          <td class="val">R$ 499</td>
-          <td class="tot">R$ 7.485</td>
-        </tr>
-        <tr>
-          <td class="rl"><b>Perfumaria</b><span>criação de fragrância autoral para levar</span></td>
-          <td class="val">R$ 289</td>
-          <td class="tot">R$ 4.335</td>
-        </tr>
-        <tr>
-          <td class="rl"><b>Gastronomia interativa</b> · Spicy Gabriel<span>preparo participativo e experiência à mesa</span></td>
-          <td class="val">R$ 599</td>
-          <td class="tot">R$ 8.985</td>
+          <td class="rl"><b>Gastronomia</b> · harmonização · Spicy Gabriel<span>preparo participativo e experiência à mesa</span></td>
+          <td class="val">R$ 899</td>
+          <td class="tot">R$ 13.485</td>
         </tr>
       </tbody>
     </table>
@@ -341,7 +360,7 @@ investimento = f'''
       <span class="o">◆ Opcionais: <b>registro fotográfico profissional</b> R$ 450 (total)</span>
       <span class="o"><b>brindes / personalização</b> sob consulta</span>
     </div>
-    <p class="fineprint">Valores por pessoa, para 15 participantes, na 1ª semana de novembro. O <b>Tufting</b> acontece no Lado B Studio (Av. Brigadeiro Faria Lima, 1572), com workshops de 4h a 5h conforme o tamanho da peça — formato corporativo e valor sob confirmação. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro da NBCUniversal.</p>
+    <p class="fineprint">Valores por pessoa, para 15 participantes, na 1ª semana de novembro. O espaço é escolhido conforme a experiência, a região e a preferência do time. O <b>Tufting</b> acontece no Lado B Studio (Av. Brigadeiro Faria Lima, 1572), com formato corporativo sob confirmação; <b>Aromas</b> com valor sob confirmação. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro da NBCUniversal.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -367,8 +386,8 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + conceito + experiencias + sugestao + espaco
-        + ceramica + gastronomia + investimento + proximos + '\n\n</div>\n\n')
+        + cover + conceito + atmosfera_slide + experiencias + sugestao + espaco
+        + ceramica + gastronomia + espacos_curadoria + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-corporativa-nbcuniversal.html"
 open(out, "w", encoding="utf-8").write(html)
