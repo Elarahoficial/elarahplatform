@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 138;
+      var EXPECTED = 139;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -306,6 +306,21 @@
         </svg>
         <span>Cronograma</span>
       </button>
+
+      <!-- Datas Comemorativas: calendário do ano com feriados, grandes
+           datas do varejo e "dia de tudo" (dia do amigo, da cachaça…),
+           cada uma com ideia de gancho pra Elarah. Módulo em
+           admin-datas-comemorativas.js. -->
+      <button class="admin__nav-item" data-panel="datas-comemorativas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+          <polygon points="12 12.5 13.1 14.8 15.5 15.1 13.7 16.7 14.2 19 12 17.8 9.8 19 10.3 16.7 8.5 15.1 10.9 14.8"/>
+        </svg>
+        <span>Datas Comemorativas</span>
+      </button>
     </nav>
 
     <a href="feed.html" target="_blank" rel="noopener"
@@ -327,7 +342,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.81 · 2026-09-15 (Feedbacks: ocultar avaliação do site)
+        Admin v.82 · 2026-09-25 (Datas Comemorativas)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2507,6 +2522,115 @@
         <div id="cal-modal-content"></div>
       </div>
     </div>
+
+    <!-- =========================================================
+         DATAS COMEMORATIVAS — calendário de marketing do ano
+         (renderizado por admin-datas-comemorativas.js)
+         ========================================================= -->
+    <div class="admin__panel" id="panel-datas-comemorativas">
+      <div class="admin__header">
+        <h1 class="admin__page-title">Datas Comemorativas</h1>
+        <p class="admin__page-subtitle">Todas as datas do ano pra criar marketing em cima — feriados, grandes datas do varejo, dia do amigo, da cachaça, das profissões… Cada uma com uma ideia de gancho pra Elarah.</p>
+      </div>
+
+      <div class="dc-toolbar">
+        <div id="dc-vistas" class="dc-vistas" role="tablist" aria-label="Modo de visualização">
+          <button type="button" class="dc-vista" data-vista="lista">📋 Lista</button>
+          <button type="button" class="dc-vista" data-vista="calendario">📅 Calendário</button>
+        </div>
+        <select id="dc-ano" aria-label="Ano"></select>
+        <input type="search" id="dc-busca" placeholder="Buscar (ex.: amigo, cachaça, feriado)…" aria-label="Buscar data">
+        <select id="dc-rel" aria-label="Relevância">
+          <option value="1">Todas as relevâncias</option>
+          <option value="2">★★ ou mais (vale post)</option>
+          <option value="3">Só ★★★ (quentes)</option>
+        </select>
+        <button type="button" id="dc-hoje" class="dc-btn">📍 Ir pra este mês</button>
+        <button type="button" id="dc-csv" class="dc-btn" title="Baixa as datas filtradas em CSV (abre no Excel / Google Sheets)">⬇ Baixar planilha</button>
+      </div>
+      <div id="dc-cats" class="dc-cats"></div>
+      <div id="dc-stats" class="dc-stats"></div>
+      <div id="dc-root"><p style="color:#888;font-style:italic;padding:40px;text-align:center;">Carregando…</p></div>
+    </div>
+
+    <style>
+      .dc-toolbar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+      .dc-toolbar select, .dc-toolbar input {
+        padding:9px 12px; border:1.5px solid #ddd; border-radius:8px; font-family:inherit; font-size:.9rem; background:#fff;
+      }
+      .dc-toolbar input { flex:1; min-width:200px; }
+      .dc-btn { padding:9px 14px; border:1.5px solid #ddd; background:#fff; border-radius:8px; font-family:inherit; font-size:.85rem; font-weight:600; color:#444; cursor:pointer; }
+      .dc-btn:hover { border-color:#f0a05e; color:#a4663b; }
+      .dc-cats { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+      .dc-cat { padding:6px 12px; border:1.5px solid #ddd; background:#fff; border-radius:999px; font-family:inherit; font-size:.8rem; font-weight:600; color:#666; cursor:pointer; }
+      .dc-cat:hover { border-color:#f0a05e; color:#a4663b; }
+      .dc-cat--on { background:#5C2426; border-color:#5C2426; color:#fff; }
+      .dc-stats { color:#666; font-size:.85rem; margin-bottom:16px; }
+      .dc-radar { background:#fff8ef; border:1.5px solid #f0a05e; border-radius:12px; padding:14px 16px; margin-bottom:18px; }
+      .dc-radar h3 { margin:0 0 2px; font-size:1rem; color:#5C2426; }
+      .dc-radar p { margin:0 0 10px; font-size:.8rem; color:#8a6a4a; }
+      .dc-radar-list { display:flex; gap:8px; flex-wrap:wrap; }
+      .dc-radar-item { background:#fff; border:1px solid #f0d9bd; border-radius:8px; padding:8px 12px; display:flex; flex-direction:column; font-size:.85rem; }
+      .dc-radar-item span { font-size:.75rem; color:#a4663b; }
+      .dc-mes { background:#fff; border:1px solid #e6e6e6; border-radius:12px; overflow:hidden; margin-bottom:14px; scroll-margin-top:12px; }
+      .dc-mes-head { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; padding:12px 16px; background:#faf6f0; border-bottom:1px solid #f0e8de; }
+      .dc-mes-head h3 { margin:0; font-family:'DM Serif Display', serif; font-weight:400; font-size:1.3rem; color:#1a1a1a; }
+      .dc-mes-head span { font-size:.75rem; color:#8a6a4a; }
+      .dc-row { display:flex; gap:12px; align-items:flex-start; padding:12px 16px; border-bottom:1px solid #f3eee8; }
+      .dc-row:last-child { border-bottom:none; }
+      .dc-row--passou { opacity:.5; }
+      .dc-row--hoje { background:#fff4e0; }
+      .dc-data { flex-shrink:0; width:52px; display:flex; flex-direction:column; align-items:center; }
+      .dc-data strong { font-size:1rem; color:#5C2426; }
+      .dc-data span { font-size:.68rem; color:#999; text-transform:uppercase; letter-spacing:.5px; }
+      .dc-corpo { flex:1; min-width:0; }
+      .dc-titulo { font-weight:700; font-size:.95rem; color:#1a1a1a; }
+      .dc-movel { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#888; border:1px solid #ddd; border-radius:999px; padding:1px 6px; vertical-align:middle; }
+      .dc-meta { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:4px 0; }
+      .dc-chip { font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:999px; }
+      .dc-stars { color:#e08a2e; font-size:.85rem; letter-spacing:1px; }
+      .dc-ante { font-size:.72rem; color:#a4663b; }
+      .dc-ideia { font-size:.85rem; color:#555; line-height:1.4; }
+      .dc-add { flex-shrink:0; padding:6px 10px; border:1.5px solid #f0a05e; background:#fff; color:#a4663b; border-radius:8px; font-family:inherit; font-size:.75rem; font-weight:700; cursor:pointer; white-space:nowrap; }
+      .dc-add:hover { background:#f0a05e; color:#fff; }
+      .dc-vazio { color:#aaa; font-style:italic; font-size:.85rem; padding:12px 16px; margin:0; }
+      @media (max-width:600px) {
+        .dc-row { flex-wrap:wrap; }
+        .dc-corpo { flex-basis:calc(100% - 64px); }
+        .dc-add { margin-left:64px; }
+      }
+      /* Alternador Lista / Calendário */
+      .dc-vistas { display:flex; border:1.5px solid #ddd; border-radius:8px; overflow:hidden; }
+      .dc-vista { padding:8px 12px; border:none; background:#fff; font-family:inherit; font-size:.85rem; font-weight:600; color:#666; cursor:pointer; }
+      .dc-vista + .dc-vista { border-left:1.5px solid #ddd; }
+      .dc-vista--on { background:#5C2426; color:#fff; }
+      /* Vista calendário: jan→dez, dias com data pintados em círculo */
+      .dc-legenda { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:.75rem; color:#666; margin-bottom:14px; }
+      .dc-legenda span { display:inline-flex; align-items:center; gap:5px; }
+      .dc-legenda i { width:12px; height:12px; border-radius:50%; border:2px solid; display:inline-block; }
+      .dc-cal { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:14px; align-items:start; }
+      .dc-mes--cal { margin-bottom:0; }
+      .dc-grade { display:grid; grid-template-columns:repeat(7, 1fr); gap:4px; padding:12px; justify-items:center; }
+      .dc-wd { font-size:.68rem; font-weight:700; color:#aaa; padding-bottom:2px; }
+      .dc-dia { position:relative; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.85rem; color:#555; border:2px solid transparent; background:transparent; font-family:inherit; padding:0; }
+      .dc-dia--vazio { visibility:hidden; }
+      .dc-dia--tem { background:var(--dc-bg); border-color:var(--dc-fg); color:var(--dc-fg); font-weight:700; cursor:pointer; }
+      .dc-dia--quente { background:var(--dc-fg); color:#fff; }
+      .dc-dia--tem:hover { transform:scale(1.1); }
+      .dc-dia--passou { opacity:.4; }
+      .dc-dia--hoje { box-shadow:0 0 0 2px #fff, 0 0 0 4px #f0a05e; opacity:1; }
+      .dc-dia--sel { box-shadow:0 0 0 2px #fff, 0 0 0 4px #1a1a1a; opacity:1; }
+      .dc-dia b { position:absolute; top:-5px; right:-5px; min-width:16px; height:16px; border-radius:8px; background:#1a1a1a; color:#fff; font-size:.6rem; line-height:16px; text-align:center; }
+      .dc-detalhe { border-top:1px solid #f0e8de; }
+      .dc-detalhe .dc-row { padding:10px 12px; }
+      .dc-detalhe-dica { margin:0; padding:8px 12px; font-size:.75rem; color:#aaa; font-style:italic; }
+      @media (max-width:600px) {
+        .dc-cal { grid-template-columns:1fr; }
+        .dc-dia { width:40px; height:40px; }
+      }
+      /* Selo de data comemorativa no cabeçalho do dia (Cronograma) */
+      .cal-dc-badge { display:inline-block; margin-left:8px; font-size:.7rem; font-weight:600; padding:2px 8px; border-radius:999px; background:#fff1dc; color:#9a5a00; }
+    </style>
 
     <!-- =========================================================
          CAPTAÇÃO — Growth OS: áreas, projetos, tarefas e KPIs
@@ -4830,8 +4954,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
 <script src="admin-conversas.js?v=2"></script>
-<script src="admin-acessos.js?v=2"></script>
-<script src="admin.js?v=245"></script>
+<script src="admin-acessos.js?v=3"></script>
+<script src="admin-datas-comemorativas.js?v=2"></script>
+<script src="admin.js?v=246"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
