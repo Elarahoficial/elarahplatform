@@ -1,9 +1,10 @@
 # Proposta Elarah · Corporativo NBCUniversal (Heloisa Ramires) · 15 pessoas · 1a semana de novembro · SP
 # Base direta: deck BFA (bfa_ceramica_jardim_build.py) — mesma familia visual/comercial. Paleta editorial verde/terracota/argila.
-# 10 slides: capa, conceito, 4 experiencias (2x2), atmosfera (6 fotos), Sugestao Elarah (Tufting/Lado B), espaco Lado B,
-#            ceramica (Perdizes), gastronomia (Spicy Gabriel), investimento, proximos passos.
-# Recomendacao principal = TUFTING no Lado B (Av. Brig. Faria Lima 1572). Ceramica atelie Perdizes. Gastronomia Spicy Gabriel.
-# Tufting: duracao/formato/valor SOB CONFIRMACAO (Lado B: workshops 4h-5h). Ceramica R$499, Perfumaria R$289, Gastronomia R$599.
+# 9 slides: capa, conceito, atmosfera (6 fotos), 4 experiencias (2x2), Sugestao Elarah (Tufting/Lado B),
+#           espacos I (Lado B Faria Lima + Entremaos Perdizes), espacos II (Spicy Gabriel + O Jardim), investimento, proximos.
+# Recomendacao principal = TUFTING no Lado B (Faria Lima). Cerâmica Entremaos/Perdizes. Gastronomia Spicy Gabriel.
+# Valores por pessoa: Tufting R$899, Ceramica R$499, Fragrancias R$359, Gastronomia R$899. Brindes a partir de R$139/pessoa.
+# Bairros confirmados: Lado B/Sterna = Faria Lima; Entremaos = Perdizes. Spicy Gabriel e O Jardim = bairro a confirmar (nao inventar).
 # Nunca mostrar custo de fornecedor/margem. Fotos reais reaproveitadas do historico + material tufting (Lado B).
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
@@ -83,6 +84,27 @@ xcss = '''
   .stp .num{font-family:'DM Serif Display',serif;color:var(--orange);font-size:26px;line-height:1}
   .stp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy);line-height:1.1;margin:8px 0 5px}
   .stp p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+  /* dois espacos lado a lado (60/40 ou 50/50) */
+  .duo{display:grid;gap:26px;margin-top:16px;align-items:start}
+  .duo.b60{grid-template-columns:1.5fr 1fr}
+  .duo.b50{grid-template-columns:1fr 1fr}
+  .sp{display:flex;flex-direction:column}
+  .sp .sphead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:12px}
+  .sp .spn{font-family:'DM Serif Display',serif;font-weight:400;font-size:21px;color:var(--navy);line-height:1.04}
+  .sp .spn small{display:block;font-family:'DM Sans';font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:5px}
+  .sp .spsel{flex:none;font-size:7.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#fff;background:var(--orange-dark);padding:5px 10px;border-radius:999px;line-height:1.3;text-align:center;max-width:120px}
+  .spgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .spgrid figure{margin:0;border-radius:12px;overflow:hidden;height:168px;border:1px solid rgba(38,51,42,.10);box-shadow:0 12px 26px -20px rgba(0,0,0,.34)}
+  .duo.b50 .spgrid figure{height:180px}
+  .spgrid img{width:100%;height:100%;object-fit:cover;display:block}
+  .sp p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:12px 0 0}
+  /* adicionais (investimento) */
+  .addhead{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);margin-top:18px}
+  .adds{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px}
+  .add{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
+  .add .an{font-size:9px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .add h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy);margin:4px 0 4px;line-height:1.08}
+  .add span{font-size:11px;color:var(--muted);line-height:1.4}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -184,11 +206,11 @@ conceito = f'''
       </div>
     </div>
     <div class="bfeat">
-      <div class="bphoto">{img("capa-homens-pintando.jpg", "Homens e mulheres criando juntos numa oficina", "center 42%")}</div>
+      <div class="bphoto">{img("pizza-brinde.jpg", "Grupo reunido em torno da mesa, com comida e brinde", "center 50%")}</div>
       <div class="bbody">
-        <span class="btag">No mesmo pé</span>
-        <h3>Ninguém precisa ter experiência</h3>
-        <p>Liderança e time começam do zero juntos — e é justamente aí que a hierarquia cai e o encontro fica espontâneo.</p>
+        <span class="btag">À mesa</span>
+        <h3>Na mesma mesa, a conversa muda</h3>
+        <p>Compartilhar uma mesa cria outro ritmo para o encontro — mais leve, próximo e espontâneo.</p>
       </div>
     </div>
     {foot("O conceito")}
@@ -203,8 +225,8 @@ experiencias = f'''
     <p class="lead">Pensadas para quem nunca fez, funcionam bem em grupo e convidam todo mundo a participar — cada uma à sua maneira.</p>
     <div class="mcards">
       {mcard("01", "Tufting", "A mais autoral", "Com a pistola de tufting, cada participante desenvolve a própria criação em fios, cores e composição.", "R$ 899", "tufting12.jpg", "Pistola de tufting criando uma peça colorida", "center 50%")}
-      {mcard("02", "Cerâmica", "Modelagem à mão", "Cada participante molda a própria peça à mão, guiado por uma ceramista, no seu ritmo.", "R$ 469", "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}
-      {mcard("03", "Aromas", "Criação de fragrância", "Cada participante explora diferentes notas e desenvolve a própria fragrância para levar.", "Sob confirmação", "perfumaria-corp.jpg", "Essências e frascos para criação de fragrância", "center 50%", sc=True)}
+      {mcard("02", "Cerâmica", "Modelagem à mão", "Cada participante molda a própria peça à mão, guiado por uma ceramista, no seu ritmo.", "R$ 499", "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}
+      {mcard("03", "Criação de fragrâncias", "Aromas", "Cada participante explora diferentes notas e desenvolve a própria fragrância para levar.", "R$ 359", "perfumaria-corp.jpg", "Essências e frascos para criação de fragrância", "center 50%")}
       {mcard("04", "Gastronomia", "Harmonização", "O grupo participa do preparo com um chef e termina em torno da mesa, com harmonização e celebração.", "R$ 899", "aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%")}
     </div>
     <div class="bnote" style="margin-top:16px">◆ Nossa recomendação principal para a NBCUniversal é o <b>Tufting</b> — a mais autoral e visual das quatro, com cada participante criando a própria peça do começo ao fim. 🎨</div>
@@ -221,9 +243,9 @@ atmosfera_slide = atmosfera(
         ("tuftingpacote8.jpg", "Participante criando uma peça de tufting", "center 45%", "Criar junto"),
         ("ceramica-fria.jpg", "Mãos modelando cerâmica", "center 45%", "Mãos ocupadas"),
         ("perfumaria-oficina.jpg", "Bancada de perfumaria com essências", "center 50%", "Um outro ritmo"),
-        ("aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%", "Mesa compartilhada"),
+        ("bfa-grupo1.webp", "O time reunido à mesa", "center 40%", "Mesa compartilhada"),
         ("mimos-registro-itau.jpg", "Grupo corporativo diverso conversando e celebrando", "center 45%", "Conversa boa"),
-        ("bfa-grupo1.webp", "O time reunido à mesa", "center 40%", "Tempo juntos"),
+        ("aula-grupo.jpg", "Grupo diverso cozinhando com um chef", "center 50%", "Tempo juntos"),
     ],
     "Tudo incluso",
     "profissional que conduz · materiais e estrutura · montagem e desmontagem · produção Elarah",
@@ -250,83 +272,100 @@ sugestao = f'''
     {foot("Sugestão Elarah · Tufting")}
   </section>'''
 
-# ============================ 6 · O ESPAÇO · LADO B ============================
-espaco = atmosfera(
-    "O espaço · Lado B",
-    "O espaço · Lado B",
-    "Um ateliê criativo no <em>coração de São Paulo</em>",
-    "Um espaço dedicado às artes manuais e ao Tufting, preparado para receber o grupo em uma experiência criativa e imersiva.",
-    [
-        ("tufting13.jpg", "Parede de fios e cones de lã do ateliê", "center 50%", "Parede de fios"),
-        ("tufting15.jpg", "Pistola de tufting em uso sobre o bastidor", "center 50%", "A máquina em uso"),
-        ("tufting17.jpg", "Participante observando as peças de tufting na parede", "center 45%", "No ateliê"),
-        ("tufting7.jpg", "Participante criando a própria peça", "center 45%", "Mãos à obra"),
-        ("tufting5.jpg", "Peça de tufting finalizada em fios coloridos", "center 45%", "Peças prontas"),
-        ("tufting6.jpg", "Grupo reunido com as próprias criações", "center 40%", "O grupo no ateliê"),
-    ],
-    "Lado B Studio",
-    "Av. Brigadeiro Faria Lima, 1572 · São Paulo · estrutura completa para a experiência",
-    "O espaço · Lado B",
-)
+# ---- helper: bloco de um espaço (nome · bairro + selo opcional + 3 fotos + texto) ----
+def spblock(name, bairro, photos, body, selo=None):
+    figs = "\n        ".join(
+        f'<figure>{img(src, alt, pos)}</figure>' for src, alt, pos in photos)
+    sel = f'<span class="spsel">{selo}</span>' if selo else ''
+    return f'''<div class="sp">
+      <div class="sphead">
+        <div class="spn">{name}<small>{bairro}</small></div>
+        {sel}
+      </div>
+      <div class="spgrid">
+        {figs}
+      </div>
+      <p>{body}</p>
+    </div>'''
 
-# ============================ 7 · CERÂMICA · PERDIZES ============================
-ceramica = f'''
+
+# ============================ 6 · ESPAÇOS I · LADO B + ENTREMÃOS ============================
+lado_b = spblock(
+    "Lado B Studio", "Faria Lima · São Paulo",
+    [
+        ("tufting6.jpg", "Grupo reunido com as próprias criações de tufting", "center 40%"),
+        ("tufting1.jpg", "Participante criando a própria peça de tufting", "center 45%"),
+        ("tufting17.jpg", "Participante diante da parede de peças de tufting", "center 45%"),
+    ],
+    "Um ateliê criativo no coração de São Paulo, dedicado às artes manuais e ao Tufting — preparado para receber o grupo em uma experiência imersiva e mão na massa.",
+    selo="★ Sugestão Elarah para Tufting",
+)
+entremaos = spblock(
+    "Entremãos", "Perdizes · São Paulo",
+    [
+        ("netas-atelie.jpg", "Ateliê de cerâmica intimista, com luz natural", "center 50%"),
+        ("ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%"),
+        ("ceramicacool.jpg", "Peças de cerâmica finalizadas", "center 50%"),
+    ],
+    "Um ateliê acolhedor em Perdizes, com clima intimista e luz natural — cenário ideal para a experiência de cerâmica, no ritmo de cada participante.",
+)
+espacos1 = f'''
   <section class="slide">
-{head_simple("Cerâmica · ateliês")}
-    <span class="eyebrow orange">Experiência · Cerâmica</span>
-    <h2>Cerâmica em <em>ateliê parceiro</em></h2>
-    <p class="lead">Uma experiência de modelagem à mão em um ateliê preparado para receber o grupo — com ceramista, materiais e toda a estrutura para cada participante desenvolver a própria peça.</p>
-    <div class="gstrip">
-      {gfig("netas-atelie.jpg", "Ateliê de cerâmica intimista, com luz natural", "O ateliê", "center 50%")}
-      {gfig("ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "Modelagem à mão", "center 50%")}
-      {gfig("ceramicacool.jpg", "Peças de cerâmica finalizadas", "As peças", "center 50%")}
+{head_simple("Os espaços")}
+    <span class="eyebrow orange">Os espaços</span>
+    <h2>Onde a experiência <em>acontece</em></h2>
+    <p class="lead">Cada espaço é escolhido conforme a experiência, a região e o ritmo do encontro. Para o Tufting, nossa sugestão é o Lado B Studio.</p>
+    <div class="duo b60">
+      {lado_b}
+      {entremaos}
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Podemos realizar a cerâmica em diferentes ateliês parceiros — <b>Perdizes</b>, <b>Entremãos</b> ou <b>O Jardim</b> — conforme a experiência, a região e a preferência do time. Ceramista, materiais, acabamento e queima inclusos; peças finalizadas e devolvidas depois de prontas.</div>
-    {foot("Cerâmica · ateliês")}
+    <div class="bnote" style="margin-top:16px">◆ Espaços sujeitos à consulta e disponibilidade na data escolhida.</div>
+    {foot("Os espaços · I")}
   </section>'''
 
-# ============================ 8 · GASTRONOMIA · SPICY GABRIEL ============================
-gastronomia = f'''
-  <section class="slide">
-{head_simple("Gastronomia · Spicy Gabriel")}
-    <span class="eyebrow orange">Experiência · Gastronomia interativa</span>
-    <h2>Gastronomia interativa na <em>Spicy Gabriel</em></h2>
-    <p class="lead">Um encontro em torno da cozinha, com o grupo participando do preparo e terminando a experiência à mesa — conversa, sabores e celebração.</p>
-    <div class="gstrip">
-      {gfig("aula-grupo.jpg", "Grupo diverso cozinhando junto com um chef", "Mão na cozinha", "center 50%")}
-      {gfig("pizza-brinde.jpg", "Mesa posta com pizzas e brinde de vinho", "À mesa", "center 50%")}
-      {gfig("vinhotintos.jpg", "Taças e vinhos servidos para o encontro", "Para brindar", "center 45%")}
-    </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Spicy Gabriel · São Paulo</b> · chef, preparo participativo, serviço e experiência à mesa. Um formato mais lifestyle, feito para aproveitar o tempo junto.</div>
-    {foot("Gastronomia · Spicy Gabriel")}
-  </section>'''
-
-# ============================ 8B · CURADORIA DE ESPAÇOS ============================
-espacos_curadoria = atmosfera(
-    "A curadoria de espaços",
-    "A curadoria de espaços",
-    "O cenário também faz parte da <em>experiência</em>",
-    "Selecionamos o espaço de acordo com a experiência, a região e o perfil do encontro — de ateliês criativos a cafés, jardins e ambientes privativos. Mais aberto ou mais intimista, em ateliê ou à mesa, a curadoria se adapta ao que fizer mais sentido para o time.",
+# ============================ 7 · ESPAÇOS II · SPICY GABRIEL + O JARDIM ============================
+spicy = spblock(
+    "Spicy Gabriel", "São Paulo <i>· bairro a confirmar</i>",
     [
-        ("tufting13.jpg", "Ateliê de tufting com parede de fios coloridos", "center 50%", "Lado B · Faria Lima"),
-        ("netas-atelie.jpg", "Ateliê de cerâmica com luz natural", "center 50%", "Ateliê · Perdizes"),
-        ("casa-aquario-atelie.jpg", "Ateliê criativo e intimista", "center 50%", "Entremãos"),
-        ("ojardim1.jpg", "Jardim com deck e verde ao redor", "center 50%", "O Jardim"),
-        ("sowcafe.jpg", "Café urbano e acolhedor", "center 50%", "Sterna Café · Faria Lima"),
-        ("pizza-brinde.jpg", "Mesa de gastronomia com brinde", "center 50%", "Spicy Gabriel"),
+        ("aula-grupo.jpg", "Grupo diverso cozinhando junto com um chef", "center 50%"),
+        ("pizza-brinde.jpg", "Mesa posta com comida e brinde", "center 50%"),
+        ("vinhotintos.jpg", "Taças e vinhos servidos para o encontro", "center 45%"),
     ],
-    "Curadoria Elarah",
-    "experiência + espaço + atmosfera, escolhidos conforme a região e a preferência do time",
-    "A curadoria de espaços",
+    "Um encontro em torno da cozinha e da mesa — preparo participativo com chef, sabores e celebração. Um formato mais gastronômico, feito para aproveitar o tempo junto.",
 )
+jardim = spblock(
+    "O Jardim", "São Paulo <i>· bairro a confirmar</i>",
+    [
+        ("ojardim1.jpg", "Jardim arborizado com deck e verde ao redor", "center 50%"),
+        ("natura-mesa.jpg", "Grupo reunido à mesa em meio ao verde", "center 50%"),
+        ("ojardim4.jpg", "Espaço ao ar livre cercado de verde e luz natural", "center 50%"),
+    ],
+    "Um café-ateliê cercado de verde e luz natural, com mesa compartilhada ao ar livre — um cenário mais leve e espontâneo para o encontro.",
+)
+espacos2 = f'''
+  <section class="slide">
+{head_simple("Os espaços")}
+    <span class="eyebrow orange">A curadoria de espaços</span>
+    <h2>O cenário também faz parte da <em>experiência</em></h2>
+    <p class="lead">De ateliês criativos a jardins, cafés e espaços gastronômicos, selecionamos o cenário de acordo com a experiência, a região e o ritmo que o encontro pede.</p>
+    <div class="duo b50">
+      {spicy}
+      {jardim}
+    </div>
+    <div class="optline" style="margin-top:14px">
+      <span class="o">◆ Outras possibilidades: <b>Sterna Café · Faria Lima</b> &nbsp;·&nbsp; <b>Ateliê parceiro · Perdizes</b></span>
+    </div>
+    <p class="fineprint" style="margin-top:10px">Espaços sujeitos à consulta, disponibilidade e condições específicas de reserva ou consumo.</p>
+    {foot("Os espaços · II")}
+  </section>'''
 
 # ============================ 9 · INVESTIMENTO ============================
 investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">Investimento</span>
-    <h2>Valores por pessoa <em>para 15</em></h2>
-    <p class="lead">Valores por pessoa para turma privada de 15 participantes, com profissional, materiais e estrutura necessários já inclusos.</p>
+    <h2>Escolha a experiência que <em>combina com o time</em></h2>
+    <p class="lead">Quatro formatos, diferentes maneiras de criar, compartilhar e sair da rotina. Valores por pessoa para turma privada de 15 participantes, com profissional, materiais e estrutura já inclusos.</p>
     <table class="itable">
       <thead><tr>
         <th class="l">Experiência</th>
@@ -334,33 +373,35 @@ investimento = f'''
         <th>Total · 15 pessoas</th>
       </tr></thead>
       <tbody>
+        <tr>
+          <td class="rl"><b>Criação de fragrâncias</b><span>fragrância autoral para levar</span></td>
+          <td class="val">R$ 359</td>
+          <td class="tot">R$ 5.385</td>
+        </tr>
+        <tr>
+          <td class="rl"><b>Cerâmica</b><span>modelagem à mão, com queima e acabamento</span></td>
+          <td class="val">R$ 499</td>
+          <td class="tot">R$ 7.485</td>
+        </tr>
         <tr class="hl">
-          <td class="rl"><b>Tufting</b> · Lado B<span>criação autoral em fios e cores · ★ Sugestão Elarah</span></td>
-          <td class="val">A partir de R$ 899</td>
+          <td class="rl"><b>Tufting</b><span>criação autoral em fios e cores · ★ Sugestão Elarah</span></td>
+          <td class="val">R$ 899</td>
           <td class="tot">R$ 13.485</td>
         </tr>
         <tr>
-          <td class="rl"><b>Cerâmica</b> · ateliê parceiro<span>modelagem à mão, com queima e acabamento</span></td>
-          <td class="val">A partir de R$ 469</td>
-          <td class="tot">R$ 7.035</td>
-        </tr>
-        <tr>
-          <td class="rl"><b>Aromas</b> · criação de fragrância<span>fragrância autoral para levar</span></td>
-          <td class="sc">Sob confirmação</td>
-          <td class="sc">—</td>
-        </tr>
-        <tr>
-          <td class="rl"><b>Gastronomia</b> · harmonização · Spicy Gabriel<span>preparo participativo e experiência à mesa</span></td>
+          <td class="rl"><b>Gastronomia</b> · harmonização<span>preparo participativo e experiência à mesa</span></td>
           <td class="val">R$ 899</td>
           <td class="tot">R$ 13.485</td>
         </tr>
       </tbody>
     </table>
-    <div class="optline">
-      <span class="o">◆ Opcionais: <b>registro fotográfico profissional</b> R$ 450 (total)</span>
-      <span class="o"><b>brindes / personalização</b> sob consulta</span>
+    <div class="addhead">Para deixar a experiência ainda mais completa</div>
+    <div class="adds">
+      <div class="add"><span class="an">Registro fotográfico</span><h4>Fotos do encontro</h4><span>Valor sob consulta</span></div>
+      <div class="add"><span class="an">Brindes &amp; personalização</span><h4>Lembrança do dia</h4><span>A partir de R$ 139 por pessoa</span></div>
+      <div class="add"><span class="an">Espaços</span><h4>Cenário da experiência</h4><span>Sob consulta e disponibilidade</span></div>
     </div>
-    <p class="fineprint">Valores por pessoa, para 15 participantes, na 1ª semana de novembro. O espaço é escolhido conforme a experiência, a região e a preferência do time. O <b>Tufting</b> acontece no Lado B Studio (Av. Brigadeiro Faria Lima, 1572), com formato corporativo sob confirmação; <b>Aromas</b> com valor sob confirmação. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro da NBCUniversal.</p>
+    <p class="fineprint">Os espaços apresentados estão sujeitos à disponibilidade na data escolhida. Eventuais condições de reserva, locação ou consumo são confirmadas de acordo com o local e o formato da experiência. Valores por pessoa, para 15 participantes, na 1ª semana de novembro. A Elarah emite nota fiscal e ajusta as condições de pagamento com o financeiro da NBCUniversal.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -381,13 +422,13 @@ proximos = f'''
       Heloisa, nos conta qual experiência faz mais sentido para o time e seguimos com a confirmação de disponibilidade e os próximos passos.<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — turma privada de 15 pessoas, na 1ª semana de novembro, em São Paulo. Sugestão principal: Tufting no Lado B Studio (Av. Brigadeiro Faria Lima, 1572), workshops de 4h a 5h conforme o tamanho da peça, formato corporativo e valor sob confirmação. Demais experiências: Cerâmica em ateliê parceiro em Perdizes R$ 499 por pessoa; Perfumaria (criação de fragrância) R$ 289 por pessoa; Gastronomia interativa na Spicy Gabriel R$ 599 por pessoa. Cada experiência inclui profissional, materiais e estrutura necessários. Registro fotográfico profissional R$ 450 (total); brindes e personalização sob consulta. Emissão de nota fiscal e condições de pagamento alinhadas com o financeiro. Proposta válida mediante confirmação de data, disponibilidade de agenda e definição da experiência.</p>
+    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — turma privada de 15 pessoas, na 1ª semana de novembro, em São Paulo. Sugestão principal: Tufting no Lado B Studio (Faria Lima), R$ 899 por pessoa. Demais experiências: Cerâmica R$ 499 por pessoa; Criação de fragrâncias R$ 359 por pessoa; Gastronomia interativa (harmonização) R$ 899 por pessoa. Cada experiência inclui profissional, materiais e estrutura necessários. Adicionais: registro fotográfico sob consulta; brindes e personalização a partir de R$ 139 por pessoa; espaços sob consulta e disponibilidade. Emissão de nota fiscal e condições de pagamento alinhadas com o financeiro. Proposta válida mediante confirmação de data, disponibilidade de agenda e definição da experiência.</p>
     {foot("Próximos passos")}
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + conceito + atmosfera_slide + experiencias + sugestao + espaco
-        + ceramica + gastronomia + espacos_curadoria + investimento + proximos + '\n\n</div>\n\n')
+        + cover + conceito + atmosfera_slide + experiencias + sugestao
+        + espacos1 + espacos2 + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/experiencia-corporativa-nbcuniversal.html"
 open(out, "w", encoding="utf-8").write(html)
