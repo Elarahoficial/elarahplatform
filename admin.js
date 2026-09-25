@@ -15640,6 +15640,7 @@
     const v = entry.meta && entry.meta.local_atendimento;
     if (filtro === 'sem_espaco') return v === 'vai_ate_local' || v === 'ambos';
     if (filtro === 'com_espaco') return v === 'espaco_proprio' || v === 'ambos';
+    if (filtro === 'ambos') return v === 'ambos';
     if (filtro === 'nao_informado') return !v;
     return true;
   }
@@ -16054,6 +16055,18 @@
           (entry.semFornecedor ? '' : fornStatusBadge(meta && meta.status)) +
         '</div>';
 
+      // Onde atende em destaque, logo abaixo do nome.
+      const localInfo = FORN_LOCAL_ATENDIMENTO.find(o => o.v === (meta && meta.local_atendimento));
+      const localTexto = {
+        espaco_proprio: 'Tem espaço próprio',
+        vai_ate_local: 'Sem espaço — vai até o local',
+        ambos: 'Tem espaço e também vai até o local',
+      };
+      const localBadge = (entry.semFornecedor || !localInfo) ? '' :
+        '<div style="margin-top:8px;"><span style="display:inline-block;padding:4px 10px;border-radius:12px;' +
+          'font-size:.76rem;font-weight:600;color:#fff;background:' + localInfo.c + ';">' +
+          localInfo.icon + ' ' + escapeHtml(localTexto[localInfo.v]) + '</span></div>';
+
       // Contato / localização.
       const linhas = [];
       const local = [meta && meta.bairro, meta && meta.cidade].filter(Boolean).join(' · ');
@@ -16135,7 +16148,13 @@
       // já servem pra marcar/trocar ali mesmo (clicar na ativa desmarca).
       const localAtual = meta && meta.local_atendimento;
       const localHtml = entry.semFornecedor ? '' :
-        '<div style="margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:5px;">' +
+        (localAtual
+          ? '<button type="button" class="cotacao-local-trocar" ' +
+              'style="margin-top:8px;align-self:flex-start;padding:0;border:none;background:none;cursor:pointer;' +
+              'font-family:inherit;font-size:.72rem;color:#999;text-decoration:underline;">trocar onde atende</button>'
+          : '') +
+        '<div class="cotacao-local-row" style="margin-top:10px;' + (localAtual ? 'display:none;' : 'display:flex;') +
+          'flex-wrap:wrap;align-items:center;gap:5px;">' +
           '<span style="font-size:.72rem;color:' + (localAtual ? '#888' : '#b07b00') + ';margin-right:2px;">' +
             (localAtual ? 'Onde atende:' : 'Onde atende? marque:') + '</span>' +
           FORN_LOCAL_ATENDIMENTO.map(o => {
@@ -16153,7 +16172,7 @@
 
       return '<div style="border:1px solid #eee;border-radius:10px;padding:14px 16px;background:#fff;' +
         'box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;">' +
-        head + linhas.join('') + faixa + expsHtml + localHtml + acoes +
+        head + localBadge + linhas.join('') + faixa + expsHtml + localHtml + acoes +
       '</div>';
     }).join('');
 
@@ -16171,6 +16190,15 @@
           : '▼ ver mais (' + (btn.dataset.resto || '') + ')';
         if (abrindo) _cotacaoExpandidos.add(btn.dataset.fornKey);
         else _cotacaoExpandidos.delete(btn.dataset.fornKey);
+      });
+    });
+
+    // "trocar onde atende" abre as pílulas de novo.
+    grid.querySelectorAll('.cotacao-local-trocar').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.nextElementSibling;
+        if (row) row.style.display = 'flex';
+        btn.remove();
       });
     });
 
