@@ -583,6 +583,9 @@
       case 'campanhas':   await renderCampanhas(); break;
       case 'marketing-ai': await renderMarketingAI(); break;
       case 'calendario-editorial': await renderCalendarioEditorial(); break;
+      case 'datas-comemorativas':
+        if (window.ElarahDatasComemorativas) window.ElarahDatasComemorativas.run();
+        break;
       case 'captacao':    await renderCaptacao(); break;
       case 'giftcards':   await renderGiftCards(); break;
       case 'coupons':     await renderCoupons(); break;
@@ -26404,7 +26407,7 @@
 
       return '<div class="' + cls + '">' +
         '<div class="cal-day-header">' +
-          '<div><strong>' + ddmm + '</strong><span class="cal-day-header__wd">' + wdNames[d.dt.getDay()] + '</span></div>' +
+          '<div><strong>' + ddmm + '</strong><span class="cal-day-header__wd">' + wdNames[d.dt.getDay()] + '</span>' + _calDatasComemorativasHtml(d.ymd) + '</div>' +
           '<button type="button" class="cal-day-add" data-day="' + _calEsc(d.ymd) + '" style="background:transparent;border:none;color:#a4663b;font-size:.85rem;font-weight:600;cursor:pointer;">+ adicionar</button>' +
         '</div>' +
         '<div class="cal-day-posts">' + postsHtml + '</div>' +
@@ -26424,6 +26427,20 @@
       });
     });
   }
+
+  // Selos das datas comemorativas do dia (aba Datas Comemorativas),
+  // pra quem monta o cronograma ver "Dia do Amigo" sem trocar de aba.
+  function _calDatasComemorativasHtml(ymd) {
+    var mod = window.ElarahDatasComemorativas;
+    if (!mod) return '';
+    return mod.porDia(ymd).filter(function (e) { return e.rel >= 2; }).map(function (e) {
+      return '<span class="cal-dc-badge" title="' + _calEsc(e.ideia) + '">🎉 ' + _calEsc(e.nome) + '</span>';
+    }).join('');
+  }
+
+  // Atalho usado pela aba Datas Comemorativas ("+ Cronograma"): abre o
+  // modal de novo conteúdo já com data e ideia preenchidas.
+  window._adminCalNovoConteudo = function (p) { _calOpenEditModal(p); };
 
   function _calOpenEditModal(p) {
     var isNew = !p || !p.id;

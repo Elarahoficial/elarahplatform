@@ -58,7 +58,8 @@
     { key: 'contabilidade',        label: 'Contabilidade',        grupo: 'Dinheiro' },
     { key: 'analytics',            label: 'Analytics',            grupo: 'Dinheiro' },
     { key: 'broadcast',            label: 'Novidades',            grupo: 'Comunicação' },
-    { key: 'calendario-editorial', label: 'Cronograma',           grupo: 'Comunicação' }
+    { key: 'calendario-editorial', label: 'Cronograma',           grupo: 'Comunicação' },
+    { key: 'datas-comemorativas',  label: 'Datas Comemorativas',  grupo: 'Comunicação' }
   ];
 
   // ===== PERFIS PRONTOS =====
