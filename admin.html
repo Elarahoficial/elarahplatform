@@ -24,7 +24,7 @@
        pra versão antiga do admin.js. Roda 1x por sessão. -->
   <script>
     (function () {
-      var EXPECTED = 139;
+      var EXPECTED = 140;
       try {
         var stored = parseInt(sessionStorage.getItem('elarah_admin_v') || '0', 10);
         if (stored === EXPECTED) return;                  // já está na versão certa
@@ -93,10 +93,12 @@
         <span>Feedbacks</span>
       </button>
 
-      <!-- Pós-compra: o painel existe desde sempre, mas tinha ficado SEM item
-           de menu — e como a troca de painel depende do botão, ele estava
-           inacessível (junto com os testes de WhatsApp que moram nele). -->
-      <button class="admin__nav-item" data-panel="postevent">
+      <!-- Pós-compra: saiu do menu pra enxugar (set/26) — o pedido de
+           feedback já é automático (2 dias depois do evento). O botão
+           fica no DOM escondido porque a troca de painel depende dele;
+           a entrada agora é o botão "📨 Pós-compra" na aba Feedbacks
+           (onde também moram os testes de WhatsApp). -->
+      <button class="admin__nav-item" data-panel="postevent" style="display:none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/>
         </svg>
@@ -342,7 +344,7 @@
            novo de fornecedor, esse marcador deve estar igual ou maior
            que v.60. Se está em 57 ou menor, é cache do navegador. -->
       <div class="admin__version" style="padding:6px 14px;font-size:.7rem;color:#aaa;letter-spacing:.04em;">
-        Admin v.82 · 2026-09-25 (Datas Comemorativas)
+        Admin v.83 · 2026-09-25 (Pós-compra dentro de Feedbacks)
       </div>
       <button class="admin__logout" id="admin-logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1933,7 +1935,10 @@
             avaliação no WhatsApp com o mesmo link.
           </p>
         </div>
-        <button id="fb-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="admin__add-btn admin__add-btn--ghost" type="button" onclick="window._adminNavigateToPanel && window._adminNavigateToPanel('postevent')" title="Lista de reservas finalizadas pra pedir feedback manualmente + testes das mensagens automáticas de WhatsApp">📨 Pós-compra</button>
+          <button id="fb-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
+        </div>
       </div>
       <div id="feedbacks-root"></div>
     </div>
@@ -1942,6 +1947,7 @@
     <div class="admin__panel" id="panel-postevent">
       <div class="admin__header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
         <div>
+          <button type="button" onclick="window._adminNavigateToPanel && window._adminNavigateToPanel('feedbacks')" style="background:none;border:none;padding:0;margin-bottom:6px;color:#a4663b;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;">← Voltar pra Feedbacks</button>
           <h1 class="admin__page-title">Pós-compra</h1>
           <p class="admin__page-subtitle">Reservas finalizadas há 24h+ — peça avaliação da experiência via WhatsApp</p>
         </div>
