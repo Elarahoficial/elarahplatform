@@ -129,9 +129,10 @@ xcss = '''
   .curcol{display:grid;grid-template-rows:1fr 1fr;gap:18px;min-height:0}
   .curhero .ccbig .cnm{font-size:23px}
   .curhero .cc{min-height:0}
-  /* curadoria I: 3 iguais */
-  .cur3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px;height:540px}
-  .cur3 .cc{min-height:0}
+  /* curadoria I: 3 iguais — fotos do mesmo tamanho */
+  .cur3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px;align-items:start}
+  .cur3 .cph{height:446px;flex:0 0 446px}
+  .cur3 .ctx{min-height:120px}
   /* curadoria II: 2 espacos, fotos maiores */
   .cur2{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:16px;height:560px}
   .cur2 .cc{min-height:0}
@@ -161,6 +162,15 @@ xcss = '''
   .itable4 thead th small{display:block;font-size:8px;letter-spacing:.02em;text-transform:none;color:var(--muted);font-weight:600;margin-top:3px;line-height:1.3}
   .itable4 .cpl b{font-family:'DM Serif Display',serif;font-weight:400;font-size:21px;color:var(--orange-dark);display:block;line-height:1}
   .itable4 .cpl span{font-size:9px;color:var(--muted);display:block;margin-top:3px;letter-spacing:.02em}
+  /* coluna destacada "mais completo" (estilo matriz de planos) */
+  .itable4 .hlcol{background:#F6EADD}
+  .itable4 thead th.hlcol{border-bottom-color:var(--orange-dark)}
+  .itable4 thead th.hlcol .plabel{display:inline-block;background:var(--navy);color:#fff;font-size:7.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;padding:4px 10px;border-radius:999px;margin-bottom:6px}
+  .itable4 thead th.hlcol .phd{display:block;color:var(--orange-dark);font-size:12px;letter-spacing:.05em;font-weight:800;text-transform:uppercase}
+  .itable4 thead th .psub{display:block;font-size:8px;letter-spacing:.02em;text-transform:none;color:var(--muted);font-weight:600;margin-top:3px;line-height:1.3}
+  .itable4 tbody td.hlcol .cplbig{font-family:'DM Serif Display',serif;font-weight:400;font-size:23px;color:var(--navy);display:block;line-height:1}
+  .itable4 tbody td.hlcol .cplsub{font-size:9px;color:var(--navy-soft);display:block;margin-top:3px;font-weight:600}
+  .itable td.rl span.rlpill{display:inline-block;width:auto;background:var(--orange-dark);color:#fff;font-size:7.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;margin-top:6px}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -281,7 +291,7 @@ experiencias = f'''
       {mcard("01", "Tufting", "A mais autoral", "Com a pistola de tufting, cada participante desenvolve a própria criação em fios, cores e composição.", "R$ 899", "tufting12.jpg", "Pistola de tufting criando uma peça colorida", "center 50%")}
       {mcard("02", "Cerâmica", "Modelagem à mão", "Cada participante molda a própria peça à mão, guiado por uma ceramista, no seu ritmo.", "R$ 489", "ceramicamodelagem.jpg", "Mãos modelando uma peça de cerâmica", "center 50%")}
       {mcard("03", "Criação de fragrâncias", "Aromas", "Cada participante explora diferentes notas e desenvolve a própria fragrância para levar.", "R$ 359", "nbc-aromas-criacao.jpg", "Duas participantes criando a própria fragrância", "center 30%")}
-      {mcard("04", "Encontro gastronômico", "Preparo com chef", "O grupo participa do preparo com um chef e termina em torno da mesa, com sabores e celebração.", "R$ 899", "nbc-gastronomia-pizza.jpg", "Participantes preparando a própria refeição com um chef", "center 40%")}
+      {mcard("04", "Encontro gastronômico", "Preparo com chef", "O grupo participa do preparo com um chef e termina em torno da mesa, com sabores e celebração.", "R$ 879", "nbc-gastronomia-pizza.jpg", "Participantes preparando a própria refeição com um chef", "center 40%")}
     </div>
     <div class="bnote" style="margin-top:16px">◆ Nossa principal sugestão para a NBCUniversal é o <b>Tufting</b> — uma experiência visual, criativa e mão na massa, em que cada participante desenvolve a própria peça do começo ao fim.</div>
     {foot("As experiências")}
@@ -346,9 +356,9 @@ DISC = '<p class="fineprint" style="margin-top:12px">Espaços sujeitos à dispon
 # ============================ 6 · CURADORIA I ============================
 c_ladob = cc(
     "Lado B", "Faria Lima",
-    "tufting6.jpg", "Grupo sorrindo com as próprias criações de tufting no estúdio",
+    "lado-b-vermelho.webp", "Participante criando à mesa do estúdio, com a parede de fios ao fundo",
     "Criativo, contemporâneo e pensado para experiências mais imersivas.",
-    pos="center 40%", selo="★ Sugestão Elarah para Tufting",
+    pos="center 42%", selo="★ Sugestão Elarah para Tufting",
 )
 c_entremaos = cc(
     "Entremãos", "Perdizes",
@@ -358,9 +368,9 @@ c_entremaos = cc(
 )
 c_spicy = cc(
     "Spicy", "Pinheiros",
-    "pizza-brinde.jpg", "Grupo reunido à mesa, com comida e brinde",
+    "spicy-mesa-pratos.webp", "Mesa posta com pratos e taças, chef ao fundo",
     "Um cenário gastronômico para reunir o grupo em torno da cozinha e da mesa.",
-    pos="center 50%",
+    pos="center 55%",
 )
 espacos1 = f'''
   <section class="slide">
@@ -386,7 +396,7 @@ c_jardim = cc(
 )
 c_sterna = cc(
     "Sterna Café", "Faria Lima",
-    "sowcafe.jpg", "Café urbano e acolhedor, bem localizado",
+    "sterna-painel.webp", "Salão do café com painel pintado ao fundo e mesas de madeira",
     "Uma opção urbana e prática para encontros leves e bem localizados.",
     pos="center 50%",
 )
@@ -444,34 +454,34 @@ investimento = f'''
     <table class="itable itable4">
       <thead><tr>
         <th class="l">Experiência</th>
-        <th>Por pessoa</th>
+        <th>A experiência<span class="psub">por pessoa · profissional, materiais e estrutura</span></th>
         <th>Total · 15 pessoas</th>
-        <th>Opção mais completa<small>experiência + mimo + registro</small></th>
+        <th class="hlcol"><span class="plabel">★ Mais completo</span><span class="phd">Opção completa</span><span class="psub">experiência + mimo + registro</span></th>
       </tr></thead>
       <tbody>
         <tr>
           <td class="rl"><b>Criação de fragrâncias</b></td>
           <td class="val">R$ 359</td>
           <td class="tot">R$ 5.385</td>
-          <td class="cpl"><b>R$ 528</b><span>por pessoa · R$ 7.920 total</span></td>
+          <td class="cpl hlcol"><span class="cplbig">R$ 528</span><span class="cplsub">por pessoa · R$ 7.920 total</span></td>
         </tr>
         <tr>
           <td class="rl"><b>Cerâmica</b></td>
           <td class="val">R$ 489</td>
           <td class="tot">R$ 7.335</td>
-          <td class="cpl"><b>R$ 658</b><span>por pessoa · R$ 9.870 total</span></td>
+          <td class="cpl hlcol"><span class="cplbig">R$ 658</span><span class="cplsub">por pessoa · R$ 9.870 total</span></td>
         </tr>
         <tr class="hl">
-          <td class="rl"><b>Tufting</b><span>★ Sugestão Elarah</span></td>
+          <td class="rl"><b>Tufting</b><br><span class="rlpill">★ Sugestão Elarah</span></td>
           <td class="val">R$ 899</td>
           <td class="tot">R$ 13.485</td>
-          <td class="cpl"><b>R$ 1.068</b><span>por pessoa · R$ 16.020 total</span></td>
+          <td class="cpl hlcol"><span class="cplbig">R$ 1.068</span><span class="cplsub">por pessoa · R$ 16.020 total</span></td>
         </tr>
         <tr>
           <td class="rl"><b>Encontro gastronômico</b></td>
-          <td class="val">R$ 899</td>
-          <td class="tot">R$ 13.485</td>
-          <td class="cpl"><b>R$ 1.068</b><span>por pessoa · R$ 16.020 total</span></td>
+          <td class="val">R$ 879</td>
+          <td class="tot">R$ 13.185</td>
+          <td class="cpl hlcol"><span class="cplbig">R$ 1.048</span><span class="cplsub">por pessoa · R$ 15.720 total</span></td>
         </tr>
       </tbody>
     </table>
@@ -496,7 +506,7 @@ proximos = f'''
       Heloisa, nos conta qual experiência faz mais sentido para o time e seguimos com a confirmação de disponibilidade e os próximos passos.<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — turma privada de 15 pessoas, na 1ª semana de novembro, em São Paulo. Sugestão principal: Tufting no Lado B Studio (Faria Lima), R$ 899 por pessoa. Demais experiências: Cerâmica R$ 489 por pessoa; Criação de fragrâncias R$ 359 por pessoa; Encontro gastronômico R$ 899 por pessoa. Cada experiência inclui profissional, materiais e estrutura necessários. Complementos: mimo personalizado R$ 139 por pessoa; registro fotográfico R$ 450 total; espaços sob consulta e disponibilidade. Emissão de nota fiscal e condições de pagamento alinhadas com o financeiro. Proposta válida mediante confirmação de data, disponibilidade de agenda e definição da experiência.</p>
+    <p class="fineprint">Proposta de experiência corporativa da Elarah para a NBCUniversal (a/c Heloisa Ramires) — turma privada de 15 pessoas, na 1ª semana de novembro, em São Paulo. Sugestão principal: Tufting no Lado B Studio (Faria Lima), R$ 899 por pessoa. Demais experiências: Cerâmica R$ 489 por pessoa; Criação de fragrâncias R$ 359 por pessoa; Encontro gastronômico R$ 879 por pessoa. Cada experiência inclui profissional, materiais e estrutura necessários. Complementos: mimo personalizado R$ 139 por pessoa; registro fotográfico R$ 450 total; espaços sob consulta e disponibilidade. Emissão de nota fiscal e condições de pagamento alinhadas com o financeiro. Proposta válida mediante confirmação de data, disponibilidade de agenda e definição da experiência.</p>
     {foot("Próximos passos")}
   </section>'''
 
