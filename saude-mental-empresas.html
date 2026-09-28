@@ -217,6 +217,70 @@ footer a{color:var(--muted)}
 
 .wa-float{position:fixed;right:18px;bottom:18px;z-index:60;background:#25d366;color:#fff;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;box-shadow:0 10px 26px rgba(0,0,0,.2);text-decoration:none}
 
+/* ARTETERAPIA */
+.arte{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.arte h2{font-size:clamp(2rem,4vw,2.9rem);margin:12px 0 16px}
+.arte p{color:#3d4a45;margin-bottom:12px}
+.arte__quote{font-family:'DM Serif Display',serif;font-size:1.35rem;line-height:1.3;color:var(--green)!important;border-left:3px solid var(--terra);padding-left:16px;margin-top:20px}
+.arte__cards{display:grid;gap:14px}
+.acard{display:flex;gap:16px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px 22px}
+.acard .ic{width:48px;height:48px;border-radius:14px;background:var(--terra-soft);display:grid;place-items:center;font-size:1.4rem;flex-shrink:0}
+.acard h3{font-size:1.25rem;margin-bottom:4px}
+.acard p{font-size:.92rem;color:var(--muted)}
+
+/* MONTE SEU CRONOGRAMA */
+.picker{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:22px}
+.picker>span{font-weight:700;margin-right:6px}
+.picker button{font:inherit;font-weight:700;font-size:1.05rem;border:2px solid var(--line);background:#fff;border-radius:16px;padding:10px 18px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:64px}
+.picker button small{font-size:.66rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+.picker button.on{background:var(--green);border-color:var(--green);color:#fff}
+.picker button.on small{color:#cfe3d8}
+.mon--off{opacity:.42;filter:grayscale(.4)}
+.mon--off .a{visibility:hidden}
+.picker__cta{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:24px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px 24px}
+.picker__cta p{font-size:1rem;max-width:720px}
+
+/* QUEM SOMOS */
+.team{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.person{background:var(--paper);border:1px solid var(--line);border-radius:26px;padding:28px;display:grid;grid-template-columns:150px 1fr;gap:24px;align-items:start}
+.person__photo{width:150px;height:190px;border-radius:20px;background:linear-gradient(160deg,var(--sage-soft),var(--terra-soft));position:relative;overflow:hidden;display:grid;place-items:center}
+.person__photo span{font-size:.74rem;color:var(--muted);font-weight:600}
+.person__photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.person__role{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--terra)}
+.person h3{font-size:1.6rem;margin:6px 0 10px}
+.person p{font-size:.94rem;color:#3d4a45;margin-bottom:10px}
+
+/* CONHEÇA A ELARAH */
+.elarah{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;position:relative}
+.elarah h2{font-size:clamp(2rem,4vw,2.9rem);margin:12px 0 14px}
+.elarah p{color:#3d4a45;margin-bottom:10px}
+.elarah__pics{display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:1fr 1fr;gap:12px;height:380px}
+.elarah__pics img{width:100%;height:100%;object-fit:cover;border-radius:20px}
+.elarah__pics img:first-child{grid-row:1/3}
+.elarah__tag{position:absolute;right:0;bottom:-34px;font-family:'DM Serif Display',serif;font-style:italic;color:var(--terra)}
+
+/* MODAL DE ORÇAMENTO */
+.lm{position:fixed;inset:0;z-index:100;background:rgba(15,30,26,.55);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
+.lm[hidden]{display:none}
+.lm__box{background:var(--paper);border-radius:26px;max-width:560px;width:100%;padding:30px 28px;position:relative;box-shadow:0 30px 80px rgba(0,0,0,.3);max-height:calc(100vh - 32px);overflow-y:auto}
+.lm__box h3{font-size:1.8rem;margin:8px 0 6px}
+.lm__sub{color:var(--muted);font-size:.95rem;margin-bottom:16px}
+.lm__x{position:absolute;right:14px;top:10px;border:0;background:none;font-size:1.8rem;line-height:1;cursor:pointer;color:var(--muted)}
+.form--modal{padding:0;background:transparent}
+body.lm-open{overflow:hidden}
+.lm .form.form--modal{padding:0}
+
+@media (max-width:980px){
+  .arte,.elarah,.team{grid-template-columns:1fr}
+  .elarah__pics{height:300px}
+  .elarah__tag{position:static}
+}
+@media (max-width:560px){
+  .person{grid-template-columns:1fr;padding:22px}
+  .person__photo{width:120px;height:150px}
+  .picker button{padding:8px 12px;min-width:54px}
+  .lm__box{padding:26px 18px}
+}
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .7s ease,transform .7s ease}
 .reveal.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
@@ -254,12 +318,14 @@ footer a{color:var(--muted)}
     <a class="brand" href="#topo"><img src="assets/logo.png" alt="Elarah"><span>Mental<br>Health</span></a>
     <div class="nav__links">
       <a href="#nr1">NR-1</a>
+      <a href="#arteterapia">Arteterapia</a>
       <a href="#como">Como funciona</a>
       <a href="#planos">Planos</a>
-      <a href="#calendario">Calendário</a>
+      <a href="#monte">Monte o seu</a>
+      <a href="#quem-somos">Quem somos</a>
       <a href="#faq">Dúvidas</a>
     </div>
-    <a class="btn btn--terra" href="#contato">Quero meu cronograma</a>
+    <a class="btn btn--terra" href="#contato" data-lead="nav">Pedir orçamento</a>
   </div>
 </nav>
 
@@ -267,16 +333,16 @@ footer a{color:var(--muted)}
 <header class="hero" id="topo">
   <div class="wrap hero__grid">
     <div class="reveal">
-      <span class="eyebrow">Saúde mental corporativa · NR-1</span>
+      <span class="eyebrow">Arteterapia corporativa · NR-1</span>
       <h1>Saúde mental que o seu time <em>quer</em> participar.</h1>
-      <p class="hero__lead">Programas de bem-estar com experiências manuais — cerâmica terapêutica, kintsugi, terrários, rodas com psicóloga — organizados num <b>cronograma pontual, semestral ou anual</b> e documentados para o plano de riscos psicossociais da NR-1.</p>
+      <p class="hero__lead">Workshops de <b>Arteterapia</b> conduzidos por arteterapeutas — pintura, argila, colagem, kintsugi — num <b>cronograma pontual, semestral ou anual</b>, com a quantidade de encontros que a sua empresa quiser. A gente cuida de tudo e entrega a documentação para a NR-1.</p>
       <div class="hero__actions">
-        <a class="btn btn--terra" href="#contato">Receber meu cronograma grátis</a>
+        <a class="btn btn--terra" href="#contato" data-lead="hero">Receber meu cronograma grátis</a>
         <a class="btn btn--ghost" href="#calendario">Ver o calendário do ano</a>
       </div>
       <div class="hero__trust">
         <span>Na sua empresa, no ateliê ou online</span>
-        <span>De 8 a 300 pessoas</span>
+        <span>Você escolhe quantos encontros</span>
         <span>Relatório pronto pro PGR</span>
       </div>
     </div>
@@ -318,7 +384,26 @@ footer a{color:var(--muted)}
     </div>
     <div class="turn reveal">
       <p>A Elarah transforma saúde mental em <em>experiências que o time espera o mês inteiro</em> — com planejamento e documentação que o RH precisa.</p>
-      <a class="btn btn--terra" href="#contato">Falar com a Elarah</a>
+      <a class="btn btn--terra" href="#contato" data-lead="problema">Falar com a Elarah</a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ARTETERAPIA ===== -->
+<section class="soft" id="arteterapia">
+  <div class="wrap arte">
+    <div class="reveal">
+      <span class="eyebrow">O que é Arteterapia</span>
+      <h2>Uma pausa <em>com propósito</em>.</h2>
+      <p>A Arteterapia usa o processo criativo e a expressão artística como caminho para o autoconhecimento, a elaboração emocional, o relaxamento e o bem-estar.</p>
+      <p>No trabalho, ela abre um espaço de pausa e descompressão: por alguns momentos, o colaborador se desconecta das pressões do dia a dia, sai do automático e volta para o presente — com tinta, argila, desenho, colagem e outros materiais.</p>
+      <p><b>Não é preciso ter nenhuma experiência artística.</b> O foco não está no resultado estético, e sim no processo de criação e nas descobertas que acontecem ao longo dele.</p>
+      <p class="arte__quote">Cuidar antes que o sofrimento se intensifique também é uma forma de cuidar da empresa.</p>
+    </div>
+    <div class="arte__cards">
+      <div class="acard reveal"><div class="ic">🎨</div><div><h3>Pausa com Arte</h3><p>Pintura e expressão artística para desacelerar, aliviar as tensões do cotidiano e estimular o autoconhecimento.</p></div></div>
+      <div class="acard reveal"><div class="ic">💡</div><div><h3>Criatividade e novas perspectivas</h3><p>Vivências para experimentar, flexibilizar padrões de pensamento e redescobrir o potencial criativo.</p></div></div>
+      <div class="acard reveal"><div class="ic">🤝</div><div><h3>Conexão e desenvolvimento de equipes</h3><p>Criação compartilhada que estimula escuta, empatia e colaboração — para times e para lideranças.</p></div></div>
     </div>
   </div>
 </section>
@@ -329,12 +414,12 @@ footer a{color:var(--muted)}
     <div class="sec-head reveal">
       <span class="eyebrow">Como funciona</span>
       <h2>Do diagnóstico ao relatório, <em>a gente cuida de tudo</em>.</h2>
-      <p>Você aprova o cronograma. A Elarah organiza facilitadoras, materiais, local e registros.</p>
+      <p>Você aprova as datas. A Elarah organiza arteterapeutas, materiais, local e registros — o RH não precisa se preocupar com nada.</p>
     </div>
     <div class="steps">
       <div class="step reveal"><h3>Conversa de 20 min</h3><p>Entendemos o time, os turnos, o momento da empresa e os fatores de risco que o SESMT já mapeou.</p></div>
-      <div class="step reveal"><h3>Cronograma sob medida</h3><p>Pontual, semestral ou anual — conectado às datas que importam (Janeiro Branco, Setembro Amarelo, 10/10…).</p></div>
-      <div class="step reveal"><h3>Experiências que engajam</h3><p>Na empresa, no ateliê, online ou com kit em casa. Facilitadoras especializadas e psicólogas parceiras.</p></div>
+      <div class="step reveal"><h3>Cronograma sob medida</h3><p>Você diz quantos encontros quer — 1, 4, 6, 12… — e a gente distribui nas datas que mais importam (Janeiro Branco, Setembro Amarelo, 10/10…).</p></div>
+      <div class="step reveal"><h3>Arteterapia que engaja</h3><p>Na empresa, no ateliê, online ou com kit em casa. Conduzida por arteterapeutas — ninguém precisa saber desenhar.</p></div>
       <div class="step reveal"><h3>Relatório para o PGR</h3><p>Presença, fotos, pesquisa de pulso e o fator psicossocial trabalhado em cada ação. Pronto pra anexar.</p></div>
     </div>
   </div>
@@ -346,7 +431,7 @@ footer a{color:var(--muted)}
     <div class="sec-head center reveal" style="text-align:center">
       <span class="eyebrow">Planos</span>
       <h2>Comece do tamanho que fizer sentido.</h2>
-      <p>Todos os planos são montados sob medida para o número de pessoas e o orçamento da sua empresa.</p>
+      <p>Todos os planos são montados sob medida: você escolhe quantos encontros quer, para quantas pessoas, e a gente cuida do resto.</p>
     </div>
     <div class="plans">
       <div class="plan reveal">
@@ -357,23 +442,23 @@ footer a{color:var(--muted)}
           <li>1 experiência de 1h30 a 3h</li>
           <li>Materiais, facilitadora e registro fotográfico</li>
           <li>Lista de presença + relatório da ação</li>
-          <li>Opção de gift cards para quem não puder ir</li>
+          <li>Pode trocar o encontro por gift cards Elarah</li>
         </ul>
-        <a class="btn btn--ghost" href="#contato" data-plano="Pontual">Quero uma ação pontual</a>
+        <a class="btn btn--ghost" href="#contato" data-lead="plano_pontual" data-plano="Pontual" data-encontros="1">Quero uma ação pontual</a>
       </div>
       <div class="plan plan--hot reveal">
         <span class="tag">Mais escolhido</span>
         <h3>Anual</h3>
         <p class="for">O programa completo “12 meses de cuidado” — o que a NR-1 pede e o que o time lembra.</p>
         <ul>
-          <li>12 ações mensais + reforços nos meses-chave</li>
+          <li>Até 12 encontros no ano (vocês escolhem quantos)</li>
           <li>Workshop NR-1 para lideranças</li>
           <li>Rodas de conversa com psicóloga</li>
-          <li>Datas de presentear com gift cards Elarah</li>
+          <li>Datas de presentear com gift cards Elarah — e a opção de trocar encontros por gift cards</li>
           <li>Relatório semestral consolidado para o PGR</li>
           <li>Check-in semanal com o RH</li>
         </ul>
-        <a class="btn btn--terra" href="#contato" data-plano="Anual">Quero o programa anual</a>
+        <a class="btn btn--terra" href="#contato" data-lead="plano_anual" data-plano="Anual" data-encontros="12">Quero o programa anual</a>
       </div>
       <div class="plan reveal">
         <span class="tag">Semestral</span>
@@ -384,22 +469,36 @@ footer a{color:var(--muted)}
           <li>1 roda de conversa com psicóloga</li>
           <li>Pesquisa de pulso antes e depois</li>
           <li>Relatório consolidado do semestre</li>
+          <li>Qualquer encontro pode virar gift cards Elarah</li>
         </ul>
-        <a class="btn btn--ghost" href="#contato" data-plano="Semestral">Quero o semestral</a>
+        <a class="btn btn--ghost" href="#contato" data-lead="plano_semestral" data-plano="Semestral" data-encontros="6">Quero o semestral</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===== CALENDÁRIO ===== -->
-<section class="soft" id="calendario">
+<!-- ===== MONTE SEU CRONOGRAMA ===== -->
+<section class="soft" id="monte">
+  <span id="calendario"></span>
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="eyebrow">O ano inteiro, planejado</span>
-      <h2>Um calendário de saúde mental <em>pronto pra aprovar</em>.</h2>
-      <p>Este é o nosso programa-modelo. Cada empresa recebe uma versão ajustada ao time, ao orçamento e às datas que importam para o seu setor.</p>
+      <span class="eyebrow">Monte o seu cronograma</span>
+      <h2>Você escolhe <em>quantos encontros</em>. A gente monta o resto.</h2>
+      <p>O cronograma é criado a partir da quantidade de eventos que a sua empresa quer no ano. Nós distribuímos os encontros nas datas mais importantes para a saúde mental — e cuidamos de tudo: arteterapeutas, materiais, local, fotos e relatório.</p>
+    </div>
+    <div class="picker reveal" role="group" aria-label="Quantos encontros por ano">
+      <span>Quantos encontros por ano?</span>
+      <button type="button" data-enc="1">1 <small>pontual</small></button>
+      <button type="button" data-enc="2">2</button>
+      <button type="button" data-enc="4" class="on">4 <small>essencial</small></button>
+      <button type="button" data-enc="6">6 <small>semestral</small></button>
+      <button type="button" data-enc="12">12 <small>anual</small></button>
     </div>
     <div class="cal" id="cal"></div>
+    <div class="picker__cta reveal">
+      <p id="cal-resumo"></p>
+      <a class="btn btn--terra" href="#contato" data-lead="simulador" id="cal-cta">Quero esse cronograma</a>
+    </div>
   </div>
 </section>
 
@@ -461,7 +560,8 @@ footer a{color:var(--muted)}
         <span class="eyebrow">Benefício que o time usa</span>
         <h2>Presenteie nas datas que importam — com <em>experiências</em>.</h2>
         <p>Flores murcham, cestas se esquecem. Com os gift cards Elarah cada colaborador escolhe o que quer viver: cerâmica, pintura, perfumaria, drinks, bem-estar. Entram no cronograma como reconhecimento — e como cuidado.</p>
-        <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn--terra" href="#contato">Montar o calendário de presentes</a></div>
+        <p style="margin-top:10px"><b>Flexível de verdade:</b> se num mês não der pra reunir o time, qualquer encontro do cronograma pode ser trocado por gift cards Elarah — cada pessoa usa quando e onde quiser.</p>
+        <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn--terra" href="#contato" data-lead="gift" data-plano="Gift cards">Montar o calendário de presentes</a></div>
       </div>
       <div class="dates" id="dates"></div>
     </div>
@@ -490,13 +590,72 @@ footer a{color:var(--muted)}
   </div>
 </section>
 
+<!-- ===== QUEM SOMOS ===== -->
+<section id="quem-somos">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Quem somos</span>
+      <h2>Duas mulheres, <em>um propósito</em>: levar a arte para dentro das empresas.</h2>
+    </div>
+    <div class="team">
+      <!-- FOTO: salve a foto como assets/mh-fundadora.jpg — aparece sozinha aqui. -->
+      <article class="person reveal">
+        <div class="person__photo"><img src="assets/mh-fundadora.jpg" alt="Maria Eduarda Vitiello, fundadora da Elarah" loading="lazy" onerror="this.remove()"><span>Foto em breve</span></div>
+        <div>
+          <div class="person__role">Fundadora da Elarah</div>
+          <h3>Maria Eduarda Vitiello</h3>
+          <p>A Elarah nasceu de uma inquietação: num mundo cada vez mais acelerado, digital e cheio de distrações, faltava espaço para presença, troca, criatividade e conexão real. Por isso criei uma curadoria de experiências offline em São Paulo — cerâmica, pintura, velas, floral e tantas outras vivências que transformam tempo em memória.</p>
+          <p>Ao ver o impacto dessas pausas nas pessoas, ficou claro que elas precisavam chegar também aonde passamos a maior parte do dia: o trabalho. Assim nasceu a Elarah Mental Health.</p>
+        </div>
+      </article>
+      <!-- FOTO: salve a foto como assets/mh-larissa.jpg — aparece sozinha aqui. -->
+      <article class="person reveal">
+        <div class="person__photo"><img src="assets/mh-larissa.jpg" alt="Larissa Setzer, arteterapeuta" loading="lazy" onerror="this.remove()"><span>Foto em breve</span></div>
+        <div>
+          <div class="person__role">Arteterapeuta · Elarah Mental Health</div>
+          <h3>Larissa Setzer</h3>
+          <p>Formada em Design pela FAAP e pós-graduada em Arteterapia (UBAAT 08/1353/1125). Com mais de 20 anos de experiência no mercado corporativo, acompanhou de perto como o estresse, a ansiedade e o burnout impactam a saúde mental, a criatividade e o bem-estar dos profissionais.</p>
+          <p>Decidiu unir essa experiência à paixão pela arte, criando workshops e projetos de Arteterapia para empresas que convidam as pessoas a desacelerar, sair do automático e despertar o seu potencial criativo — como ferramenta de prevenção, autoconhecimento e transformação.</p>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CONHEÇA A ELARAH ===== -->
+<section class="soft">
+  <div class="wrap">
+    <div class="elarah reveal">
+      <div>
+        <span class="eyebrow">Um braço da Elarah</span>
+        <h2>Conheça a <em>Elarah</em>.</h2>
+        <p>A Elarah Mental Health é o braço corporativo da Elarah, uma curadoria de experiências criativas e offline em São Paulo. Mais do que workshops, a Elarah existe para criar momentos que marcam — e para lembrar as pessoas de viverem mais no mundo real.</p>
+        <p>É dela que vêm os gift cards de experiência que sua empresa pode usar para presentear o time nas datas importantes.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
+          <a class="btn btn--ghost" href="index.html" target="_blank" rel="noopener">Ver as experiências da Elarah</a>
+          <a class="btn btn--ghost" href="sobre.html" target="_blank" rel="noopener">Sobre a Elarah</a>
+        </div>
+      </div>
+      <div class="elarah__pics">
+        <img src="assets/ceramica.jpg" alt="Experiência de cerâmica da Elarah" loading="lazy">
+        <img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal" loading="lazy">
+        <img src="assets/aquarela.jpg" alt="Aquarela" loading="lazy">
+      </div>
+      <p class="elarah__tag">Offline is a feeling.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ===== FAQ ===== -->
 <section class="soft" id="faq">
   <div class="wrap">
     <div class="sec-head center reveal" style="text-align:center"><span class="eyebrow">Dúvidas</span><h2>Perguntas frequentes</h2></div>
     <div class="faq">
       <details class="reveal"><summary>Isso deixa minha empresa em dia com a NR-1?</summary><p>A NR-1 pede que os riscos psicossociais sejam identificados, avaliados e tratados com um plano de ação. Nossas experiências entram como <b>medidas de prevenção e promoção de saúde mental</b> desse plano, com registro de cada ação. A avaliação dos riscos e o PGR continuam sob responsabilidade do SESMT/responsável técnico da empresa — e a gente trabalha junto com eles.</p></details>
-      <details class="reveal"><summary>É terapia?</summary><p>Não. São experiências de bem-estar com efeito terapêutico (atividades manuais, atenção plena, conversa mediada). Nas rodas de conversa há psicólogas parceiras, mas não fazemos atendimento clínico individual — e indicamos caminhos de apoio quando necessário.</p></details>
+      <details class="reveal"><summary>É terapia?</summary><p>São workshops de Arteterapia em grupo, conduzidos por arteterapeutas, com foco em prevenção, pausa e bem-estar. Não substituem acompanhamento psicológico individual — e, quando necessário, indicamos caminhos de apoio.</p></details>
+      <details class="reveal"><summary>Preciso saber desenhar ou pintar?</summary><p>Não. Ninguém precisa ter experiência artística. O foco não é o resultado estético, e sim o processo de criação — é justamente isso que tira a pessoa do automático.</p></details>
+      <details class="reveal"><summary>Quantos encontros precisamos contratar?</summary><p>Quantos fizerem sentido para vocês: 1 encontro pontual, 4 no ano (os meses-chave), 6 no semestre ou 12 no ano. O cronograma é montado a partir desse número.</p></details>
+      <details class="reveal"><summary>E se um mês não der pra fazer o encontro?</summary><p>Sem problema: qualquer encontro do cronograma pode ser trocado por gift cards Elarah. Cada colaborador escolhe a experiência que quer viver — cerâmica, pintura, perfumaria, drinks — em São Paulo ou com kit em casa.</p></details>
       <details class="reveal"><summary>Onde acontece?</summary><p>Onde fizer mais sentido: na sua empresa (sala de reunião, refeitório, terraço), em ateliês parceiros em São Paulo, online ou com kits enviados para a casa de cada pessoa — ótimo para times híbridos, remotos e turnos diferentes.</p></details>
       <details class="reveal"><summary>Para quantas pessoas?</summary><p>De 8 a 300 por ação, com turmas simultâneas quando o time é grande. Para empresas com várias unidades, combinamos ações presenciais e kits.</p></details>
       <details class="reveal"><summary>Quanto custa?</summary><p>Depende do formato, do número de pessoas e da frequência. Ações pontuais cabem em orçamentos de campanha; programas semestrais e anuais têm valor por colaborador mais baixo e investimento previsível. Mande seus dados que respondemos com 3 opções em até 1 dia útil.</p></details>
@@ -516,7 +675,7 @@ footer a{color:var(--muted)}
         <ul>
           <li>Pontual, semestral ou anual</li>
           <li>Baseado nas datas que importam para o seu setor</li>
-          <li>Com gift cards para as datas de presentear</li>
+          <li>Com gift cards nas datas de presentear — e a opção de trocar encontros por gift cards</li>
           <li>Documentação pronta para a NR-1</li>
         </ul>
       </div>
@@ -525,9 +684,10 @@ footer a{color:var(--muted)}
         <label>Empresa<input name="empresa" required autocomplete="organization"></label>
         <label>Cargo<input name="cargo" placeholder="RH, SESMT, Diretoria…" autocomplete="organization-title"></label>
         <label>E-mail corporativo<input name="email" type="email" required autocomplete="email"></label>
-        <label>WhatsApp<input name="whatsapp" type="tel" placeholder="(11) 9…" autocomplete="tel"></label>
+        <label>WhatsApp<input name="whatsapp" type="tel" required placeholder="(11) 9…" autocomplete="tel"></label>
         <label>Colaboradores<select name="colaboradores"><option value="">Selecione</option><option>até 50</option><option>51–200</option><option>201–500</option><option>501–1000</option><option>1000+</option></select></label>
-        <label class="full">Interesse<select name="plano"><option value="Anual">Programa anual</option><option value="Semestral">Semestral</option><option value="Pontual">Ação pontual (uma data)</option><option value="Gift cards">Gift cards para datas</option><option value="Não sei ainda">Ainda não sei — quero ajuda</option></select></label>
+        <label class="full">Quantos encontros no ano?<select name="encontros"><option value="">Ainda não sei — quero ajuda</option><option value="1">1 (pontual)</option><option value="2">2</option><option value="4">4 (essencial)</option><option value="6">6 (semestral)</option><option value="12">12 (anual)</option></select></label>
+        <input type="hidden" name="plano" value="">
         <label class="full">Algo que devemos saber? (opcional)<textarea name="mensagem" placeholder="Ex.: queremos algo pro Dia Mundial da Saúde Mental; time 100% remoto; temos 3 turnos…"></textarea></label>
         <input class="hp" name="site_url" tabindex="-1" autocomplete="off" aria-hidden="true">
         <button class="btn btn--terra" type="submit">Quero meu cronograma grátis →</button>
@@ -544,30 +704,69 @@ footer a{color:var(--muted)}
   </div>
 </footer>
 
-<a class="wa-float" href="https://wa.me/5511914455930?text=Ol%C3%A1!%20Quero%20saber%20sobre%20o%20programa%20de%20sa%C3%BAde%20mental%20da%20Elarah%20para%20a%20minha%20empresa." target="_blank" rel="noopener" aria-label="Falar no WhatsApp">
+<a class="wa-float" href="#contato" data-lead="whatsapp_flutuante" aria-label="Falar no WhatsApp">
   <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.03c-.25.69-1.44 1.32-1.99 1.37-.51.05-1.15.07-1.85-.12-.43-.13-.97-.31-1.67-.61-2.94-1.27-4.86-4.23-5.01-4.43-.15-.2-1.2-1.6-1.2-3.05s.76-2.16 1.03-2.46c.27-.3.59-.37.79-.37h.57c.18 0 .43-.07.67.51.25.59.84 2.05.91 2.2.07.15.12.32.02.52-.1.2-.15.32-.3.49-.15.17-.31.39-.45.52-.15.15-.3.31-.13.61.17.3.77 1.27 1.65 2.06 1.14 1.01 2.1 1.33 2.4 1.48.3.15.47.12.64-.07.17-.2.74-.86.94-1.16.2-.3.39-.25.66-.15.27.1 1.72.81 2.02.96.3.15.49.22.57.34.07.12.07.69-.18 1.38z"/></svg>
 </a>
 
-<script src="admin-mh-data.js?v=1"></script>
+<!-- ===== FORMULÁRIO RÁPIDO (antes de ir pro WhatsApp) ===== -->
+<div class="lm" id="lead-modal" hidden>
+  <div class="lm__box" role="dialog" aria-modal="true" aria-labelledby="lm-title">
+    <button type="button" class="lm__x" data-lm-close aria-label="Fechar">×</button>
+    <span class="eyebrow">Orçamento em 1 dia útil</span>
+    <h3 id="lm-title">Conta rapidinho sobre a sua empresa</h3>
+    <p class="lm__sub">Assim já chegamos no WhatsApp com o cronograma pensado para vocês.</p>
+    <form class="form form--modal" id="lead-form-modal" novalidate>
+      <label>Seu nome<input name="nome" required autocomplete="name"></label>
+      <label>WhatsApp<input name="whatsapp" type="tel" required placeholder="(11) 9…" autocomplete="tel"></label>
+      <label>E-mail<input name="email" type="email" required autocomplete="email"></label>
+      <label>Empresa<input name="empresa" required autocomplete="organization"></label>
+      <label>Cargo<input name="cargo" placeholder="RH, SESMT, Diretoria…" autocomplete="organization-title"></label>
+      <label>Colaboradores<select name="colaboradores"><option value="">Selecione</option><option>até 50</option><option>51–200</option><option>201–500</option><option>501–1000</option><option>1000+</option></select></label>
+      <label class="full">Quantos encontros no ano?<select name="encontros"><option value="">Ainda não sei — quero ajuda</option><option value="1">1 (pontual)</option><option value="2">2</option><option value="4">4 (essencial)</option><option value="6">6 (semestral)</option><option value="12">12 (anual)</option></select></label>
+      <input type="hidden" name="plano" value="">
+      <input class="hp" name="site_url" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button class="btn btn--terra" type="submit">Continuar no WhatsApp →</button>
+      <p class="fine">Seus dados ficam só com a Elarah e são usados apenas para este contato.</p>
+    </form>
+  </div>
+</div>
+
+<script src="admin-mh-data.js?v=2"></script>
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script>
 (function () {
   'use strict';
   var D = window.ElarahMHData;
+  var WA = '5511914455930';
   var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
-  // Calendário do programa-modelo (mesmo conteúdo do painel).
-  var cal = document.getElementById('cal');
-  if (cal && D) {
-    var chave = { 1: 1, 4: 1, 9: 1, 10: 1 };
+  // ---------- Monte seu cronograma ----------
+  // A empresa escolhe quantos encontros; os meses acendem na ordem de
+  // força das datas (mesma regra do painel da equipe).
+  var encSel = 4;
+  function desenharCal() {
+    var cal = document.getElementById('cal');
+    if (!cal || !D) return;
+    var ativos = D.PRIORIDADE_MESES.slice(0, encSel);
     cal.innerHTML = D.PROGRAMA.map(function (p) {
-      var a = D.atividade(p.atividade);
-      return '<div class="mon reveal' + (chave[p.mes] ? ' mon--key' : '') + '"><span class="emo">' + a.emoji + '</span><div class="m">' + MESES[p.mes - 1] + '</div>' +
+      var a = D.atividade(p.atividade), on = ativos.indexOf(p.mes) >= 0;
+      return '<div class="mon in' + (on ? ' mon--key' : ' mon--off') + '"><span class="emo">' + (on ? a.emoji : '·') + '</span><div class="m">' + MESES[p.mes - 1] + '</div>' +
         '<b>' + esc(p.tema) + '</b><div class="a">' + esc(a.nome) + '</div></div>';
     }).join('');
+    var nomes = ativos.slice().sort(function (a, b) { return a - b; }).map(function (m) { return MESES[m - 1].toLowerCase(); });
+    var res = document.getElementById('cal-resumo');
+    if (res) res.innerHTML = '<b>' + encSel + ' encontro' + (encSel > 1 ? 's' : '') + ' no ano</b> — ' +
+      (encSel === 12 ? 'um por mês, o ano inteiro.' : 'em ' + nomes.join(', ').replace(/, ([^,]*)$/, ' e $1') + '.') +
+      ' Arteterapeutas, materiais, local e relatório por nossa conta — e qualquer encontro pode virar gift cards Elarah pro time.';
+    var cta = document.getElementById('cal-cta'); if (cta) cta.setAttribute('data-encontros', String(encSel));
+    document.querySelectorAll('[data-enc]').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-enc') === encSel); });
   }
+  document.querySelectorAll('[data-enc]').forEach(function (b) {
+    b.addEventListener('click', function () { encSel = +b.getAttribute('data-enc'); desenharCal(); });
+  });
+  desenharCal();
 
   // Próximas datas de presentear.
   var dl = document.getElementById('dates');
@@ -581,14 +780,6 @@ footer a{color:var(--muted)}
     }).join('');
   }
 
-  // Botões de plano pré-selecionam o interesse no formulário.
-  document.querySelectorAll('[data-plano]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var sel = document.querySelector('#lead-form select[name=plano]');
-      if (sel) sel.value = b.getAttribute('data-plano');
-    });
-  });
-
   // Animação de entrada.
   var els = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
@@ -598,43 +789,87 @@ footer a{color:var(--muted)}
     els.forEach(function (el) { io.observe(el); });
   } else els.forEach(function (el) { el.classList.add('in'); });
 
-  // Formulário → public.mh_leads (insert público) + WhatsApp como garantia.
-  var form = document.getElementById('lead-form');
-  form.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    var f = form.elements;
-    if (f.site_url.value) return; // honeypot
-    var d = {
-      nome: f.nome.value.trim().slice(0, 120), empresa: f.empresa.value.trim().slice(0, 160),
-      cargo: f.cargo.value.trim().slice(0, 120) || null, email: f.email.value.trim().slice(0, 160) || null,
-      whatsapp: f.whatsapp.value.trim().slice(0, 40) || null, colaboradores: f.colaboradores.value || null,
-      plano: f.plano.value || null, mensagem: f.mensagem.value.trim().slice(0, 2000) || null
-    };
-    if (!d.nome || !d.empresa || !d.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) {
-      alert('Preencha nome, empresa e um e-mail válido.'); return;
-    }
-    var btn = form.querySelector('button[type=submit]');
-    btn.disabled = true; btn.textContent = 'Enviando…';
-    var salvo = false;
-    try {
-      var t0 = Date.now();
-      while (!window.supabaseClient && Date.now() - t0 < 5000) await new Promise(function (r) { setTimeout(r, 150); });
-      if (window.supabaseClient) {
-        var r = await window.supabaseClient.from('mh_leads').insert(d);
-        salvo = !r.error;
-        if (r.error) console.warn('[MH lead]', r.error);
-      }
-    } catch (err) { console.warn('[MH lead]', err); }
-    try { if (window.ElarahAnalytics && ElarahAnalytics.track) ElarahAnalytics.track('mh_lead', { plano: d.plano }); } catch (_) {}
-    var msg = 'Olá! Sou ' + d.nome + ' (' + (d.cargo || 'RH') + ') da ' + d.empresa + '. Quero receber o cronograma de saúde mental da Elarah. ' +
-      'Interesse: ' + (d.plano || '-') + '. Time: ' + (d.colaboradores || '-') + ' pessoas. E-mail: ' + d.email + (d.mensagem ? '. ' + d.mensagem : '');
-    var wa = 'https://wa.me/5511914455930?text=' + encodeURIComponent(msg);
-    form.innerHTML = '<div class="ok"><h3>Recebido! 💚</h3><p style="color:var(--muted);margin-bottom:18px">' +
-      (salvo ? 'Em até 1 dia útil você recebe o cronograma da ' + esc(d.empresa) + '. Quer adiantar? Chama a gente no WhatsApp.' :
-               'Pra garantir que chegue, confirme pelo WhatsApp — já deixamos a mensagem pronta.') +
-      '</p><a class="btn btn--terra" href="' + wa + '" target="_blank" rel="noopener">Falar no WhatsApp agora</a></div>';
-    if (!salvo) window.open(wa, '_blank', 'noopener');
+  // ---------- Pedido de orçamento ----------
+  // Todo botão de orçamento/WhatsApp abre o formulário rápido. Os dados
+  // são SALVOS na plataforma (public.mh_leads) ANTES de abrir o WhatsApp.
+  var params = new URLSearchParams(location.search);
+  var utm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].map(function (k) { return params.get(k) ? k.replace('utm_', '') + '=' + params.get(k) : ''; }).filter(Boolean).join(' · ');
+  var origemAtual = 'formulario';
+  var modalEl = document.getElementById('lead-modal');
+  var formModal = document.getElementById('lead-form-modal');
+
+  function abrirModal(origem, plano, encontros) {
+    origemAtual = origem || 'botao';
+    formModal.elements.plano.value = plano || '';
+    if (encontros) formModal.elements.encontros.value = String(encontros);
+    modalEl.hidden = false;
+    document.body.classList.add('lm-open');
+    setTimeout(function () { formModal.elements.nome.focus(); }, 50);
+    try { if (window.ElarahAnalytics && ElarahAnalytics.track) ElarahAnalytics.track('mh_lead_open', { origem: origemAtual }); } catch (_) {}
+  }
+  function fecharModal() { modalEl.hidden = true; document.body.classList.remove('lm-open'); }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-lead]');
+    if (t) { e.preventDefault(); abrirModal(t.getAttribute('data-lead'), t.getAttribute('data-plano'), t.getAttribute('data-encontros')); return; }
+    if (e.target === modalEl || e.target.closest('[data-lm-close]')) fecharModal();
   });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modalEl.hidden) fecharModal(); });
+
+  function planoDe(enc, plano) {
+    if (plano) return plano;
+    var n = parseInt(enc, 10);
+    return !n ? 'Não sei ainda' : n === 1 ? 'Pontual' : n <= 6 ? (n === 6 ? 'Semestral' : n + ' encontros') : 'Anual';
+  }
+  async function salvar(d) {
+    var t0 = Date.now();
+    while (!window.supabaseClient && Date.now() - t0 < 5000) await new Promise(function (r) { setTimeout(r, 150); });
+    if (!window.supabaseClient) return false;
+    var r = await window.supabaseClient.from('mh_leads').insert(d);
+    if (r.error && /column|origem|encontros|utm|pagina|referrer/i.test(r.error.message || '')) {
+      // Banco ainda sem as colunas novas: salva o essencial mesmo assim.
+      var b = Object.assign({}, d);
+      b.mensagem = [d.mensagem, d.encontros ? d.encontros + ' encontro(s)/ano' : '', d.origem ? 'origem: ' + d.origem : ''].filter(Boolean).join(' · ') || null;
+      delete b.origem; delete b.encontros; delete b.utm; delete b.pagina; delete b.referrer;
+      r = await window.supabaseClient.from('mh_leads').insert(b);
+    }
+    if (r.error) console.warn('[MH lead]', r.error);
+    return !r.error;
+  }
+  function tratar(form, origem) {
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var f = form.elements;
+      if (f.site_url.value) return; // robô
+      var d = {
+        nome: f.nome.value.trim().slice(0, 120), empresa: f.empresa.value.trim().slice(0, 160),
+        cargo: f.cargo.value.trim().slice(0, 120) || null, email: f.email.value.trim().slice(0, 160) || null,
+        whatsapp: f.whatsapp.value.trim().slice(0, 40) || null, colaboradores: f.colaboradores.value || null,
+        encontros: parseInt(f.encontros.value, 10) || null,
+        mensagem: f.mensagem ? (f.mensagem.value.trim().slice(0, 2000) || null) : null,
+        origem: (origem || origemAtual).slice(0, 60), utm: utm.slice(0, 300) || null,
+        pagina: location.pathname.slice(0, 300), referrer: (document.referrer || '').slice(0, 300) || null
+      };
+      d.plano = planoDe(d.encontros, f.plano && f.plano.value).slice(0, 20);
+      if (!d.nome || !d.empresa || !d.whatsapp || String(d.whatsapp).replace(/\D/g, '').length < 10 || !d.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) {
+        alert('Preencha nome, empresa, WhatsApp (com DDD) e um e-mail válido.'); return;
+      }
+      var btn = form.querySelector('button[type=submit]');
+      btn.disabled = true; btn.textContent = 'Salvando…';
+      var ok = false;
+      try { ok = await salvar(d); } catch (err) { console.warn('[MH lead]', err); }
+      try { if (window.ElarahAnalytics && ElarahAnalytics.track) ElarahAnalytics.track('mh_lead', { origem: d.origem, encontros: d.encontros }); } catch (_) {}
+      var msg = 'Olá! Sou ' + d.nome + (d.cargo ? ' (' + d.cargo + ')' : '') + ' da ' + d.empresa + '. Quero um orçamento da Elarah Mental Health' +
+        (d.encontros ? ' para ' + d.encontros + ' encontro' + (d.encontros > 1 ? 's' : '') + ' no ano' : '') +
+        (d.colaboradores ? ', time de ' + d.colaboradores + ' pessoas' : '') + '. E-mail: ' + d.email + (d.mensagem ? '. ' + d.mensagem : '');
+      var wa = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
+      form.innerHTML = '<div class="ok"><h3>Recebido! 💚</h3><p style="color:var(--muted);margin-bottom:18px">' +
+        (ok ? 'Seus dados já estão com a gente. Abrindo o WhatsApp pra continuar a conversa…' : 'Abrindo o WhatsApp com a mensagem pronta…') +
+        '</p><a class="btn btn--terra" href="' + wa + '">Abrir o WhatsApp</a></div>';
+      setTimeout(function () { location.href = wa; }, 900);
+    });
+  }
+  tratar(formModal, null);
+  tratar(document.getElementById('lead-form'), 'formulario');
 })();
 </script>
 </body>

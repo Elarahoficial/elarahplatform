@@ -174,7 +174,7 @@
     S.prospects = lsGet(lsKey('b2b_prospects'), []);
   }
   async function carregarInteracoes() {
-    var desde = addDays(weekStart(), -7).toISOString();
+    var desde = addDays(weekStart(), -35).toISOString(); // 5 semanas: placar + histórico
     S.interacoes = await dbList('b2b_prospect_interactions', function (q) { return q.gte('occurred_at', desde).limit(2000); });
     var ids = {}; S.prospects.forEach(function (p) { ids[p.id] = 1; });
     S.interacoes = S.interacoes.filter(function (i) { return ids[i.prospect_id]; });
@@ -454,8 +454,59 @@
   }
 
   // =============================================================
-  // O QUE FAZER HOJE
+  // CALENDÁRIO DO ANO (bolinhas por dia, igual ao painel Elarah)
   // =============================================================
+  // porDia = { 'YYYY-MM-DD': [{ label, bg, fg, forte, html }] }
+  // kind   = qual tela (cada uma guarda o próprio dia selecionado).
+  var WD1 = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+  function calendarioAno(ano, porDia, kind, legenda, sub) {
+    var hoje = today0(), hk = dayKey(hoje);
+    var sel = (S.ui.diaSel || {})[kind] || '';
+    var html = (legenda ? '<div class="mh-legenda">' + legenda + '</div>' : '') + '<div class="mh-cal">';
+    for (var m = 0; m < 12; m++) {
+      var primeiro = new Date(ano, m, 1), n = new Date(ano, m + 1, 0).getDate(), cels = '', total = 0;
+      for (var v = 0; v < primeiro.getDay(); v++) cels += '<span class="mh-dia mh-dia--vazio"></span>';
+      for (var d = 1; d <= n; d++) {
+        var dt = new Date(ano, m, d), k = dayKey(dt), its = porDia[k];
+        var cls = 'mh-dia' + (dt < hoje ? ' mh-dia--passou' : '') + (k === hk ? ' mh-dia--hoje' : '') + (k === sel ? ' mh-dia--sel' : '');
+        if (its && its.length) {
+          total += its.length;
+          var top = its[0];
+          cls += ' mh-dia--tem' + (top.forte ? ' mh-dia--forte' : '');
+          cels += '<button type="button" class="' + cls + '" style="--c-bg:' + top.bg + ';--c-fg:' + top.fg + '" data-dia="' + k + '" data-dia-kind="' + kind + '" title="' +
+            esc(its.map(function (x) { return x.label; }).join(' · ')) + '">' + d + (its.length > 1 ? '<b>' + its.length + '</b>' : '') + '</button>';
+        } else cels += '<span class="' + cls + '">' + d + '</span>';
+      }
+      var det = '';
+      if (sel && sel.slice(0, 7) === dayKey(primeiro).slice(0, 7) && porDia[sel]) {
+        det = '<div class="mh-cal-det"><b>' + fmtData(sel) + '</b>' + porDia[sel].map(function (x) { return x.html; }).join('') + '</div>';
+      }
+      html += '<section class="mh-cal-mes"><div class="mh-cal-head"><h4>' + MESES[m] + '</h4><span>' + (sub && sub[m] ? esc(sub[m]) : (total ? total + ' item(ns)' : '')) + '</span></div>' +
+        '<div class="mh-grade">' + WD1.map(function (w) { return '<span class="mh-wd">' + w + '</span>'; }).join('') + cels + '</div>' + det + '</section>';
+    }
+    return html + '</div>';
+  }
+  function add(porDia, k, item) { (porDia[k] = porDia[k] || []).push(item); }
+  function ordenarDia(porDia) { Object.keys(porDia).forEach(function (k) { porDia[k].sort(function (a, b) { return (b.forte ? 1 : 0) - (a.forte ? 1 : 0) || (b.peso || 0) - (a.peso || 0); }); }); }
+  function legItem(bg, fg, txt) { return '<span><i style="background:' + bg + ';border-color:' + fg + '"></i>' + txt + '</span>'; }
+  function toggleVista(kind, atual) {
+    return '<div class="mh-seg"><button class="' + (atual === 'cal' ? 'on' : '') + '" data-vista="' + kind + '|cal">📅 Calendário</button><button class="' + (atual === 'lista' ? 'on' : '') + '" data-vista="' + kind + '|lista">☰ Lista</button></div>';
+  }
+
+  // =============================================================
+  // O QUE FAZER HOJE — rotina de uma pessoa só + o que o sistema achou
+  // =============================================================
+  // Semana do mês (1-5) pra encaixar as tarefas mensais.
+  function semanaDoMes(d) { return Math.floor((d.getDate() - 1) / 7) + 1; }
+  function rotinaDoDia(d) {
+    var dow = d.getDay();
+    var base = (D.ROTINA[dow] || { nome: dow === 0 || dow === 6 ? 'Fim de semana — descanso (ou evento marcado)' : '', itens: [] });
+    var itens = base.itens.map(function (x, i) { return Object.assign({ id: 'rot-' + dow + '-' + i, tipo: 'rotina' }, x); });
+    D.ROTINA_MES.forEach(function (x, i) {
+      if (x.dia === dow && x.semana === semanaDoMes(d)) itens.push(Object.assign({ id: 'mes-' + i, tipo: 'mensal', h: '15:00' }, x));
+    });
+    return { nome: base.nome, itens: itens };
+  }
   function tarefasHoje() {
     var feitas = lsGet('elarah_mh_tarefas_' + dayKey(), {});
     var t = [];
@@ -464,74 +515,135 @@
     var util = dow >= 1 && dow <= 5;
     var ps = prospStats();
 
-    if (util) {
-      var metaDia = Math.ceil(Math.max(0, META_SEMANA - ps.contatadas + ps.hoje) / Math.max(1, 6 - dow));
-      t.push({ id: 'prosp', prio: 1, titulo: '🎯 Abordar ' + metaDia + ' empresas hoje', go: 'prosp',
-        desc: 'Meta de ' + META_SEMANA + ' por semana. Já foram ' + ps.contatadas + ' nesta semana (' + ps.hoje + ' hoje). Mensagens prontas na aba Prospecção.',
-        auto: ps.hoje >= metaDia });
-    }
+    // 1. Rotina do dia (o esqueleto do trabalho de uma pessoa só).
+    rotinaDoDia(hoje).itens.forEach(function (x) {
+      var desc = x.d;
+      if (x.go === 'prosp' && /abordage|e-mails|convites|ligações|WhatsApps/.test(x.t)) {
+        desc += ' Semana: ' + ps.contatadas + '/' + META_SEMANA + ' abordadas.';
+      }
+      if (/Instagram/.test(x.t)) desc += ' 💡 Ideia de hoje: ' + D.IDEIAS_FOTO[(hoje.getDate() + dow) % D.IDEIAS_FOTO.length];
+      t.push({ id: x.id, prio: 2, h: x.h, min: x.min, titulo: x.t, go: x.go, desc: desc, tipo: x.tipo });
+    });
+
+    // 2. O que o sistema encontrou (urgente vem primeiro).
     var fim = new Date(); fim.setHours(23, 59, 59, 999);
-    var follow = S.prospects.filter(function (p) {
-      return p.proxima_acao_at && new Date(p.proxima_acao_at) <= fim && ['recusou', 'fechado', 'cliente_ativo', 'pausado'].indexOf(p.status_comercial) < 0;
-    });
-    follow.slice(0, 15).forEach(function (p) {
-      t.push({ id: 'fu-' + p.id, prio: 1, titulo: '↩️ Follow-up: ' + p.nome, go: 'prosp', desc: (p.proxima_acao || 'Retomar contato') + ' · combinado para ' + fmtDia(new Date(p.proxima_acao_at)) });
-    });
     S.leads.filter(function (l) { return l.status === 'novo'; }).forEach(function (l) {
-      t.push({ id: 'lead-' + l.id, prio: 1, titulo: '📥 Responder pedido do site: ' + l.empresa, go: 'leads', desc: l.nome + (l.whatsapp ? ' · ' + l.whatsapp : '') + ' — responda em até 2h, é lead quente.' });
+      t.push({ id: 'lead-' + l.id, prio: 1, titulo: '📥 Responder pedido do site: ' + l.empresa, go: 'leads', min: 10, tipo: 'alerta',
+        desc: l.nome + (l.whatsapp ? ' · ' + l.whatsapp : '') + ' — responda em até 2h, é o lead mais quente que existe.' });
     });
     S.eventos.forEach(function (e) {
       var d = parseDay(e.data_evento); if (!d || e.status === 'cancelado') return;
       var n = diasAte(d);
-      if (n === 0) t.push({ id: 'evt0-' + e.id, prio: 1, titulo: '🎉 Evento hoje: ' + e.titulo, go: 'eventos', desc: e.empresa + (e.horario ? ' às ' + e.horario : '') + '. Levar lista de presença e tirar fotos pro relatório NR-1.' });
-      else if (n > 0 && n <= 7 && e.status === 'confirmado') t.push({ id: 'evt7-' + e.id, prio: 2, titulo: '📦 Preparar: ' + e.titulo + ' (' + fmtDia(d) + ')', go: 'eventos', desc: 'Confirmar facilitadora, material para ' + (e.participantes || '?') + ' pessoas e local com ' + e.empresa + '.' });
-      else if (n < 0 && n >= -3 && e.status === 'confirmado') t.push({ id: 'evtpos-' + e.id, prio: 2, titulo: '📝 Pós-evento: ' + e.titulo, go: 'eventos', desc: 'Marcar como realizado, enviar relatório + fotos ao RH e pedir depoimento em vídeo.' });
+      if (n === 0) t.push({ id: 'evt0-' + e.id, prio: 1, titulo: '🎉 Evento hoje: ' + e.titulo, go: 'eventos', tipo: 'alerta', desc: e.empresa + (e.horario ? ' às ' + e.horario : '') + '. Lista de presença, fotos (com autorização) e 1 frase do RH pro relatório.' });
+      else if (n > 0 && n <= 7 && e.status === 'confirmado') t.push({ id: 'evt7-' + e.id, prio: 1, titulo: '📦 Preparar: ' + e.titulo + ' (' + fmtDia(d) + ')', go: 'eventos', min: 30, tipo: 'alerta', desc: 'Confirmar arteterapeuta, material para ' + (e.participantes || '?') + ' pessoas e local com ' + e.empresa + '.' });
+      else if (n < 0 && n >= -3 && e.status === 'confirmado') t.push({ id: 'evtpos-' + e.id, prio: 1, titulo: '📝 Pós-evento: ' + e.titulo, go: 'eventos', min: 30, tipo: 'alerta', desc: 'Marcar como realizado, mandar relatório + fotos ao RH e propor o próximo encontro do cronograma.' });
       if ((e.status === 'orcamento' || e.status === 'proposta_enviada') && e.updated_at && (Date.now() - new Date(e.updated_at)) > 5 * DAY) {
-        t.push({ id: 'orc-' + e.id, prio: 2, titulo: '⏳ Orçamento parado: ' + e.empresa, go: 'eventos', desc: '"' + e.titulo + '" sem movimento há ' + Math.floor((Date.now() - new Date(e.updated_at)) / DAY) + ' dias. Mande um follow-up com a data como gancho.' });
+        t.push({ id: 'orc-' + e.id, prio: 1, titulo: '⏳ Proposta parada: ' + e.empresa, go: 'eventos', min: 10, tipo: 'alerta', desc: '"' + e.titulo + '" sem resposta há ' + Math.floor((Date.now() - new Date(e.updated_at)) / DAY) + ' dias. Mande o follow-up com a data como gancho.' });
       }
     });
-    if (util && dow >= 3) {
-      var ws = dayKey(weekStart());
-      clientes().filter(function (c) { return !S.acomp.some(function (a) { return a.empresa === c && a.semana === ws; }); }).slice(0, 10).forEach(function (c) {
-        t.push({ id: 'acomp-' + c, prio: 3, titulo: '📈 Check-in semanal: ' + c, go: 'acomp', desc: 'Perguntar ao RH como o time está (termômetro 1–5) e registrar.' });
-      });
-    }
-    datasProximas(45, 3).forEach(function (x) {
-      var n = diasAte(x.data);
-      if (n >= 20 && n <= 45) t.push({ id: 'data-' + dayKey(x.data) + x.nome, prio: 2, titulo: '🎁 Oferecer "' + x.nome + '" (' + fmtDia(x.data) + ')', go: 'datas', desc: 'Janela de venda aberta: mande o pitch pros clientes e pros prospects quentes. Sugestão: ' + x.presente + '.' });
+    var follow = S.prospects.filter(function (p) {
+      return p.proxima_acao_at && new Date(p.proxima_acao_at) <= fim && ['recusou', 'fechado', 'cliente_ativo', 'pausado', 'nao_contatado'].indexOf(p.status_comercial) < 0;
     });
-    if (util) t.push({ id: 'post', prio: 3, titulo: '📣 Publicar o conteúdo do dia', go: 'captacao', desc: 'Post pronto na aba Captação — LinkedIn funciona melhor entre 8h e 10h.' });
+    if (follow.length) t.push({ id: 'fu-lote', prio: 1, titulo: '↩️ ' + follow.length + ' follow-up(s) vencendo hoje', go: 'prosp', min: follow.length * 3, tipo: 'alerta',
+      desc: follow.slice(0, 6).map(function (p) { return p.nome; }).join(', ') + (follow.length > 6 ? '…' : '') + '. Use a mensagem “Follow-up (3 dias depois)”.' });
+    if (util) datasProximas(45, 3).forEach(function (x) {
+      var n = diasAte(x.data);
+      if (n >= 20 && n <= 45) t.push({ id: 'data-' + dayKey(x.data) + x.nome, prio: 2, titulo: '🎁 Janela de venda: ' + x.nome + ' (' + fmtDia(x.data) + ')', go: 'datas', min: 20, tipo: 'alerta', desc: 'Faltam ' + n + ' dias. Mande o pitch pros clientes e prospects quentes. Sugestão: ' + x.presente + '.' });
+    });
 
-    t.forEach(function (x) { x.feita = !!feitas[x.id] || !!x.auto; });
-    t.sort(function (a, b) { return (a.feita - b.feita) || (a.prio - b.prio); });
+    t.forEach(function (x) { x.feita = !!feitas[x.id]; });
     return t;
   }
   function rHoje() {
     var t = tarefasHoje();
+    var hoje = today0();
+    var rot = rotinaDoDia(hoje);
+    var alertas = t.filter(function (x) { return x.tipo === 'alerta'; });
+    var rotina = t.filter(function (x) { return x.tipo !== 'alerta'; }).sort(function (a, b) { return String(a.h).localeCompare(String(b.h)); });
     var feitas = t.filter(function (x) { return x.feita; }).length;
-    var cores = { 1: '#d9774b', 2: '#e2b04a', 3: '#8fb3a0' };
-    return head('O que fazer hoje', 'Lista montada sozinha a partir da agenda, prospecção, pedidos e datas. Marque conforme for fazendo.') +
-      '<div class="mh-card"><h3>' + feitas + ' de ' + t.length + ' feitas <small>' + fmtData(today0()) + '</small></h3>' +
-      '<div class="mh-progress" style="margin:0 0 10px"><i style="width:' + (t.length ? Math.round(feitas / t.length * 100) : 100) + '%"></i></div>' +
-      (t.length ? t.map(function (x) {
-        return '<div class="mh-task' + (x.feita ? ' done' : '') + '"><input type="checkbox" data-task="' + esc(x.id) + '"' + (x.feita ? ' checked' : '') + '>' +
-          '<span class="mh-prio" style="background:' + cores[x.prio] + '"></span>' +
-          '<div class="t"><strong>' + esc(x.titulo) + '</strong><p>' + esc(x.desc) + '</p></div>' +
-          '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-go="' + x.go + '">Abrir</button></div>';
-      }).join('') : '<div class="mh-empty">Nada pendente. Aproveite pra criar conteúdo ou montar um cronograma novo. ✨</div>') +
-      '</div>';
+    var mins = t.filter(function (x) { return !x.feita; }).reduce(function (s, x) { return s + (x.min || 0); }, 0);
+    function linha(x) {
+      return '<div class="mh-task' + (x.feita ? ' done' : '') + '"><input type="checkbox" data-task="' + esc(x.id) + '"' + (x.feita ? ' checked' : '') + '>' +
+        (x.h ? '<span class="mh-hora">' + x.h + '</span>' : '<span class="mh-prio" style="background:' + (x.prio === 1 ? '#d9774b' : '#e2b04a') + '"></span>') +
+        '<div class="t"><strong>' + esc(x.titulo) + (x.min ? ' <small class="mh-min">~' + x.min + ' min</small>' : '') + (x.tipo === 'mensal' ? ' <span class="mh-chip mh-chip--terra">do mês</span>' : '') + '</strong><p>' + esc(x.desc) + '</p></div>' +
+        '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-go="' + x.go + '">Abrir</button></div>';
+    }
+    var semana = [1, 2, 3, 4, 5].map(function (dw) {
+      var d = addDays(weekStart(), dw - 1), r = rotinaDoDia(d);
+      return '<div class="mh-dayplan' + (dw === hoje.getDay() ? ' on' : '') + '"><b>' + (D.ROTINA[dw] ? D.ROTINA[dw].nome.split(' — ')[0] : '') + ' ' + fmtDia(d) + '</b><small>' + esc((D.ROTINA[dw] || {}).nome.split(' — ')[1] || '') + '</small>' +
+        '<ul>' + r.itens.map(function (x) { return '<li>' + esc(x.t) + '</li>'; }).join('') + '</ul></div>';
+    }).join('');
+    return head('O que fazer hoje', 'Rotina pensada pra uma pessoa só tocar a Elarah Mental Health: ~4 horas de comercial e conteúdo por dia, o resto livre pra executar os eventos.') +
+      '<div class="mh-grid mh-grid--4" style="margin-bottom:16px">' +
+        kpi('Hoje', esc(rot.nome.split(' — ')[1] || rot.nome), fmtData(hoje)) +
+        kpi('Feitas', feitas + ' / ' + t.length, '<div class="mh-progress"><i style="width:' + (t.length ? Math.round(feitas / t.length * 100) : 0) + '%"></i></div>') +
+        kpi('Tempo restante', mins >= 60 ? Math.floor(mins / 60) + 'h' + pad2(mins % 60) : mins + ' min', 'estimativa das tarefas abertas') +
+        kpi('Prospecção da semana', prospStats().contatadas + ' / ' + META_SEMANA, 'abordagens registradas') +
+      '</div>' +
+      (alertas.length ? '<div class="mh-card" style="margin-bottom:16px;border-left:4px solid var(--mh-terra)"><h3>🔔 Não deixe passar <small>' + alertas.length + '</small></h3>' + alertas.map(linha).join('') + '</div>' : '') +
+      '<div class="mh-card" style="margin-bottom:16px"><h3>🗓️ Sua rotina de hoje <small>marque conforme for fazendo</small></h3>' +
+        (rotina.length ? rotina.map(linha).join('') : '<div class="mh-empty">Fim de semana: descanse. Se tiver evento marcado, ele aparece em “Não deixe passar”. 💚</div>') + '</div>' +
+      '<div class="mh-card"><h3>A semana inteira</h3><div class="mh-week">' + semana + '</div></div>';
   }
 
   // =============================================================
   // AGENDA DE EVENTOS
   // =============================================================
+  var COR_EVT = {
+    orcamento: ['#f0efeb', '#6b6b6b'], proposta_enviada: ['#fff1d6', '#a86b00'], confirmado: ['#e2f3e8', '#1c7a43'],
+    realizado: ['#e6efe9', '#1f4d3f'], cancelado: ['#fde5e3', '#b3261e']
+  };
+  // Agenda própria da Elarah Mental Health (captação), pra agenda nunca
+  // ficar vazia e a Larissa enxergar o mês de longe.
+  function nthWeekday(ano, mes, dow, n) {
+    var d = new Date(ano, mes, 1); var off = (dow - d.getDay() + 7) % 7;
+    return new Date(ano, mes, 1 + off + 7 * (n - 1));
+  }
+  function agendaPropria(ano) {
+    var out = [];
+    for (var m = 0; m < 12; m++) {
+      out.push({ data: nthWeekday(ano, m, 4, 3), label: '☕ Café com RHs (ateliê)', desc: '10–15 RHs convidados: 1h de Arteterapia + conversa sobre NR-1. Convites na quinta anterior.' });
+      out.push({ data: nthWeekday(ano, m, 2, 2), label: '🎙️ Live/webinar “NR-1 na prática”', desc: '40 min no LinkedIn com convidada (psicóloga/SST). Gravação vira conteúdo.' });
+    }
+    return out;
+  }
   function rEventos() {
+    var vista = S.ui.vistaEventos || 'cal';
+    var ano = S.ui.anoEventos || today0().getFullYear();
+    var acts = '<button class="mh-btn mh-btn--terra" data-new-evento>+ Novo evento</button>';
+    var resumo = '<div class="mh-grid mh-grid--4" style="margin-bottom:16px">' +
+      ['orcamento', 'proposta_enviada', 'confirmado', 'realizado'].map(function (k) {
+        var l = S.eventos.filter(function (e) { return e.status === k; });
+        return kpi(STATUS_EVT[k], l.length, brl(l.reduce(function (s, e) { return s + (Number(e.valor_centavos) || 0); }, 0)));
+      }).join('') + '</div>';
+
+    if (vista === 'cal') {
+      var porDia = {};
+      S.eventos.forEach(function (e) {
+        if (!e.data_evento) return;
+        var c = COR_EVT[e.status] || COR_EVT.orcamento;
+        add(porDia, String(e.data_evento).slice(0, 10), { label: e.titulo + ' · ' + e.empresa, bg: c[0], fg: c[1], forte: e.status === 'confirmado', peso: 3, html: rowEvento(e) });
+      });
+      agendaPropria(ano).forEach(function (x) {
+        add(porDia, dayKey(x.data), { label: x.label, bg: '#fbe9df', fg: '#b95c32', peso: 1,
+          html: '<div class="mh-row">' + dateBox(x.data) + '<div class="body"><strong>' + esc(x.label) + '</strong><p>' + esc(x.desc) + '</p></div></div>' });
+      });
+      D.datasDoAno(ano).filter(function (x) { return x.rel === 3; }).forEach(function (x) {
+        add(porDia, dayKey(x.data), { label: x.nome, bg: '#e8edf8', fg: '#2d4f8a', peso: 2, html: rowData(x) });
+      });
+      ordenarDia(porDia);
+      var leg = legItem(COR_EVT.confirmado[0], COR_EVT.confirmado[1], 'Evento confirmado (cheio)') + legItem(COR_EVT.proposta_enviada[0], COR_EVT.proposta_enviada[1], 'Proposta / orçamento') +
+        legItem('#e8edf8', '#2d4f8a', 'Data forte pro RH') + legItem('#fbe9df', '#b95c32', 'Agenda de captação (Café com RHs, live)');
+      return head('Agenda de eventos', 'O ano inteiro de longe: eventos das empresas, datas fortes e a agenda de captação. Toque num dia colorido pra ver os detalhes.', acts) + resumo +
+        '<div class="mh-toolbar">' + toggleVista('eventos', vista) +
+          '<select class="mh-select" data-ano-kind="eventos">' + [ano - 1, ano, ano + 1].map(function (a) { return '<option' + (a === ano ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select></div>' +
+        calendarioAno(ano, porDia, 'eventos', leg);
+    }
+
     var f = S.ui.evtFiltro || 'futuros';
     var lista = S.eventos.slice().sort(function (a, b) { return String(a.data_evento || '').localeCompare(String(b.data_evento || '')); });
     if (f === 'futuros') lista = lista.filter(function (e) { var d = parseDay(e.data_evento); return !d || diasAte(d) >= 0; }).filter(function (e) { return e.status !== 'cancelado'; });
     else if (f !== 'todos') lista = lista.filter(function (e) { return e.status === f; });
-    if (f === 'realizado' || f === 'todos') lista.reverse();
-
     var porMes = {};
     lista.forEach(function (e) {
       var d = parseDay(e.data_evento);
@@ -539,16 +651,13 @@
       (porMes[k] = porMes[k] || []).push(e);
     });
     var filtros = { futuros: 'Próximos', orcamento: 'Orçamentos', proposta_enviada: 'Propostas', confirmado: 'Confirmados', realizado: 'Realizados', cancelado: 'Cancelados', todos: 'Todos' };
-    return head('Agenda de eventos', 'Eventos in company, no ateliê, online ou kits em casa — do orçamento ao relatório final.',
-        '<button class="mh-btn mh-btn--terra" data-new-evento>+ Novo evento</button>') +
-      '<div class="mh-toolbar">' + Object.keys(filtros).map(function (k) {
-        var n = k === 'futuros' || k === 'todos' ? '' : ' (' + S.eventos.filter(function (e) { return e.status === k; }).length + ')';
-        return '<button class="mh-btn mh-btn--sm ' + (f === k ? '' : 'mh-btn--ghost') + '" data-evt-filtro="' + k + '">' + filtros[k] + n + '</button>';
+    return head('Agenda de eventos', 'Eventos in company, no ateliê, online ou kits em casa — do orçamento ao relatório final.', acts) + resumo +
+      '<div class="mh-toolbar">' + toggleVista('eventos', vista) + Object.keys(filtros).map(function (k) {
+        return '<button class="mh-btn mh-btn--sm ' + (f === k ? '' : 'mh-btn--ghost') + '" data-evt-filtro="' + k + '">' + filtros[k] + '</button>';
       }).join('') + '</div>' +
       (lista.length ? Object.keys(porMes).map(function (m) {
-        var tot = porMes[m].reduce(function (s, e) { return s + (Number(e.valor_centavos) || 0); }, 0);
-        return '<div class="mh-card" style="margin-bottom:14px"><h3>' + m + ' <small>' + porMes[m].length + ' evento(s) · ' + brl(tot) + '</small></h3><div class="mh-list">' + porMes[m].map(rowEvento).join('') + '</div></div>';
-      }).join('') : '<div class="mh-card"><div class="mh-empty">Nenhum evento aqui ainda. Cadastre o primeiro orçamento — ou use “+ Evento” numa data da aba Datas para o RH.</div></div>');
+        return '<div class="mh-card" style="margin-bottom:14px"><h3>' + m + ' <small>' + porMes[m].length + ' evento(s)</small></h3><div class="mh-list">' + porMes[m].map(rowEvento).join('') + '</div></div>';
+      }).join('') : '<div class="mh-card"><div class="mh-empty">Nenhum evento com esse filtro. Veja o calendário pra enxergar as datas fortes e a agenda de captação.</div></div>');
   }
 
   function abrirEvento(ev, preset) {
@@ -596,35 +705,76 @@
   }
 
   // =============================================================
-  // ACOMPANHAMENTO SEMANAL
+  // ACOMPANHAMENTO SEMANAL — placar da operação + check-in dos clientes
   // =============================================================
   var HUMOR = ['', '😣', '😕', '😐', '🙂', '😄'];
+  var METAS = { abordagens: META_SEMANA, respostas: 10, reunioes: 3, propostas: 2, fechados: 1, conteudos: 4 };
+  function placarSemana(ws) {
+    var ini = ws.getTime(), fim = addDays(ws, 7).getTime();
+    function dentro(v) { var t = new Date(v).getTime(); return t >= ini && t < fim; }
+    var inter = S.interacoes;
+    function conta(tipo) { var ids = {}; inter.forEach(function (i) { if (i.tipo === tipo && dentro(i.occurred_at)) ids[i.prospect_id] = 1; }); return Object.keys(ids).length; }
+    // Tarefas de conteúdo da rotina: post LinkedIn (seg), story (ter), post IG (qua), case (sex).
+    var CONTEUDO = ['rot-1-3', 'rot-2-2', 'rot-3-0', 'rot-5-1'];
+    var rotinaFeita = 0;
+    for (var i = 0; i < 7; i++) {
+      var f = lsGet('elarah_mh_tarefas_' + dayKey(addDays(ws, i)), {});
+      CONTEUDO.forEach(function (k) { if (f[k]) rotinaFeita++; });
+    }
+    return {
+      abordagens: conta('mensagem_enviada'),
+      respostas: conta('respondeu'),
+      reunioes: conta('reuniao_marcada') + conta('reuniao_realizada'),
+      propostas: conta('proposta_enviada') + S.eventos.filter(function (e) { return e.status === 'proposta_enviada' && dentro(e.updated_at || e.created_at); }).length,
+      fechados: conta('fechado') + S.eventos.filter(function (e) { return e.status === 'confirmado' && dentro(e.updated_at || e.created_at); }).length,
+      leads: S.leads.filter(function (l) { return dentro(l.created_at); }).length,
+      conteudos: rotinaFeita
+    };
+  }
   function rAcomp() {
     var ws = S.ui.semana ? parseDay(S.ui.semana) : weekStart();
     var wk = dayKey(ws);
+    var p = placarSemana(ws);
+    var nomes = { abordagens: '🎯 Abordagens', respostas: '💬 Respostas', reunioes: '🤝 Reuniões', propostas: '📄 Propostas', fechados: '✅ Fechamentos', leads: '📥 Pedidos do site', conteudos: '📣 Tarefas de conteúdo' };
+    var cards = Object.keys(nomes).map(function (k) {
+      var meta = METAS[k], v = p[k];
+      var pct = meta ? Math.min(100, Math.round(v / meta * 100)) : null;
+      return '<div class="mh-card mh-kpi"><div class="lbl">' + nomes[k] + '</div><div class="val">' + v + (meta ? '<span style="font-size:1rem;color:var(--mh-muted)"> / ' + meta + '</span>' : '') + '</div>' +
+        (pct != null ? '<div class="mh-progress"><i style="width:' + pct + '%"></i></div>' : '<div class="sub">sem meta</div>') + '</div>';
+    }).join('');
+    var hist = [0, 1, 2, 3].map(function (i) {
+      var w = addDays(weekStart(), -7 * i), q = placarSemana(w);
+      return '<tr><td>' + fmtDia(w) + '</td><td>' + q.abordagens + '</td><td>' + q.respostas + '</td><td>' + q.reunioes + '</td><td>' + q.propostas + '</td><td>' + q.fechados + '</td><td>' + q.leads + '</td>' +
+        '<td>' + (q.abordagens ? Math.round(q.respostas / q.abordagens * 100) + '%' : '—') + '</td></tr>';
+    }).join('');
     var lista = clientes();
     var extras = S.acomp.filter(function (a) { return a.semana === wk && lista.indexOf(a.empresa) < 0; }).map(function (a) { return a.empresa; });
     lista = lista.concat(extras);
-    return head('Acompanhamento semanal', 'Um check-in por empresa por semana: como o time está, o que foi feito e o próximo passo. É o histórico que mostra valor na renovação — e evidência pro plano da NR-1.',
-        '<button class="mh-btn mh-btn--terra" data-acomp-novo>+ Registrar semana</button>') +
+    var dica = p.abordagens < METAS.abordagens * 0.5 ? 'Poucas abordagens: reserve 1h amanhã cedo só pra prospecção (e-mail personalizado é o mais rápido).'
+      : p.respostas === 0 ? 'Muitas abordagens e nenhuma resposta: teste o gancho de data ou ligue para 5 empresas.'
+      : p.reunioes === 0 ? 'Tem respostas: proponha 15 minutos de conversa com 2 horários fixos.'
+      : 'Bom ritmo! Mande o cronograma em PDF no mesmo dia de cada reunião.';
+    return head('Acompanhamento semanal', 'Seu placar da semana (calculado sozinho) e o check-in de cada empresa cliente — o histórico que mostra valor na renovação.',
+        '<button class="mh-btn mh-btn--terra" data-acomp-novo>+ Check-in de cliente</button>') +
       '<div class="mh-toolbar mh-weeknav"><button class="mh-btn mh-btn--ghost mh-btn--sm" data-semana="' + dayKey(addDays(ws, -7)) + '">← semana anterior</button>' +
         '<b style="font-size:.9rem">Semana de ' + fmtDia(ws) + ' a ' + fmtDia(addDays(ws, 6)) + '</b>' +
         '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-semana="' + dayKey(addDays(ws, 7)) + '">próxima →</button></div>' +
+      '<div class="mh-grid mh-grid--4">' + cards + '<div class="mh-card" style="background:var(--mh-sage-soft)"><div class="lbl" style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mh-green)">💡 Dica da semana</div><p style="margin:8px 0 0;font-size:.88rem">' + dica + '</p></div></div>' +
+      '<div class="mh-card" style="margin-top:16px"><h3>Últimas 4 semanas</h3><div class="mh-table-wrap"><table class="mh-table"><thead><tr><th>Semana</th><th>Abordagens</th><th>Respostas</th><th>Reuniões</th><th>Propostas</th><th>Fechados</th><th>Pedidos site</th><th>Taxa de resposta</th></tr></thead><tbody>' + hist + '</tbody></table></div></div>' +
+      '<h2 style="font-family:\'DM Serif Display\',serif;font-weight:400;margin:26px 0 12px">Empresas clientes</h2>' +
       (lista.length ? '<div class="mh-grid mh-grid--2">' + lista.map(function (emp) {
         var reg = S.acomp.filter(function (a) { return a.empresa === emp && a.semana === wk; })[0];
-        var hist = S.acomp.filter(function (a) { return a.empresa === emp; }).sort(function (a, b) { return a.semana.localeCompare(b.semana); }).slice(-8);
+        var h = S.acomp.filter(function (a) { return a.empresa === emp; }).sort(function (a, b) { return a.semana.localeCompare(b.semana); }).slice(-8);
         return '<div class="mh-card"><h3>' + esc(emp) + (reg && reg.alerta ? ' <span class="mh-chip mh-chip--danger">🚩 atenção</span>' : '') + '</h3>' +
           (reg
-            ? '<p style="margin:0 0 6px"><span class="mh-humor">' + (HUMOR[reg.humor_time] || '—') + '</span> ' +
-                (reg.participacao != null ? '<span class="mh-chip">' + reg.participacao + '% de adesão</span>' : '') + '</p>' +
+            ? '<p style="margin:0 0 6px"><span class="mh-humor">' + (HUMOR[reg.humor_time] || '—') + '</span> ' + (reg.participacao != null ? '<span class="mh-chip">' + reg.participacao + '% de adesão</span>' : '') + '</p>' +
               (reg.feito ? '<p style="font-size:.84rem;margin:4px 0"><b>Feito:</b> ' + esc(reg.feito) + '</p>' : '') +
               (reg.proximo_passo ? '<p style="font-size:.84rem;margin:4px 0"><b>Próximo passo:</b> ' + esc(reg.proximo_passo) + '</p>' : '')
             : '<div class="mh-empty" style="padding:4px 0 8px">Sem check-in nesta semana.</div>') +
-          (hist.length > 1 ? '<p style="font-size:.76rem;color:var(--mh-muted);margin:8px 0 0">Termômetro: ' + hist.map(function (h) { return '<span title="' + fmtDia(h.semana) + '">' + (HUMOR[h.humor_time] || '·') + '</span>'; }).join(' ') + '</p>' : '') +
-          '<div style="margin-top:10px"><button class="mh-btn mh-btn--ghost mh-btn--sm" data-acomp-emp="' + esc(emp) + '">' + (reg ? 'Editar' : 'Registrar') + '</button></div>' +
-        '</div>';
+          (h.length > 1 ? '<p style="font-size:.76rem;color:var(--mh-muted);margin:8px 0 0">Termômetro: ' + h.map(function (x) { return '<span title="' + fmtDia(x.semana) + '">' + (HUMOR[x.humor_time] || '·') + '</span>'; }).join(' ') + '</p>' : '') +
+          '<div style="margin-top:10px"><button class="mh-btn mh-btn--ghost mh-btn--sm" data-acomp-emp="' + esc(emp) + '">' + (reg ? 'Editar' : 'Registrar') + '</button></div></div>';
       }).join('') + '</div>'
-      : '<div class="mh-card"><div class="mh-empty">Ainda não há clientes. Uma empresa entra aqui quando tem evento confirmado, cronograma aprovado, status "fechado/cliente ativo" na prospecção — ou quando você registra a primeira semana.</div></div>');
+      : '<div class="mh-card"><div class="mh-empty">Quando a primeira empresa fechar (evento confirmado, cronograma aprovado ou status “Fechou” na Prospecção), ela aparece aqui pra você registrar o check-in semanal com o RH.</div></div>');
   }
   function abrirAcomp(emp) {
     var wk = S.ui.semana || dayKey(weekStart());
@@ -665,28 +815,46 @@
   // =============================================================
   // CRONOGRAMAS
   // =============================================================
-  var PLANOS = { pontual: 'Pontual (1 ação)', semestral: 'Semestral (6 meses)', anual: 'Anual (12 meses)' };
-  function gerarItens(plano, ano, mesIni, incluirDatas, pontualData) {
+  var PLANOS = { pontual: 'Pontual', semestral: 'Semestral', anual: 'Anual' };
+  // Gera os itens do cronograma. A empresa escolhe QUANTOS encontros
+  // quer; os meses são escolhidos pela força das datas (Saúde Mental,
+  // Setembro Amarelo, Janeiro Branco…) dentro da janela do plano.
+  function gerarItens(opt) {
     var itens = [];
-    if (plano === 'pontual') {
-      var x = pontualData;
-      if (x) itens.push({ data_key: dayKey(x.data), mes: x.data.getMonth() + 1, titulo: x.nome, atividade: x.atividade, tipo: 'acao', nota: x.gancho });
+    if (opt.plano === 'pontual') {
+      var x = opt.pontualData;
+      if (x) itens.push({ data_key: dayKey(x.data), mes: x.data.getMonth() + 1, ano: x.data.getFullYear(), titulo: x.nome, atividade: x.atividade, tipo: 'acao', nota: x.gancho });
       return itens;
     }
-    var n = plano === 'semestral' ? 6 : 12;
-    for (var i = 0; i < n; i++) {
-      var mesAbs = mesIni - 1 + i;
-      var m = (mesAbs % 12) + 1, a = ano + Math.floor(mesAbs / 12);
-      var prog = D.PROGRAMA[m - 1];
-      itens.push({ mes: m, ano: a, titulo: prog.tema, atividade: prog.atividade, tipo: 'acao', nota: prog.porque });
-      if (prog.extra && plano === 'anual' && [1, 4, 9, 10].indexOf(m) >= 0) {
-        itens.push({ mes: m, ano: a, titulo: 'Complemento: ' + D.atividade(prog.extra).nome, atividade: prog.extra, tipo: 'acao', nota: 'Reforço de escuta/lideranças no mês-chave.' });
+    var janela = opt.plano === 'semestral' ? 6 : 12;
+    var meses = [];
+    for (var i = 0; i < janela; i++) {
+      var abs = opt.mesIni - 1 + i;
+      meses.push({ m: (abs % 12) + 1, a: opt.ano + Math.floor(abs / 12) });
+    }
+    var n = Math.max(1, Math.min(janela, opt.encontros || janela));
+    var escolhidos = meses;
+    if (opt.meses && opt.meses.length) {
+      escolhidos = meses.filter(function (x) { return opt.meses.indexOf(x.m) >= 0; });
+    } else if (n < janela) {
+      var ordem = D.PRIORIDADE_MESES;
+      escolhidos = meses.slice().sort(function (a, b) { return ordem.indexOf(a.m) - ordem.indexOf(b.m); }).slice(0, n)
+        .sort(function (a, b) { return meses.indexOf(a) - meses.indexOf(b); });
+    }
+    escolhidos.forEach(function (x) {
+      var prog = D.PROGRAMA[x.m - 1];
+      itens.push({ mes: x.m, ano: x.a, titulo: prog.tema, atividade: prog.atividade, tipo: 'acao', nota: prog.porque });
+      if (prog.extra && n >= 12 && [1, 4, 9, 10].indexOf(x.m) >= 0) {
+        itens.push({ mes: x.m, ano: x.a, titulo: 'Complemento: ' + D.atividade(prog.extra).nome, atividade: prog.extra, tipo: 'acao', nota: 'Reforço de escuta/lideranças no mês-chave.' });
       }
-      if (incluirDatas) {
-        D.datasDoAno(a).filter(function (x) { return x.data.getMonth() + 1 === m && x.cat === 'presentear' && x.rel >= 2; }).forEach(function (x) {
-          itens.push({ data_key: dayKey(x.data), mes: m, ano: a, titulo: x.nome, atividade: 'giftcard', tipo: 'data', nota: x.presente });
+    });
+    if (opt.incluirDatas) {
+      meses.forEach(function (x) {
+        D.datasDoAno(x.a).filter(function (d) { return d.data.getMonth() + 1 === x.m && d.cat === 'presentear' && d.rel >= 2; }).forEach(function (d) {
+          itens.push({ data_key: dayKey(d.data), mes: x.m, ano: x.a, titulo: d.nome, atividade: 'giftcard', tipo: 'data', nota: d.presente });
         });
-      }
+      });
+      itens.sort(function (a, b) { return (a.ano - b.ano) || (a.mes - b.mes) || String(a.data_key || '').localeCompare(String(b.data_key || '')); });
     }
     return itens;
   }
@@ -704,27 +872,42 @@
     return { lo: lo, hi: hi };
   }
   function brlN(n) { return 'R$ ' + Math.round(n).toLocaleString('pt-BR'); }
+  function encontrosDe(dr) { return dr.itens.filter(function (i) { return i.tipo === 'acao'; }).length; }
 
   function rCronograma() {
     var dr = S.ui.draft;
     var salvos = S.crons;
-    return head('Cronogramas', 'Monte o plano pontual, semestral ou anual de uma empresa em 1 minuto: temas do mês + atividades + datas de presentear. Copie, imprima em PDF ou salve.',
-        '<button class="mh-btn mh-btn--terra" data-cron-novo>+ Montar cronograma</button>') +
+    var hoje = today0();
+    var modelos = D.MODELOS.map(function (m) {
+      var itens = gerarItens({ plano: m.plano, ano: hoje.getFullYear() + (hoje.getMonth() >= 10 ? 1 : 0), mesIni: m.plano === 'semestral' ? ((hoje.getMonth() + 1) % 12) + 1 : 1, encontros: m.encontros, meses: m.meses,
+        pontualData: m.plano === 'pontual' ? datasProximas(365, 3).filter(function (x) { return x.cat === 'saude'; })[0] : null });
+      var est = estimativa(itens, 50);
+      return '<div class="mh-card mh-idea"><div class="meta"><span class="mh-chip mh-chip--terra">' + m.encontros + ' encontro' + (m.encontros > 1 ? 's' : '') + '</span></div>' +
+        '<h4>' + esc(m.nome) + '</h4><p>' + esc(m.desc) + '</p>' +
+        '<p style="font-size:.8rem;color:var(--mh-muted)">' + itens.filter(function (i) { return i.tipo === 'acao'; }).map(function (i) { var a = D.atividade(i.atividade); return (i.data_key ? fmtDia(i.data_key) : MES3[i.mes - 1]) + ' ' + (a ? a.emoji : ''); }).join(' · ') + '</p>' +
+        '<div class="foot"><small style="color:var(--mh-muted)">50 pessoas: ' + brlN(est.lo) + '–' + brlN(est.hi) + '</small><button class="mh-btn mh-btn--sm" data-modelo="' + m.id + '">Usar este modelo</button></div></div>';
+    }).join('');
+    return head('Cronogramas', 'A empresa escolhe quantos encontros quer — 1, 4, 6, 12 ou o que fizer sentido — e o sistema monta o cronograma nas melhores datas. Copie, imprima em PDF ou salve.',
+        '<button class="mh-btn mh-btn--terra" data-cron-novo>+ Montar sob medida</button>') +
       (dr ? rDraft(dr) : '') +
-      '<div class="mh-card"><h3>Cronogramas salvos <small>' + salvos.length + '</small></h3>' +
-      (salvos.length ? '<div class="mh-table-wrap"><table class="mh-table"><thead><tr><th>Empresa</th><th>Plano</th><th>Ano</th><th>Ações</th><th>Status</th><th></th></tr></thead><tbody>' +
+      '<h2 style="font-family:\'DM Serif Display\',serif;font-weight:400;margin:4px 0 12px">Modelos prontos</h2>' +
+      '<div class="mh-grid mh-grid--4" style="margin-bottom:22px">' + modelos + '</div>' +
+      '<div class="mh-card"><h3>Cronogramas das empresas <small>' + salvos.length + '</small></h3>' +
+      (salvos.length ? '<div class="mh-table-wrap"><table class="mh-table"><thead><tr><th>Empresa</th><th>Plano</th><th>Ano</th><th>Encontros</th><th>Status</th><th></th></tr></thead><tbody>' +
         salvos.map(function (c) {
           var itens = Array.isArray(c.itens) ? c.itens : [];
-          return '<tr><td><b>' + esc(c.empresa) + '</b>' + (c.colaboradores ? '<br><small>' + c.colaboradores + ' pessoas</small>' : '') + '</td><td>' + (PLANOS[c.plano] || c.plano) + '</td><td>' + c.ano + '</td><td>' + itens.length + '</td>' +
+          return '<tr><td><b>' + esc(c.empresa) + '</b>' + (c.colaboradores ? '<br><small>' + c.colaboradores + ' pessoas</small>' : '') + '</td><td>' + (PLANOS[c.plano] || c.plano) + '</td><td>' + c.ano + '</td><td>' + itens.filter(function (i) { return i.tipo === 'acao'; }).length + '</td>' +
             '<td><span class="mh-chip ' + (c.status === 'aprovado' ? 'mh-chip--ok' : c.status === 'enviado' ? 'mh-chip--warn' : 'mh-chip--gray') + '">' + c.status + '</span></td>' +
             '<td style="white-space:nowrap"><button class="mh-btn mh-btn--ghost mh-btn--sm" data-cron-abrir="' + c.id + '">Abrir</button></td></tr>';
-        }).join('') + '</tbody></table></div>' : '<div class="mh-empty">Nenhum cronograma salvo ainda.</div>') +
+        }).join('') + '</tbody></table></div>' : '<div class="mh-empty">Nenhum cronograma de empresa ainda. Use um modelo acima e troque o nome da empresa — leva 1 minuto.</div>') +
       '</div>';
   }
   function rDraft(dr) {
     var est = estimativa(dr.itens, dr.colaboradores);
     return '<div class="mh-card" style="margin-bottom:16px" id="mh-draft"><h3>' + esc(dr.empresa || 'Nova empresa') + ' — ' + (PLANOS[dr.plano] || '') + ' ' + dr.ano +
-        ' <small>' + dr.itens.length + ' itens' + (dr.colaboradores ? ' · estimativa ' + brlN(est.lo) + ' – ' + brlN(est.hi) : '') + '</small></h3>' +
+        ' <small>' + encontrosDe(dr) + ' encontro(s)' + (dr.colaboradores ? ' · estimativa ' + brlN(est.lo) + ' – ' + brlN(est.hi) : '') + '</small></h3>' +
+      '<div class="mh-toolbar"><input class="mh-input" data-draft-empresa placeholder="Nome da empresa" value="' + esc(dr.empresa || '') + '" style="flex:1;min-width:180px">' +
+        '<input class="mh-input" type="number" min="1" data-draft-pessoas placeholder="Nº de pessoas" value="' + esc(dr.colaboradores || '') + '" style="width:150px"></div>' +
       dr.itens.map(function (it, i) {
         var a = D.atividade(it.atividade);
         var when = it.data_key ? fmtDia(it.data_key) : MES3[it.mes - 1] + (it.ano && it.ano !== dr.ano ? '/' + String(it.ano).slice(2) : '');
@@ -743,31 +926,36 @@
         '<button class="mh-btn mh-btn--ghost" data-draft-close>Fechar</button><button class="mh-btn" data-draft-save>Salvar cronograma</button>' +
       '</div></div></div>';
   }
-  function abrirNovoCron() {
+  function abrirNovoCron(preset) {
+    preset = preset || {};
     var hoje = today0();
     var datas = datasProximas(365, 2);
     modal('Montar cronograma',
       empresasDatalist() +
-      '<label>Empresa<input class="mh-input" name="empresa" list="mh-emp-list"></label>' +
-      '<label>Colaboradores<input class="mh-input" type="number" min="1" name="colaboradores" placeholder="Ex.: 120"></label>' +
-      '<label>Plano<select class="mh-select" name="plano">' + optList(PLANOS, 'anual') + '</select></label>' +
+      '<label>Empresa<input class="mh-input" name="empresa" list="mh-emp-list" value="' + esc(preset.empresa || '') + '"></label>' +
+      '<label>Nº de pessoas<input class="mh-input" type="number" min="1" name="colaboradores" placeholder="Ex.: 120" value="' + esc(preset.colaboradores || '') + '"></label>' +
+      '<label>Período<select class="mh-select" name="plano">' + optList({ pontual: 'Pontual (uma data)', semestral: 'Semestral (6 meses)', anual: 'Anual (12 meses)' }, preset.plano || 'anual') + '</select></label>' +
+      '<label>Quantos encontros?<input class="mh-input" type="number" min="1" max="12" name="encontros" value="' + (preset.encontros || 12) + '"></label>' +
       '<label>Começa em<select class="mh-select" name="mes">' + MESES.map(function (m, i) {
         var nxt = (hoje.getMonth() + 1) % 12; return '<option value="' + (i + 1) + '"' + (i === nxt ? ' selected' : '') + '>' + m + '</option>'; }).join('') + '</select></label>' +
-      '<label>Ano<input class="mh-input" type="number" name="ano" value="' + (hoje.getMonth() === 11 ? hoje.getFullYear() + 1 : hoje.getFullYear()) + '"></label>' +
-      '<label>Data (plano pontual)<select class="mh-select" name="pontual">' + datas.map(function (x) {
+      '<label>Ano<input class="mh-input" type="number" name="ano" value="' + (hoje.getMonth() >= 10 ? hoje.getFullYear() + 1 : hoje.getFullYear()) + '"></label>' +
+      '<label class="full">Data (só para plano pontual)<select class="mh-select" name="pontual">' + datas.map(function (x) {
         return '<option value="' + esc(dayKey(x.data) + '|' + x.nome) + '">' + fmtDia(x.data) + ' — ' + esc(x.nome) + '</option>'; }).join('') + '</select></label>' +
-      '<label class="full check"><input type="checkbox" name="datas" checked> Incluir datas de presentear com gift card (Mães, Pais, Secretária, Cliente, fim de ano…)</label>',
+      '<label class="full check"><input type="checkbox" name="datas"' + (preset.datas === false ? '' : ' checked') + '> Incluir datas de presentear com gift card (Mães, Pais, Secretária, Cliente, fim de ano…)</label>' +
+      '<p class="full" style="font-size:.8rem;color:var(--mh-muted);margin:0">Com menos encontros que meses, o sistema escolhe os meses mais fortes (10/10, Setembro Amarelo, Janeiro Branco, Abril Verde, fim de ano…).</p>',
       {
         okLabel: 'Gerar',
+        onOpen: function (form) {
+          form.elements.plano.addEventListener('change', function () {
+            form.elements.encontros.value = this.value === 'pontual' ? 1 : this.value === 'semestral' ? 6 : 12;
+          });
+        },
         onSubmit: function (d) {
           var ano = parseInt(d.ano, 10) || hoje.getFullYear();
-          var mes = parseInt(d.mes, 10) || 1;
-          if (d.plano === 'semestral' || d.plano === 'anual') {
-            // Ano/mês de início valem pro programa; o gerador já vira o ano sozinho.
-          }
           S.ui.draft = {
             empresa: d.empresa, colaboradores: d.colaboradores ? parseInt(d.colaboradores, 10) : null, plano: d.plano, ano: ano, status: 'rascunho',
-            itens: gerarItens(d.plano, ano, mes, !!d.datas, d.pontual ? acharData(d.pontual) : null)
+            itens: gerarItens({ plano: d.plano, ano: ano, mesIni: parseInt(d.mes, 10) || 1, encontros: parseInt(d.encontros, 10) || 12,
+              incluirDatas: !!d.datas, meses: preset.meses || null, pontualData: d.pontual ? acharData(d.pontual) : null })
           };
           render();
           var el = $('mh-draft'); if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -784,7 +972,7 @@
       if (a) linhas.push('   ' + a.beneficio);
     });
     if (dr.colaboradores) linhas.push('', 'Investimento estimado para ' + dr.colaboradores + ' pessoas: ' + brlN(est.lo) + ' a ' + brlN(est.hi) + ' (valores de referência; proposta final sob medida).');
-    linhas.push('', 'Inclui: planejamento, facilitadoras, materiais, fotos, lista de presença e relatório de cada ação para o plano de riscos psicossociais (NR-1).');
+    linhas.push('', 'Inclui: planejamento, arteterapeutas, materiais, fotos, lista de presença e relatório de cada ação para o plano de riscos psicossociais (NR-1). Qualquer encontro pode ser trocado por gift cards Elarah.');
     return linhas.join('\n');
   }
   function imprimirCron(dr) {
@@ -803,7 +991,7 @@
       '.w{width:110px;color:#1f4d3f;font-weight:700;text-transform:uppercase;font-size:.8rem}.b{color:#6b716d;font-size:.84rem}.box{background:#e6efe9;border-radius:12px;padding:16px 18px;margin-top:24px;font-size:.9rem}</style></head><body>' +
       '<div class="k">Elarah Mental Health</div><h1>Cronograma de saúde mental</h1><p>' + esc(dr.empresa) + ' · ' + esc(PLANOS[dr.plano] || '') + ' · ' + dr.ano + (dr.colaboradores ? ' · ' + dr.colaboradores + ' colaboradores' : '') + '</p>' +
       '<table>' + rows + '</table>' +
-      '<div class="box"><b>O que está incluso:</b> planejamento, facilitadoras, materiais, fotos, lista de presença e relatório de cada ação para anexar ao plano de ação de riscos psicossociais (NR-1).' +
+      '<div class="box"><b>O que está incluso:</b> planejamento, arteterapeutas, materiais, fotos, lista de presença e relatório de cada ação para anexar ao plano de ação de riscos psicossociais (NR-1). Qualquer encontro pode ser trocado por gift cards Elarah.' +
       (dr.colaboradores ? '<br><br><b>Investimento de referência:</b> ' + brlN(est.lo) + ' a ' + brlN(est.hi) + ' — proposta final sob medida.' : '') + '</div>' +
       '<p style="margin-top:28px;font-size:.84rem;color:#6b716d">contato.elarah@gmail.com · +55 11 91445-5930 · elarah.com.br</p>' +
       '<script>setTimeout(function(){window.print()},600)<\/script></body></html>');
@@ -811,21 +999,50 @@
   }
 
   // =============================================================
-  // PEDIDOS DO SITE (landing)
+  // PEDIDOS DO SITE (landing) + análise
   // =============================================================
   var STATUS_LEAD = { novo: 'Novo', em_contato: 'Em contato', convertido: 'Convertido', descartado: 'Descartado' };
+  var ORIGEM_LABEL = {
+    hero: 'Topo da página', nav: 'Menu', plano_pontual: 'Plano pontual', plano_semestral: 'Plano semestral', plano_anual: 'Plano anual',
+    simulador: 'Monte seu cronograma', problema: 'Seção “o problema”', gift: 'Gift cards', whatsapp_flutuante: 'Botão WhatsApp', formulario: 'Formulário final', quem_somos: 'Quem somos'
+  };
+  function barras(titulo, contagem) {
+    var ks = Object.keys(contagem).sort(function (a, b) { return contagem[b] - contagem[a]; });
+    var max = ks.length ? contagem[ks[0]] : 0;
+    return '<div class="mh-card"><h3>' + titulo + '</h3>' + (ks.length ? ks.map(function (k) {
+      return '<div class="mh-bar"><span>' + esc(k) + '</span><i style="width:' + Math.max(6, Math.round(contagem[k] / max * 100)) + '%"></i><b>' + contagem[k] + '</b></div>';
+    }).join('') : '<div class="mh-empty">Sem dados ainda.</div>') + '</div>';
+  }
   function rLeads() {
-    return head('Pedidos do site', 'Quem pediu proposta pela landing page <a href="saude-mental-empresas.html" target="_blank" rel="noopener">saude-mental-empresas.html</a>. Responda em até 2 horas.') +
-      '<div class="mh-card">' + (S.leads.length ? '<div class="mh-table-wrap"><table class="mh-table"><thead><tr><th>Quando</th><th>Empresa</th><th>Contato</th><th>Time</th><th>Interesse</th><th>Status</th><th></th></tr></thead><tbody>' +
-        S.leads.map(function (l) {
-          var wa = waLink(l.whatsapp, 'Oi, ' + (l.nome || '').split(' ')[0] + '! Aqui é da Elarah Mental Health 💚 Recebemos seu pedido pela ' + l.empresa + ' e já estou montando uma proposta. Posso te fazer 3 perguntas rápidas?');
-          return '<tr><td>' + fmtDia(new Date(l.created_at)) + '</td><td><b>' + esc(l.empresa) + '</b>' + (l.mensagem ? '<br><small>' + esc(l.mensagem) + '</small>' : '') + '</td>' +
-            '<td>' + esc(l.nome) + (l.cargo ? '<br><small>' + esc(l.cargo) + '</small>' : '') + (l.email ? '<br><a href="mailto:' + esc(l.email) + '">' + esc(l.email) + '</a>' : '') + '</td>' +
-            '<td>' + esc(l.colaboradores || '—') + '</td><td>' + esc(l.plano || '—') + '</td>' +
+    var L = S.leads;
+    function conta(fn) { var c = {}; L.forEach(function (l) { var k = fn(l); if (k) c[k] = (c[k] || 0) + 1; }); return c; }
+    var ult30 = L.filter(function (l) { return Date.now() - new Date(l.created_at) < 30 * DAY; }).length;
+    var conv = L.filter(function (l) { return l.status === 'convertido'; }).length;
+    var tempos = L.filter(function (l) { return l.status !== 'novo'; }).length;
+    return head('Pedidos do site', 'Quem pediu orçamento pela landing <a href="saude-mental-empresas.html" target="_blank" rel="noopener">saude-mental-empresas.html</a>. Todo botão de orçamento/WhatsApp da página pede os dados antes — então todo mundo que clicou está aqui.') +
+      '<div class="mh-grid mh-grid--4" style="margin-bottom:16px">' +
+        kpi('Pedidos (total)', L.length, ult30 + ' nos últimos 30 dias') +
+        kpi('Aguardando resposta', L.filter(function (l) { return l.status === 'novo'; }).length, 'responda em até 2h') +
+        kpi('Convertidos', conv, L.length ? Math.round(conv / L.length * 100) + '% dos pedidos' : '—') +
+        kpi('Já atendidos', tempos, 'em contato, convertidos ou descartados') +
+      '</div>' +
+      '<div class="mh-grid mh-grid--3" style="margin-bottom:16px">' +
+        barras('De qual botão vieram', conta(function (l) { return ORIGEM_LABEL[l.origem] || l.origem || 'Formulário'; })) +
+        barras('Tamanho do time', conta(function (l) { return l.colaboradores; })) +
+        barras('Interesse / encontros no ano', conta(function (l) { return l.encontros ? l.encontros + ' encontro(s)' : l.plano; })) +
+      '</div>' +
+      '<div class="mh-card">' + (L.length ? '<div class="mh-table-wrap"><table class="mh-table"><thead><tr><th>Quando</th><th>Empresa</th><th>Contato</th><th>Time</th><th>Interesse</th><th>Origem</th><th>Status</th><th></th></tr></thead><tbody>' +
+        L.map(function (l) {
+          var wa = waLink(l.whatsapp, 'Oi, ' + (l.nome || '').split(' ')[0] + '! Aqui é a Larissa, da Elarah Mental Health 💚 Recebi seu pedido pela ' + l.empresa + ' e já estou montando o cronograma de vocês. Posso te fazer 3 perguntas rápidas?');
+          return '<tr><td>' + fmtDia(new Date(l.created_at)) + '<br><small>' + new Date(l.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + '</small></td><td><b>' + esc(l.empresa) + '</b>' + (l.mensagem ? '<br><small>' + esc(l.mensagem) + '</small>' : '') + '</td>' +
+            '<td>' + esc(l.nome) + (l.cargo ? '<br><small>' + esc(l.cargo) + '</small>' : '') + (l.email ? '<br><a href="mailto:' + esc(l.email) + '">' + esc(l.email) + '</a>' : '') + (l.whatsapp ? '<br><small>' + esc(l.whatsapp) + '</small>' : '') + '</td>' +
+            '<td>' + esc(l.colaboradores || '—') + '</td><td>' + esc(l.encontros ? l.encontros + ' encontro(s)' : (l.plano || '—')) + '</td>' +
+            '<td><small>' + esc(ORIGEM_LABEL[l.origem] || l.origem || '—') + (l.utm ? '<br>' + esc(l.utm) : '') + '</small></td>' +
             '<td><select class="mh-select" data-lead-status="' + l.id + '">' + optList(STATUS_LEAD, l.status) + '</select></td>' +
             '<td style="white-space:nowrap">' + (wa ? '<a class="mh-btn mh-btn--sm" href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a> ' : '') +
+            '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-lead-cron="' + l.id + '">Cronograma</button> ' +
             '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-lead-prosp="' + l.id + '">→ Prospecção</button></td></tr>';
-        }).join('') + '</tbody></table></div>' : '<div class="mh-empty">Nenhum pedido ainda. Divulgue a landing page no LinkedIn e nas mensagens de prospecção.</div>') + '</div>';
+        }).join('') + '</tbody></table></div>' : '<div class="mh-empty">Nenhum pedido ainda. Coloque o link da landing na bio do Instagram, na assinatura do e-mail e nos posts do LinkedIn.</div>') + '</div>';
   }
 
   // =============================================================
@@ -859,23 +1076,40 @@
   }
 
   // =============================================================
-  // DATAS PARA O RH
+  // DATAS PARA O RH — calendário do ano com bolinhas (igual Elarah)
   // =============================================================
+  var CAMPANHA_MES = ['Janeiro Branco', 'Volta às aulas / Carnaval', 'Mês da Mulher', 'Abril Verde', 'Maio Amarelo', 'Festa junina / Dia do RH', 'Férias / Dia do Amigo', 'Agosto Lilás', 'Setembro Amarelo', 'Outubro Rosa / Saúde Mental', 'Novembro Azul', 'Fim de ano'];
   function rDatas() {
     var ano = S.ui.ano || today0().getFullYear();
     var cat = S.ui.cat || '';
+    var vista = S.ui.vistaDatas || 'cal';
     var lista = D.datasDoAno(ano).filter(function (x) { return !cat || x.cat === cat; });
+    var topo = '<div class="mh-toolbar">' + toggleVista('datas', vista) +
+      '<select class="mh-select" data-ano>' + [ano - 1, ano, ano + 1].map(function (a) { return '<option' + (a === ano ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select>' +
+      '<button class="mh-btn mh-btn--sm ' + (!cat ? '' : 'mh-btn--ghost') + '" data-cat="">Todas</button>' +
+      Object.keys(D.CATS_DATA).map(function (k) { var c = D.CATS_DATA[k]; return '<button class="mh-btn mh-btn--sm ' + (cat === k ? '' : 'mh-btn--ghost') + '" data-cat="' + k + '">' + c.emoji + ' ' + c.label + '</button>'; }).join('') +
+      '</div>';
+    var radar = datasProximas(45, 2).filter(function (x) { return diasAte(x.data) >= 7; });
+    var radarHtml = radar.length ? '<div class="mh-card" style="margin-bottom:16px;border-left:4px solid var(--mh-terra)"><h3>📡 Hora de oferecer <small>janela de venda aberta</small></h3><div class="mh-radar">' +
+      radar.map(function (x) { return '<button class="mh-radar-item" data-pitch="' + esc(dayKey(x.data) + '|' + x.nome) + '"><b>' + esc(x.nome) + '</b><span>' + fmtDia(x.data) + ' · em ' + diasAte(x.data) + ' dias · copiar pitch</span></button>'; }).join('') + '</div></div>' : '';
+    var intro = head('Datas para o RH', 'Calendário corporativo: campanhas de saúde, homenagens por profissão e datas de presentear. Comece a oferecer ~30 dias antes. Toque num dia colorido pra ver o gancho e copiar o pitch.');
+    if (vista === 'cal') {
+      var porDia = {};
+      lista.forEach(function (x) {
+        var c = D.CATS_DATA[x.cat];
+        add(porDia, dayKey(x.data), { label: x.nome, bg: c.bg, fg: c.fg, forte: x.rel === 3, peso: x.rel, html: rowData(x) });
+      });
+      ordenarDia(porDia);
+      var leg = Object.keys(D.CATS_DATA).map(function (k) { var c = D.CATS_DATA[k]; return legItem(c.bg, c.fg, c.label); }).join('') + legItem('#1f4d3f', '#1f4d3f', 'Círculo cheio = data forte ★');
+      return intro + radarHtml + topo + calendarioAno(ano, porDia, 'datas', leg, CAMPANHA_MES);
+    }
     var porMes = {};
     lista.forEach(function (x) { (porMes[x.data.getMonth()] = porMes[x.data.getMonth()] || []).push(x); });
-    return head('Datas para o RH', 'Calendário corporativo: campanhas de saúde, homenagens por profissão e datas de presentear. Comece a oferecer ~30 dias antes. Gift cards Elarah entram como presente em qualquer data.') +
-      '<div class="mh-toolbar"><select class="mh-select" data-ano>' + [ano - 1, ano, ano + 1].map(function (a) { return '<option' + (a === ano ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select>' +
-        '<button class="mh-btn mh-btn--sm ' + (!cat ? '' : 'mh-btn--ghost') + '" data-cat="">Todas</button>' +
-        Object.keys(D.CATS_DATA).map(function (k) { var c = D.CATS_DATA[k]; return '<button class="mh-btn mh-btn--sm ' + (cat === k ? '' : 'mh-btn--ghost') + '" data-cat="' + k + '">' + c.emoji + ' ' + c.label + '</button>'; }).join('') +
-      '</div>' +
+    return intro + radarHtml + topo +
       Object.keys(porMes).map(function (m) {
-        return '<div class="mh-card" style="margin-bottom:14px"><h3>' + MESES[m] + '</h3><div class="mh-list">' + porMes[m].map(function (x) {
+        return '<div class="mh-card" style="margin-bottom:14px"><h3>' + MESES[m] + ' <small>' + CAMPANHA_MES[m] + '</small></h3><div class="mh-list">' + porMes[m].map(function (x) {
           var n = diasAte(x.data);
-          var tag = n < 0 ? '<span class="mh-chip mh-chip--gray">passou</span>' : n <= 30 ? '<span class="mh-chip mh-chip--danger">em ' + n + ' dias — urgente</span>' : n <= 60 ? '<span class="mh-chip mh-chip--warn">oferecer agora</span>' : '';
+          var tag = n < 0 ? '<span class="mh-chip mh-chip--gray">passou</span>' : n <= 30 ? '<span class="mh-chip mh-chip--danger">em ' + n + ' dias</span>' : n <= 60 ? '<span class="mh-chip mh-chip--warn">oferecer agora</span>' : '';
           return rowData(x).replace('</strong>', '</strong>' + (x.rel === 3 ? ' <span class="mh-chip mh-chip--terra">★ forte</span> ' : ' ') + tag);
         }).join('') + '</div></div>';
       }).join('');
@@ -888,17 +1122,32 @@
     nao_contatado: 'Não contatada', mensagem_enviada: 'Mensagem enviada', respondeu: 'Respondeu', reuniao_marcada: 'Reunião marcada',
     proposta_enviada: 'Proposta enviada', negociacao: 'Negociação', fechado: 'Fechou', cliente_ativo: 'Cliente ativo', pausado: 'Pausado', recusou: 'Recusou'
   };
-  function assinatura() { return lsGet('elarah_mh_assinatura', 'Um abraço,\n[Seu nome]\nElarah Mental Health\n+55 11 91445-5930 · elarah.com.br/saude-mental-empresas'); }
+  // Assinatura padrão: Larissa Setzer. Dá pra trocar no botão "Minha assinatura".
+  var ASSINATURA_PADRAO = 'Um abraço,\nLarissa Setzer\nArteterapeuta · Elarah Mental Health\n+55 11 91445-5930\nelarah.com.br/saude-mental-empresas.html';
+  function assinatura() {
+    var v = lsGet('elarah_mh_assinatura', null);
+    // Quem salvou a assinatura antiga com "[Seu nome]" passa a ver a da Larissa.
+    if (!v || /\[Seu nome\]/.test(v)) return ASSINATURA_PADRAO;
+    return v;
+  }
   function preencher(txt, p) {
+    p = p || {};
     var g = ganchoAtual();
-    var contato = (p.contato_nome || '').split(' ')[0] || 'tudo bem';
+    var seg = D.segmentoDe(p);
+    var contato = (p.contato_nome || '').split(' ')[0];
     return String(txt)
-      .replace(/Olá, \{contato\}!/g, p.contato_nome ? 'Olá, ' + contato + '!' : 'Olá!')
-      .replace(/Oi, \{contato\}!/g, p.contato_nome ? 'Oi, ' + contato + '!' : 'Oi!')
-      .replace(/\{contato\}, /g, p.contato_nome ? contato + ', ' : '')
-      .replace(/\{contato\}/g, p.contato_nome ? contato : 'pessoal do RH')
+      .replace(/Olá, \{contato\}!/g, contato ? 'Olá, ' + contato + '!' : 'Olá!')
+      .replace(/Oi, \{contato\}!/g, contato ? 'Oi, ' + contato + '!' : 'Oi!')
+      .replace(/Obrigada por aceitar, \{contato\}!/g, contato ? 'Obrigada por aceitar, ' + contato + '!' : 'Obrigada por aceitar o convite!')
+      .replace(/\{contato\}, /g, contato ? contato + ', ' : '')
+      .replace(/\{contato\}/g, contato || 'pessoal do RH')
+      .replace(/\{promessa\}/g, D.PROMESSA)
+      .replace(/\{dor\}/g, seg.dor)
+      .replace(/\{atividade\}/g, seg.atividade)
+      .replace(/\{data_seg\}/g, seg.data)
+      .replace(/\{ajuste\}/g, seg.ajuste)
       .replace(/\{empresa\}/g, p.nome || 'sua empresa')
-      .replace(/\{segmento\}/g, (p.segmento || 'seu setor').toLowerCase())
+      .replace(/\{segmento\}/g, (p.segmento || seg.label).toLowerCase())
       .replace(/\{gancho\}/g, g ? g.nome : 'próximo mês')
       .replace(/\{data_gancho\}/g, g ? fmtDia(g.data) : '')
       .replace(/\{assinatura\}/g, assinatura());
@@ -956,7 +1205,8 @@
       '<td>' + (p.contato_nome ? esc(p.contato_nome) + (p.contato_cargo ? '<br><small>' + esc(p.contato_cargo) + '</small>' : '') : '') + (tel ? '<br><small>' + esc(tel) + '</small>' : '') + '</td>' +
       '<td><select class="mh-select" data-p-set-status="' + p.id + '" style="padding:4px 8px;font-size:.8rem">' + optList(STATUS_P, p.status_comercial) + '</select>' +
         (p.proxima_acao_at ? '<br><small>↩ ' + fmtDia(new Date(p.proxima_acao_at)) + '</small>' : '') + '</td>' +
-      '<td style="white-space:nowrap"><button class="mh-btn mh-btn--sm ' + (open ? '' : 'mh-btn--ghost') + '" data-p-open="' + p.id + '">' + (open ? 'Fechar' : 'Abordar') + '</button></td></tr>';
+      '<td style="white-space:nowrap"><button class="mh-btn mh-btn--sm ' + (open ? '' : 'mh-btn--ghost') + '" data-p-open="' + p.id + '">' + (open ? 'Fechar' : 'Abordar') + '</button>' +
+        (p.status_comercial === 'mensagem_enviada' ? '<br><button class="mh-btn mh-btn--ghost mh-btn--sm" style="margin-top:4px" data-p-desfazer="' + p.id + '" title="Cliquei sem querer — voltar para Não contatada">↺ Desfazer</button>' : '') + '</td></tr>';
     if (open) html += '<tr class="is-open"><td colspan="5">' + painelAbordagem(p) + '</td></tr>';
     return html;
   }
@@ -968,7 +1218,9 @@
     var liRH = 'https://www.linkedin.com/search/results/people/?keywords=' + encodeURIComponent(p.nome + ' RH OR "gente e cultura" OR people');
     var msgs = D.MENSAGENS[canal] || [];
     var nomes = { email: '✉️ E-mail', linkedin: 'in LinkedIn', whatsapp: '💬 WhatsApp', ligacao: '📞 Ligação' };
-    return '<div class="mh-channels">' +
+    var seg = D.segmentoDe(p);
+    return '<p style="margin:0 0 10px;font-size:.84rem">✨ Mensagens personalizadas para <b>' + esc(seg.label) + '</b> — dor do setor, experiência e data que mais conversam com essa empresa. Confira o nome do contato antes de enviar.</p>' +
+      '<div class="mh-channels">' +
       (tel ? '<a class="mh-btn mh-btn--ghost mh-btn--sm" href="tel:' + digits(tel) + '">📞 ' + esc(tel) + '</a>' : '') +
       (tel && ehCelular(tel) ? '<a class="mh-btn mh-btn--ghost mh-btn--sm" href="' + waLink(tel) + '" target="_blank" rel="noopener">💬 WhatsApp</a>' : '') +
       emails.map(function (e, i) { return '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-copy-txt="' + esc(e) + '" title="' + (i === 0 && p.contato_email ? 'e-mail cadastrado' : 'sugestão pelo domínio — confirme antes') + '">✉️ ' + esc(e) + (i === 0 && p.contato_email ? '' : ' ?') + '</button>'; }).join('') +
@@ -1008,6 +1260,32 @@
       toast('Abordagem registrada ✓ follow-up ' + fmtDia(fu));
       render();
     } catch (e) { alert('Não deu pra registrar: ' + e.message); }
+  }
+
+  // Desfaz uma abordagem marcada sem querer: volta pra "Não contatada",
+  // limpa o follow-up e apaga o registro de mensagem enviada.
+  async function desfazerAbordagem(id, silencioso) {
+    var p = S.prospects.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+    var patch = { status_comercial: 'nao_contatado', proxima_acao: null, proxima_acao_at: null };
+    await dbSave('b2b_prospects', Object.assign({ id: id }, patch));
+    Object.assign(p, patch);
+    var alvo = S.interacoes.filter(function (i) { return i.prospect_id === id && i.tipo === 'mensagem_enviada'; });
+    for (var k = 0; k < alvo.length; k++) { if (alvo[k].id) { try { await dbDelete('b2b_prospect_interactions', alvo[k].id); } catch (_) {} } }
+    S.interacoes = S.interacoes.filter(function (i) { return alvo.indexOf(i) < 0; });
+    if (!silencioso) { toast('↺ ' + p.nome + ' voltou para Não contatada'); render(); }
+  }
+  // Correção única: as abordagens marcadas antes do painel ir pro ar
+  // foram cliques de teste (nenhuma empresa foi contatada de verdade).
+  // Só mexe no que foi criado pelo botão da Mental Health.
+  var CORTE_TESTE = new Date('2026-09-29T03:00:00Z').getTime();
+  async function corrigirTestes() {
+    var ids = {};
+    S.interacoes.forEach(function (i) {
+      if (i.tipo === 'mensagem_enviada' && /^Abordagem Elarah Mental Health/.test(i.descricao || '') && new Date(i.occurred_at).getTime() < CORTE_TESTE) ids[i.prospect_id] = 1;
+    });
+    var alvo = S.prospects.filter(function (p) { return ids[p.id] && p.status_comercial === 'mensagem_enviada'; });
+    for (var k = 0; k < alvo.length; k++) { try { await desfazerAbordagem(alvo[k].id, true); } catch (e) { console.warn('[MH] corrigirTestes', e); } }
+    if (alvo.length) toast('↺ ' + alvo.map(function (p) { return p.nome; }).join(', ') + ' voltou para Não contatada (clique de teste)');
   }
 
   function abrirProspect(p) {
@@ -1162,6 +1440,28 @@
       if (ds.copyPost != null) return copiar(D.POSTS[+ds.copyPost].texto);
       if (ds.copyTxt != null) return copiar(ds.copyTxt);
       if (ds.evtFiltro) { S.ui.evtFiltro = ds.evtFiltro; return render(); }
+      if (ds.dia) {
+        S.ui.diaSel = S.ui.diaSel || {};
+        S.ui.diaSel[ds.diaKind] = S.ui.diaSel[ds.diaKind] === ds.dia ? '' : ds.dia;
+        return render();
+      }
+      if (ds.vista) {
+        var pv = ds.vista.split('|');
+        if (pv[0] === 'eventos') S.ui.vistaEventos = pv[1]; else S.ui.vistaDatas = pv[1];
+        return render();
+      }
+      if (ds.modelo) {
+        var mo = D.MODELOS.filter(function (x) { return x.id === ds.modelo; })[0];
+        return abrirNovoCron({ plano: mo.plano, encontros: mo.encontros, meses: mo.meses });
+      }
+      if (ds.leadCron) {
+        var lc = S.leads.filter(function (x) { return x.id === ds.leadCron; })[0];
+        var nEnc = parseInt(lc.encontros, 10) || (/pontual/i.test(lc.plano || '') ? 1 : /semestral/i.test(lc.plano || '') ? 6 : 12);
+        var colab = parseInt(String(lc.colaboradores || '').replace(/\D.*$/, ''), 10) || null;
+        ir('cronograma');
+        return abrirNovoCron({ empresa: lc.empresa, colaboradores: colab, encontros: nEnc, plano: nEnc === 1 ? 'pontual' : nEnc <= 6 && /semestral/i.test(lc.plano || '') ? 'semestral' : 'anual' });
+      }
+      if (ds.pDesfazer) { try { await desfazerAbordagem(ds.pDesfazer); } catch (err) { alert('Não deu: ' + err.message); } return; }
       if (ds.semana) { S.ui.semana = ds.semana; return render(); }
       if ('acompNovo' in ds) return abrirAcomp('');
       if (ds.acompEmp) return abrirAcomp(ds.acompEmp);
@@ -1229,6 +1529,7 @@
       if ('filtroFator' in ds) { S.ui.fator = t.value; return render(); }
       if ('filtroFormato' in ds) { S.ui.formato = t.value; return render(); }
       if ('ano' in ds) { S.ui.ano = parseInt(t.value, 10); return render(); }
+      if (ds.anoKind) { S.ui.anoEventos = parseInt(t.value, 10); return render(); }
       if (ds.draftAtv != null) { S.ui.draft.itens[+ds.draftAtv].atividade = t.value; return render(); }
       if ('draftStatus' in ds) { S.ui.draft.status = t.value; return; }
       if ('pStatus' in ds) { S.ui.pStatus = t.value; S.ui.pPag = 50; return render(); }
@@ -1253,6 +1554,8 @@
 
     var tBusca;
     document.addEventListener('input', function (e) {
+      if ('draftEmpresa' in e.target.dataset) { S.ui.draft.empresa = e.target.value; return; }
+      if ('draftPessoas' in e.target.dataset) { S.ui.draft.colaboradores = parseInt(e.target.value, 10) || null; return; }
       if ('pBusca' in e.target.dataset) {
         clearTimeout(tBusca);
         var v = e.target.value;
@@ -1308,6 +1611,7 @@
     });
     renderNav();
     try { await carregarTudo(); } catch (e) { console.error('[MH] carregar', e); }
+    try { await corrigirTestes(); } catch (e) { console.warn('[MH] corrigirTestes', e); }
     render();
   }
 
