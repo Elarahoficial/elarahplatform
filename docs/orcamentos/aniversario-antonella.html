@@ -234,6 +234,19 @@
   .cpc ul.cpi{list-style:none;margin:11px 0 0;padding:0;display:flex;flex-direction:column;gap:5px}
   .cpc ul.cpi li{position:relative;padding-left:18px;font-size:10.5px;color:var(--ink);line-height:1.35}
   .cpc ul.cpi li:before{content:"✓";position:absolute;left:0;top:0;color:var(--orange);font-size:9px;font-weight:800}
+  /* opcionais · strip de fotos + lista com precos */
+  .ostrip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .ostrip figure{margin:0;border-radius:14px;overflow:hidden;position:relative;height:150px;border:1px solid var(--line);box-shadow:0 12px 28px -22px rgba(0,0,0,.3)}
+  .ostrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .ostrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:16px 12px 9px;color:#fff;font-size:10.5px;font-weight:600;background:linear-gradient(to top,rgba(40,20,28,.85),transparent)}
+  .oplist{display:flex;flex-direction:column;margin-top:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card);box-shadow:0 12px 30px -24px rgba(0,0,0,.22)}
+  .oprow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 20px}
+  .oprow + .oprow{border-top:1px solid var(--line)}
+  .oprow .oln{font-size:12.5px;color:var(--navy);font-weight:600;line-height:1.25}
+  .oprow .old{font-size:10px;color:var(--muted);line-height:1.35;margin-top:2px}
+  .oprow .opv{font-family:'DM Serif Display',serif;font-size:18px;color:var(--orange-dark);white-space:nowrap;text-align:right;line-height:1}
+  .oprow .opv small{display:block;font-family:-apple-system,sans-serif;font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
+  .oprow .opv em{font-style:italic;font-size:15px;color:var(--navy-soft)}
 </style>
 <style>
   :root{
@@ -488,9 +501,9 @@
     </div>
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Um aniversário para criar</span>
+        <span class="eyebrow">✦ Uma comemoração completa</span>
         <h1>A festa da <em>Antonella</em> 🎀</h1>
-        <p class="lead">Um encontro entre amigas para criar, se divertir e levar pra casa uma lembrança feita à mão. Cada convidada personaliza a própria <b>escova &amp; presilha</b> — do jeitinho dela.</p>
+        <p class="lead">Um encontro entre amigas para criar, se divertir e levar pra casa uma lembrança feita à mão — <b>no conforto do espaço de vocês</b>. Cada convidada personaliza a própria escova &amp; presilha do jeitinho dela.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>13</b> anos</span>
@@ -498,9 +511,10 @@
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip">Outubro · sábado ou domingo</span>
+          <span class="chip">No seu espaço · Mooca</span>
         </div>
       </div>
-      <div class="cover-photo"><img src="assets/aniv-infantil.jpg" alt="Meninas criando juntas em uma festa delicada e florida" style="object-position:center 40%"></div>
+      <div class="cover-photo"><img src="assets/macarons.jpg" alt="Mesa de doces delicada para a comemoração" style="object-position:center 50%"></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Aniversário · Antonella</span></div>
   </section>
@@ -514,12 +528,12 @@
     <p class="lead">Duas oficinas conduzidas, no mesmo formato — uma mais artística e colorida, outra mais glam e cheia de brilho. Em ambas, cada convidada leva as próprias peças pra casa.</p>
     <div class="cpg">
       <div class="cpc">
-        <div class="cpph"><img src="assets/pinturatacameninas.jpg" alt="Meninas pintando e decorando seus acessórios" style="object-position:center 40%"></div>
+        <div class="cpph"><img src="assets/lembrancinha-escova.jpg" alt="Escova e presilha personalizadas, coloridas e delicadas" style="object-position:center 50%"></div>
         <div class="cpb">
-          <div class="cptag">Pintura &amp; personalização</div>
+          <div class="cptag">Artística &amp; colorida</div>
           <div class="cpn">Customize sua Escova &amp; Presilha</div>
-          <div class="cpdur">Duração · 2h</div>
-          <div class="cpd">Cada convidada personaliza uma escova de madeira e uma presilha, escolhendo cores, flores, adesivos e detalhes — bem a cara dela.</div>
+          <div class="cpdur">Duração · a combinar</div>
+          <div class="cpd">Cada convidada personaliza uma escova de madeira e uma presilha com pintura, cores, flores, adesivos e detalhes — bem a cara dela.</div>
           <ul class="cpi">
             <li>Oficina conduzida</li>
             <li>1 escova de madeira + 1 presilha por convidada</li>
@@ -532,10 +546,10 @@
       <div class="cpc">
         <div class="cpph"><img src="assets/piranhapersonalizada.jpg" alt="Presilhas personalizadas com cristais e iniciais" style="object-position:center 50%"></div>
         <div class="cpb">
-          <div class="cptag">Personalização com brilho</div>
+          <div class="cptag">Glam &amp; cheia de brilho</div>
           <div class="cpn">Piranha &amp; Escova Bedazzled</div>
-          <div class="cpdur">Duração · a confirmar</div>
-          <div class="cpd">Uma customização glam: cada convidada decora a própria piranha e escova com cristais e a própria inicial, pra deixar tudo ainda mais especial.</div>
+          <div class="cpdur">Duração · a combinar</div>
+          <div class="cpd">Uma customização glam: cada convidada decora a própria piranha e escova com cristais, brilho e a própria inicial, pra deixar tudo ainda mais especial.</div>
           <ul class="cpi">
             <li>Oficina conduzida</li>
             <li>1 piranha + 1 escova por convidada</li>
@@ -551,49 +565,25 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O que cada uma leva</span></div>
+      <div class="head-right"><span class="kicker">Elarah até você</span></div>
     </div>
-    <span class="eyebrow orange">◆ O que cada uma leva</span>
-    <h2>Escova &amp; presilha <em>personalizadas</em></h2>
-    <p class="lead">Cores, brilho e detalhes que fazem diferença — cada convidada personaliza a própria escova e a própria presilha e leva pra casa numa caixinha linda.</p>
-    <div class="gstrip">
-      <figure><img src="assets/lembrancinha-escova.jpg" alt="Escova personalizada com o nome e presilha de flor" style="object-position:center 50%"><figcaption>A escova personalizada</figcaption></figure>
-      <figure><img src="assets/piranhapersonalizada.jpg" alt="Presilhas personalizadas com nomes e brilhos" style="object-position:center 50%"><figcaption>As presilhas de cada uma</figcaption></figure>
-      <figure><img src="assets/nivergibrinde.jpg" alt="Kit de escova e presilha em caixinha rosa" style="object-position:center 50%"><figcaption>Numa caixinha linda</figcaption></figure>
+    <span class="eyebrow orange">◆ Como funciona</span>
+    <h2>Elarah <em>até você</em></h2>
+    <p class="lead">A comemoração acontece no espaço de vocês — e nós levamos toda a experiência até lá. Vocês só recebem as amigas.</p>
+    <div class="bfeat">
+      <div class="bphoto"><img src="assets/nivergibrinde.jpg" alt="Kit da experiência pronto, delicado e personalizado" style="object-position:center 50%"></div>
+      <div class="bbody">
+        <span class="btag">Vocês recebem, a gente faz acontecer</span>
+        <h3>Do início ao fim, com a Elarah</h3>
+        <ul class="feat">
+          <li><span class="st">1</span><b>Levamos os materiais</b> — tudo o que a experiência precisa vai até vocês.</li>
+          <li><span class="st">2</span><b>Montamos a experiência</b> — organizamos a mesa e a estrutura no seu espaço.</li>
+          <li><span class="st">3</span><b>Recebemos e coordenamos</b> — conduzimos a atividade do começo ao fim.</li>
+        </ul>
+      </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Cada peça é personalizada com o <b>nome</b> e os detalhes preferidos de cada convidada — brilhos, cores e aquele toque delicado. 🎀</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>O que cada uma leva</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Onde acontece</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Onde comemorar</span>
-    <h2>Na sua casa ou em um <em>espaço parceiro</em></h2>
-    <p class="lead">A festa acontece onde for mais gostoso para vocês — em casa ou em um café/espaço parceiro na região da Mooca.</p>
-    <div class="vg">
-      <div class="vc"><div class="vcph"><img src="assets/aniv-decor.jpg" alt="Mesa montada em casa, delicada e colorida" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Na casa de vocês 🏡</div><div class="vcd">A Elarah leva tudo e monta a experiência aí mesmo — vocês só recebem as amigas.</div></div></div>
-      <div class="vc"><div class="vcph"><img src="assets/sowcafe.jpg" alt="Café aconchegante para a comemoração" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Café ou espaço parceiro ☕</div><div class="vcd">Selecionamos um café ou espaço acolhedor na região da Mooca, conforme a preferência.</div></div></div>
-    </div>
-    <div class="bnote" style="margin-top:16px">◆ É só nos contar o que preferem que a gente cuida da curadoria do espaço e de toda a produção. 🎀</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Onde acontece</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Comidinhas & bebidas</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Pra deixar mais gostoso</span>
-    <h2>Docinhos, comidinhas <em>e bebidas</em></h2>
-    <p class="lead">Dá pra somar uma mesa de comidinhas e bebidas pra deixar a celebração ainda mais especial — tudo opcional, do jeitinho que vocês quiserem.</p>
-    <div class="gstrip">
-      <figure><img src="assets/cupcake.jpg" alt="Cupcakes decorados" style="object-position:center 50%"><figcaption>Cupcakes &amp; bolo</figcaption></figure>
-      <figure><img src="assets/macarons.jpg" alt="Macarons coloridos" style="object-position:center 50%"><figcaption>Doces &amp; macarons</figcaption></figure>
-      <figure><img src="assets/brigadeirolab.jpg" alt="Brigadeiros" style="object-position:center 50%"><figcaption>Brigadeiros</figcaption></figure>
-    </div>
-    <div class="bnote" style="margin-top:16px">◆ E também <b>bebidas</b>: sucos naturais, limonadas e drinks sem álcool pra brindar a festa. Cardápio e valores combinados conforme a escolha de vocês. 🍓</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Comidinhas & bebidas</span></div>
+    <div class="bnote" style="margin-top:16px">◆ A família define <b>o local e a data</b> — a Elarah cuida de todo o resto da experiência. 🎀</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Elarah até você</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -611,9 +601,31 @@
       <div class="ic2"><span class="icn">Opção 1 · Pintura &amp; personalização</span><div class="icv">Customize sua Escova &amp; Presilha</div><div class="ics"><em>Valor por convidada a confirmar</em> · condução, escova e presilha e materiais inclusos.</div></div>
       <div class="ic2"><span class="icn">Opção 2 · Personalização com brilho</span><div class="icv">Piranha &amp; Escova Bedazzled</div><div class="ics"><em>Valor por convidada a confirmar</em> · condução, piranha e escova, cristais e inicial inclusos.</div></div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Estimativa em confirmação.</b> Fechamos o valor por convidada de cada experiência e o total para as 15 assim que confirmarmos o espaço (casa ou parceiro), a data e as comidinhas/bebidas — antes de fechar a proposta com vocês.</div>
-    <p class="fineprint">Aniversário de 13 anos da Antonella, para 15 convidadas, em outubro (sábado ou domingo), em São Paulo (região da Mooca). Valor por convidada e total confirmados após a definição do espaço, da data e dos opcionais de comidinhas e bebidas.</p>
+    <div class="bnote" style="margin-top:16px">◆ <b>Estimativa em confirmação.</b> Fechamos o valor por convidada de cada experiência e o total para as 15 assim que confirmarmos a data e os opcionais escolhidos — antes de fechar a proposta com vocês. A experiência acontece no espaço de vocês, com toda a produção Elarah inclusa.</div>
+    <p class="fineprint">Aniversário de 13 anos da Antonella, para 15 convidadas, em outubro (sábado ou domingo), em São Paulo (região da Mooca), no espaço da própria família. Valor por convidada e total confirmados após a definição da data e dos opcionais.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Complete a comemoração</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Opcionais para completar</span>
+    <h2>Uma comemoração <em>completa</em></h2>
+    <p class="lead">Mais que uma oficina: monte a festa do jeitinho de vocês. Cada item é opcional e entra conforme a escolha da família.</p>
+    <div class="ostrip">
+      <figure><img src="assets/salgadosemgluten.jpg" alt="Salgadinhos para a mesa da festa" style="object-position:center 50%"><figcaption>Comidinhas</figcaption></figure>
+      <figure><img src="assets/bologanache.jpg" alt="Bolo de aniversário" style="object-position:center 50%"><figcaption>Bolo &amp; vela</figcaption></figure>
+      <figure><img src="assets/lembrancinha-garrafa.jpg" alt="Garrafa personalizada com o nome da convidada" style="object-position:center 45%"><figcaption>Garrafas personalizadas</figcaption></figure>
+    </div>
+    <div class="oplist">
+      <div class="oprow"><div><div class="oln">Comidinhas · salgados + doces</div><div class="old">Mesa de salgadinhos e docinhos para a festa</div></div><div class="opv">R$ 89,90<small>por pessoa</small></div></div>
+      <div class="oprow"><div><div class="oln">Bolo + vela</div><div class="old">Bolo de aniversário com vela para o momento do parabéns</div></div><div class="opv">R$ 200<small>valor total</small></div></div>
+      <div class="oprow"><div><div class="oln">Registro fotográfico profissional</div><div class="old">Fotógrafo cobrindo a comemoração · álbum digital para compartilhar</div></div><div class="opv">R$ 450<small>valor total</small></div></div>
+      <div class="oprow"><div><div class="oln">Garrafa personalizada</div><div class="old">Com o nome de cada convidada, posicionada na mesa</div></div><div class="opv">R$ 149,90<small>por pessoa</small></div></div>
+      <div class="oprow"><div><div class="oln">Mimo extra · nécessaire ou espelhinho personalizado</div><div class="old">Uma lembrança a mais para cada convidada levar</div></div><div class="opv"><em>a cotar</em></div></div>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Complete a comemoração</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -624,9 +636,9 @@
     <h2>É só <em>reunir as amigas</em></h2>
     <p class="lead">A gente cuida de tudo pra Antonella e as amigas só chegarem e aproveitarem:</p>
     <div class="steps3">
-      <div class="stp"><span class="num">01</span><h3>Escolhem</h3><p>O espaço (casa ou parceiro), a data e as comidinhas que quiserem.</p></div>
+      <div class="stp"><span class="num">01</span><h3>Escolhem</h3><p>A experiência, a data e os opcionais que quiserem — o local é o espaço de vocês.</p></div>
       <div class="stp"><span class="num">02</span><h3>Confirmamos</h3><p>O valor por convidada, o total e a disponibilidade da agenda.</p></div>
-      <div class="stp"><span class="num">03</span><h3>A gente monta tudo</h3><p>Levamos os materiais, montamos e conduzimos a oficina — do começo ao fim.</p></div>
+      <div class="stp"><span class="num">03</span><h3>Levamos até vocês</h3><p>Materiais, montagem e condução da experiência — do começo ao fim, no seu espaço.</p></div>
     </div>
     <div class="quote" style="margin-top:22px">
       <strong style="font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy);display:block;margin-bottom:8px">Vamos deixar essa festa inesquecível? 🎀</strong>

@@ -1,8 +1,10 @@
 # Proposta Elarah · Aniversario Antonella · 13 anos · 15 convidadas · outubro (sab/dom) · Mooca
-# Experiencia: oficina de escova + presilha (cada convidada personaliza a propria e leva). Comidinhas/bebidas opcionais.
-# Local: casa da cliente OU cafe/espaco parceiro. Padrao editorial Elarah aniversario. Paleta blush (jovem, delicada, divertida).
-# Fotos reais do banco. NAO ha foto de oficina de escova em acao — usar kit finalizado + meninas criando (representativo).
-# Valores NAO confirmados -> estrutura "a confirmar" (nao inventar). Total para 15 quando o valor for definido.
+# SOMENTE no local da cliente (sem espaco parceiro) -> conceito "Elarah ate voce": levamos experiencia, materiais e producao.
+# Duas experiencias: 1) Customize Escova & Presilha (artistica/colorida) 2) Piranha & Escova Bedazzled (glam/cristais).
+# Opcionais com precos: comidinhas R$89,90/pp · bolo+vela R$200 · foto R$450 · garrafa personalizada R$149,90/pp · mimo a cotar.
+# Padrao editorial Elarah aniversario. Paleta blush. Fotos reais e coerentes (escova/presilha/piranha/cristais/mesa/bolo).
+# PROIBIDO: ceramica, pintura em tela, tacas, workshops sem relacao, mencao a espaco parceiro/Bake Studio.
+# Valor da experiencia por convidada NAO informado -> "a confirmar" (nao inventar).
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
 
@@ -71,6 +73,19 @@ xcss = '''
   .cpc ul.cpi{list-style:none;margin:11px 0 0;padding:0;display:flex;flex-direction:column;gap:5px}
   .cpc ul.cpi li{position:relative;padding-left:18px;font-size:10.5px;color:var(--ink);line-height:1.35}
   .cpc ul.cpi li:before{content:"✓";position:absolute;left:0;top:0;color:var(--orange);font-size:9px;font-weight:800}
+  /* opcionais · strip de fotos + lista com precos */
+  .ostrip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .ostrip figure{margin:0;border-radius:14px;overflow:hidden;position:relative;height:150px;border:1px solid var(--line);box-shadow:0 12px 28px -22px rgba(0,0,0,.3)}
+  .ostrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .ostrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:16px 12px 9px;color:#fff;font-size:10.5px;font-weight:600;background:linear-gradient(to top,rgba(40,20,28,.85),transparent)}
+  .oplist{display:flex;flex-direction:column;margin-top:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card);box-shadow:0 12px 30px -24px rgba(0,0,0,.22)}
+  .oprow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 20px}
+  .oprow + .oprow{border-top:1px solid var(--line)}
+  .oprow .oln{font-size:12.5px;color:var(--navy);font-weight:600;line-height:1.25}
+  .oprow .old{font-size:10px;color:var(--muted);line-height:1.35;margin-top:2px}
+  .oprow .opv{font-family:'DM Serif Display',serif;font-size:18px;color:var(--orange-dark);white-space:nowrap;text-align:right;line-height:1}
+  .oprow .opv small{display:block;font-family:-apple-system,sans-serif;font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
+  .oprow .opv em{font-style:italic;font-size:15px;color:var(--navy-soft)}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -106,9 +121,9 @@ cover = f'''
 {head_block("Aniversário · 13 anos", "Antonella", "", "São Paulo · outubro")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Um aniversário para criar</span>
+        <span class="eyebrow">✦ Uma comemoração completa</span>
         <h1>A festa da <em>Antonella</em> 🎀</h1>
-        <p class="lead">Um encontro entre amigas para criar, se divertir e levar pra casa uma lembrança feita à mão. Cada convidada personaliza a própria <b>escova &amp; presilha</b> — do jeitinho dela.</p>
+        <p class="lead">Um encontro entre amigas para criar, se divertir e levar pra casa uma lembrança feita à mão — <b>no conforto do espaço de vocês</b>. Cada convidada personaliza a própria escova &amp; presilha do jeitinho dela.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>13</b> anos</span>
@@ -116,9 +131,10 @@ cover = f'''
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip">Outubro · sábado ou domingo</span>
+          <span class="chip">No seu espaço · Mooca</span>
         </div>
       </div>
-      <div class="cover-photo">{img("aniv-infantil.jpg", "Meninas criando juntas em uma festa delicada e florida", "center 40%")}</div>
+      <div class="cover-photo">{img("macarons.jpg", "Mesa de doces delicada para a comemoração", "center 50%")}</div>
     </div>
     {foot("Aniversário · Antonella")}
   </section>'''
@@ -132,12 +148,12 @@ experiencia = f'''
     <p class="lead">Duas oficinas conduzidas, no mesmo formato — uma mais artística e colorida, outra mais glam e cheia de brilho. Em ambas, cada convidada leva as próprias peças pra casa.</p>
     <div class="cpg">
       <div class="cpc">
-        <div class="cpph">{img("pinturatacameninas.jpg", "Meninas pintando e decorando seus acessórios", "center 40%")}</div>
+        <div class="cpph">{img("lembrancinha-escova.jpg", "Escova e presilha personalizadas, coloridas e delicadas", "center 50%")}</div>
         <div class="cpb">
-          <div class="cptag">Pintura &amp; personalização</div>
+          <div class="cptag">Artística &amp; colorida</div>
           <div class="cpn">Customize sua Escova &amp; Presilha</div>
-          <div class="cpdur">Duração · 2h</div>
-          <div class="cpd">Cada convidada personaliza uma escova de madeira e uma presilha, escolhendo cores, flores, adesivos e detalhes — bem a cara dela.</div>
+          <div class="cpdur">Duração · a combinar</div>
+          <div class="cpd">Cada convidada personaliza uma escova de madeira e uma presilha com pintura, cores, flores, adesivos e detalhes — bem a cara dela.</div>
           <ul class="cpi">
             <li>Oficina conduzida</li>
             <li>1 escova de madeira + 1 presilha por convidada</li>
@@ -150,10 +166,10 @@ experiencia = f'''
       <div class="cpc">
         <div class="cpph">{img("piranhapersonalizada.jpg", "Presilhas personalizadas com cristais e iniciais", "center 50%")}</div>
         <div class="cpb">
-          <div class="cptag">Personalização com brilho</div>
+          <div class="cptag">Glam &amp; cheia de brilho</div>
           <div class="cpn">Piranha &amp; Escova Bedazzled</div>
-          <div class="cpdur">Duração · a confirmar</div>
-          <div class="cpd">Uma customização glam: cada convidada decora a própria piranha e escova com cristais e a própria inicial, pra deixar tudo ainda mais especial.</div>
+          <div class="cpdur">Duração · a combinar</div>
+          <div class="cpd">Uma customização glam: cada convidada decora a própria piranha e escova com cristais, brilho e a própria inicial, pra deixar tudo ainda mais especial.</div>
           <ul class="cpi">
             <li>Oficina conduzida</li>
             <li>1 piranha + 1 escova por convidada</li>
@@ -183,35 +199,49 @@ vibe = f'''
     {foot("O que cada uma leva")}
   </section>'''
 
-# ============================ 4 · ONDE ACONTECE ============================
-espacos = f'''
+# ============================ 4 · ELARAH ATÉ VOCÊ ============================
+ate_voce = f'''
   <section class="slide">
-{head_simple("Onde acontece")}
-    <span class="eyebrow orange">◆ Onde comemorar</span>
-    <h2>Na sua casa ou em um <em>espaço parceiro</em></h2>
-    <p class="lead">A festa acontece onde for mais gostoso para vocês — em casa ou em um café/espaço parceiro na região da Mooca.</p>
-    <div class="vg">
-      <div class="vc"><div class="vcph">{img("aniv-decor.jpg", "Mesa montada em casa, delicada e colorida", "center 50%")}</div><div class="vcb"><div class="vcn">Na casa de vocês 🏡</div><div class="vcd">A Elarah leva tudo e monta a experiência aí mesmo — vocês só recebem as amigas.</div></div></div>
-      <div class="vc"><div class="vcph">{img("sowcafe.jpg", "Café aconchegante para a comemoração", "center 50%")}</div><div class="vcb"><div class="vcn">Café ou espaço parceiro ☕</div><div class="vcd">Selecionamos um café ou espaço acolhedor na região da Mooca, conforme a preferência.</div></div></div>
+{head_simple("Elarah até você")}
+    <span class="eyebrow orange">◆ Como funciona</span>
+    <h2>Elarah <em>até você</em></h2>
+    <p class="lead">A comemoração acontece no espaço de vocês — e nós levamos toda a experiência até lá. Vocês só recebem as amigas.</p>
+    <div class="bfeat">
+      <div class="bphoto">{img("nivergibrinde.jpg", "Kit da experiência pronto, delicado e personalizado", "center 50%")}</div>
+      <div class="bbody">
+        <span class="btag">Vocês recebem, a gente faz acontecer</span>
+        <h3>Do início ao fim, com a Elarah</h3>
+        <ul class="feat">
+          <li><span class="st">1</span><b>Levamos os materiais</b> — tudo o que a experiência precisa vai até vocês.</li>
+          <li><span class="st">2</span><b>Montamos a experiência</b> — organizamos a mesa e a estrutura no seu espaço.</li>
+          <li><span class="st">3</span><b>Recebemos e coordenamos</b> — conduzimos a atividade do começo ao fim.</li>
+        </ul>
+      </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ É só nos contar o que preferem que a gente cuida da curadoria do espaço e de toda a produção. 🎀</div>
-    {foot("Onde acontece")}
+    <div class="bnote" style="margin-top:16px">◆ A família define <b>o local e a data</b> — a Elarah cuida de todo o resto da experiência. 🎀</div>
+    {foot("Elarah até você")}
   </section>'''
 
-# ============================ 5 · COMIDINHAS & BEBIDAS ============================
-comidinhas = f'''
+# ============================ 5 · COMPLETE A COMEMORAÇÃO ============================
+complete = f'''
   <section class="slide">
-{head_simple("Comidinhas & bebidas")}
-    <span class="eyebrow orange">◆ Pra deixar mais gostoso</span>
-    <h2>Docinhos, comidinhas <em>e bebidas</em></h2>
-    <p class="lead">Dá pra somar uma mesa de comidinhas e bebidas pra deixar a celebração ainda mais especial — tudo opcional, do jeitinho que vocês quiserem.</p>
-    <div class="gstrip">
-      <figure>{img("cupcake.jpg", "Cupcakes decorados", "center 50%")}<figcaption>Cupcakes &amp; bolo</figcaption></figure>
-      <figure>{img("macarons.jpg", "Macarons coloridos", "center 50%")}<figcaption>Doces &amp; macarons</figcaption></figure>
-      <figure>{img("brigadeirolab.jpg", "Brigadeiros", "center 50%")}<figcaption>Brigadeiros</figcaption></figure>
+{head_simple("Complete a comemoração")}
+    <span class="eyebrow orange">◆ Opcionais para completar</span>
+    <h2>Uma comemoração <em>completa</em></h2>
+    <p class="lead">Mais que uma oficina: monte a festa do jeitinho de vocês. Cada item é opcional e entra conforme a escolha da família.</p>
+    <div class="ostrip">
+      <figure>{img("salgadosemgluten.jpg", "Salgadinhos para a mesa da festa", "center 50%")}<figcaption>Comidinhas</figcaption></figure>
+      <figure>{img("bologanache.jpg", "Bolo de aniversário", "center 50%")}<figcaption>Bolo &amp; vela</figcaption></figure>
+      <figure>{img("lembrancinha-garrafa.jpg", "Garrafa personalizada com o nome da convidada", "center 45%")}<figcaption>Garrafas personalizadas</figcaption></figure>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ E também <b>bebidas</b>: sucos naturais, limonadas e drinks sem álcool pra brindar a festa. Cardápio e valores combinados conforme a escolha de vocês. 🍓</div>
-    {foot("Comidinhas & bebidas")}
+    <div class="oplist">
+      <div class="oprow"><div><div class="oln">Comidinhas · salgados + doces</div><div class="old">Mesa de salgadinhos e docinhos para a festa</div></div><div class="opv">R$ 89,90<small>por pessoa</small></div></div>
+      <div class="oprow"><div><div class="oln">Bolo + vela</div><div class="old">Bolo de aniversário com vela para o momento do parabéns</div></div><div class="opv">R$ 200<small>valor total</small></div></div>
+      <div class="oprow"><div><div class="oln">Registro fotográfico profissional</div><div class="old">Fotógrafo cobrindo a comemoração · álbum digital para compartilhar</div></div><div class="opv">R$ 450<small>valor total</small></div></div>
+      <div class="oprow"><div><div class="oln">Garrafa personalizada</div><div class="old">Com o nome de cada convidada, posicionada na mesa</div></div><div class="opv">R$ 149,90<small>por pessoa</small></div></div>
+      <div class="oprow"><div><div class="oln">Mimo extra · nécessaire ou espelhinho personalizado</div><div class="old">Uma lembrança a mais para cada convidada levar</div></div><div class="opv"><em>a cotar</em></div></div>
+    </div>
+    {foot("Complete a comemoração")}
   </section>'''
 
 # ============================ 6 · INVESTIMENTO ============================
@@ -229,8 +259,8 @@ investimento = f'''
       <div class="ic2"><span class="icn">Opção 1 · Pintura &amp; personalização</span><div class="icv">Customize sua Escova &amp; Presilha</div><div class="ics"><em>Valor por convidada a confirmar</em> · condução, escova e presilha e materiais inclusos.</div></div>
       <div class="ic2"><span class="icn">Opção 2 · Personalização com brilho</span><div class="icv">Piranha &amp; Escova Bedazzled</div><div class="ics"><em>Valor por convidada a confirmar</em> · condução, piranha e escova, cristais e inicial inclusos.</div></div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Estimativa em confirmação.</b> Fechamos o valor por convidada de cada experiência e o total para as 15 assim que confirmarmos o espaço (casa ou parceiro), a data e as comidinhas/bebidas — antes de fechar a proposta com vocês.</div>
-    <p class="fineprint">Aniversário de 13 anos da Antonella, para 15 convidadas, em outubro (sábado ou domingo), em São Paulo (região da Mooca). Valor por convidada e total confirmados após a definição do espaço, da data e dos opcionais de comidinhas e bebidas.</p>
+    <div class="bnote" style="margin-top:16px">◆ <b>Estimativa em confirmação.</b> Fechamos o valor por convidada de cada experiência e o total para as 15 assim que confirmarmos a data e os opcionais escolhidos — antes de fechar a proposta com vocês. A experiência acontece no espaço de vocês, com toda a produção Elarah inclusa.</div>
+    <p class="fineprint">Aniversário de 13 anos da Antonella, para 15 convidadas, em outubro (sábado ou domingo), em São Paulo (região da Mooca), no espaço da própria família. Valor por convidada e total confirmados após a definição da data e dos opcionais.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -242,9 +272,9 @@ proximos = f'''
     <h2>É só <em>reunir as amigas</em></h2>
     <p class="lead">A gente cuida de tudo pra Antonella e as amigas só chegarem e aproveitarem:</p>
     <div class="steps3">
-      <div class="stp"><span class="num">01</span><h3>Escolhem</h3><p>O espaço (casa ou parceiro), a data e as comidinhas que quiserem.</p></div>
+      <div class="stp"><span class="num">01</span><h3>Escolhem</h3><p>A experiência, a data e os opcionais que quiserem — o local é o espaço de vocês.</p></div>
       <div class="stp"><span class="num">02</span><h3>Confirmamos</h3><p>O valor por convidada, o total e a disponibilidade da agenda.</p></div>
-      <div class="stp"><span class="num">03</span><h3>A gente monta tudo</h3><p>Levamos os materiais, montamos e conduzimos a oficina — do começo ao fim.</p></div>
+      <div class="stp"><span class="num">03</span><h3>Levamos até vocês</h3><p>Materiais, montagem e condução da experiência — do começo ao fim, no seu espaço.</p></div>
     </div>
     <div class="quote" style="margin-top:22px">
       <strong style="font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy);display:block;margin-bottom:8px">Vamos deixar essa festa inesquecível? 🎀</strong>
@@ -255,7 +285,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + experiencia + vibe + espacos + comidinhas + investimento + proximos + '\n\n</div>\n\n')
+        + cover + experiencia + ate_voce + investimento + complete + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/aniversario-antonella.html"
 open(out, "w", encoding="utf-8").write(html)
