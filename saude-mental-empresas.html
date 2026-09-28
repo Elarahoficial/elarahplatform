@@ -192,7 +192,7 @@ section{padding:96px 0}
 /* EXPERIENCES */
 .exp{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
 .xcard{background:var(--paper);border-radius:22px;overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column}
-.xcard img{height:220px;width:100%;object-fit:cover}
+.xcard img{aspect-ratio:1/1;height:auto;width:100%;object-fit:cover}
 .xcard .in{padding:22px}
 .xcard h3{font-size:1.35rem;margin-bottom:6px}
 .xcard p{font-size:.93rem;color:var(--muted)}
@@ -253,25 +253,80 @@ section{padding:96px 0}
 .disclaimer{font-size:.78rem;color:var(--muted);margin-top:16px}
 
 /* GIFT */
-.gift{background:linear-gradient(135deg,var(--terra-soft),#fff5ee);border-radius:32px;padding:56px;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
-.gift h2{font-size:clamp(1.9rem,3.6vw,2.7rem);margin:12px 0 14px}
-.gift p{color:#5a4a42}
-.dates{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.date{background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 6px 18px rgba(185,92,50,.08)}
-.date small{display:block;font-size:.72rem;font-weight:700;color:var(--terra);letter-spacing:.08em;text-transform:uppercase}
-.date b{display:block;font-size:.98rem;margin-top:2px}
+.gc{display:grid;grid-template-columns:1.05fr .95fr;gap:72px;align-items:center}
+.gc h2{font-size:clamp(2.2rem,4.4vw,3.4rem);margin:14px 0 20px}
+.gc p{color:var(--muted);font-size:1.04rem}
+.gc__lead{color:var(--ink)!important;font-size:1.14rem!important;margin-bottom:14px}
+.gc__lead b{color:var(--green)}
+.gc__escolhe{list-style:none;display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 22px}
+.gc__escolhe li{display:flex;align-items:center;gap:8px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:9px 18px 9px 14px;font-size:.95rem;color:var(--green)}
+.gc__escolhe li::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--terra)}
+.gc__assina{font-family:'DM Serif Display',serif;font-size:1.25rem!important;color:var(--ink)!important;line-height:1.35}
+.gc__assina em{color:var(--terra)}
+.gc__ctas{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-top:28px}
+.gc__link{font-weight:700;color:var(--green);text-decoration:none;border-bottom:1px solid rgba(31,77,63,.3);padding-bottom:2px}
+.gc__link:hover{color:var(--terra-dark);border-color:var(--terra)}
+.gc__vis{position:relative;padding:56px 40px;min-height:440px;display:grid;place-items:center;border-radius:32px;background:linear-gradient(150deg,var(--terra-soft),#fff5ee 60%,var(--sage-soft))}
+.gcard{width:min(400px,100%);aspect-ratio:1.6/1;border-radius:22px;padding:26px 28px;display:flex;flex-direction:column;justify-content:space-between;color:#fff;background:radial-gradient(120% 140% at 100% 0%,#2e6a57 0%,#1f4d3f 45%,#16302a 100%);box-shadow:0 30px 60px rgba(22,48,42,.28),inset 0 0 0 1px rgba(255,255,255,.08);transform:rotate(-4deg);position:relative;overflow:hidden}
+.gcard::after{content:'';position:absolute;right:-60px;bottom:-60px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(255,255,255,.12)}
+.gcard__top{display:flex;align-items:center;justify-content:space-between}
+.gcard__top img{height:30px;filter:brightness(0) invert(1)}
+.gcard__top span{font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#f3c9b3}
+.gcard__tit{font-family:'DM Serif Display',serif;font-size:1.75rem;line-height:1.1;color:#fff!important}
+.gcard__tit em{color:#f3b08e}
+.gcard__pe{display:flex;justify-content:space-between;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.gtag{position:absolute;background:#fff;border-radius:16px;padding:12px 18px;box-shadow:0 12px 30px rgba(22,48,42,.12);display:flex;flex-direction:column;line-height:1.2;z-index:2}
+.gtag b{font-family:'DM Serif Display',serif;font-weight:400;font-size:1.2rem;color:var(--green)}
+.gtag span{font-size:.8rem;color:var(--muted)}
+.gtag--1{top:34px;left:28px}
+.gtag--1 b{font-size:1.9rem;color:var(--terra)}
+.gtag--2{top:46px;right:24px}
+.gtag--3{bottom:36px;right:40px}
+.gpassos{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:88px 0 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.gpassos li{padding:34px 36px}
+.gpassos li+li{border-left:1px solid var(--line)}
+.gpassos em{display:block;font-style:normal;font-family:'DM Serif Display',serif;font-size:2.6rem;line-height:1;color:var(--terra)}
+.gpassos b{display:block;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin:14px 0 8px}
+.gpassos p{color:var(--muted);font-size:.96rem;max-width:320px}
+.gdif{text-align:center;max-width:860px;margin:88px auto 0}
+.gdif__frase{font-family:'DM Serif Display',serif;font-size:clamp(1.9rem,3.6vw,2.8rem);line-height:1.15}
+.gdif__frase em{color:var(--terra)}
+.gdif__txt{color:var(--muted);font-size:1.06rem;margin:18px auto 26px;max-width:680px}
+.gquando{display:grid;grid-template-columns:.8fr 1.2fr;gap:48px;align-items:center;margin-top:88px;padding:40px 44px;background:var(--paper);border:1px solid var(--line);border-radius:28px}
+.gquando p{color:var(--muted);margin-top:10px}
+.gquando__chips{justify-content:flex-start;margin-top:0}
+.gduas{margin-top:88px}
+.gduas__tit{text-align:center;font-family:'DM Serif Display',serif;font-size:clamp(1.5rem,2.6vw,2rem);margin-bottom:28px}
+.gduas__tit em{color:var(--terra)}
+.gduas__grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.gduas__card{border:1px solid var(--line);border-radius:24px;padding:32px 34px;background:var(--paper)}
+.gduas__card--gift{background:linear-gradient(135deg,var(--terra-soft),#fff5ee);border-color:#f3d6c6}
+.gduas__card small{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
+.gduas__card h3{font-size:1.6rem;margin:8px 0 8px}
+.gduas__card p{color:var(--muted);font-size:.98rem}
+.gduas__card a{display:inline-block;margin-top:16px;font-weight:700;color:var(--green);text-decoration:none}
+.gduas__card a:hover{color:var(--terra-dark)}
 
 /* PERSONAS */
 .pers{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.per{border-radius:22px;padding:28px;background:var(--paper);border:1px solid var(--line)}
-.per .who{font-size:.74rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green-2)}
-.per h3{font-size:1.35rem;margin:10px 0 10px}
-.per p{font-size:.94rem;color:var(--muted)}
+.per{border-radius:22px;padding:34px 32px;background:var(--paper);border:1px solid var(--line);transition:border-color .25s,transform .25s}
+.per:hover{border-color:var(--sage);transform:translateY(-2px)}
+.per__ic{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid var(--sage);color:var(--green);margin-bottom:20px;transition:background .25s,color .25s}
+.per:hover .per__ic{background:var(--green);color:#fff}
+.per .who{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
+.per h3{font-size:1.55rem;margin:10px 0 12px;color:var(--ink)}
+.per p{font-size:.93rem;color:var(--muted);line-height:1.65}
+.pers__fecho{text-align:center;font-family:'DM Serif Display',serif;font-size:clamp(1.35rem,2.4vw,1.8rem);line-height:1.3;max-width:900px;margin:56px auto 0;color:var(--ink);text-wrap:balance}
+.pers__fecho em{color:var(--terra)}
 
 /* QUOTE */
-.quote{text-align:center;max-width:860px;margin:0 auto}
-.quote p{font-family:'DM Serif Display',serif;font-size:clamp(1.6rem,3.2vw,2.4rem);line-height:1.25}
-.quote small{display:block;margin-top:18px;color:var(--muted);font-size:.92rem}
+.manifesto{padding:68px 0;background:linear-gradient(180deg,#eaf1ec,#e3ece6);border-top:1px solid #d6e3da;border-bottom:1px solid #d6e3da}
+.quote{text-align:center;max-width:900px;margin:0 auto}
+.quote__mark{display:block;font-family:'DM Serif Display',serif;font-size:5rem;line-height:.6;height:34px;color:var(--terra);opacity:.55}
+.quote p{font-family:'DM Serif Display',serif;font-size:clamp(1.8rem,3.6vw,2.85rem);line-height:1.2;color:var(--ink);max-width:820px;margin:0 auto;text-wrap:balance}
+.quote p em{font-style:italic;color:var(--terra)}
+.quote small{display:inline-flex;align-items:center;gap:10px;margin-top:24px;color:var(--green-2);font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;opacity:.8}
+.quote small::before,.quote small::after{content:'';width:22px;height:1px;background:var(--sage)}
 
 /* FAQ */
 .faq{max-width:820px;margin:0 auto}
@@ -429,7 +484,7 @@ body.lm-open{overflow:hidden}
 
 @media (max-width:980px){
   section{padding:72px 0}
-  .hero__grid,.entrega,.gift,.cta{grid-template-columns:1fr}
+  .hero__grid,.entrega,.gc,.gquando,.cta{grid-template-columns:1fr}
   .fluxo{grid-template-columns:1fr 1fr;row-gap:36px}
   .fluxo::before{display:none}
   .hero__visual{height:440px;max-width:560px;width:100%;margin:0 auto}
@@ -443,7 +498,7 @@ body.lm-open{overflow:hidden}
   .sim{grid-template-columns:1fr}
   .cal{grid-template-columns:repeat(2,1fr)}
   .nav__links{display:none}
-  .gift,.cta{padding:36px 24px}
+  .cta{padding:36px 24px}
 }
 @media (max-width:560px){
   .wrap{padding:0 16px}
@@ -462,7 +517,13 @@ body.lm-open{overflow:hidden}
   .jornada b{margin:4px 0 4px}
   .sim__perguntas,.sim__previa{padding:24px 20px}
   .sim__previa .btn{align-self:stretch}
-  .dates{grid-template-columns:1fr}
+  .gpassos,.gduas__grid{grid-template-columns:1fr}
+  .gpassos li+li{border-left:0;border-top:1px solid var(--line)}
+  .gpassos li{padding:26px 4px}
+  .gc__vis{min-height:0;padding:96px 20px 110px}
+  .gtag--1{top:18px;left:16px}.gtag--2{top:24px;right:14px}.gtag--3{bottom:22px;right:20px}
+  .gquando{padding:28px 22px;gap:18px}
+  .gduas__card{padding:26px 22px}
   .form{grid-template-columns:1fr;padding:20px}
   .brand span{font-size:.68rem;padding-left:10px}
   .brand{gap:10px}
@@ -739,10 +800,10 @@ body.lm-open{overflow:hidden}
       <p>Atividades manuais tiram o cérebro do modo alerta: foco no presente, conversa leve e algo criado com as próprias mãos. Ninguém precisa saber fazer — e a empresa combina as experiências como quiser ao longo do ano.</p>
     </div>
     <div class="exp">
-      <div class="xcard reveal"><img src="assets/ceramica.jpg" alt="Peças de cerâmica feitas à mão" loading="lazy"><div class="in"><h3>Cerâmica terapêutica</h3><p>Modelar a argila com as mãos: atenção total ao presente, sem telas e sem pressa.</p><div class="why">Ajuda com: estresse e esgotamento</div></div></div>
-      <div class="xcard reveal"><img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal acesa" loading="lazy"><div class="in"><h3>Velas aromáticas</h3><p>Cera vegetal e óleos essenciais em um ritual de pausa que cada pessoa leva para casa.</p><div class="why">Ajuda com: estresse e reconhecimento</div></div></div>
-      <div class="xcard reveal"><img src="assets/corp-grupo.jpg" alt="Equipe cozinhando junta" loading="lazy"><div class="in"><h3>Gastronomia afetiva</h3><p>Receitas preparadas em grupo e compartilhadas à mesa: cozinhar junto aproxima as pessoas.</p><div class="why">Ajuda com: clima e conexão entre áreas</div></div></div>
-      <div class="xcard reveal"><img src="assets/aquarela.jpg" alt="Pintura em aquarela" loading="lazy"><div class="in"><h3>Pintura intuitiva</h3><p>Tinta, pincel e nenhuma regra: pinceladas livres, respiração guiada e zero autojulgamento.</p><div class="why">Ajuda com: ansiedade e pressão por entrega</div></div></div>
+      <div class="xcard reveal"><img src="assets/mh-exp-ceramica.jpg" style="object-position:55% 55%" alt="Mãos modelando uma tigela de argila em uma mesa de cerâmica" loading="lazy"><div class="in"><h3>Cerâmica terapêutica</h3><p>Modelar a argila com as mãos: atenção total ao presente, sem telas e sem pressa.</p><div class="why">Ajuda com: estresse e esgotamento</div></div></div>
+      <div class="xcard reveal"><img src="assets/mh-exp-velas.jpg" style="object-position:50% 58%" alt="Velas artesanais em potes de cerâmica com flores secas" loading="lazy"><div class="in"><h3>Velas aromáticas</h3><p>Cera vegetal e óleos essenciais em um ritual de pausa que cada pessoa leva para casa.</p><div class="why">Ajuda com: estresse e reconhecimento</div></div></div>
+      <div class="xcard reveal"><img src="assets/mh-exp-gastronomia.jpg" style="object-position:50% 50%" alt="Time fazendo massa fresca junto em uma mesa comprida" loading="lazy"><div class="in"><h3>Gastronomia afetiva</h3><p>Receitas preparadas em grupo e compartilhadas à mesa: cozinhar junto aproxima as pessoas.</p><div class="why">Ajuda com: clima e conexão entre áreas</div></div></div>
+      <div class="xcard reveal"><img src="assets/aquarela.jpg" style="object-position:50% 55%" alt="Pintura em aquarela de uma paisagem com lago" loading="lazy"><div class="in"><h3>Pintura intuitiva</h3><p>Tinta, pincel e nenhuma regra: pinceladas livres, respiração guiada e zero autojulgamento.</p><div class="why">Ajuda com: ansiedade e pressão por entrega</div></div></div>
     </div>
     <p class="chips__tit reveal">E muitas outras para combinar no cronograma</p>
     <div class="chips reveal">
@@ -816,18 +877,77 @@ body.lm-open{overflow:hidden}
   </div>
 </section>
 
-<!-- ===== GIFT CARDS / DATAS ===== -->
-<section>
+<!-- ===== GIFT CARD ELARAH ===== -->
+<section id="gift-card">
   <div class="wrap">
-    <div class="gift reveal">
-      <div>
-        <span class="eyebrow">Benefício que o time usa</span>
-        <h2>Presenteie nas datas que importam — com <em>experiências</em>.</h2>
-        <p>Flores murcham, cestas se esquecem. Com os gift cards Elarah cada colaborador escolhe o que quer viver: cerâmica, pintura, perfumaria, drinks, bem-estar. Entram no cronograma como reconhecimento — e como cuidado.</p>
-        <p style="margin-top:10px"><b>Flexível de verdade:</b> se num mês não der pra reunir o time, qualquer encontro do cronograma pode ser trocado por gift cards Elarah — cada pessoa usa quando e onde quiser.</p>
-        <div style="margin-top:24px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn--terra" href="#contato" data-lead="gift" data-plano="Gift cards">Montar o calendário de presentes</a></div>
+    <div class="gc reveal">
+      <div class="gc__txt">
+        <span class="eyebrow">Benefício para o seu time</span>
+        <h2>O presente é seu. <em>A escolha também.</em></h2>
+        <p class="gc__lead">Com o <b>Gift Card Elarah</b>, sua empresa presenteia os colaboradores com algo que vai além de um presente: liberdade para escolher uma experiência que realmente faça sentido para cada pessoa.</p>
+        <p>São mais de 20 experiências disponíveis na Elarah — cerâmica, velas, gastronomia, pintura, perfumaria e muito mais. Cada colaborador escolhe:</p>
+        <ul class="gc__escolhe">
+          <li><b>a experiência</b></li>
+          <li><b>o dia</b></li>
+          <li><b>o horário</b></li>
+        </ul>
+        <p class="gc__assina">A empresa presenteia. Cada pessoa escolhe. <em>A experiência acontece no tempo dela.</em></p>
+        <div class="gc__ctas">
+          <a class="btn btn--terra" href="#contato" data-lead="gift" data-plano="Gift cards">Quero presentear meu time →</a>
+          <a class="gc__link" href="https://elarah.com.br/" target="_blank" rel="noopener">Conheça as experiências Elarah →</a>
+        </div>
       </div>
-      <div class="dates" id="dates"></div>
+
+      <div class="gc__vis" aria-hidden="true">
+        <div class="gcard">
+          <div class="gcard__top"><img src="assets/logo.png" alt=""><span>Gift Card</span></div>
+          <p class="gcard__tit">Uma experiência<br><em>à sua escolha.</em></p>
+          <div class="gcard__pe"><span>Para você</span><span>elarah.com.br</span></div>
+        </div>
+        <div class="gtag gtag--1"><b>20+</b><span>experiências</span></div>
+        <div class="gtag gtag--2"><b>Você escolhe</b><span>o que quer viver</span></div>
+        <div class="gtag gtag--3"><b>Dia e horário</b><span>que preferir</span></div>
+      </div>
+    </div>
+
+    <ol class="gpassos reveal">
+      <li><em>01</em><b>A empresa presenteia</b><p>A empresa oferece o Gift Card Elarah ao colaborador.</p></li>
+      <li><em>02</em><b>A pessoa escolhe</b><p>O colaborador acessa a Elarah e escolhe entre mais de 20 experiências.</p></li>
+      <li><em>03</em><b>Vive quando quiser</b><p>Escolhe a experiência, o dia e o horário que fizerem sentido para sua rotina.</p></li>
+    </ol>
+
+    <div class="gdif reveal">
+      <p class="gdif__frase">Mais de 20 experiências. <em>Uma escolha para cada pessoa.</em></p>
+      <p class="gdif__txt">Cada colaborador tem gostos e rotinas diferentes. Por isso, em vez de escolher um único presente para todo mundo, sua empresa oferece liberdade para cada pessoa escolher sua própria experiência na Elarah.</p>
+      <a class="btn btn--ghost" href="https://elarah.com.br/" target="_blank" rel="noopener">Ver experiências disponíveis →</a>
+    </div>
+
+    <div class="gquando reveal">
+      <div>
+        <span class="eyebrow">Quando presentear?</span>
+        <p>Datas comemorativas, aniversários, reconhecimento, integração, campanhas internas — ou simplesmente porque seu time merece.</p>
+      </div>
+      <div class="chips gquando__chips">
+        <span class="chip">Dia da Secretária</span><span class="chip">Dia do Professor</span><span class="chip">Dia do Médico</span><span class="chip">Dia do Profissional de TI</span><span class="chip">Confraternização de fim de ano</span><span class="chip">Aniversários</span><span class="chip">Reconhecimento de equipes</span><span class="chip">Boas-vindas e onboarding</span><span class="chip">Campanhas internas</span>
+      </div>
+    </div>
+
+    <div class="gduas reveal">
+      <p class="gduas__tit">Duas formas de cuidar do time — <em>e elas se completam.</em></p>
+      <div class="gduas__grid">
+        <div class="gduas__card">
+          <small>Para o time junto</small>
+          <h3>Experiências no cronograma</h3>
+          <p>A empresa contrata experiências coletivas para o time, com datas planejadas ao longo do ano.</p>
+          <a href="#monte-experiencia" data-ir-sim>Montar o cronograma →</a>
+        </div>
+        <div class="gduas__card gduas__card--gift">
+          <small>Para cada pessoa</small>
+          <h3>Gift Cards Elarah</h3>
+          <p>A empresa oferece Gift Cards para que cada colaborador escolha individualmente a experiência que quiser.</p>
+          <a href="#contato" data-lead="gift" data-plano="Gift cards">Quero presentear meu time →</a>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -840,17 +960,20 @@ body.lm-open{overflow:hidden}
       <h2>Feito pra quem cuida de gente.</h2>
     </div>
     <div class="pers">
-      <div class="per reveal"><div class="who">RH · Gente & Cultura</div><h3>Um programa que engaja e se prova.</h3><p>Calendário pronto, execução completa e indicadores simples pra mostrar à diretoria. Você ganha tempo e reconhecimento.</p></div>
-      <div class="per reveal"><div class="who">SESMT · Segurança do Trabalho</div><h3>Ações de prevenção registradas.</h3><p>Cada ação ligada a um fator psicossocial do inventário, com presença e relatório pra compor o plano de ação do PGR.</p></div>
-      <div class="per reveal"><div class="who">Lideranças & diretoria</div><h3>Time mais presente, menos afastamento.</h3><p>Workshop para líderes identificarem sinais cedo e um clima que retém talentos. Investimento previsível, por colaborador.</p></div>
+      <div class="per reveal"><span class="per__ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><path d="M15 14.6c2.5-.2 4.6 1.3 5.3 4.4"/></svg></span><div class="who">RH · Gente & Cultura</div><h3>Um programa que o time realmente quer viver.</h3><p>Experiências que engajam de verdade, com calendário personalizado, execução completa e indicadores para mostrar participação, percepção e resultado à liderança.</p></div>
+      <div class="per reveal"><span class="per__ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span><div class="who">SESMT · Segurança do Trabalho</div><h3>Prevenção que vira ação — e fica registrada.</h3><p>Experiências conectadas aos fatores psicossociais identificados pela empresa, com presença, registros e relatórios que ajudam a documentar cada ação no plano de cuidado.</p></div>
+      <div class="per reveal"><span class="per__ic"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><div class="who">Lideranças & Diretoria</div><h3>Cuidar do time também é estratégia.</h3><p>Experiências que aproximam as pessoas, fortalecem vínculos e criam momentos reais de pausa e conexão — com investimento planejado e acompanhamento dos resultados.</p></div>
     </div>
+    <p class="pers__fecho reveal">Uma solução que conecta experiência, cuidado e gestão — <em>do planejamento ao relatório.</em></p>
   </div>
 </section>
 
-<section>
+<!-- ===== MANIFESTO ===== -->
+<section class="manifesto">
   <div class="wrap quote reveal">
-    <p>“Saúde mental no trabalho não se resolve com um post. Se constrói com <em style="color:var(--terra)">pausas que o time quer viver</em> — todo mês.”</p>
-    <small>Elarah Mental Health</small>
+    <span class="quote__mark" aria-hidden="true">“</span>
+    <p>Saúde mental no trabalho não se resolve com um post. Se constrói com <em>pausas que o time quer viver</em> — todo mês.</p>
+    <small>Elarah</small>
   </div>
 </section>
 
@@ -1041,18 +1164,6 @@ body.lm-open{overflow:hidden}
     b.addEventListener('click', function () { encSel = +b.getAttribute('data-enc'); desenharCal(); });
   });
   desenharCal();
-
-  // Próximas datas de presentear.
-  var dl = document.getElementById('dates');
-  if (dl && D) {
-    var hoje = new Date(); hoje.setHours(0,0,0,0);
-    var lista = D.datasDoAno(hoje.getFullYear()).concat(D.datasDoAno(hoje.getFullYear() + 1))
-      .filter(function (x) { return x.data >= hoje && (x.cat === 'presentear' || (x.cat === 'homenagem' && x.rel >= 2)); })
-      .slice(0, 6);
-    dl.innerHTML = lista.map(function (x) {
-      return '<div class="date"><small>' + x.data.getDate() + ' de ' + MESES[x.data.getMonth()].toLowerCase() + '</small><b>' + esc(x.nome) + '</b></div>';
-    }).join('');
-  }
 
   // Animação de entrada.
   var els = document.querySelectorAll('.reveal');
