@@ -239,15 +239,26 @@ footer a{color:var(--muted)}
 .wa-float{position:fixed;right:18px;bottom:18px;z-index:60;background:#25d366;color:#fff;width:56px;height:56px;border-radius:50%;display:grid;place-items:center;box-shadow:0 10px 26px rgba(0,0,0,.2);text-decoration:none}
 
 /* ARTETERAPIA */
-.arte{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
-.arte h2{font-size:clamp(2rem,4vw,2.9rem);margin:12px 0 16px}
+.arte{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:stretch}
+.arte__txt{align-self:center}
+.arte h2{font-size:clamp(2rem,4vw,2.9rem);margin:12px 0 8px}
+.arte__sub{font-family:'DM Serif Display',serif;font-size:1.3rem;color:var(--green)!important;margin-bottom:16px!important}
 .arte p{color:#3d4a45;margin-bottom:12px}
-.arte__quote{font-family:'DM Serif Display',serif;font-size:1.35rem;line-height:1.3;color:var(--green)!important;border-left:3px solid var(--terra);padding-left:16px;margin-top:20px}
-.arte__cards{display:grid;gap:14px}
-.acard{display:flex;gap:16px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px 22px}
-.acard .ic{width:48px;height:48px;border-radius:14px;background:var(--terra-soft);display:grid;place-items:center;font-size:1.4rem;flex-shrink:0}
-.acard h3{font-size:1.25rem;margin-bottom:4px}
-.acard p{font-size:.92rem;color:var(--muted)}
+.arte__dois{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+.arte__dois div{border-top:1px solid var(--line);padding-top:12px}
+.arte__dois dt{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--terra)}
+.arte__dois dd{margin:6px 0 0;font-size:.95rem;color:var(--ink)}
+.arte__foto{border-radius:24px;overflow:hidden;height:460px;position:relative;background:#f1ebe1;box-shadow:0 24px 50px rgba(22,48,42,.12)}
+.arte__foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 55%}
+.arte__cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px}
+.acard{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px 26px}
+.acard__n{display:block;font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--terra);line-height:1}
+.acard h3{font-size:.82rem;font-family:'DM Sans',sans-serif;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin:12px 0 6px}
+.acard p{font-size:.95rem;color:var(--muted)}
+.arte__quote{font-family:'DM Serif Display',serif;font-size:clamp(1.3rem,2.4vw,1.7rem);line-height:1.3;color:var(--green)!important;text-align:center;max-width:760px;margin:40px auto 0!important}
+.arte__cta{margin-top:32px;background:var(--green);color:#fff;border-radius:22px;padding:26px 32px;display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.arte__cta h3{font-size:1.45rem;color:#fff;margin-bottom:4px}
+.arte__cta p{color:rgba(255,255,255,.8);font-size:.95rem}
 
 /* MONTE SEU CRONOGRAMA */
 .picker{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:22px}
@@ -294,9 +305,13 @@ body.lm-open{overflow:hidden}
 @media (max-width:1120px){.nav__links{display:none} .hero__visual{height:540px}}
 @media (max-width:980px){
   .arte,.elarah,.team{grid-template-columns:1fr}
+  .arte__cards{grid-template-columns:1fr}
+  .arte__foto{height:320px}
   .elarah__pics{height:300px}
 }
 @media (max-width:560px){
+  .arte__dois{grid-template-columns:1fr}
+  .arte__cta{padding:22px}
   .vcard__foto{aspect-ratio:5/4}
   .hero__trust{grid-template-columns:1fr;gap:6px}
   .hero__actions .btn{width:100%;font-size:.9rem;padding:14px 16px}
@@ -446,19 +461,31 @@ body.lm-open{overflow:hidden}
 
 <!-- ===== ARTETERAPIA ===== -->
 <section class="soft" id="arteterapia">
-  <div class="wrap arte">
-    <div class="reveal">
-      <span class="eyebrow">O que é Arteterapia</span>
-      <h2>Uma pausa <em>com propósito</em>.</h2>
-      <p>A Arteterapia usa o processo criativo e a expressão artística como caminho para o autoconhecimento, a elaboração emocional, o relaxamento e o bem-estar.</p>
-      <p>No trabalho, ela abre um espaço de pausa e descompressão: por alguns momentos, o colaborador se desconecta das pressões do dia a dia, sai do automático e volta para o presente — com tinta, argila, desenho, colagem e outros materiais.</p>
-      <p><b>Não é preciso ter nenhuma experiência artística.</b> O foco não está no resultado estético, e sim no processo de criação e nas descobertas que acontecem ao longo dele.</p>
-      <p class="arte__quote">Cuidar antes que o sofrimento se intensifique também é uma forma de cuidar da empresa.</p>
+  <div class="wrap">
+    <div class="arte">
+      <div class="arte__txt reveal">
+        <span class="eyebrow">O que é Arteterapia</span>
+        <h2>Criatividade que <em>também cuida</em>.</h2>
+        <p class="arte__sub">Um espaço para criar, respirar e se reconectar.</p>
+        <p>A Arteterapia usa a criação como ponto de partida para desacelerar, se expressar e se reconectar. <b>Não é preciso ter nenhuma experiência artística</b> — o foco está no processo, não no resultado.</p>
+        <dl class="arte__dois">
+          <div><dt>Para quem participa</dt><dd>Mais espaço para respirar, criar e se expressar.</dd></div>
+          <div><dt>Para a empresa</dt><dd>Uma forma concreta de promover bem-estar, conexão e cuidado.</dd></div>
+        </dl>
+      </div>
+      <!-- FOTO: salve assets/mh-arteterapia.jpg (pessoas + mãos criando, luz
+           quente, tons terrosos). Enquanto não existir, usa a foto de aquarela. -->
+      <div class="arte__foto reveal"><img src="assets/mh-arteterapia.jpg" alt="Pessoas criando juntas em uma experiência de Arteterapia" loading="lazy" onerror="this.onerror=null;this.src='assets/mh-hero-aquarela.jpg'"></div>
     </div>
     <div class="arte__cards">
-      <div class="acard reveal"><div class="ic">🎨</div><div><h3>Pausa com Arte</h3><p>Pintura e expressão artística para desacelerar, aliviar as tensões do cotidiano e estimular o autoconhecimento.</p></div></div>
-      <div class="acard reveal"><div class="ic">💡</div><div><h3>Criatividade e novas perspectivas</h3><p>Vivências para experimentar, flexibilizar padrões de pensamento e redescobrir o potencial criativo.</p></div></div>
-      <div class="acard reveal"><div class="ic">🤝</div><div><h3>Conexão e desenvolvimento de equipes</h3><p>Criação compartilhada que estimula escuta, empatia e colaboração — para times e para lideranças.</p></div></div>
+      <article class="acard reveal"><span class="acard__n">01</span><h3>Desacelerar</h3><p>Um momento para sair do automático e aliviar as tensões do dia.</p></article>
+      <article class="acard reveal"><span class="acard__n">02</span><h3>Criar</h3><p>Experimentar, brincar com novas possibilidades e estimular a criatividade.</p></article>
+      <article class="acard reveal"><span class="acard__n">03</span><h3>Conectar</h3><p>Criar junto, conversar, escutar e fortalecer vínculos.</p></article>
+    </div>
+    <p class="arte__quote reveal">Cuidar antes que o sofrimento se intensifique também é uma forma de cuidar da empresa.</p>
+    <div class="arte__cta reveal">
+      <div><h3>Quer levar essa experiência para sua empresa?</h3><p>Criamos formatos pontuais, semestrais ou anuais, adaptados à rotina da sua equipe.</p></div>
+      <a class="btn btn--terra" href="#planos">Conheça os formatos</a>
     </div>
   </div>
 </section>
