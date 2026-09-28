@@ -161,12 +161,9 @@
     var c = sb();
     S.prospSemFrente = false;
     if (c && !LOCAL_MODE.b2b_prospects) {
-      var r = await c.from('b2b_prospects').select('*').eq('frente', 'mh').order('created_at', { ascending: false }).limit(2000);
-      if (r.error && /frente|42703/i.test(String(r.error.message) + r.error.code)) {
-        // SQL da MH ainda não rodou: mostra os B2B existentes mesmo assim.
-        S.prospSemFrente = true;
-        r = await c.from('b2b_prospects').select('*').order('created_at', { ascending: false }).limit(2000);
-      }
+      // Prospecção mista: qualquer empresa pode ter evento corporativo
+      // ou programa de saúde mental, então a lista traz todos os B2B.
+      var r = await c.from('b2b_prospects').select('*').order('created_at', { ascending: false }).limit(2000);
       if (!r.error) { S.prospects = r.data || []; return; }
       if (tabelaFaltando(r.error)) LOCAL_MODE.b2b_prospects = true;
       else console.warn('[MH] prospects', r.error);
@@ -265,8 +262,6 @@
     if (faltam.length) {
       out += '<div class="mh-banner">⚠️ Modo rascunho: <b>' + faltam.join(', ') + '</b> ainda não existe(m) no banco, então o que você cadastrar fica salvo só neste navegador. ' +
         'Rode <code>sql/elarah_mental_health.sql</code> no SQL Editor do Supabase pra salvar tudo e compartilhar com a equipe.</div>';
-    } else if (S.prospSemFrente) {
-      out += '<div class="mh-banner">ℹ️ A Prospecção está mostrando todos os leads B2B porque a coluna <code>frente</code> ainda não existe. Rode <code>sql/elarah_mental_health.sql</code> pra separar os leads da Mental Health.</div>';
     }
     return out;
   }
@@ -650,7 +645,7 @@
       (porMes[k] = porMes[k] || []).push(e);
     });
     var filtros = { futuros: 'Próximos', orcamento: 'Orçamentos', proposta_enviada: 'Propostas', confirmado: 'Confirmados', realizado: 'Realizados', cancelado: 'Cancelados', todos: 'Todos' };
-    return head('Agenda & datas do RH', 'Eventos in company, no ateliê, online ou kits em casa — do orçamento ao relatório final.', acts) + radarRH() + resumo +
+    return head('Agenda & datas do RH', 'Eventos in company, no ateliê ou kits em casa — do orçamento ao relatório final.', acts) + radarRH() + resumo +
       '<div class="mh-toolbar">' + toggleVista('eventos', vista) + Object.keys(filtros).map(function (k) {
         return '<button class="mh-btn mh-btn--sm ' + (f === k ? '' : 'mh-btn--ghost') + '" data-evt-filtro="' + k + '">' + filtros[k] + '</button>';
       }).join('') + '</div>' +
