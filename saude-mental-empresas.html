@@ -419,20 +419,36 @@ footer a{color:var(--muted)}
 .person__body{padding:34px 40px 40px}
 .person h3{font-size:clamp(1.8rem,2.6vw,2.3rem);line-height:1.05;color:var(--ink)}
 .person__role{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra);margin-top:10px}
-.person__cred{list-style:none;display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 24px}
-.person__cred li{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:var(--sage-soft);color:var(--green);font-size:.82rem;font-weight:600}
-.person__cred svg{color:var(--terra);flex:none}
+.person__cred{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0 26px}
+.person__cred li{display:flex;align-items:flex-start;gap:10px;padding:14px 14px;border-radius:16px;background:var(--sage-soft);color:var(--green);font-size:.95rem;font-weight:700;line-height:1.25}
+.person__cred small{display:block;font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--terra);margin-bottom:4px;line-height:1.3}
+.person__cred svg{color:var(--terra);flex:none;margin-top:1px}
 .person__lead{font-family:'DM Serif Display',serif;font-style:italic;font-size:1.3rem!important;line-height:1.3;color:var(--green)!important;padding-left:16px;border-left:2px solid var(--terra);margin-bottom:18px!important}
 .person p{font-size:.93rem;color:var(--muted);line-height:1.7;margin-bottom:12px}
 
 /* CONHEÇA A ELARAH */
-.elarah{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;position:relative}
-.elarah h2{font-size:clamp(2rem,4vw,2.9rem);margin:12px 0 14px}
-.elarah p{color:#3d4a45;margin-bottom:10px}
-.elarah__pics{display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:12px;height:380px;overflow:hidden}
-.elarah__pics img{width:100%;height:100%;min-height:0;min-width:0;object-fit:cover;border-radius:20px;display:block}
-.elarah__pics img:first-child{grid-row:1/3}
-.elarah__tag{margin-top:18px;font-family:'DM Serif Display',serif;font-style:italic;font-size:1.2rem;color:var(--terra)!important}
+.origem{display:grid;grid-template-columns:.95fr 1.05fr;gap:72px;align-items:start}
+.origem h2{font-size:clamp(2.2rem,4.2vw,3.3rem);margin:14px 0 22px}
+.origem__txt p{color:var(--muted);font-size:1rem;margin-bottom:14px}
+.origem__txt p b{color:var(--green)}
+.origem__lead{color:var(--ink)!important;font-size:1.12rem!important}
+.origem__vimos{list-style:none;margin:6px 0 22px;padding:6px 0 6px 22px;border-left:2px solid var(--terra);display:grid;gap:8px}
+.origem__vimos li{font-family:'DM Serif Display',serif;font-size:1.2rem;line-height:1.3;color:var(--green)}
+.origem__vis{position:sticky;top:120px}
+.mosaico{display:grid;grid-template-columns:1.35fr 1fr;grid-template-rows:260px 260px;gap:14px;position:relative}
+.mosaico img{width:100%;height:100%;object-fit:cover;border-radius:22px;display:block;min-height:0}
+.mosaico__g{grid-row:1/3}
+.mosaico__d{position:absolute;width:170px!important;height:170px!important;left:-36px;bottom:-40px;border:6px solid var(--paper);border-radius:24px!important;box-shadow:0 18px 40px rgba(22,48,42,.18)}
+.origem__prova{margin:58px 0 0 150px;padding:18px 22px;border-radius:18px;background:var(--green);color:#fff}
+.origem__prova small{display:block;font-size:.66rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#f3b08e;margin-bottom:6px}
+.origem__prova p{font-size:.95rem;font-weight:600;line-height:1.5;color:#fff}
+.origem__prova i{font-style:normal;color:var(--sage);margin:0 4px}
+.origem__fecho{text-align:center;margin:96px auto 0;max-width:900px;padding-top:56px;border-top:1px solid var(--line)}
+.origem__fecho p{font-family:'DM Serif Display',serif;font-size:clamp(1.9rem,3.8vw,3rem);line-height:1.15;color:var(--ink);text-wrap:balance}
+.origem__fecho em{color:var(--terra)}
+.origem__ctas{display:flex;justify-content:center;align-items:center;gap:26px;flex-wrap:wrap;margin-top:32px}
+.origem__link{font-weight:700;color:var(--green);text-decoration:none;border-bottom:1px solid rgba(31,77,63,.3);padding-bottom:2px}
+.origem__link:hover{color:var(--terra-dark);border-color:var(--terra)}
 
 /* MODAL DE ORÇAMENTO */
 .lm{position:fixed;inset:0;z-index:100;background:rgba(15,30,26,.55);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
@@ -456,10 +472,15 @@ body.lm-open{overflow:hidden}
 
 @media (max-width:1120px){.nav__links{display:none} .hero__visual{height:540px}}
 @media (max-width:980px){
-  .arte,.elarah,.team{grid-template-columns:1fr}
+  .arte,.origem,.team{grid-template-columns:1fr}
+  .origem{gap:48px}
+  .origem__vis{position:static}
   .arte__cards{grid-template-columns:1fr}
   .arte__foto{height:320px}
-  .elarah__pics{height:300px}
+  .mosaico{grid-template-rows:180px 180px;gap:10px}
+  .mosaico__d{width:110px!important;height:110px!important;left:-8px;bottom:-26px;border-width:4px}
+  .origem__prova{margin:40px 0 0 0}
+  .origem__fecho{margin-top:64px;padding-top:40px}
 }
 @media (max-width:560px){
   .fluxo{grid-template-columns:1fr}
@@ -480,6 +501,7 @@ body.lm-open{overflow:hidden}
   .nav .btn{white-space:nowrap;padding:9px 12px;font-size:.78rem}
   .nav__in{height:72px}
   .person__body{padding:26px 22px 30px}
+  .person__cred{grid-template-columns:1fr}
   .picker button{padding:8px 12px;min-width:54px}
   .lm__box{padding:26px 18px}
 }
@@ -990,36 +1012,36 @@ body.lm-open{overflow:hidden}
       <h2>Duas mulheres, <em>um propósito</em>: levar experiências que transformam para dentro das empresas.</h2>
     </div>
     <div class="team">
-      <!-- FOTO: salve a foto como assets/mh-fundadora.jpg — aparece sozinha aqui. -->
+      <!-- FOTO: assets/mh-fundadora.jpg -->
       <article class="person reveal">
         <div class="person__photo"><img src="assets/mh-fundadora.jpg" alt="Maria Eduarda Vitiello, fundadora da Elarah" loading="lazy" onerror="this.remove()"><span class="person__mono" aria-hidden="true">MV</span></div>
         <div class="person__body">
           <h3>Maria Eduarda Vitiello</h3>
-          <div class="person__role">Fundadora da Elarah · Empreendedora · Estudante FGV</div>
+          <div class="person__role">Fundadora da Elarah · Empreendedora · Inovação & Experiências</div>
           <ul class="person__cred">
-            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M6.3 17.7l2.8-2.8M14.9 9.1l2.8-2.8"/></svg>Empreendedorismo</li>
-            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Negócios e gestão · FGV</li>
-            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c2 1.6 4 2.2 6 2.2s4-.6 6-2.2v-5"/></svg>Pessoas e experiências</li>
+            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.8 2.8M14.9 14.9l2.8 2.8M6.3 17.7l2.8-2.8M14.9 9.1l2.8-2.8"/></svg><span><small>Fundação & estratégia</small>Elarah</span></li>
+            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span><small>Inovação & novos negócios</small>Empreendedorismo</span></li>
+            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c2 1.6 4 2.2 6 2.2s4-.6 6-2.2v-5"/></svg><span><small>Formação</small>Estudante FGV</span></li>
           </ul>
-          <p class="person__lead">Levar para dentro das empresas aquilo que já funcionava fora delas.</p>
-          <p>Maria Eduarda Vitiello é empreendedora e fundadora da Elarah, uma plataforma criada para aproximar pessoas de experiências que estimulam criatividade, presença e conexão.</p>
-          <p>Ao longo da sua trajetória, já esteve à frente de outros projetos e negócios, desenvolvendo uma visão prática sobre empreendedorismo, pessoas e construção de experiências. Atualmente, é estudante da FGV e segue aprofundando sua formação em negócios e gestão, unindo essa visão empreendedora à criação de soluções que façam sentido para a vida real das pessoas.</p>
-          <p>Foi dessa inquietação que nasceu a Elarah Mental Health: levar para dentro das empresas aquilo que já funcionava fora delas — experiências capazes de criar pausas, aproximar pessoas e transformar momentos em conexões reais.</p>
+          <p class="person__lead">Criar negócios sempre fez parte da minha trajetória.</p>
+          <p>Antes da Elarah, já havia empreendido e atuado na construção de projetos e novos negócios. Hoje, como fundadora da Elarah e estudante da FGV, estou à frente de uma empresa que nasceu para transformar a forma como as pessoas vivem experiências — dentro e fora das empresas.</p>
+          <p>A Elarah começou como uma curadoria de experiências offline e, a partir da conexão com centenas de pessoas, empresas e parceiros, ganhou uma nova dimensão: levar experiências criativas, humanas e memoráveis também para o ambiente corporativo.</p>
+          <p>É dessa experiência que nasce a Elarah Mental Health: a união entre inovação, experiências e cuidado para criar soluções que façam sentido para a vida real e para o trabalho.</p>
         </div>
       </article>
-      <!-- FOTO: salve a foto como assets/mh-larissa.jpg — aparece sozinha aqui. -->
+      <!-- FOTO: assets/mh-larissa.jpg -->
       <article class="person reveal">
         <div class="person__photo"><img src="assets/mh-larissa.jpg" alt="Larissa Setzer, arteterapeuta" loading="lazy" onerror="this.remove()"><span class="person__mono" aria-hidden="true">LS</span></div>
         <div class="person__body">
           <h3>Larissa Setzer</h3>
           <div class="person__role">Arteterapeuta · Elarah Mental Health</div>
           <ul class="person__cred">
-            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>Design · FAAP</li>
-            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 3l3 3-9 9-3-3z"/><path d="M9 12c-3 0-5 2-5 5 0 1.5-1 2.5-2 3 3 1 7 0 8-3"/></svg>Pós em Arteterapia · UBAAT 08/1353/1125</li>
-            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>20+ anos no mercado corporativo</li>
+            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 3l3 3-9 9-3-3z"/><path d="M9 12c-3 0-5 2-5 5 0 1.5-1 2.5-2 3 3 1 7 0 8-3"/></svg><span><small>Arteterapia & saúde mental</small>Elarah Mental Health</span></li>
+            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span><small>Design & criatividade</small>FAAP</span></li>
+            <li><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span><small>Experiência corporativa</small>20+ anos</span></li>
           </ul>
           <p class="person__lead">Práticas criativas como espaços de pausa, expressão e encontro.</p>
-          <p>Formada em Design pela FAAP e pós-graduada em Arteterapia, Larissa Setzer reúne mais de 20 anos de experiência no mercado corporativo e uma trajetória dedicada a compreender as relações entre pessoas, criatividade e trabalho.</p>
+          <p>Formada em Design pela FAAP e pós-graduada em Arteterapia (UBAAT 08/1353/1125), Larissa Setzer reúne mais de 20 anos de experiência no mercado corporativo e uma trajetória dedicada a compreender as relações entre pessoas, criatividade e trabalho.</p>
           <p>Ao longo dessa experiência, acompanhou de perto os desafios que atravessam a rotina profissional — como estresse, ansiedade, sobrecarga e perda de conexão — e percebeu o potencial das práticas criativas como espaços de pausa, expressão e encontro.</p>
           <p>Na Elarah Mental Health, une sua experiência corporativa à Arteterapia para desenvolver experiências e programas pensados para empresas, conectando criatividade, prevenção, autocuidado e relações mais saudáveis no trabalho.</p>
         </div>
@@ -1028,25 +1050,45 @@ body.lm-open{overflow:hidden}
   </div>
 </section>
 
-<!-- ===== CONHEÇA A ELARAH ===== -->
-<section class="soft">
+<!-- ===== ORIGEM: DA ELARAH À ELARAH MENTAL HEALTH ===== -->
+<section class="soft" id="origem">
   <div class="wrap">
-    <div class="elarah reveal">
-      <div>
+    <div class="origem">
+      <div class="origem__txt reveal">
         <span class="eyebrow">Um braço da Elarah</span>
-        <h2>Conheça a <em>Elarah</em>.</h2>
-        <p>A Elarah Mental Health é o braço corporativo da Elarah, uma curadoria de experiências criativas e offline em São Paulo. Mais do que workshops, a Elarah existe para criar momentos que marcam — e para lembrar as pessoas de viverem mais no mundo real.</p>
-        <p>É dela que vêm os gift cards de experiência que sua empresa pode usar para presentear o time nas datas importantes.</p>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px">
-          <a class="btn btn--ghost" href="index.html" target="_blank" rel="noopener">Ver as experiências da Elarah</a>
-          <a class="btn btn--ghost" href="sobre.html" target="_blank" rel="noopener">Sobre a Elarah</a>
-        </div>
-        <p class="elarah__tag">Offline is a feeling.</p>
+        <h2>De tantos encontros, nasceu um <em>novo jeito de cuidar.</em></h2>
+        <p class="origem__lead">A Elarah nasceu para colocar as pessoas de volta no mundo real. E, ao longo de sua trajetória, levou essa ideia para muito além dos encontros individuais: foram experiências, eventos e ativações corporativas que colocaram criatividade, presença e conexão dentro das empresas.</p>
+        <p>Foi vivendo tudo isso na prática que percebemos algo maior.</p>
+        <ul class="origem__vimos">
+          <li>Uma experiência não termina quando o workshop acaba.</li>
+          <li>Uma pausa pode abrir espaço para uma conversa.</li>
+          <li>Criar junto pode aproximar um time.</li>
+          <li>Fazer algo com as próprias mãos pode tirar alguém do automático.</li>
+        </ul>
+        <p>Foi desse repertório construído pela Elarah que nasceu a <b>Elarah Mental Health</b> — seu braço dedicado às empresas, transformando a experiência acumulada em programas estruturados de prevenção, cuidado e saúde mental no trabalho.</p>
+        <p>A mesma curadoria. A mesma capacidade de criar experiências que as pessoas realmente querem viver. Agora conectadas às necessidades do ambiente corporativo e aos fatores psicossociais do trabalho.</p>
       </div>
-      <div class="elarah__pics">
-        <img src="assets/ceramica.jpg" alt="Experiência de cerâmica da Elarah" loading="lazy">
-        <img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal" loading="lazy">
-        <img src="assets/aquarela.jpg" alt="Aquarela" loading="lazy">
+
+      <div class="origem__vis reveal">
+        <!-- FOTOS: grande = grupo em experiência corporativa · s1/s2 = atividades diferentes · detalhe = mãos criando -->
+        <div class="mosaico">
+          <img class="mosaico__g" src="assets/eventocorporativo.jpg" alt="Equipe reunida em um evento corporativo da Elarah" loading="lazy">
+          <img class="mosaico__s1" src="assets/corp-grupo.jpg" alt="Colaboradoras cozinhando juntas em uma experiência de gastronomia da Elarah" loading="lazy">
+          <img class="mosaico__s2" src="assets/timeadyen.jpg" alt="Time em uma experiência criativa corporativa da Elarah" loading="lazy">
+          <img class="mosaico__d" src="assets/ceramicamodelagem.jpg" alt="Mãos modelando argila" loading="lazy">
+        </div>
+        <div class="origem__prova">
+          <small>Uma história construída na prática</small>
+          <p>Experiências offline <i>·</i> Eventos corporativos <i>·</i> Curadoria <i>·</i> Produção <i>·</i> Pessoas</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="origem__fecho reveal">
+      <p>Da experiência que conecta, <em>nasce o cuidado que permanece.</em></p>
+      <div class="origem__ctas">
+        <a class="btn btn--terra" href="https://elarah.com.br/#experiencias" target="_blank" rel="noopener">Conheça as experiências da Elarah →</a>
+        <a class="origem__link" href="https://elarah.com.br/" target="_blank" rel="noopener">Conheça a Elarah</a>
       </div>
     </div>
   </div>
