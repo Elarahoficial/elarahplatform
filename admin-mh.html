@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Admin — Elarah Mental Health</title>
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin-mh.css?v=1">
+</head>
+<body>
+
+<div class="mh" id="mh-app" hidden>
+  <aside class="mh__sidebar">
+    <div class="mh__logo">
+      <img src="assets/logo.png" alt="Elarah">
+      <span>Painel Admin</span>
+    </div>
+    <nav class="mh__nav" id="mh-nav"></nav>
+    <div class="mh__foot">
+      <a href="saude-mental-empresas.html" target="_blank" rel="noopener">↗ Ver landing page</a>
+      <button type="button" id="mh-logout">Sair</button>
+    </div>
+  </aside>
+  <main class="mh__main" id="mh-main"></main>
+</div>
+
+<div id="mh-lock" class="mh-lock" hidden></div>
+
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="auth.js?v=14"></script>
+<script src="admin-switcher.js?v=1"></script>
+<script src="admin-mh-data.js?v=1"></script>
+<script src="admin-mh.js?v=1"></script>
+</body>
+</html>
