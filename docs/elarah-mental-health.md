@@ -39,6 +39,18 @@ cronogramas (pontual, semestral ou anual) de experiências manuais.
 4. **Equipe com acesso restrito**: marcar "Elarah Mental Health" no editor de
    acesso da aba Usuários. Quem tem acesso total já entra.
 
+## Novidades (v2)
+
+- **Landing:** todo botão de orçamento/WhatsApp abre um formulário rápido (nome, WhatsApp, e-mail, empresa, cargo, tamanho do time, encontros/ano). Os dados são salvos em `mh_leads` **antes** de abrir o WhatsApp, com o botão de origem e a campanha (`utm_*`). Rode o SQL de novo para criar as colunas novas.
+- **Landing:** seções de Arteterapia, “Monte seu cronograma” (a empresa escolhe quantos encontros), Quem somos e Conheça a Elarah. Encontros podem ser trocados por gift cards Elarah.
+- **Fotos do Quem somos:** salve como `assets/mh-fundadora.jpg` e `assets/mh-larissa.jpg` — aparecem sozinhas.
+- **O que fazer hoje:** rotina de uma pessoa só (seg a sex, com horário e tempo estimado) + alertas do sistema.
+- **Agenda e Datas para o RH:** calendário do ano com bolinhas por dia (igual ao painel Elarah), com opção de lista.
+- **Acompanhamento semanal:** placar automático da operação (abordagens, respostas, reuniões, propostas, fechamentos) + histórico de 4 semanas.
+- **Cronogramas:** modelos prontos (1, 4, 6 e 12 encontros) e montagem pela quantidade de encontros.
+- **Prospecção:** mensagens personalizadas por setor, assinatura Larissa Setzer e botão “↺ Desfazer” para abordagem marcada sem querer. Cliques de teste feitos antes de 29/09/2026 são desfeitos automaticamente na primeira abertura do painel.
+- **Pedidos do site:** análise por botão de origem, tamanho do time e encontros.
+
 ## Observações
 
 - O Google Maps traz nome, telefone, site e endereço. **E-mail e LinkedIn do RH

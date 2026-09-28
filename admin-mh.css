@@ -227,6 +227,63 @@ a { color: var(--mh-green-2); }
   .mh-plan-item { grid-template-columns: 1fr; }
   .mh-row { flex-wrap: wrap; }
 }
+
+/* ---------- Calendário do ano (bolinhas por dia) ---------- */
+.mh-legenda { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .76rem; color: var(--mh-muted); margin-bottom: 14px; }
+.mh-legenda span { display: inline-flex; align-items: center; gap: 6px; }
+.mh-legenda i { width: 12px; height: 12px; border-radius: 50%; border: 2px solid; display: inline-block; }
+.mh-cal { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; align-items: start; }
+.mh-cal-mes { background: var(--mh-paper); border: 1px solid var(--mh-line); border-radius: var(--mh-radius); box-shadow: var(--mh-shadow); overflow: hidden; }
+.mh-cal-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 12px 14px 0; }
+.mh-cal-head h4 { margin: 0; font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 1.15rem; }
+.mh-cal-head span { font-size: .7rem; color: var(--mh-terra); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; text-align: right; }
+.mh-grade { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; padding: 10px 12px 12px; justify-items: center; }
+.mh-wd { font-size: .66rem; font-weight: 700; color: #aaa; }
+.mh-dia { position: relative; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .82rem; color: #555; border: 2px solid transparent; background: transparent; padding: 0; font-family: inherit; }
+.mh-dia--vazio { visibility: hidden; }
+.mh-dia--tem { background: var(--c-bg); border-color: var(--c-fg); color: var(--c-fg); font-weight: 700; cursor: pointer; transition: transform .12s; }
+.mh-dia--forte { background: var(--c-fg); color: #fff; }
+.mh-dia--tem:hover { transform: scale(1.12); }
+.mh-dia--passou { opacity: .38; }
+.mh-dia--hoje { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--mh-terra); opacity: 1; }
+.mh-dia--sel { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--mh-ink); opacity: 1; }
+.mh-dia b { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--mh-ink); color: #fff; font-size: .6rem; line-height: 16px; text-align: center; }
+.mh-cal-det { border-top: 1px solid var(--mh-line); padding: 8px 14px 4px; font-size: .84rem; }
+.mh-cal-det .mh-row { flex-wrap: wrap; }
+.mh-cal-det .mh-row .body { flex: 1 1 170px; }
+.mh-cal-det .mh-row .acts { flex-basis: 100%; padding-left: 62px; }
+.mh-seg { display: inline-flex; background: #fff; border: 1px solid var(--mh-line); border-radius: 999px; padding: 3px; }
+.mh-seg button { border: 0; background: none; padding: 5px 12px; border-radius: 999px; font-size: .8rem; font-weight: 600; cursor: pointer; color: var(--mh-muted); }
+.mh-seg button.on { background: var(--mh-green); color: #fff; }
+.mh-radar { display: flex; gap: 8px; flex-wrap: wrap; }
+.mh-radar-item { text-align: left; border: 1px solid var(--mh-line); background: #fbfaf6; border-radius: 12px; padding: 8px 12px; cursor: pointer; }
+.mh-radar-item:hover { background: var(--mh-terra-soft); }
+.mh-radar-item b { display: block; font-size: .86rem; }
+.mh-radar-item span { font-size: .74rem; color: var(--mh-muted); }
+
+/* ---------- Rotina ---------- */
+.mh-hora { flex-shrink: 0; width: 48px; font-size: .78rem; font-weight: 700; color: var(--mh-terra); margin-top: 2px; }
+.mh-min { font-weight: 500; color: var(--mh-muted); font-size: .74rem; }
+.mh-week { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.mh-dayplan { border: 1px solid var(--mh-line); border-radius: 12px; padding: 12px; background: #fbfaf6; font-size: .8rem; }
+.mh-dayplan.on { border-color: var(--mh-terra); background: var(--mh-terra-soft); }
+.mh-dayplan b { display: block; font-size: .86rem; }
+.mh-dayplan small { display: block; color: var(--mh-muted); margin-bottom: 6px; }
+.mh-dayplan ul { margin: 0; padding-left: 16px; display: grid; gap: 3px; }
+
+/* ---------- Barras (análise de pedidos) ---------- */
+.mh-bar { display: grid; grid-template-columns: 110px 1fr 28px; gap: 8px; align-items: center; font-size: .8rem; margin: 6px 0; }
+.mh-bar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #3d4a45; }
+.mh-bar i { display: block; height: 10px; border-radius: 999px; background: linear-gradient(90deg, var(--mh-green-2), var(--mh-sage)); }
+.mh-bar b { text-align: right; }
+
+@media (max-width: 1100px) { .mh-week { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 768px) {
+  .mh-cal { grid-template-columns: 1fr; }
+  .mh-dia { width: 38px; height: 38px; }
+  .mh-week { grid-template-columns: 1fr; }
+}
+
 @media print {
   .mh__sidebar, .mh__head-actions, .mh-toolbar, .mh-banner { display: none !important; }
   .mh__main { margin: 0; padding: 0; }

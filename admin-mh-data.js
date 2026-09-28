@@ -35,6 +35,21 @@
   // ---------- Biblioteca de atividades ----------
   // preco: faixa por pessoa (referência pra orçamento, não é tabela).
   var ATIVIDADES = [
+    { id: 'pausa-arte', emoji: '🎨', nome: 'Pausa com Arte (Arteterapia)',
+      resumo: 'Vivência de pintura e expressão artística conduzida por arteterapeuta. Ninguém precisa saber desenhar.',
+      beneficio: 'Desacelera, alivia as tensões do cotidiano e estimula o autoconhecimento — o foco é o processo, não o resultado.',
+      fatores: ['estresse', 'esgotamento'], duracao: '2h', grupo: '8 a 40', formatos: ['presencial_empresa', 'presencial_atelie', 'online'],
+      preco: 'R$ 150–240', destaque: true },
+    { id: 'criatividade', emoji: '💡', nome: 'Criatividade e novas perspectivas',
+      resumo: 'Vivência de Arteterapia com tinta, argila, desenho e colagem para experimentar e flexibilizar padrões.',
+      beneficio: 'Desbloqueio criativo: ajuda o time a sair do automático e enxergar novas possibilidades.',
+      fatores: ['mudancas', 'esgotamento'], duracao: '2h', grupo: '8 a 30', formatos: ['presencial_empresa', 'presencial_atelie'],
+      preco: 'R$ 160–250', destaque: true },
+    { id: 'conexao', emoji: '🤝', nome: 'Conexão e desenvolvimento de equipes',
+      resumo: 'Criação artística compartilhada que trabalha escuta, empatia e colaboração — para times e lideranças.',
+      beneficio: 'Fortalece as relações e o clima; ótimo para times novos, fusões de áreas e lideranças.',
+      fatores: ['relacoes', 'pertencimento', 'lideranca'], duracao: '2h30', grupo: '8 a 40', formatos: ['presencial_empresa', 'presencial_atelie'],
+      preco: 'R$ 170–260', destaque: true },
     { id: 'ceramica', emoji: '🏺', nome: 'Cerâmica terapêutica',
       resumo: 'Modelagem em argila com as mãos: foco total no presente, sem tela.',
       beneficio: 'Reduz ansiedade pelo foco sensorial; é um "desligar" que o time sente no mesmo dia.',
@@ -280,69 +295,203 @@
     cultura:    { label: 'Clima & cultura', emoji: '✨', bg: '#f1eafb', fg: '#5b3a9c' }
   };
 
+  // ---------- Personalização por segmento ----------
+  // Cada empresa recebe a mensagem com a DOR do setor dela, a data que
+  // mais conversa com o time e a experiência que mais combina.
+  // match: regex testada em "segmento + tipo_empresa + nome".
+  var SEGMENTOS = [
+    { id: 'tech', label: 'Tecnologia', match: /tech|software|fintech|startup|ti\b|tecnolog|sistemas|digital|dados|saas/i,
+      dor: 'times de tecnologia passam o dia inteiro em tela, com prazos apertados e muita reunião — é onde o esgotamento aparece primeiro',
+      atividade: 'cerâmica terapêutica (2 horas sem tela, só mãos na argila)', data: 'Dia do Programador e o Dia Mundial da Saúde Mental', ajuste: 'e temos formato online e kit em casa para quem é remoto' },
+    { id: 'juridico', label: 'Jurídico', match: /advoga|jur[ií]dic|direito|law|legal/i,
+      dor: 'escritórios de advocacia vivem de prazo, pressão por resultado e jornada longa — um cenário clássico de sobrecarga',
+      atividade: 'kintsugi, a arte japonesa de consertar cerâmica com ouro (vira uma conversa linda sobre pressão e recomeço)', data: 'o Dia do Advogado (11/8) e o Setembro Amarelo', ajuste: 'no fim do expediente, no próprio escritório, em 2 horas' },
+    { id: 'saude', label: 'Saúde', match: /hospital|cl[ií]nic|sa[uú]de|m[eé]dic|laborat|odonto|enferm|farm/i,
+      dor: 'quem trabalha cuidando dos outros é quem mais adoece — equipes de saúde estão entre as mais afastadas por esgotamento',
+      atividade: 'velas aromáticas ou terrário (ritual de pausa que cabe entre plantões)', data: 'o Dia da Enfermagem, o Dia do Médico e o Dia Mundial da Saúde Mental', ajuste: 'em horários diferentes para cobrir todos os turnos' },
+    { id: 'educacao', label: 'Educação', match: /escola|col[eé]gio|faculdade|universidade|educa|ensino|curso/i,
+      dor: 'professores estão entre os profissionais mais afastados por burnout no Brasil',
+      atividade: 'bordado livre ou cerâmica (atividade manual que acalma e aproxima a equipe)', data: 'o Dia do Professor (15/10) e o Janeiro Branco', ajuste: 'nas semanas de planejamento pedagógico, sem atrapalhar as aulas' },
+    { id: 'agencia', label: 'Agência / marketing', match: /ag[eê]ncia|publicidade|marketing|comunica|propaganda|design|criativ/i,
+      dor: 'agências vivem de criatividade — e de prazo impossível, o que drena a própria criatividade do time',
+      atividade: 'pintura intuitiva ou mosaico coletivo (criar sem briefing e sem cliente)', data: 'o Dia do Publicitário e o Dia Mundial da Saúde Mental', ajuste: 'num fim de tarde, na própria agência' },
+    { id: 'financeiro', label: 'Financeiro', match: /banco|financ|seguro|investim|cr[eé]dito|contab|cont[aá]bil|auditoria|corretora/i,
+      dor: 'o setor financeiro combina meta agressiva, fechamento de mês e cobrança constante — muito estresse acumulado',
+      atividade: 'cerâmica terapêutica ou chá & mindfulness', data: 'o Dia do Bancário/Contador e o Setembro Amarelo', ajuste: 'fora das semanas de fechamento' },
+    { id: 'construcao', label: 'Construção / engenharia', match: /constru|engenharia|incorpora|obra|arquitet|imobili/i,
+      dor: 'obra, prazo e cliente cobrando: o time administrativo e de engenharia carrega muita pressão invisível',
+      atividade: 'terrário ou cerâmica (mãos na terra, cabeça no presente)', data: 'o Abril Verde (segurança e saúde no trabalho) e o Dia do Engenheiro', ajuste: 'no escritório ou em ateliê parceiro perto da empresa' },
+    { id: 'industria', label: 'Indústria / logística', match: /ind[uú]stria|f[aá]brica|log[ií]stica|transport|distribui|manufat/i,
+      dor: 'em operação e turnos, o cuidado com a saúde mental quase nunca chega em todo mundo',
+      atividade: 'pintura em ecobag ou sabonete artesanal (rápido, para turmas grandes)', data: 'a SIPAT e o Abril Verde', ajuste: 'em turmas rápidas de 1 hora dentro da SIPAT' },
+    { id: 'varejo', label: 'Varejo / atendimento', match: /varejo|loja|call ?center|atendimento|e-?commerce|shopping|supermerc/i,
+      dor: 'atendimento ao público e datas de pico (Black Friday, Natal) deixam o time no limite',
+      atividade: 'velas aromáticas ou kit em casa (cuidado depois do pico)', data: 'o Dia do Cliente e o pós-Black Friday', ajuste: 'logo depois das datas de pico' },
+    { id: 'rh', label: 'RH / consultoria', match: /recursos humanos|\brh\b|recrut|consultoria|coworking|escrit[oó]rio/i,
+      dor: 'quem cuida das pessoas da empresa raramente tem tempo de planejar o próprio calendário de cuidado',
+      atividade: 'cerâmica terapêutica ou roda de conversa com psicóloga', data: 'o Dia do Profissional de RH (3/6) e o Dia Mundial da Saúde Mental', ajuste: 'no formato que couber na agenda de vocês' }
+  ];
+  var SEG_PADRAO = { id: 'geral', label: 'Geral',
+    dor: 'o time está cansado e as ações de sempre (palestra, cartaz, e-mail de campanha) não engajam',
+    atividade: 'cerâmica terapêutica ou kintsugi', data: 'o Dia Mundial da Saúde Mental e o Janeiro Branco', ajuste: 'na empresa, no ateliê ou online' };
+  function segmentoDe(p) {
+    var txt = [p && p.segmento, p && p.tipo_empresa, p && p.nome].join(' ');
+    for (var i = 0; i < SEGMENTOS.length; i++) if (SEGMENTOS[i].match.test(txt)) return SEGMENTOS[i];
+    return SEG_PADRAO;
+  }
+
+  // A promessa central, repetida em todas as mensagens: ninguém da
+  // empresa precisa se preocupar com nada.
+  var PROMESSA = 'A gente cuida de tudo: nosso time de arteterapeutas monta o cronograma com a quantidade de encontros que vocês quiserem — um evento pontual, um semestre ou o ano inteiro —, leva todo o material, organiza o local e entrega o relatório de cada ação para a NR-1. Se num mês não der pra reunir o time, o encontro pode virar gift cards Elarah pra cada pessoa usar quando quiser. O RH só aprova as datas.';
+
   // ---------- Mensagens de prospecção ----------
-  // angulo: nr1 (obrigação legal), data (data próxima), giftcard.
+  // Variáveis: {empresa} {contato} {dor} {atividade} {data_seg} {ajuste}
+  // {gancho} {data_gancho} {promessa} {assinatura}
   var MENSAGENS = {
     email: [
-      { id: 'email-nr1', angulo: 'NR-1', assunto: '{empresa} + NR-1: um plano de saúde mental que o time vai querer participar',
+      { id: 'email-personalizado', angulo: 'Personalizada para o setor (recomendada)', assunto: 'Um ano de cuidado com o time da {empresa} — sem trabalho pro RH',
         corpo:
 'Olá, {contato}!\n\n' +
-'Desde maio de 2026 a NR-1 exige que as empresas incluam os riscos psicossociais (estresse, sobrecarga, esgotamento) no gerenciamento de riscos — e mostrem ações de prevenção no plano.\n\n' +
-'A Elarah Mental Health monta isso de um jeito que o time AMA participar: um cronograma de experiências manuais (cerâmica terapêutica, kintsugi, terrários, rodas com psicóloga, workshop para lideranças) conectado às datas que importam — Setembro Amarelo, Dia Mundial da Saúde Mental, Janeiro Branco.\n\n' +
-'Entregamos tudo pronto: planejamento pontual, semestral ou anual, execução na {empresa} ou no ateliê, lista de presença e relatório de cada ação pra anexar ao PGR.\n\n' +
-'Posso te mandar um cronograma-modelo para {segmento} sem compromisso? São 15 minutos de conversa.\n\n' +
+'Sou a Larissa Setzer, arteterapeuta da Elarah Mental Health — depois de mais de 20 anos no mercado corporativo, hoje levo a Arteterapia para dentro das empresas. Escrevo porque {dor}.\n\n' +
+'Com a NR-1, os riscos psicossociais passaram a fazer parte do gerenciamento de riscos das empresas — e a pergunta deixou de ser "se" e virou "o que vamos fazer e como vamos registrar".\n\n' +
+'Para a {empresa}, eu começaria por um workshop de Arteterapia com {atividade}, aproveitando {data_seg}, {ajuste}. Ninguém precisa saber desenhar: o foco é a pausa, não o resultado.\n\n' +
+'{promessa}\n\n' +
+'Posso te mandar um cronograma de exemplo montado para a {empresa}? Leva 1 dia e não tem compromisso.\n\n' +
 '{assinatura}' },
-      { id: 'email-data', angulo: 'Data próxima', assunto: 'Ideia pro {gancho} na {empresa} 💚',
+      { id: 'email-data', angulo: 'Gancho da próxima data forte', assunto: '{gancho} na {empresa}: já tem algo planejado?',
         corpo:
 'Oi, {contato}! Tudo bem?\n\n' +
-'Faltam poucas semanas pro {gancho} ({data_gancho}) e pensei na {empresa}.\n\n' +
-'Em vez de mais um e-mail de campanha, que tal 2 horas em que o time desliga das telas e cria algo com as mãos? Nossas experiências mais pedidas pra essa data: cerâmica terapêutica, kintsugi (a arte japonesa de consertar com ouro) e roda de conversa com psicóloga.\n\n' +
-'A gente leva tudo até a empresa — material, facilitadora, fotos e relatório pro RH.\n\n' +
+'O {gancho} é dia {data_gancho} — e costuma ser a data em que o RH decide em cima da hora o que fazer.\n\n' +
+'Para a {empresa} eu sugiro {atividade}: 2 horas em que o time desliga das telas e cria algo com as mãos. Levamos tudo até vocês, tiramos fotos e entregamos o relatório da ação.\n\n' +
+'E se fizer sentido depois, transformamos isso num cronograma (semestral ou anual) com a quantidade de encontros que vocês preferirem — sem vocês precisarem se preocupar com nada.\n\n' +
 'Te mando 3 opções com valores até amanhã?\n\n' +
 '{assinatura}' },
-      { id: 'email-gift', angulo: 'Gift card / presentear', assunto: 'Presente que o time não esquece (e que cabe no orçamento)',
+      { id: 'email-followup', angulo: 'Follow-up (3 dias depois)', assunto: 'Re: cronograma de saúde mental da {empresa}',
+        corpo:
+'Oi, {contato}! Passando rapidinho aqui.\n\n' +
+'Sei que a agenda do RH é corrida, então resumi em uma linha: você escolhe quantos encontros quer no ano, a gente monta o cronograma, executa tudo e entrega o relatório para a NR-1.\n\n' +
+'Faz sentido eu te mandar o modelo pronto para a {empresa}? É só responder "sim".\n\n' +
+'{assinatura}' },
+      { id: 'email-gift', angulo: 'Gift cards para datas de presentear', assunto: 'Presente que o time da {empresa} não esquece',
         corpo:
 'Olá, {contato}!\n\n' +
-'Datas como Dia da Secretária, Dia do Cliente e fim de ano costumam virar cesta ou brinde que ninguém lembra na semana seguinte.\n\n' +
-'Na Elarah, a {empresa} presenteia com gift cards de experiência: a pessoa escolhe o que quer viver — aula de cerâmica, drinks, pintura, perfumaria — em São Paulo ou com kit em casa. Vale como reconhecimento e como cuidado com a saúde mental.\n\n' +
-'Montamos um calendário anual de datas pra {empresa} presentear, com valores por faixa. Quer ver?\n\n' +
+'Dia da Secretária, Dia do Cliente, Dia das Mães, fim de ano… essas datas costumam virar cesta ou brinde que ninguém lembra na semana seguinte.\n\n' +
+'Com os gift cards Elarah, cada pessoa escolhe a experiência que quer viver — cerâmica, pintura, perfumaria, drinks — em São Paulo ou com kit em casa. É reconhecimento e cuidado com a saúde mental ao mesmo tempo.\n\n' +
+'Posso montar o calendário de presentes do ano da {empresa}, com valores por faixa? Vocês só escolhem as datas.\n\n' +
 '{assinatura}' }
     ],
     linkedin: [
-      { id: 'li-convite', angulo: 'Convite (até 300 caracteres)',
-        corpo: 'Oi, {contato}! Trabalho com programas de saúde mental para empresas (NR-1) usando experiências manuais — cerâmica, kintsugi, rodas com psicóloga. Vi o trabalho da {empresa} com pessoas e adoraria trocar ideias. Posso te adicionar?' },
+      { id: 'li-convite', angulo: 'Convite de conexão (até 300 caracteres)',
+        corpo: 'Oi, {contato}! Sou a Larissa, arteterapeuta da Elarah Mental Health. Levamos workshops de Arteterapia para empresas (saúde mental / NR-1) e cuidamos de todo o cronograma. Adoraria trocar ideias sobre o time da {empresa}!' },
       { id: 'li-followup', angulo: 'Depois que aceitar',
         corpo:
 'Obrigada por aceitar, {contato}! 💚\n\n' +
-'Rapidinho: estamos montando cronogramas de saúde mental para empresas de {segmento} — ações mensais que já entram no plano de riscos psicossociais da NR-1 e que o time participa de verdade (nada de palestra que ninguém assiste).\n\n' +
-'Posso te mandar um modelo de calendário anual? Sem compromisso, dá pra usar como referência mesmo que não seja com a gente.' },
+'Vou direto ao ponto: {dor}.\n\n' +
+'A gente monta o cronograma de saúde mental da empresa — 1 evento pontual, um semestre ou o ano todo, com quantos encontros vocês quiserem — e executa tudo. Para a {empresa}, começaria com {atividade}.\n\n' +
+'Posso te mandar um modelo pronto? Sem compromisso.' },
       { id: 'li-data', angulo: 'Gancho de data',
-        corpo: '{contato}, o {gancho} ({data_gancho}) está chegando. Já tem algo planejado na {empresa}? Tenho 3 ideias de experiências de 2h que o time adora (e que viram evidência pro plano da NR-1). Posso te mandar?' }
+        corpo: '{contato}, o {gancho} ({data_gancho}) está chegando. Já tem algo planejado na {empresa}? Tenho uma ideia de 2 horas que o time adora — e a gente cuida de tudo, do material ao relatório pra NR-1. Te mando?' }
     ],
     whatsapp: [
       { id: 'wa-primeiro', angulo: 'Primeiro contato',
         corpo:
-'Olá! Aqui é da Elarah Mental Health 💚\n\n' +
-'A gente cria programas de saúde mental para empresas com experiências manuais (cerâmica terapêutica, terrários, kintsugi, rodas com psicóloga) — e entrega tudo documentado pra NR-1.\n\n' +
-'Com quem da {empresa} eu posso falar sobre ações para o time? (RH, Gente & Cultura ou SESMT)' },
+'Olá! Aqui é a Larissa, da Elarah Mental Health 💚\n\n' +
+'A gente monta e executa o cronograma de saúde mental das empresas — pontual, semestral ou anual — com workshops de Arteterapia (pintura, argila, colagem, kintsugi) conduzidos por arteterapeutas, e o relatório pronto para a NR-1. O RH não precisa se preocupar com nada.\n\n' +
+'Com quem da {empresa} eu falo sobre ações para o time? (RH, Gente & Cultura ou SESMT)' },
+      { id: 'wa-contato', angulo: 'Quando já tem o nome do RH',
+        corpo: 'Oi, {contato}! Aqui é a Larissa, da Elarah Mental Health 💚 Pensei na {empresa} porque {dor}. A gente monta o cronograma do ano com a quantidade de encontros que vocês quiserem e cuida de tudo. Posso te mandar um modelo em PDF?' },
       { id: 'wa-data', angulo: 'Data próxima',
-        corpo: 'Oi, {contato}! O {gancho} é dia {data_gancho} 🗓️ Já pensou na ação da {empresa}? Montamos em 48h uma experiência de 2h pro time, na empresa ou no ateliê. Te mando as opções?' }
+        corpo: 'Oi, {contato}! O {gancho} é dia {data_gancho} 🗓️ Já tem algo para o time da {empresa}? Organizo uma experiência de 2 horas ({atividade}) na empresa ou no ateliê, com tudo incluso. Te mando as opções?' }
     ],
     ligacao: [
       { id: 'call-roteiro', angulo: 'Roteiro de ligação (60 segundos)',
         corpo:
-'1) ABERTURA — "Oi, aqui é [nome], da Elarah Mental Health. Você cuida da parte de pessoas ou benefícios da {empresa}?"\n' +
+'1) ABERTURA — "Oi, aqui é a Larissa, da Elarah Mental Health. Você cuida da parte de pessoas ou benefícios da {empresa}?"\n' +
 '   (Se não: "Quem seria a melhor pessoa? Pode me passar o e-mail dela?")\n\n' +
-'2) GANCHO — "Estou ligando porque, com a NR-1 exigindo ações sobre riscos psicossociais, muitas empresas de {segmento} estão buscando algo que o time realmente participe."\n\n' +
-'3) VALOR — "A gente monta o cronograma do ano — cerâmica terapêutica, roda com psicóloga, workshop para lideranças — e entrega o relatório de cada ação pro PGR."\n\n' +
-'4) PERGUNTA — "Vocês já têm algo planejado pro {gancho}?"\n\n' +
-'5) PRÓXIMO PASSO — "Posso te mandar um cronograma-modelo por e-mail e marcar 15 minutos na semana que vem? Qual o melhor e-mail?"\n\n' +
+'2) GANCHO — "Estou ligando porque {dor}. E com a NR-1 as empresas precisam mostrar ações sobre riscos psicossociais."\n\n' +
+'3) VALOR — "A gente monta o cronograma — com quantos encontros vocês quiserem, pontual, semestral ou anual —, executa tudo e entrega o relatório de cada ação. O RH só aprova as datas."\n\n' +
+'4) PERGUNTA — "Vocês já têm algo planejado para o {gancho}?"\n\n' +
+'5) FECHAMENTO — "Posso te mandar hoje um cronograma de exemplo montado para a {empresa} e a gente conversa 15 minutos na semana que vem? Qual o melhor e-mail?"\n\n' +
 'OBJEÇÕES:\n' +
 '• "Já temos psicólogo / EAP" → "Ótimo! A gente complementa: o EAP atende quem já pediu ajuda; as experiências chegam em todo mundo, antes."\n' +
-'• "Sem orçamento" → "Dá pra começar com uma ação pontual numa data forte, ou com gift cards no valor que couber."\n' +
+'• "Sem orçamento" → "Dá pra começar com 1 encontro numa data forte, ou com gift cards no valor que couber."\n' +
+'• "Não tenho tempo pra organizar" → "Esse é justamente o ponto: a gente organiza tudo. Você só aprova."\n' +
 '• "Manda por e-mail" → "Mando agora. Pra personalizar: quantas pessoas são no time?"' }
     ]
   };
+
+  // ---------- Cronogramas-modelo ----------
+  // Prontos pra usar: escolhe o modelo, põe o nome da empresa, pronto.
+  // meses = quais meses do programa entram (1-12).
+  var MODELOS = [
+    { id: 'pontual', nome: 'Pontual — 1 encontro', plano: 'pontual', encontros: 1, meses: [10],
+      desc: 'Uma ação numa data forte (ex.: Dia Mundial da Saúde Mental). Porta de entrada ideal pra fechar rápido.' },
+    { id: 'trimestral', nome: 'Essencial — 4 encontros no ano', plano: 'anual', encontros: 4, meses: [1, 4, 9, 10],
+      desc: 'Os 4 meses-chave: Janeiro Branco, Abril Verde (lideranças), Setembro Amarelo e 10/10.' },
+    { id: 'semestral', nome: 'Semestral — 6 encontros', plano: 'semestral', encontros: 6, meses: null,
+      desc: 'Um encontro por mês durante 6 meses, a partir do mês que a empresa escolher.' },
+    { id: 'anual', nome: 'Anual — 12 meses de cuidado', plano: 'anual', encontros: 12, meses: null,
+      desc: 'O programa completo, com reforços nos meses-chave e datas de presentear com gift card.' }
+  ];
+  // Ordem de prioridade dos meses quando a empresa quer menos de 12 encontros.
+  var PRIORIDADE_MESES = [10, 9, 1, 4, 12, 3, 5, 6, 8, 11, 7, 2];
+
+  // ---------- Rotina de uma pessoa só ----------
+  // Pensada pra Larissa tocar sozinha: ~4 a 5 horas de trabalho comercial
+  // e de conteúdo por dia, o resto livre pra executar os eventos.
+  // go = aba do painel que resolve a tarefa.
+  var ROTINA = {
+    1: { nome: 'Segunda — planejar e abrir a semana', itens: [
+      { h: '09:00', min: 20, t: '☕ Planejar a semana', d: 'Abra a Visão geral: eventos da semana, orçamentos parados e a próxima data forte. Escolha 3 prioridades.', go: 'visao' },
+      { h: '09:20', min: 30, t: '🔎 Revisar as empresas novas da semana', d: 'O agente trouxe ~100 empresas. Marque as 20 com mais cara de fechar (porte, setor com dor forte).', go: 'prosp' },
+      { h: '10:00', min: 60, t: '✉️ 20 e-mails personalizados', d: 'Use a mensagem “Personalizada para o setor”. Abra no Gmail, confira o nome e envie.', go: 'prosp' },
+      { h: '11:00', min: 20, t: '💼 Post no LinkedIn', d: 'Post educativo sobre NR-1 ou saúde mental (tem pronto na aba Captação). Responda os comentários até o fim do dia.', go: 'captacao' },
+      { h: '14:00', min: 30, t: '↩️ Follow-ups do dia', d: 'Quem recebeu mensagem há 3 dias e não respondeu.', go: 'prosp' }
+    ] },
+    2: { nome: 'Terça — LinkedIn e ligações', itens: [
+      { h: '09:00', min: 45, t: 'in 20 convites no LinkedIn', d: 'Use “Achar o RH” em cada empresa e mande o convite curto (até 300 caracteres).', go: 'prosp' },
+      { h: '10:00', min: 60, t: '📞 10 ligações para RH', d: 'Roteiro de 60 segundos na aba Prospecção → Ligação. Objetivo: conseguir o e-mail e um “pode mandar”.', go: 'prosp' },
+      { h: '11:15', min: 15, t: '📸 Story no Instagram', d: 'Bastidor: separando material de um evento, argila, peças secando, a mesa montada.', go: 'captacao' },
+      { h: '14:00', min: 30, t: '↩️ Follow-ups + respostas', d: 'Responda quem aceitou convite no LinkedIn com a mensagem “Depois que aceitar”.', go: 'prosp' }
+    ] },
+    3: { nome: 'Quarta — conteúdo e propostas', itens: [
+      { h: '09:00', min: 30, t: '📷 Post no Instagram (foto)', d: 'Foto real de mãos na argila, peça de kintsugi ou equipe criando. Legenda curta + convite para o RH chamar no WhatsApp.', go: 'captacao' },
+      { h: '09:30', min: 60, t: '✉️ 20 abordagens (e-mail ou WhatsApp)', d: 'Priorize os setores com a data forte mais próxima.', go: 'prosp' },
+      { h: '10:45', min: 45, t: '🧭 Montar cronogramas e propostas', d: 'Para quem pediu: gere o cronograma, imprima em PDF e envie no mesmo dia.', go: 'cronograma' },
+      { h: '14:00', min: 20, t: '📥 Pedidos do site', d: 'Responda todo pedido em até 2 horas. Lead do site é o mais quente.', go: 'leads' }
+    ] },
+    4: { nome: 'Quinta — reuniões e relacionamento', itens: [
+      { h: '09:00', min: 60, t: '📞 10 ligações + 10 WhatsApps', d: 'Empresas que abriram e-mail/aceitaram convite mas não responderam.', go: 'prosp' },
+      { h: '10:00', min: 60, t: '🤝 Reuniões e apresentações', d: 'Deixe as quintas pra reuniões de 15–20 minutos com RHs.', go: 'eventos' },
+      { h: '11:00', min: 20, t: '💼 Convite pro Café com RHs', d: 'Convide 5 RHs da lista pro próximo encontro no ateliê (1h de cerâmica + conversa).', go: 'captacao' },
+      { h: '14:00', min: 30, t: '📈 Check-in com clientes', d: 'Mensagem pro RH de cada cliente: “como o time está essa semana?” e registre.', go: 'acomp' }
+    ] },
+    5: { nome: 'Sexta — fechar a semana', itens: [
+      { h: '09:00', min: 45, t: '↩️ Follow-ups de propostas', d: 'Toda proposta enviada na semana recebe um “alguma dúvida?” hoje.', go: 'eventos' },
+      { h: '10:00', min: 30, t: '🎥 Case ou depoimento', d: 'Depois de um evento, poste fotos + 1 frase do RH (com autorização). Sem evento na semana? Poste bastidor.', go: 'captacao' },
+      { h: '10:30', min: 20, t: '📊 Placar da semana', d: 'Abra Acompanhamento semanal e veja abordagens, respostas, reuniões e propostas. O que funcionou mais?', go: 'acomp' },
+      { h: '11:00', min: 30, t: '🗓️ Planejar conteúdo da próxima semana', d: 'Escolha o post de LinkedIn, a foto do Instagram e o gancho de data da semana que vem.', go: 'datas' }
+    ] }
+  };
+  // Tarefas que aparecem em semanas específicas do mês.
+  var ROTINA_MES = [
+    { semana: 1, dia: 1, t: '🎁 Disparar a data forte do mês', d: 'Mande o pitch da próxima data forte para clientes e prospects quentes (aba Datas para o RH).', go: 'datas', min: 30 },
+    { semana: 2, dia: 2, t: '🎙️ Preparar o webinar/live do mês', d: '“NR-1 na prática para RH” — 40 min com uma psicóloga parceira. Divulgue no LinkedIn.', go: 'captacao', min: 45 },
+    { semana: 3, dia: 4, t: '☕ Café com RHs', d: 'Encontro no ateliê com 10–15 RHs: 1h de cerâmica + conversa. Quem vive a experiência vende pra diretoria.', go: 'captacao', min: 120 },
+    { semana: 4, dia: 5, t: '📈 Fechamento do mês', d: 'Some leads, reuniões, propostas e fechamentos do mês. Ajuste a meta do próximo.', go: 'acomp', min: 30 }
+  ];
+
+  // Ideias de foto/post pro Instagram (gira por dia).
+  var IDEIAS_FOTO = [
+    'Close das mãos modelando argila — legenda: “2 horas sem tela. Seu time merece.”',
+    'Peça de kintsugi com o dourado brilhando — legenda sobre recomeço e Setembro Amarelo.',
+    'Mesa montada antes do evento (argila, aventais, flores) — “Tudo pronto: o RH só aprovou a data.”',
+    'Terrários prontos enfileirados — “Cada pessoa levou um pedacinho de calma pra mesa de trabalho.”',
+    'Carrossel: “5 datas que todo RH devia ter no calendário”.',
+    'Vídeo de 10s do forno/peças secando — bastidor gera curiosidade.',
+    'Foto do time rindo durante a atividade (com autorização) — prova social vale ouro.',
+    'Print do cronograma anual (sem nome do cliente) — “É assim que a gente organiza o ano de uma empresa.”'
+  ];
 
   // ---------- Captação: ações de marketing ----------
   var CAPTACAO = [
@@ -374,11 +523,11 @@
 
   // ---------- Posts prontos ----------
   var POSTS = [
-    { canal: 'LinkedIn', titulo: 'Kintsugi e o seu time (troque pelo seu caso real)',
+    { canal: 'LinkedIn', titulo: 'Kintsugi e o seu time',
       texto:
 'No Japão, quando uma cerâmica quebra, ela não vai pro lixo.\n\n' +
 'Ela é consertada com ouro. As rachaduras viram a parte mais bonita da peça. Isso se chama kintsugi.\n\n' +
-'[Troque por um caso real: "Esta semana levamos o kintsugi pra um time de X pessoas. No fim, alguém disse: …"]\n\n' +
+'É isso que a gente faz nas empresas: 2 horas em que o time desliga das telas, conserta uma peça com as próprias mãos e conversa sobre pressão, cansaço e recomeço — sem cara de palestra.\n\n' +
 'Saúde mental no trabalho não é só palestra. É criar espaço pra pausa, pra conversa, pra reparo.\n\n' +
 'Com a NR-1, cuidar dos riscos psicossociais virou obrigação. Na Elarah Mental Health, a gente faz isso virar o momento que o time mais espera no mês.\n\n' +
 '#SaudeMental #NR1 #RH #GenteECultura #BemEstarCorporativo' },
@@ -426,6 +575,14 @@
     MENSAGENS: MENSAGENS,
     CAPTACAO: CAPTACAO,
     POSTS: POSTS,
+    SEGMENTOS: SEGMENTOS,
+    segmentoDe: segmentoDe,
+    PROMESSA: PROMESSA,
+    MODELOS: MODELOS,
+    PRIORIDADE_MESES: PRIORIDADE_MESES,
+    ROTINA: ROTINA,
+    ROTINA_MES: ROTINA_MES,
+    IDEIAS_FOTO: IDEIAS_FOTO,
     atividade: function (id) {
       for (var i = 0; i < ATIVIDADES.length; i++) if (ATIVIDADES[i].id === id) return ATIVIDADES[i];
       return null;

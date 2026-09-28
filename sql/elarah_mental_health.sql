@@ -132,6 +132,14 @@ create table if not exists public.mh_leads (
 );
 create index if not exists mh_leads_created_idx on public.mh_leads (created_at desc);
 
+-- Análise de dados dos pedidos (v2): de qual botão veio, quantos
+-- encontros a empresa quer no ano e de qual campanha/link chegou.
+alter table public.mh_leads add column if not exists origem    text check (char_length(origem) <= 60);
+alter table public.mh_leads add column if not exists encontros int  check (encontros between 1 and 52);
+alter table public.mh_leads add column if not exists utm       text check (char_length(utm) <= 300);
+alter table public.mh_leads add column if not exists pagina    text check (char_length(pagina) <= 300);
+alter table public.mh_leads add column if not exists referrer  text check (char_length(referrer) <= 300);
+
 
 -- ===== 6. RLS =====
 alter table public.mh_eventos        enable row level security;
