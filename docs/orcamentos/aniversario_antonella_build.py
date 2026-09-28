@@ -1,10 +1,12 @@
 # Proposta Elarah · Aniversario Antonella · 13 anos · 15 convidadas · outubro (sab/dom) · Mooca
 # SOMENTE no local da cliente (sem espaco parceiro) -> conceito "Elarah ate voce": levamos experiencia, materiais e producao.
-# Duas experiencias: 1) Customize Escova & Presilha (artistica/colorida) 2) Piranha & Escova Bedazzled (glam/cristais).
-# Opcionais com precos: comidinhas R$89,90/pp · bolo+vela R$200 · foto R$450 · garrafa personalizada R$149,90/pp · mimo a cotar.
-# Padrao editorial Elarah aniversario. Paleta blush. Fotos reais e coerentes (escova/presilha/piranha/cristais/mesa/bolo).
+# Duas experiencias: 1) Customize Escova & Presilha (2h, artistica) 2) Piranha & Escova Bedazzled (1h30, glam/cristais).
+# Final comercial em 2 PACOTES (Completo / Premium), com valores por experiencia (nao arredondar):
+#   Completo: Exp1 R$307,33pp/4.610,00 · Exp2 R$272,23pp/4.083,50 (15 conv).
+#   Premium (+garrafa +foto): Exp1 R$487,23pp/7.308,50 · Exp2 R$452,13pp/6.782,00 (15 conv).
+# Slides: capa(grupo) · experiencias · Elarah ate voce · A vibe · Escolha como celebrar(pacotes) · proximos.
+# Padrao editorial Elarah aniversario. Paleta blush. Priorizar fotos com pessoas/jovens.
 # PROIBIDO: ceramica, pintura em tela, tacas, workshops sem relacao, mencao a espaco parceiro/Bake Studio.
-# Valor da experiencia por convidada NAO informado -> "a confirmar" (nao inventar).
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
 
@@ -86,6 +88,26 @@ xcss = '''
   .oprow .opv{font-family:'DM Serif Display',serif;font-size:18px;color:var(--orange-dark);white-space:nowrap;text-align:right;line-height:1}
   .oprow .opv small{display:block;font-family:-apple-system,sans-serif;font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
   .oprow .opv em{font-style:italic;font-size:15px;color:var(--navy-soft)}
+  /* pacotes · completo x premium */
+  .pkg2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px;align-items:stretch}
+  .pkgc{position:relative;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 24px 24px;box-shadow:0 16px 36px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .pkgc--hl{border:1.5px solid var(--orange);box-shadow:0 20px 46px -24px rgba(217,106,142,.5)}
+  .pkgrib{position:absolute;top:-11px;right:22px;background:var(--orange-dark);color:#fff;font-size:8px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:5px 12px;border-radius:999px;box-shadow:0 8px 18px -6px rgba(0,0,0,.4)}
+  .pkgtag{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .pkgn{font-family:'DM Serif Display',serif;font-weight:400;font-size:25px;color:var(--navy);line-height:1.02;margin-top:3px}
+  .pkgsub{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:6px}
+  .pkgincl{list-style:none;margin:13px 0 0;padding:0;display:flex;flex-direction:column;gap:5px}
+  .pkgincl li{position:relative;padding-left:18px;font-size:10.5px;color:var(--ink);line-height:1.35}
+  .pkgincl li:before{content:"✓";position:absolute;left:0;top:0;color:var(--orange);font-size:9px;font-weight:800}
+  .pkgincl li.plus{color:var(--navy);font-weight:600}
+  .pkgincl li.plus:before{content:"＋";color:var(--orange-dark);font-weight:800}
+  .pkgval{margin-top:14px;padding-top:13px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
+  .pkgv{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .pkgv .pel{font-size:9.5px;color:var(--navy-soft);font-weight:700;line-height:1.25;max-width:50%;text-transform:uppercase;letter-spacing:.04em}
+  .pkgv .per{text-align:right;white-space:nowrap}
+  .pkgv .per .pp{font-family:'DM Serif Display',serif;font-size:20px;color:var(--orange-dark);line-height:1}
+  .pkgv .per .pp small{font-family:-apple-system,sans-serif;font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-left:3px}
+  .pkgv .per .tt{display:block;font-size:9.5px;color:var(--muted);margin-top:2px}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -134,7 +156,7 @@ cover = f'''
           <span class="chip">No seu espaço · Mooca</span>
         </div>
       </div>
-      <div class="cover-photo">{img("macarons.jpg", "Mesa de doces delicada para a comemoração", "center 50%")}</div>
+      <div class="cover-photo">{img("pintura-grupo.jpg", "Grupo de amigas reunidas, criando e se divertindo juntas", "center 30%")}</div>
     </div>
     {foot("Aniversário · Antonella")}
   </section>'''
@@ -148,11 +170,11 @@ experiencia = f'''
     <p class="lead">Duas oficinas conduzidas, no mesmo formato — uma mais artística e colorida, outra mais glam e cheia de brilho. Em ambas, cada convidada leva as próprias peças pra casa.</p>
     <div class="cpg">
       <div class="cpc">
-        <div class="cpph">{img("lembrancinha-escova.jpg", "Escova e presilha personalizadas, coloridas e delicadas", "center 50%")}</div>
+        <div class="cpph">{img("escova-pintada-flores.webp", "Escovas de madeira pintadas à mão com flores", "center 45%")}</div>
         <div class="cpb">
           <div class="cptag">Artística &amp; colorida</div>
           <div class="cpn">Customize sua Escova &amp; Presilha</div>
-          <div class="cpdur">Duração · a combinar</div>
+          <div class="cpdur">Duração · 2h</div>
           <div class="cpd">Cada convidada personaliza uma escova de madeira e uma presilha com pintura, cores, flores, adesivos e detalhes — bem a cara dela.</div>
           <ul class="cpi">
             <li>Oficina conduzida</li>
@@ -168,8 +190,8 @@ experiencia = f'''
         <div class="cpb">
           <div class="cptag">Glam &amp; cheia de brilho</div>
           <div class="cpn">Piranha &amp; Escova Bedazzled</div>
-          <div class="cpdur">Duração · a combinar</div>
-          <div class="cpd">Uma customização glam: cada convidada decora a própria piranha e escova com cristais, brilho e a própria inicial, pra deixar tudo ainda mais especial.</div>
+          <div class="cpdur">Duração · 1h30</div>
+          <div class="cpd">Uma customização glam: cada convidada decora a própria piranha e escova com <b>cristais, brilho e a própria inicial</b>, pra deixar tudo ainda mais especial.</div>
           <ul class="cpi">
             <li>Oficina conduzida</li>
             <li>1 piranha + 1 escova por convidada</li>
@@ -222,6 +244,22 @@ ate_voce = f'''
     {foot("Elarah até você")}
   </section>'''
 
+# ============================ · A VIBE ============================
+a_vibe = f'''
+  <section class="slide">
+{head_simple("A vibe")}
+    <span class="eyebrow orange">◆ Entre amigas, brilho e diversão</span>
+    <h2>A vibe <em>da comemoração</em></h2>
+    <p class="lead">Um encontro leve e especial para celebrar os 13 anos da Antonella com criatividade, risadas e momentos gostosos entre amigas — mais do que uma oficina, uma festa bonita e cheia de personalidade.</p>
+    <div class="gstrip">
+      <figure>{img("vibe-risada.jpg", "Amigas rindo e se divertindo juntas", "center 30%")}<figcaption>Amigas se divertindo juntas</figcaption></figure>
+      <figure>{img("macaron-risada.jpg", "Meninas rindo e trocando olhares", "center 40%")}<figcaption>Risadas e momentos gostosos</figcaption></figure>
+      <figure>{img("aniversariogi2.jpg", "Mesa montada, delicada e florida", "center 50%")}<figcaption>Mesa montada &amp; clima de festa</figcaption></figure>
+    </div>
+    <div class="bnote" style="margin-top:16px">◆ Clima leve e feminino, mão na massa entre amigas e uma <b>lembrança especial</b> pra cada uma levar pra casa. ✨</div>
+    {foot("A vibe")}
+  </section>'''
+
 # ============================ 5 · COMPLETE A COMEMORAÇÃO ============================
 complete = f'''
   <section class="slide">
@@ -244,24 +282,46 @@ complete = f'''
     {foot("Complete a comemoração")}
   </section>'''
 
-# ============================ 6 · INVESTIMENTO ============================
-investimento = f'''
+# ============================ · ESCOLHA COMO CELEBRAR (PACOTES) ============================
+pacotes = f'''
   <section class="slide">
-{head_simple("Investimento")}
-    <span class="eyebrow orange">◆ Investimento</span>
-    <h2>O valor da <em>festa</em></h2>
-    <p class="lead">Cada experiência tem um valor por convidada, que inclui a condução, as peças de cada uma e todos os materiais. O total acompanha o número final de convidadas.</p>
-    <div class="invhi">
-      <span class="il">Duas experiências · escolham o estilo</span>
-      <span class="iv"><em>valores a confirmar</em></span>
+{head_simple("Escolha como celebrar")}
+    <span class="eyebrow orange">◆ Dois pacotes, uma decisão fácil</span>
+    <h2>Escolha como <em>celebrar</em></h2>
+    <p class="lead">Dois pacotes prontos, cada um com a experiência escolhida e toda a produção da Elarah. É só escolher o pacote e a experiência — a gente cuida do resto, no espaço de vocês.</p>
+    <div class="pkg2">
+      <div class="pkgc">
+        <span class="pkgtag">Pacote</span>
+        <div class="pkgn">Completo</div>
+        <div class="pkgsub">Tudo pronto para a festa acontecer.</div>
+        <ul class="pkgincl">
+          <li>Experiência escolhida · condução + todos os materiais</li>
+          <li>Comidinhas · salgados + doces</li>
+          <li>Bolo de aniversário + vela decorativa</li>
+        </ul>
+        <div class="pkgval">
+          <div class="pkgv"><span class="pel">Exp. 1 · Escova &amp; Presilha</span><span class="per"><span class="pp">R$ 307,33<small>pp</small></span><span class="tt">R$ 4.610,00 · 15 convidadas</span></span></div>
+          <div class="pkgv"><span class="pel">Exp. 2 · Piranha Bedazzled</span><span class="per"><span class="pp">R$ 272,23<small>pp</small></span><span class="tt">R$ 4.083,50 · 15 convidadas</span></span></div>
+        </div>
+      </div>
+      <div class="pkgc pkgc--hl">
+        <span class="pkgrib">✦ Experiência completa</span>
+        <span class="pkgtag">Pacote</span>
+        <div class="pkgn">Premium</div>
+        <div class="pkgsub">A comemoração completa, do começo ao fim.</div>
+        <ul class="pkgincl">
+          <li>Tudo do pacote Completo</li>
+          <li class="plus">Garrafa personalizada com o nome de cada convidada, na mesa</li>
+          <li class="plus">Registro fotográfico profissional da comemoração</li>
+        </ul>
+        <div class="pkgval">
+          <div class="pkgv"><span class="pel">Exp. 1 · Escova &amp; Presilha</span><span class="per"><span class="pp">R$ 487,23<small>pp</small></span><span class="tt">R$ 7.308,50 · 15 convidadas</span></span></div>
+          <div class="pkgv"><span class="pel">Exp. 2 · Piranha Bedazzled</span><span class="per"><span class="pp">R$ 452,13<small>pp</small></span><span class="tt">R$ 6.782,00 · 15 convidadas</span></span></div>
+        </div>
+      </div>
     </div>
-    <div class="invcards">
-      <div class="ic2"><span class="icn">Opção 1 · Pintura &amp; personalização</span><div class="icv">Customize sua Escova &amp; Presilha</div><div class="ics"><em>Valor por convidada a confirmar</em> · condução, escova e presilha e materiais inclusos.</div></div>
-      <div class="ic2"><span class="icn">Opção 2 · Personalização com brilho</span><div class="icv">Piranha &amp; Escova Bedazzled</div><div class="ics"><em>Valor por convidada a confirmar</em> · condução, piranha e escova, cristais e inicial inclusos.</div></div>
-    </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Estimativa em confirmação.</b> Fechamos o valor por convidada de cada experiência e o total para as 15 assim que confirmarmos a data e os opcionais escolhidos — antes de fechar a proposta com vocês. A experiência acontece no espaço de vocês, com toda a produção Elarah inclusa.</div>
-    <p class="fineprint">Aniversário de 13 anos da Antonella, para 15 convidadas, em outubro (sábado ou domingo), em São Paulo (região da Mooca), no espaço da própria família. Valor por convidada e total confirmados após a definição da data e dos opcionais.</p>
-    {foot("Investimento")}
+    <div class="bnote" style="margin-top:16px">◆ Todos os pacotes acontecem <b>no espaço de vocês</b>, com toda a produção Elarah inclusa. Valores calculados para 15 convidadas. 🎀</div>
+    {foot("Escolha como celebrar")}
   </section>'''
 
 # ============================ 7 · PRÓXIMOS PASSOS ============================
@@ -272,8 +332,8 @@ proximos = f'''
     <h2>É só <em>reunir as amigas</em></h2>
     <p class="lead">A gente cuida de tudo pra Antonella e as amigas só chegarem e aproveitarem:</p>
     <div class="steps3">
-      <div class="stp"><span class="num">01</span><h3>Escolhem</h3><p>A experiência, a data e os opcionais que quiserem — o local é o espaço de vocês.</p></div>
-      <div class="stp"><span class="num">02</span><h3>Confirmamos</h3><p>O valor por convidada, o total e a disponibilidade da agenda.</p></div>
+      <div class="stp"><span class="num">01</span><h3>Escolhem</h3><p>A experiência, o pacote (Completo ou Premium) e a data — o local é o espaço de vocês.</p></div>
+      <div class="stp"><span class="num">02</span><h3>Confirmamos</h3><p>Fechamos o pacote, o total para as convidadas e a disponibilidade da agenda.</p></div>
       <div class="stp"><span class="num">03</span><h3>Levamos até vocês</h3><p>Materiais, montagem e condução da experiência — do começo ao fim, no seu espaço.</p></div>
     </div>
     <div class="quote" style="margin-top:22px">
@@ -285,7 +345,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + experiencia + ate_voce + investimento + complete + proximos + '\n\n</div>\n\n')
+        + cover + experiencia + ate_voce + a_vibe + pacotes + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/aniversario-antonella.html"
 open(out, "w", encoding="utf-8").write(html)
