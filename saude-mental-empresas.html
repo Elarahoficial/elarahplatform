@@ -202,17 +202,52 @@ section{padding:96px 0}
 .chip{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:.9rem}
 
 /* NR-1 DELIVERABLES */
-.nr{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
-.nr__list{display:grid;gap:14px}
-.nr__item{display:flex;gap:16px;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px 20px}
-.nr__item .ic{width:44px;height:44px;border-radius:12px;background:var(--sage-soft);display:grid;place-items:center;font-size:1.3rem;flex-shrink:0}
-.nr__item b{display:block}
-.nr__item span{font-size:.9rem;color:var(--muted)}
-.nr__doc{background:#fff;border-radius:22px;box-shadow:0 30px 60px rgba(22,48,42,.14);padding:28px;position:relative;border:1px solid var(--line)}
-.nr__doc .k{font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
-.nr__doc h3{font-size:1.5rem;margin:6px 0 16px}
-.nr__doc .row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px dashed var(--line);font-size:.9rem}
-.nr__doc .row span:last-child{font-weight:600;text-align:right}
+/* RESULTADO — fluxo, frase, relatório, entregas */
+#resultado .sec-head{max-width:860px}
+.fluxo{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:28px;position:relative;margin:8px 0 72px}
+.fluxo::before{content:'';position:absolute;left:12%;right:12%;top:27px;height:1px;background:linear-gradient(90deg,var(--sage),var(--green-2))}
+.fluxo li{position:relative;text-align:center;padding:0 6px}
+.fluxo__ic{display:grid;place-items:center;width:56px;height:56px;margin:0 auto;border-radius:50%;background:var(--paper);border:1px solid var(--sage);color:var(--green);position:relative;z-index:1;transition:background .25s,color .25s,transform .25s}
+.fluxo li:hover .fluxo__ic{background:var(--green);color:#fff;transform:translateY(-3px)}
+.fluxo em{display:block;font-style:normal;font-family:'DM Serif Display',serif;color:var(--terra);font-size:1rem;margin-top:14px}
+.fluxo b{display:block;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin:4px 0 8px}
+.fluxo p{font-size:.92rem;color:var(--muted);max-width:250px;margin:0 auto}
+.organiza{text-align:center;max-width:820px;margin:0 auto 64px}
+.organiza__frase{font-family:'DM Serif Display',serif;font-size:clamp(1.7rem,3.2vw,2.5rem);line-height:1.2;color:var(--ink)}
+.organiza__frase em{color:var(--terra)}
+.organiza__sub{color:var(--muted);margin-top:14px;font-size:1rem}
+.entrega{display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:center}
+.relatorio{isolation:isolate;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 0 -6px #fff,0 12px 0 -5px var(--line),0 30px 60px rgba(22,48,42,.10);padding:30px 32px 22px;margin:0;position:relative}
+.relatorio__top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:14px}
+.relatorio__top img{height:22px}
+.relatorio__top span{font-size:.66rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.relatorio__cab{padding:20px 0 6px}
+.relatorio__cab small{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--terra)}
+.relatorio__cab h3{font-size:1.9rem;margin:6px 0 2px}
+.relatorio__cab p{color:var(--muted)}
+.relatorio__grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:16px 0;border-top:1px solid var(--line)}
+.relatorio span,.relatorio__bloco>span{display:block;font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green-2)}
+.relatorio__grid b{display:block;font-family:'DM Serif Display',serif;font-weight:400;font-size:1.7rem;color:var(--ink);margin-top:6px;line-height:1.1}
+.relatorio__grid b.t{font-family:'DM Sans',sans-serif;font-weight:600;font-size:.98rem;line-height:1.35}
+.relatorio small{display:block;font-size:.78rem;color:var(--muted);margin-top:3px}
+.relatorio__bloco{padding:16px 0;border-top:1px solid var(--line)}
+.relatorio__barras{display:grid;gap:10px;margin-top:12px}
+.relatorio__barras>div{display:grid;grid-template-columns:52px 1fr 34px;gap:12px;align-items:center}
+.relatorio__barras i{font-style:normal;font-size:.8rem;color:var(--muted)}
+.relatorio__barras b{font-size:.95rem;text-align:right}
+.relatorio__barras .bar{margin-top:0}
+.bar--on i{background:var(--green)!important}
+.relatorio figcaption{border-top:1px solid var(--line);padding-top:14px;margin-top:4px;font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center}
+.recebe ul{list-style:none;display:grid;gap:18px;margin:18px 0 24px}
+.recebe li{padding-left:30px;position:relative}
+.recebe li::before{content:'';position:absolute;left:2px;top:6px;width:12px;height:7px;border-left:2px solid var(--terra);border-bottom:2px solid var(--terra);transform:rotate(-45deg)}
+.recebe li b{display:block;font-size:1.02rem;color:var(--ink)}
+.recebe li span{font-size:.93rem;color:var(--muted)}
+.recebe__nr{font-size:.9rem;color:var(--muted);padding-top:18px;border-top:1px solid var(--line)}
+.recebe__nr a{color:var(--green-2);font-weight:600;text-decoration:none;white-space:nowrap}
+.recebe__micro{font-family:'DM Serif Display',serif;font-size:1.5rem;line-height:1.25;color:var(--green);margin:22px 0 18px}
+.recebe__micro em{color:var(--terra)}
+.entrega__aviso{text-align:center;max-width:760px;margin:40px auto 0}
 .bar{height:8px;border-radius:999px;background:var(--sage-soft);margin-top:6px;overflow:hidden}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green-2),var(--sage))}
 .disclaimer{font-size:.78rem;color:var(--muted);margin-top:16px}
@@ -366,6 +401,9 @@ body.lm-open{overflow:hidden}
   .elarah__pics{height:300px}
 }
 @media (max-width:560px){
+  .fluxo{grid-template-columns:1fr}
+  .relatorio{padding:22px 20px 18px}
+  .relatorio__grid{grid-template-columns:1fr}
   .picker{gap:6px;flex-wrap:nowrap}
   .picker>span{display:none}
   .picker button{min-width:0!important;flex:1;padding:8px 2px!important}
@@ -391,7 +429,9 @@ body.lm-open{overflow:hidden}
 
 @media (max-width:980px){
   section{padding:72px 0}
-  .hero__grid,.nr,.gift,.cta{grid-template-columns:1fr}
+  .hero__grid,.entrega,.gift,.cta{grid-template-columns:1fr}
+  .fluxo{grid-template-columns:1fr 1fr;row-gap:36px}
+  .fluxo::before{display:none}
   .hero__visual{height:440px;max-width:560px;width:100%;margin:0 auto}
   .urg__grid{grid-template-columns:1fr 1fr}
   .urg__grid>div:first-child{grid-column:1/-1}
@@ -711,31 +751,68 @@ body.lm-open{overflow:hidden}
   </div>
 </section>
 
-<!-- ===== ENTREGÁVEIS NR-1 ===== -->
-<section class="soft">
-  <div class="wrap nr">
-    <div class="reveal">
+<!-- ===== RESULTADO: A EQUIPE VIVE → A ELARAH REGISTRA → O RH ACOMPANHA ===== -->
+<section class="soft" id="resultado">
+  <div class="wrap">
+    <div class="sec-head center reveal" style="text-align:center">
       <span class="eyebrow">Para o RH e o SESMT</span>
-      <h2 style="font-size:clamp(2rem,4vw,2.9rem);margin:12px 0 16px">Cada ação vira <em>evidência</em>.</h2>
-      <p style="color:var(--muted);margin-bottom:26px">O que acontece na experiência fica registrado de um jeito que faz sentido pra auditoria, pra diretoria e pra renovação do programa.</p>
-      <div class="nr__list">
-        <div class="nr__item"><div class="ic">📝</div><div><b>Lista de presença e adesão</b><span>Quantas pessoas, de quais áreas, em cada ação.</span></div></div>
-        <div class="nr__item"><div class="ic">🎯</div><div><b>Fator psicossocial trabalhado</b><span>Estresse, isolamento, relações, reconhecimento, lideranças — ligado ao seu inventário de riscos.</span></div></div>
-        <div class="nr__item"><div class="ic">📊</div><div><b>Pesquisa de pulso</b><span>Como o time chegou e como saiu. Indicador simples, que a diretoria entende.</span></div></div>
-        <div class="nr__item"><div class="ic">📸</div><div><b>Registro fotográfico e relatório</b><span>Pronto pra anexar ao plano de ação e usar na comunicação interna.</span></div></div>
+      <h2>A experiência acontece. <em>O resultado fica.</em></h2>
+      <p>A Elarah cuida da experiência do começo ao registro — para que sua empresa acompanhe cada ação sem precisar correr atrás de tudo depois.</p>
+    </div>
+
+    <ol class="fluxo reveal">
+      <li><span class="fluxo__ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8"/><path d="M15 14.6c2.5-.2 4.6 1.3 5.3 4.4"/></svg></span><em>01</em><b>A equipe vive</b><p>A experiência acontece com facilitação, materiais e toda a estrutura necessária.</p></li>
+      <li><span class="fluxo__ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 16h5"/></svg></span><em>02</em><b>A Elarah registra</b><p>Presença, data, tema e informações da ação ficam organizados.</p></li>
+      <li><span class="fluxo__ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v10H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg></span><em>03</em><b>A equipe responde</b><p>Uma pesquisa de pulso registra a percepção dos participantes sobre a experiência.</p></li>
+      <li><span class="fluxo__ic"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><em>04</em><b>O RH acompanha</b><p>Relatórios e registros reunidos para facilitar o acompanhamento do programa.</p></li>
+    </ol>
+
+    <div class="organiza reveal">
+      <p class="organiza__frase">Você não precisa correr atrás do que aconteceu depois. <em>A gente organiza.</em></p>
+      <p class="organiza__sub">Presença, registros, fotos, percepção dos participantes e relatório — tudo reunido pela Elarah.</p>
+    </div>
+
+    <div class="entrega">
+      <figure class="relatorio reveal" aria-label="Exemplo de relatório da experiência">
+        <div class="relatorio__top"><img src="assets/logo.png" alt="Elarah"><span>Relatório da experiência</span></div>
+        <div class="relatorio__cab">
+          <small>Setembro · exemplo</small>
+          <h3>Setembro Amarelo</h3>
+          <p>Kintsugi + roda de conversa</p>
+        </div>
+        <div class="relatorio__grid">
+          <div><span>Participantes</span><b>34 de 40</b><small>85% de adesão</small></div>
+          <div><span>Tema psicossocial abordado</span><b class="t">Conexão · escuta · apoio entre pares</b><small>tema trabalhado na experiência</small></div>
+        </div>
+        <div class="relatorio__bloco">
+          <span>Percepção dos participantes</span>
+          <small>Como você se sentiu antes → depois da experiência (escala de 1 a 5)</small>
+          <div class="relatorio__barras">
+            <div><i>Antes</i><div class="bar"><i style="width:58%"></i></div><b>2,9</b></div>
+            <div><i>Depois</i><div class="bar bar--on"><i style="width:86%"></i></div><b>4,3</b></div>
+          </div>
+        </div>
+        <div class="relatorio__grid">
+          <div><span>Avaliação da experiência</span><b>97%</b><small>recomendariam</small></div>
+          <div><span>Próxima ação</span><b class="t">10/10 · Cerâmica terapêutica</b><small>já no cronograma</small></div>
+        </div>
+        <figcaption>Registro organizado pela Elarah</figcaption>
+      </figure>
+
+      <div class="recebe reveal">
+        <span class="eyebrow">O que fica para sua empresa</span>
+        <ul>
+          <li><b>Presença e adesão</b><span>Registro dos participantes e da participação em cada ação.</span></li>
+          <li><b>Registro da experiência</b><span>Fotos, data, tema e informações da ação organizados em um único registro.</span></li>
+          <li><b>Percepção dos participantes</b><span>Pesquisa de pulso simples sobre como a experiência foi percebida.</span></li>
+          <li><b>Relatório da ação</b><span>Informações organizadas para acompanhamento interno do programa.</span></li>
+        </ul>
+        <p class="recebe__nr">Um registro organizado que complementa o programa de saúde e bem-estar da empresa. <a href="#nr1">Entenda como funciona na NR-1 →</a></p>
+        <p class="recebe__micro">Menos operação para o RH. <em>Mais cuidado para a equipe.</em></p>
+        <a class="btn btn--terra" href="#monte-experiencia" data-ir-sim>Quero montar o programa da minha empresa →</a>
       </div>
     </div>
-    <div class="nr__doc reveal">
-      <div class="k">Relatório de ação · exemplo</div>
-      <h3>Setembro Amarelo — Kintsugi + roda de conversa</h3>
-      <div class="row"><span>Participantes</span><span>34 de 40 (85%)</span></div>
-      <div class="row"><span>Fator de risco trabalhado</span><span>Esgotamento · baixo suporte social</span></div>
-      <div class="row"><span>Como você está? (antes → depois)</span><span>2,9 → 4,3</span></div>
-      <div class="bar"><i style="width:86%"></i></div>
-      <div class="row"><span>Recomendaria a um colega</span><span>97%</span></div>
-      <div class="row"><span>Próxima ação no cronograma</span><span>10/10 · Cerâmica terapêutica</span></div>
-      <p class="disclaimer">Exemplo ilustrativo. Nossas experiências complementam — não substituem — a avaliação de riscos feita pelo SESMT/responsável técnico da empresa, nem acompanhamento psicológico individual.</p>
-    </div>
+    <p class="disclaimer entrega__aviso">Exemplo ilustrativo. Os indicadores representam a percepção dos participantes sobre a experiência e complementam as iniciativas de saúde e bem-estar da empresa. Não substituem avaliações de risco, acompanhamento clínico ou responsabilidades técnicas do RH/SESMT.</p>
   </div>
 </section>
 
@@ -1112,6 +1189,7 @@ body.lm-open{overflow:hidden}
   });
   document.addEventListener('click', function (e) {
     if (e.target.closest('[data-sim-alterar]')) { EXP._freqAberta = true; sincronizar(); }
+    var ir = e.target.closest('[data-ir-sim]'); if (ir) { e.preventDefault(); irParaSimulador(); }
   });
 
   // "Monte o seu": escolher encontros ali também atualiza a jornada
