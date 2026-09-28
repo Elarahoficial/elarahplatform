@@ -433,11 +433,19 @@
   // =============================================================
   // FAIXA "MÊS DO CLIENTE" (desconto do carrinho)
   // -------------------------------------------------------------
-  // Pouco texto, muito impacto: selo com brilho, "15% OFF" gigante,
-  // relógio em caixinhas e um botão. A regra completa (10% / 15% por
-  // pessoa) aparece no checkout, onde a pessoa decide a quantidade.
+  // Pouco texto, muito impacto, tudo no laranja da marca: ícone de
+  // presente, "MÊS DO CLIENTE", selo "ATÉ 15% OFF", uma frase curta que
+  // alterna explicando o "até" (10% / 15% com 2+), selo de urgência
+  // ("ÚLTIMOS DIAS" / "ÚLTIMO DIA"), relógio em caixinhas e botão.
   // A faixa inteira é clicável e leva pras experiências.
   // =============================================================
+  var ICONE_PRESENTE =
+    '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/>' +
+    '<path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/>' +
+    '<path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>';
+
   function renderMesDoCliente() {
     injetarEstiloMesCliente();
 
@@ -445,20 +453,21 @@
     bar.id = 'elarah-promo-bar';
     bar.className = 'mc';
     bar.href = '/#experiencias';
-    bar.setAttribute('aria-label', 'Mês do Cliente: até ' + CARRINHO_2_MAIS_PCT +
-      '% OFF em todas as experiências. Ver experiências.');
-
-    var confete = '';
-    for (var i = 0; i < 14; i++) confete += '<i></i>';
+    bar.setAttribute('aria-label', 'Mês do Cliente: ' + CARRINHO_1_PCT + '% OFF em qualquer experiência, ' +
+      CARRINHO_2_MAIS_PCT + '% OFF por pessoa levando 2 ou mais. Ver experiências.');
 
     bar.innerHTML =
-      '<span class="mc__confete" aria-hidden="true">' + confete + '</span>' +
       '<span class="mc__brilho" aria-hidden="true"></span>' +
       '<span class="mc__linha">' +
-        '<span class="mc__tag">🎉 Mês do Cliente</span>' +
+        '<span class="mc__tag">' + ICONE_PRESENTE + '<span>Mês do Cliente</span></span>' +
         '<span class="mc__off"><small>até</small><b>' + CARRINHO_2_MAIS_PCT + '%</b><em>OFF</em></span>' +
       '</span>' +
+      '<span class="mc__frases" aria-hidden="true">' +
+        '<span><b>' + CARRINHO_1_PCT + '%</b> em qualquer experiência</span>' +
+        '<span><b>' + CARRINHO_2_MAIS_PCT + '%</b> levando 2 ou mais</span>' +
+      '</span>' +
       '<span class="mc__linha">' +
+        '<span class="mc__urgente" aria-hidden="true"></span>' +
         '<span class="mc__relogio" aria-hidden="true"></span>' +
         '<span class="mc__cta">Aproveitar <span class="mc__seta">→</span></span>' +
       '</span>';
@@ -467,6 +476,7 @@
     else document.body.appendChild(bar);
 
     var relogio = bar.querySelector('.mc__relogio');
+    var urgente = bar.querySelector('.mc__urgente');
     var timer = null;
     function caixa(n, un) {
       return '<span class="mc__cx"><b>' + String(n).padStart(2, '0') + '</b><small>' + un + '</small></span>';
@@ -485,13 +495,15 @@
         encerrar(fim);
         return;
       }
+      // Urgência só quando é verdade: último dia / últimos 3 dias.
+      var txt = ms <= 86400000 ? 'Último dia' : (ms <= 3 * 86400000 ? 'Últimos dias' : '');
+      if (urgente.textContent !== txt) urgente.textContent = txt;
       var t = Math.floor(ms / 1000);
       var d = Math.floor(t / 86400);
       var h = Math.floor((t % 86400) / 3600);
       var m = Math.floor((t % 3600) / 60);
       var sg = t % 60;
-      relogio.innerHTML = '<span class="mc__acaba">acaba em</span>' +
-        (d ? caixa(d, 'd') : '') + caixa(h, 'h') + caixa(m, 'm') + caixa(sg, 's');
+      relogio.innerHTML = (d ? caixa(d, 'd') : '') + caixa(h, 'h') + caixa(m, 'm') + caixa(sg, 's');
     }
     tick();
     timer = setInterval(tick, 1000);
@@ -501,78 +513,83 @@
     if (document.getElementById('elarah-mc-style')) return;
     var st = document.createElement('style');
     st.id = 'elarah-mc-style';
-    var arr = [
+    st.textContent = [
       '#elarah-promo-bar.mc{position:relative;z-index:101;display:flex;align-items:center;justify-content:center;',
-      'gap:10px 26px;flex-wrap:wrap;padding:10px 16px;overflow:hidden;text-decoration:none;color:#fff;',
+      'gap:10px 24px;flex-wrap:wrap;padding:10px 16px;overflow:hidden;text-decoration:none;color:#fff;',
       'font-family:inherit;line-height:1;cursor:pointer;',
       'background:linear-gradient(90deg,#e2833c 0%,#f27623 35%,#f0a05e 65%,#e2833c 100%);',
       'background-size:200% 100%;animation:mcFundo 8s ease-in-out infinite;}',
-      '.mc__linha{display:flex;align-items:center;gap:14px;position:relative;z-index:2;}',
-      // selo com texto em gradiente correndo
-      '.mc__tag{font-weight:900;text-transform:uppercase;letter-spacing:2px;font-size:1.18rem;line-height:1.25;padding-top:2px;',
-      'color:#fff;text-shadow:0 2px 0 rgba(160,70,10,.35);}',
-      // 15% OFF em selo girado
+      '.mc__linha{display:flex;align-items:center;gap:12px;position:relative;z-index:2;}',
+      // ícone + MÊS DO CLIENTE
+      '.mc__tag{display:inline-flex;align-items:center;gap:8px;font-weight:900;text-transform:uppercase;',
+      'letter-spacing:2px;font-size:1.12rem;line-height:1.25;padding-top:2px;color:#fff;',
+      'text-shadow:0 2px 0 rgba(160,70,10,.3);}',
+      '.mc__tag svg{flex:0 0 auto;filter:drop-shadow(0 2px 0 rgba(160,70,10,.3));animation:mcBalanca 2.4s ease-in-out infinite;transform-origin:50% 90%;}',
+      // selo 15% OFF
       '.mc__off{display:inline-flex;align-items:center;gap:4px;padding:6px 12px 6px 10px;border-radius:12px;',
       'background:#fff;color:#c55a12;transform:rotate(-3deg);box-shadow:0 4px 14px rgba(150,60,0,.3);',
       'animation:mcPulse 1.6s ease-in-out infinite;}',
       '.mc__off small{font-size:.62rem;font-weight:800;text-transform:uppercase;writing-mode:vertical-rl;',
       'transform:rotate(180deg);letter-spacing:1px;color:#e2833c;}',
-      '.mc__off b{font-size:1.75rem;font-weight:900;letter-spacing:-1px;',
-      'color:#f27623;}',
+      '.mc__off b{font-size:1.75rem;font-weight:900;letter-spacing:-1px;color:#f27623;}',
       '.mc__off em{font-style:normal;font-weight:900;font-size:.95rem;}',
-      // relógio em caixinhas
+      // frase que alterna (explica o "até")
+      '.mc__frases{position:relative;z-index:2;display:inline-grid;font-size:.92rem;font-weight:700;white-space:nowrap;}',
+      '.mc__frases>span{grid-area:1/1;opacity:0;animation:mcFrase 6s ease-in-out infinite;text-align:center;}',
+      '.mc__frases>span:nth-child(2){animation-delay:3s;}',
+      '.mc__frases b{font-weight:900;font-size:1.05rem;}',
+      // ÚLTIMOS DIAS
+      '.mc__urgente:not(:empty){display:inline-block;padding:5px 10px;border-radius:999px;background:#b8430b;',
+      'color:#fff;font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;',
+      'box-shadow:0 0 0 2px rgba(255,255,255,.55);animation:mcPisca 1.2s ease-in-out infinite;}',
+      '.mc__urgente:empty{display:none;}',
+      // relógio: caixinhas brancas, número laranja
       '.mc__relogio{display:flex;align-items:center;gap:5px;}',
-      '.mc__acaba{font-size:.68rem;text-transform:uppercase;letter-spacing:1px;opacity:.8;margin-right:3px;font-weight:700;}',
       '.mc__cx{display:inline-flex;align-items:baseline;gap:1px;min-width:36px;justify-content:center;padding:6px 6px;',
-      'border-radius:8px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35);}',
+      'border-radius:8px;background:#fff;color:#e2682a;box-shadow:0 2px 6px rgba(150,60,0,.22);}',
       '.mc__cx b{font-size:1.02rem;font-weight:900;font-variant-numeric:tabular-nums;}',
-      '.mc__cx small{font-size:.62rem;font-weight:700;opacity:.75;}',
+      '.mc__cx small{font-size:.62rem;font-weight:800;opacity:.8;}',
       // botão
       '.mc__cta{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:999px;',
       'background:#fff;color:#e2682a;font-weight:900;font-size:.88rem;',
       'box-shadow:0 4px 12px rgba(150,60,0,.25);white-space:nowrap;}',
       '.mc__seta{display:inline-block;animation:mcSeta 1.1s ease-in-out infinite;}',
-      '#elarah-promo-bar.mc:hover .mc__cta{filter:brightness(1.08);}',
+      '#elarah-promo-bar.mc:hover .mc__cta{filter:brightness(1.05);transform:translateY(-1px);}',
       // brilho que atravessa a faixa
       '.mc__brilho{position:absolute;inset:0;z-index:1;pointer-events:none;',
       'background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.28) 50%,transparent 60%);',
       'transform:translateX(-100%);animation:mcBrilho 3.5s ease-in-out infinite;}',
-      // confete caindo
-      '.mc__confete{position:absolute;inset:0;z-index:1;pointer-events:none;}',
-      '.mc__confete i{position:absolute;top:-10px;width:6px;height:10px;border-radius:2px;opacity:.9;',
-      'animation:mcCai 3.2s linear infinite;}',
-    ];
-    var cores = ['#ffffff', '#ffe3c4', '#ffd166', '#ffffff', '#fff1dc', '#ffc27a'];
-    for (var i = 0; i < 14; i++) css_push(i);
-    function css_push(i) {
-      var left = Math.round((i + 0.5) * (100 / 14));
-      var delay = ((i * 0.37) % 3.2).toFixed(2);
-      var dur = (2.6 + (i % 4) * 0.35).toFixed(2);
-      arr.push('.mc__confete i:nth-child(' + (i + 1) + '){left:' + left + '%;background:' + cores[i % cores.length] +
-        ';animation-delay:-' + delay + 's;animation-duration:' + dur + 's;}');
-    }
-    arr.push(
       '@keyframes mcFundo{0%,100%{background-position:0 0}50%{background-position:100% 0}}',
       '@keyframes mcPulse{0%,100%{transform:rotate(-3deg) scale(1)}50%{transform:rotate(-3deg) scale(1.06)}}',
       '@keyframes mcSeta{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}',
       '@keyframes mcBrilho{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}',
-      '@keyframes mcCai{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(90px) rotate(360deg)}}',
+      '@keyframes mcBalanca{0%,100%{transform:rotate(0)}20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(0)}}',
+      '@keyframes mcPisca{0%,100%{opacity:1}50%{opacity:.55}}',
+      '@keyframes mcFrase{0%{opacity:0;transform:translateY(6px)}8%,42%{opacity:1;transform:none}50%,100%{opacity:0;transform:translateY(-6px)}}',
       '@media (max-width:640px){',
-      '#elarah-promo-bar.mc{gap:8px;padding:9px 10px;flex-direction:column;}',
-      '.mc__linha{gap:10px;}',
-      '.mc__tag{font-size:1rem;letter-spacing:1.5px;}',
-      '.mc__off b{font-size:1.45rem;}',
+      '#elarah-promo-bar.mc{gap:7px;padding:9px 10px;flex-direction:column;}',
+      '.mc__linha{gap:8px;}',
+      '.mc__tag{font-size:.98rem;letter-spacing:1.5px;gap:6px;}',
+      '.mc__tag svg{width:18px;height:18px;}',
+      '.mc__off b{font-size:1.4rem;}',
+      '.mc__frases{font-size:.84rem;}',
+      '.mc__urgente:not(:empty){font-size:.62rem;padding:4px 7px;}',
       '.mc__cx{min-width:30px;padding:5px 4px;}',
       '.mc__cx b{font-size:.9rem;}',
-      '.mc__acaba{display:none;}',
-      '.mc__cta{padding:7px 13px;font-size:.8rem;}',
+      '.mc__cta{padding:7px 12px;font-size:.8rem;}',
+      '}',
+      '@media (max-width:380px){',
+      '.mc__linha{gap:5px;}',
+      '.mc__urgente:not(:empty){letter-spacing:.3px;padding:4px 6px;}',
+      '.mc__cx{min-width:27px;padding:5px 3px;}',
+      '.mc__cta{padding:7px 10px;}',
       '}',
       '@media (prefers-reduced-motion:reduce){',
-      '#elarah-promo-bar.mc,.mc__off,.mc__seta,.mc__brilho,.mc__confete i{animation:none!important;}',
-      '.mc__confete{display:none;}',
-      '}'
-    );
-    st.textContent = arr.join('');
+      '#elarah-promo-bar.mc,.mc__off,.mc__seta,.mc__brilho,.mc__tag svg,.mc__urgente{animation:none!important;}',
+      '.mc__frases>span{animation:none!important;opacity:0;}',
+      '.mc__frases>span:first-child{opacity:1;}',
+      '}',
+    ].join('');
     document.head.appendChild(st);
   }
 
