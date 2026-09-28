@@ -145,6 +145,11 @@ que viu, nunca mais. Pra anunciar a campanha no app também, é preciso rodar
 
 ## Desconto do carrinho (progressivo por quantidade)
 
+Campanha **Mês do Cliente** — vale até **30/09/2026 às 23h59 (horário de
+Brasília)**. Depois disso some sozinha (faixa, preços e cobrança), sem deploy.
+O prazo é `CARRINHO_FIM` em `promo.js` e `DESCONTO_CARRINHO_FIM` em
+`_shared/promo.ts` — mudar um exige mudar o outro.
+
 Toda experiência comprada no site sai com desconto automático, sem cupom:
 
 | Pessoas na compra | Desconto |
@@ -156,8 +161,10 @@ Exemplo, experiência de R$ 180: 1 pessoa paga **R$ 162**; 3 pessoas pagam
 3 × **R$ 153** = R$ 459.
 
 **Na tela:**
-- Faixa no topo de todas as páginas: "Até 15% OFF em todas as experiências ·
-  10% OFF em qualquer experiência · 15% por pessoa comprando 2 ou mais".
+- Faixa no topo de todas as páginas: "🎉 MÊS DO CLIENTE · ATÉ 15% OFF", com
+  contagem regressiva e botão "Aproveitar" (a faixa toda leva pras
+  experiências). Se o prazo vira com a página aberta, ela troca pra "O Mês do
+  Cliente acabou" e o checkout volta ao preço normal.
 - Toda vitrine mostra o preço de 1 pessoa (10% OFF) com o preço do site
   riscado: ~~R$ 180~~ **R$ 162**.
 - No checkout, o Subtotal mostra o preço do site e a linha **"Desconto do

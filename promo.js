@@ -50,6 +50,14 @@
   // Desconto do carrinho (ver bloco DESCONTO DO CARRINHO mais abaixo).
   var CARRINHO_1_PCT = 10;
   var CARRINHO_2_MAIS_PCT = 15;
+  // Validade: até 30/09/2026 23h59 (horário de Brasília) — igual ao
+  // DESCONTO_CARRINHO_FIM do servidor (_shared/promo.ts).
+  var CARRINHO_FIM = '2026-09-30T23:59:59-03:00';
+
+  function carrinhoAtivo() {
+    var fim = new Date(CARRINHO_FIM).getTime();
+    return !isNaN(fim) && Date.now() <= fim;
+  }
 
   var carregado = false;
   var carregarPromise = null;
@@ -127,7 +135,7 @@
   // mínimo que qualquer compra de experiência leva.
   function percentualVitrine() {
     if (geralAtiva()) return CONFIG.PERCENTUAL;
-    return CARRINHO_1_PCT;
+    return carrinhoAtivo() ? CARRINHO_1_PCT : 0;
   }
 
   // A vitrine está mostrando preço com desconto? (campanha geral OU
@@ -147,7 +155,7 @@
     var pct = percentualVitrine();
     if (!pct) return Math.round(n);
     var com = Math.round(n * (100 - pct) / 100);
-    BASE_DE[com] = Math.round(n);
+    if (!geralAtiva()) BASE_DE[com] = Math.round(n);
     return com;
   }
 
@@ -157,9 +165,8 @@
     var v = Math.round(Number(vitrineCents));
     if (!isFinite(v) || v <= 0) return v;
     if (BASE_DE[v]) return BASE_DE[v];
-    var pct = percentualVitrine();
-    if (!pct) return v;
-    return Math.round(v * 100 / (100 - pct));
+    if (geralAtiva() || !carrinhoAtivo()) return v;
+    return Math.round(v * 100 / (100 - CARRINHO_1_PCT));
   }
 
   // "R$ 180" → 18000. Mesmo parser do formatPrecoBR (formato BR:
@@ -269,7 +276,7 @@
 
   // Percentual do carrinho pra essa quantidade (0 = não se aplica).
   function carrinhoPct(qtd) {
-    if (geralAtiva()) return 0;
+    if (geralAtiva() || !carrinhoAtivo()) return 0;
     var q = Math.floor(Number(qtd));
     if (!isFinite(q) || q < 1) return 0;
     return q >= 2 ? CARRINHO_2_MAIS_PCT : CARRINHO_1_PCT;
@@ -283,11 +290,13 @@
   function carrinhoCentavos(vitrineCents, qtd) {
     var v = Math.round(Number(vitrineCents));
     if (!isFinite(v) || v <= 0) return v;
+    if (geralAtiva()) return v;
+    // Se o prazo virou com a página aberta, o preço da tela (com 10%)
+    // está vencido: volta ao preço do site, que é o que o servidor cobra.
+    var base = BASE_DE[v] || baseDe(v);
     var pct = carrinhoPct(qtd);
-    if (!pct) return v;
-    var base = baseDe(v);
     var com = Math.round(base * (100 - pct) / 100);
-    return com > 0 ? com : v;
+    return com > 0 ? com : base;
   }
 
   // ===== CONTAGEM REGRESSIVA =====
@@ -296,9 +305,10 @@
   // não apressa ninguém e ainda entrega que dá pra deixar pra depois.
   var LIMITE_CONTAGEM_MS = 48 * 3600 * 1000;
 
-  function msRestantes() {
-    if (!CONFIG.FIM) return 0;
-    var f = new Date(CONFIG.FIM).getTime();
+  function msRestantes(fimIso) {
+    var fimRef = fimIso || CONFIG.FIM;
+    if (!fimRef) return 0;
+    var f = new Date(fimRef).getTime();
     return isNaN(f) ? 0 : (f - Date.now());
   }
 
@@ -331,6 +341,7 @@
     // Páginas internas (admin) não recebem o aviso.
     var path = (location.pathname || '').toLowerCase();
     if (path.indexOf('admin') !== -1) return;
+    if (ehCarrinho) { renderMesDoCliente(); return; }
 
     injetarEstilo();
 
@@ -340,15 +351,11 @@
 
     var titulo = document.createElement('strong');
     titulo.className = 'elarah-promo-bar__titulo';
-    titulo.textContent = ehCarrinho
-      ? 'Até ' + CARRINHO_2_MAIS_PCT + '% OFF em todas as experiências'
-      : tituloDoAviso();
+    titulo.textContent = tituloDoAviso();
 
     var sub = document.createElement('span');
     sub.className = 'elarah-promo-bar__sub';
-    sub.textContent = ehCarrinho
-      ? CARRINHO_1_PCT + '% OFF em qualquer experiência · ' + CARRINHO_2_MAIS_PCT + '% por pessoa comprando 2 ou mais'
-      : subtituloDoAviso();
+    sub.textContent = subtituloDoAviso();
 
     bar.appendChild(titulo);
     bar.appendChild(sub);
@@ -373,14 +380,14 @@
     // Desconto do carrinho não tem prazo: sem contagem (e sem o aviso
     // de "a promoção acabou", que dispararia com a data da campanha
     // geral já vencida).
-    if (!ehCarrinho) iniciarContagem(bar, relogio);
+    iniciarContagem(bar, relogio, null);
   }
 
-  function iniciarContagem(bar, relogio) {
+  function iniciarContagem(bar, relogio, fimIso) {
     var timer = null;
 
     function tick() {
-      var ms = msRestantes();
+      var ms = msRestantes(fimIso);
       if (ms <= 0) {
         if (timer) clearInterval(timer);
         encerrar(bar);
@@ -406,7 +413,7 @@
 
     var texto = document.createElement('strong');
     texto.className = 'elarah-promo-bar__titulo';
-    texto.textContent = 'A promoção acabou';
+    texto.textContent = bar.getAttribute('data-fim-titulo') || 'A promoção acabou';
 
     var aviso = document.createElement('span');
     aviso.className = 'elarah-promo-bar__sub';
@@ -421,6 +428,154 @@
     bar.appendChild(texto);
     bar.appendChild(aviso);
     bar.appendChild(botao);
+  }
+
+  // =============================================================
+  // FAIXA "MÊS DO CLIENTE" (desconto do carrinho)
+  // -------------------------------------------------------------
+  // Pouco texto, muito impacto: selo com brilho, "15% OFF" gigante,
+  // relógio em caixinhas e um botão. A regra completa (10% / 15% por
+  // pessoa) aparece no checkout, onde a pessoa decide a quantidade.
+  // A faixa inteira é clicável e leva pras experiências.
+  // =============================================================
+  function renderMesDoCliente() {
+    injetarEstiloMesCliente();
+
+    var bar = document.createElement('a');
+    bar.id = 'elarah-promo-bar';
+    bar.className = 'mc';
+    bar.href = '/#experiencias';
+    bar.setAttribute('aria-label', 'Mês do Cliente: até ' + CARRINHO_2_MAIS_PCT +
+      '% OFF em todas as experiências. Ver experiências.');
+
+    var confete = '';
+    for (var i = 0; i < 14; i++) confete += '<i></i>';
+
+    bar.innerHTML =
+      '<span class="mc__confete" aria-hidden="true">' + confete + '</span>' +
+      '<span class="mc__brilho" aria-hidden="true"></span>' +
+      '<span class="mc__linha">' +
+        '<span class="mc__tag">🎉 Mês do Cliente</span>' +
+        '<span class="mc__off"><small>até</small><b>' + CARRINHO_2_MAIS_PCT + '%</b><em>OFF</em></span>' +
+      '</span>' +
+      '<span class="mc__linha">' +
+        '<span class="mc__relogio" aria-hidden="true"></span>' +
+        '<span class="mc__cta">Aproveitar <span class="mc__seta">→</span></span>' +
+      '</span>';
+
+    if (document.body.firstChild) document.body.insertBefore(bar, document.body.firstChild);
+    else document.body.appendChild(bar);
+
+    var relogio = bar.querySelector('.mc__relogio');
+    var timer = null;
+    function caixa(n, un) {
+      return '<span class="mc__cx"><b>' + String(n).padStart(2, '0') + '</b><small>' + un + '</small></span>';
+    }
+    function tick() {
+      var ms = msRestantes(CARRINHO_FIM);
+      if (ms <= 0) {
+        if (timer) clearInterval(timer);
+        // Troca o link por uma faixa comum (botão dentro de link não vale).
+        var fim = document.createElement('div');
+        fim.id = 'elarah-promo-bar';
+        fim.setAttribute('role', 'status');
+        fim.setAttribute('data-fim-titulo', 'O Mês do Cliente acabou');
+        injetarEstilo();
+        bar.parentNode.replaceChild(fim, bar);
+        encerrar(fim);
+        return;
+      }
+      var t = Math.floor(ms / 1000);
+      var d = Math.floor(t / 86400);
+      var h = Math.floor((t % 86400) / 3600);
+      var m = Math.floor((t % 3600) / 60);
+      var sg = t % 60;
+      relogio.innerHTML = '<span class="mc__acaba">acaba em</span>' +
+        (d ? caixa(d, 'd') : '') + caixa(h, 'h') + caixa(m, 'm') + caixa(sg, 's');
+    }
+    tick();
+    timer = setInterval(tick, 1000);
+  }
+
+  function injetarEstiloMesCliente() {
+    if (document.getElementById('elarah-mc-style')) return;
+    var st = document.createElement('style');
+    st.id = 'elarah-mc-style';
+    var arr = [
+      '#elarah-promo-bar.mc{position:relative;z-index:101;display:flex;align-items:center;justify-content:center;',
+      'gap:10px 26px;flex-wrap:wrap;padding:10px 16px;overflow:hidden;text-decoration:none;color:#fff;',
+      'font-family:inherit;line-height:1;cursor:pointer;',
+      'background:radial-gradient(120% 180% at 12% 0%,#ff5a3c 0%,rgba(255,90,60,0) 45%),',
+      'radial-gradient(120% 180% at 88% 100%,#ff2e7e 0%,rgba(255,46,126,0) 45%),#1d0f1a;}',
+      '.mc__linha{display:flex;align-items:center;gap:14px;position:relative;z-index:2;}',
+      // selo com texto em gradiente correndo
+      '.mc__tag{font-weight:900;text-transform:uppercase;letter-spacing:2px;font-size:1.18rem;line-height:1.25;padding-top:2px;',
+      'text-shadow:0 0 18px rgba(255,209,102,.35);',
+      'background:linear-gradient(90deg,#ffe29a,#ffffff,#ffd166,#ffffff,#ffe29a);background-size:300% 100%;',
+      '-webkit-background-clip:text;background-clip:text;color:transparent;animation:mcGrad 4s linear infinite;}',
+      // 15% OFF em selo girado
+      '.mc__off{display:inline-flex;align-items:center;gap:4px;padding:6px 12px 6px 10px;border-radius:12px;',
+      'background:#fff;color:#1d0f1a;transform:rotate(-3deg);box-shadow:0 4px 18px rgba(255,90,60,.55);',
+      'animation:mcPulse 1.6s ease-in-out infinite;}',
+      '.mc__off small{font-size:.62rem;font-weight:800;text-transform:uppercase;writing-mode:vertical-rl;',
+      'transform:rotate(180deg);letter-spacing:1px;color:#ff4f3c;}',
+      '.mc__off b{font-size:1.75rem;font-weight:900;letter-spacing:-1px;',
+      'background:linear-gradient(135deg,#ff4f3c,#ff2e7e);-webkit-background-clip:text;background-clip:text;color:transparent;}',
+      '.mc__off em{font-style:normal;font-weight:900;font-size:.95rem;}',
+      // relógio em caixinhas
+      '.mc__relogio{display:flex;align-items:center;gap:5px;}',
+      '.mc__acaba{font-size:.68rem;text-transform:uppercase;letter-spacing:1px;opacity:.8;margin-right:3px;font-weight:700;}',
+      '.mc__cx{display:inline-flex;align-items:baseline;gap:1px;min-width:36px;justify-content:center;padding:6px 6px;',
+      'border-radius:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);}',
+      '.mc__cx b{font-size:1.02rem;font-weight:900;font-variant-numeric:tabular-nums;}',
+      '.mc__cx small{font-size:.62rem;font-weight:700;opacity:.75;}',
+      // botão
+      '.mc__cta{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:999px;',
+      'background:linear-gradient(90deg,#ff8a3d,#ff4f8b);color:#fff;font-weight:900;font-size:.88rem;',
+      'box-shadow:0 4px 14px rgba(255,79,139,.45);white-space:nowrap;}',
+      '.mc__seta{display:inline-block;animation:mcSeta 1.1s ease-in-out infinite;}',
+      '#elarah-promo-bar.mc:hover .mc__cta{filter:brightness(1.08);}',
+      // brilho que atravessa a faixa
+      '.mc__brilho{position:absolute;inset:0;z-index:1;pointer-events:none;',
+      'background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.18) 50%,transparent 60%);',
+      'transform:translateX(-100%);animation:mcBrilho 3.5s ease-in-out infinite;}',
+      // confete caindo
+      '.mc__confete{position:absolute;inset:0;z-index:1;pointer-events:none;}',
+      '.mc__confete i{position:absolute;top:-10px;width:6px;height:10px;border-radius:2px;opacity:.9;',
+      'animation:mcCai 3.2s linear infinite;}',
+    ];
+    var cores = ['#ffd166', '#ff8a3d', '#ff4f8b', '#7ee0c3', '#ffffff', '#b98cff', '#ffd166'];
+    for (var i = 0; i < 14; i++) css_push(i);
+    function css_push(i) {
+      var left = Math.round((i + 0.5) * (100 / 14));
+      var delay = ((i * 0.37) % 3.2).toFixed(2);
+      var dur = (2.6 + (i % 4) * 0.35).toFixed(2);
+      arr.push('.mc__confete i:nth-child(' + (i + 1) + '){left:' + left + '%;background:' + cores[i % cores.length] +
+        ';animation-delay:-' + delay + 's;animation-duration:' + dur + 's;}');
+    }
+    arr.push(
+      '@keyframes mcGrad{to{background-position:300% 0}}',
+      '@keyframes mcPulse{0%,100%{transform:rotate(-3deg) scale(1)}50%{transform:rotate(-3deg) scale(1.06)}}',
+      '@keyframes mcSeta{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}',
+      '@keyframes mcBrilho{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}',
+      '@keyframes mcCai{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(90px) rotate(360deg)}}',
+      '@media (max-width:640px){',
+      '#elarah-promo-bar.mc{gap:8px;padding:9px 10px;flex-direction:column;}',
+      '.mc__linha{gap:10px;}',
+      '.mc__tag{font-size:1rem;letter-spacing:1.5px;}',
+      '.mc__off b{font-size:1.45rem;}',
+      '.mc__cx{min-width:30px;padding:5px 4px;}',
+      '.mc__cx b{font-size:.9rem;}',
+      '.mc__acaba{display:none;}',
+      '.mc__cta{padding:7px 13px;font-size:.8rem;}',
+      '}',
+      '@media (prefers-reduced-motion:reduce){',
+      '.mc__tag,.mc__off,.mc__seta,.mc__brilho,.mc__confete i{animation:none!important;}',
+      '.mc__confete{display:none;}',
+      '}'
+    );
+    st.textContent = arr.join('');
+    document.head.appendChild(st);
   }
 
   // CSS da barra num <style> só: inline não cobre media query, e o
@@ -470,6 +625,7 @@
     paraCentavos: paraCentavos,
     fimCurto: fimCurto,
     geralAtiva: geralAtiva,
+    carrinhoAtivo: carrinhoAtivo,
     baseDe: baseDe,
     carrinhoPct: carrinhoPct,
     carrinhoCentavos: carrinhoCentavos,
