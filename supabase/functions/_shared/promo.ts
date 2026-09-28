@@ -97,7 +97,7 @@ export function descontoAtivo(
   cfg: DescontoGeral | null | undefined,
   agora: Date = new Date(),
 ): boolean {
-  if (!cfg || !cfg.ativo || !cfg.percentual) return false;
+  if (!cfg || !cfg.ativo || !(cfg.percentual > 0)) return false;
   if (!cfg.inicio || !cfg.fim) return false;
   const ini = new Date(cfg.inicio).getTime();
   const fim = new Date(cfg.fim).getTime();
