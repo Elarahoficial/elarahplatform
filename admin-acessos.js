@@ -59,7 +59,10 @@
     { key: 'analytics',            label: 'Analytics',            grupo: 'Dinheiro' },
     { key: 'broadcast',            label: 'Novidades',            grupo: 'Comunicação' },
     { key: 'calendario-editorial', label: 'Cronograma',           grupo: 'Comunicação' },
-    { key: 'datas-comemorativas',  label: 'Datas Comemorativas',  grupo: 'Comunicação' }
+    { key: 'datas-comemorativas',  label: 'Datas Comemorativas',  grupo: 'Comunicação' },
+    // Não é aba deste painel: libera a plataforma Elarah Mental Health
+    // (admin-mh.html) pra quem tem acesso restrito.
+    { key: 'mental-health',        label: 'Elarah Mental Health', grupo: 'Plataformas' }
   ];
 
   // ===== PERFIS PRONTOS =====
