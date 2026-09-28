@@ -47,6 +47,10 @@
     SUBTITULO: null,
   };
 
+  // Desconto do carrinho (ver bloco DESCONTO DO CARRINHO mais abaixo).
+  var CARRINHO_1_PCT = 10;
+  var CARRINHO_2_MAIS_PCT = 15;
+
   var carregado = false;
   var carregarPromise = null;
 
@@ -106,7 +110,7 @@
 
   // O desconto está valendo AGORA? Datas inválidas ou faltando
   // desligam (falha pro lado seguro: preço normal).
-  function ativa() {
+  function geralAtiva() {
     if (!CONFIG.ATIVA || !CONFIG.PERCENTUAL) return false;
     if (!CONFIG.INICIO || !CONFIG.FIM) return false;
     var agora = Date.now();
@@ -118,11 +122,44 @@
 
   // Aplica o desconto sobre um valor em centavos. Devolve null pra
   // entrada inválida — quem chama decide o fallback.
+  // Percentual que a VITRINE mostra: o da campanha geral quando ela
+  // está no ar; senão, o desconto do carrinho de 1 pessoa (10%) — o
+  // mínimo que qualquer compra de experiência leva.
+  function percentualVitrine() {
+    if (geralAtiva()) return CONFIG.PERCENTUAL;
+    return CARRINHO_1_PCT;
+  }
+
+  // A vitrine está mostrando preço com desconto? (campanha geral OU
+  // desconto do carrinho). É o que experiences-data.js consulta.
+  function ativa() {
+    return percentualVitrine() > 0;
+  }
+
+  // preço de vitrine (centavos) → preço do site (centavos). Guardado a
+  // cada conversão pra o checkout conseguir partir do preço do site
+  // exato quando precisa aplicar os 15% (2+ pessoas).
+  var BASE_DE = {};
+
   function centavos(base) {
     var n = Number(base);
     if (!isFinite(n) || n <= 0) return null;
-    if (!ativa()) return Math.round(n);
-    return Math.round(n * (100 - CONFIG.PERCENTUAL) / 100);
+    var pct = percentualVitrine();
+    if (!pct) return Math.round(n);
+    var com = Math.round(n * (100 - pct) / 100);
+    BASE_DE[com] = Math.round(n);
+    return com;
+  }
+
+  // Preço de vitrine → preço do site. Sem registro, desfaz a conta
+  // (exato pra preços em reais redondos, que é o catálogo inteiro).
+  function baseDe(vitrineCents) {
+    var v = Math.round(Number(vitrineCents));
+    if (!isFinite(v) || v <= 0) return v;
+    if (BASE_DE[v]) return BASE_DE[v];
+    var pct = percentualVitrine();
+    if (!pct) return v;
+    return Math.round(v * 100 / (100 - pct));
   }
 
   // "R$ 180" → 18000. Mesmo parser do formatPrecoBR (formato BR:
@@ -229,27 +266,28 @@
   // A MESMA REGRA EXISTE NO SERVIDOR (_shared/promo.ts,
   // precoFinalCentavos) — é ele quem cobra. As duas contas precisam
   // bater centavo por centavo.
-  var CARRINHO_1_PCT = 10;
-  var CARRINHO_2_MAIS_PCT = 15;
 
   // Percentual do carrinho pra essa quantidade (0 = não se aplica).
   function carrinhoPct(qtd) {
-    if (ativa()) return 0;
+    if (geralAtiva()) return 0;
     var q = Math.floor(Number(qtd));
     if (!isFinite(q) || q < 1) return 0;
     return q >= 2 ? CARRINHO_2_MAIS_PCT : CARRINHO_1_PCT;
   }
 
-  // Preço UNITÁRIO com o desconto do carrinho. `unitCents` é o preço que
-  // o checkout já mostra (site ou variação). Com campanha geral no ar,
-  // devolve o mesmo valor.
-  function carrinhoCentavos(unitCents, qtd) {
-    var n = Math.round(Number(unitCents));
-    if (!isFinite(n) || n <= 0) return n;
+  // Preço UNITÁRIO cobrado pra essa quantidade. `vitrineCents` é o
+  // preço que a vitrine/checkout mostram (já com os 10% de 1 pessoa).
+  // Com 2+ pessoas, volta ao preço do site e aplica 15% — a mesma conta
+  // do servidor (precoFinalCentavos). Com campanha geral no ar, devolve
+  // o mesmo valor.
+  function carrinhoCentavos(vitrineCents, qtd) {
+    var v = Math.round(Number(vitrineCents));
+    if (!isFinite(v) || v <= 0) return v;
     var pct = carrinhoPct(qtd);
-    if (!pct) return n;
-    var com = Math.round(n * (100 - pct) / 100);
-    return com > 0 ? com : n;
+    if (!pct) return v;
+    var base = baseDe(v);
+    var com = Math.round(base * (100 - pct) / 100);
+    return com > 0 ? com : v;
   }
 
   // ===== CONTAGEM REGRESSIVA =====
@@ -288,6 +326,7 @@
   // promoção acabar, some de tudo de uma vez.
   function renderBanner() {
     if (!ativa()) return;
+    var ehCarrinho = !geralAtiva();
     if (document.getElementById('elarah-promo-bar')) return;
     // Páginas internas (admin) não recebem o aviso.
     var path = (location.pathname || '').toLowerCase();
@@ -301,11 +340,15 @@
 
     var titulo = document.createElement('strong');
     titulo.className = 'elarah-promo-bar__titulo';
-    titulo.textContent = tituloDoAviso();
+    titulo.textContent = ehCarrinho
+      ? 'Até ' + CARRINHO_2_MAIS_PCT + '% OFF em todas as experiências'
+      : tituloDoAviso();
 
     var sub = document.createElement('span');
     sub.className = 'elarah-promo-bar__sub';
-    sub.textContent = subtituloDoAviso();
+    sub.textContent = ehCarrinho
+      ? CARRINHO_1_PCT + '% OFF em qualquer experiência · ' + CARRINHO_2_MAIS_PCT + '% por pessoa comprando 2 ou mais'
+      : subtituloDoAviso();
 
     bar.appendChild(titulo);
     bar.appendChild(sub);
@@ -327,7 +370,10 @@
       document.body.appendChild(bar);
     }
 
-    iniciarContagem(bar, relogio);
+    // Desconto do carrinho não tem prazo: sem contagem (e sem o aviso
+    // de "a promoção acabou", que dispararia com a data da campanha
+    // geral já vencida).
+    if (!ehCarrinho) iniciarContagem(bar, relogio);
   }
 
   function iniciarContagem(bar, relogio) {
@@ -423,6 +469,8 @@
     formatar: formatar,
     paraCentavos: paraCentavos,
     fimCurto: fimCurto,
+    geralAtiva: geralAtiva,
+    baseDe: baseDe,
     carrinhoPct: carrinhoPct,
     carrinhoCentavos: carrinhoCentavos,
   };

@@ -65,7 +65,6 @@ import {
   carregarDescontoGeral,
   precoFinalCentavos,
   precoLabelBR,
-  precoPromocionalCentavos,
 } from "../_shared/promo.ts";
 
 const STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
@@ -737,23 +736,16 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   // (10% com 1 pessoa, 15% por pessoa com 2+). A taxa do cartão entra
   // depois, em cima deste valor.
   //
-  // Kit físico (fluxo com `shipping`, Elarah em Casa) não é experiência:
-  // não leva o desconto do carrinho — só a campanha geral, como antes.
+  // Kit (Elarah em Casa, fluxo com `shipping`) também leva: a vitrine
+  // dele mostra o preço com os 10%. O FRETE não desconta — ele é somado
+  // depois, fora deste preço.
   if (cents) {
     const descontoGeral = await carregarDescontoGeral(supabase);
     const precoAntesDaPromo = cents;
-    let origem: string | null = null;
-    let pct = 0;
-    if (shippingInput) {
-      cents = precoPromocionalCentavos(cents, descontoGeral);
-      origem = "geral";
-      pct = descontoGeral.percentual;
-    } else {
-      const precoFinal = precoFinalCentavos(cents, descontoGeral, quantidade);
-      cents = precoFinal.cents;
-      origem = precoFinal.origem;
-      pct = precoFinal.pct;
-    }
+    const precoFinal = precoFinalCentavos(cents, descontoGeral, quantidade);
+    cents = precoFinal.cents;
+    const origem = precoFinal.origem;
+    const pct = precoFinal.pct;
     if (cents !== precoAntesDaPromo) {
       console.info(
         "[create-checkout-session] desconto aplicado",

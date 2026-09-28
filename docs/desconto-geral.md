@@ -155,18 +155,27 @@ Toda experiência comprada no site sai com desconto automático, sem cupom:
 Exemplo, experiência de R$ 180: 1 pessoa paga **R$ 162**; 3 pessoas pagam
 3 × **R$ 153** = R$ 459.
 
-- **Só a experiência desconta.** A taxa do cartão (acréscimo da parcela no
-  Pagar.me / repasse no Mercado Pago) é calculada depois, em cima do valor já
-  descontado — ela continua sendo cobrada. Frete e kits físicos (Elarah em
-  Casa) não entram.
+**Na tela:**
+- Faixa no topo de todas as páginas: "Até 15% OFF em todas as experiências ·
+  10% OFF em qualquer experiência · 15% por pessoa comprando 2 ou mais".
+- Toda vitrine mostra o preço de 1 pessoa (10% OFF) com o preço do site
+  riscado: ~~R$ 180~~ **R$ 162**.
+- No checkout, o Subtotal mostra o preço do site e a linha **"Desconto do
+  carrinho (15% por pessoa)"** faz o abatimento.
+
+**Regras:**
+- **Só o preço da experiência desconta.** A taxa do cartão (acréscimo da
+  parcela no Pagar.me / repasse no Mercado Pago) é calculada depois, em cima
+  do valor já descontado — ela continua sendo cobrada. O frete dos kits não
+  desconta. Compra de vale-presente não entra.
 - **Não acumula com o Desconto geral.** Com uma campanha no ar, vale a
-  campanha. Cupom continua valendo por cima (calculado sobre o valor já
-  descontado).
-- No checkout aparece a linha **"Desconto do carrinho (15% por pessoa)"**.
+  campanha (a faixa e os preços passam a ser os dela). Cupom continua valendo
+  por cima (calculado sobre o valor já descontado).
 - Como o desconto geral, sai inteiro da comissão da Elarah (o repasse ao
   fornecedor não muda).
+- Só no site; o app (iOS/Android) segue sem.
 
 Onde vive: `precoFinalCentavos()` em `_shared/promo.ts` (servidor, é quem
-cobra) e `ElarahPromo.carrinhoCentavos()` em `promo.js` (tela). Os
-percentuais são as constantes `DESCONTO_CARRINHO_*` / `CARRINHO_*` nos dois
-arquivos — mudar um exige mudar o outro.
+cobra) e `promo.js` (tela: `percentualVitrine`, `carrinhoCentavos`,
+`baseDe`). Os percentuais são as constantes `DESCONTO_CARRINHO_*` /
+`CARRINHO_*` nos dois arquivos — mudar um exige mudar o outro.

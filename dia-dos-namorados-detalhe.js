@@ -250,7 +250,8 @@
             ' data-skip-description="true"' +
             ' data-experience-id="' + esc(exp.id) + '"' +
             ' data-experience-nome="' + esc(titulo) + '"' +
-            ' data-experience-preco="' + esc(exp.preco || '') + '"' +
+            ' data-experience-preco="' + esc(((window.ElarahData && ElarahData.precoVigente)
+              ? ElarahData.precoVigente(exp) : exp.preco) || '') + '"' +
             ' data-analytics="reserve_click"' +
             ' data-analytics-category="booking"' +
             ' data-analytics-label="' + esc(titulo) + '"' +
