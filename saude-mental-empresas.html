@@ -67,8 +67,11 @@ section{padding:96px 0}
 .hero__lead{font-size:1.2rem;line-height:1.5;color:var(--ink);max-width:560px}
 .hero__sub{font-size:1rem;color:var(--muted);max-width:520px;margin-top:14px;padding-left:14px;border-left:2px solid var(--terra)}
 .hero__actions{display:flex;gap:12px 16px;flex-wrap:wrap;margin-top:34px}
-.hero__visual{position:relative;height:620px;margin:0}
-.hero__visual img{width:100%;height:100%;display:block;object-fit:cover;object-position:58% 50%;border-radius:28px;box-shadow:0 30px 60px rgba(22,48,42,.18)}
+.hero__visual{position:relative;height:620px;display:grid;grid-template-columns:1.12fr 1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:14px}
+.hero__visual img{width:100%;height:100%;min-width:0;min-height:0;display:block;object-fit:cover;border-radius:22px;box-shadow:0 24px 50px rgba(22,48,42,.16)}
+.hv1{grid-row:1/3;object-position:58% 50%}
+.hv2{object-position:50% 28%}
+.hv3{object-position:50% 50%}
 .hero__faixa{list-style:none;display:flex;flex-wrap:wrap;align-items:center;gap:10px 0;margin-top:56px;padding:20px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--green)}
 .hero__faixa li{display:flex;align-items:center;gap:8px}
 .hero__faixa li+li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--terra);margin:0 26px}
@@ -253,20 +256,21 @@ section{padding:96px 0}
 .gc__ctas{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-top:28px}
 .gc__link{font-weight:700;color:var(--green);text-decoration:none;border-bottom:1px solid rgba(31,77,63,.3);padding-bottom:2px}
 .gc__link:hover{color:var(--terra-dark);border-color:var(--terra)}
-.gc__vis{position:relative;padding:56px 40px;min-height:440px;display:grid;place-items:center;border-radius:32px;background:linear-gradient(150deg,var(--terra-soft),#fff5ee 60%,var(--sage-soft))}
-.gcard{width:min(400px,100%);aspect-ratio:1.6/1;border-radius:22px;padding:26px 28px;display:flex;flex-direction:column;justify-content:space-between;color:#fff;background:radial-gradient(120% 140% at 100% 0%,#2e6a57 0%,#1f4d3f 45%,#16302a 100%);box-shadow:0 30px 60px rgba(22,48,42,.28),inset 0 0 0 1px rgba(255,255,255,.08);transform:rotate(-4deg);position:relative;overflow:hidden}
-.gcard::after{content:'';position:absolute;right:-60px;bottom:-60px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(255,255,255,.12)}
+.gc__vis{position:relative;padding:56px 40px;min-height:440px;display:grid;place-items:center;border-radius:32px;background:radial-gradient(90% 80% at 50% 45%,#fff4ea 0%,var(--paper) 70%);border:1px solid var(--line)}
+.gcard{width:min(400px,100%);aspect-ratio:1.6/1;border-radius:22px;padding:26px 28px;display:flex;flex-direction:column;justify-content:space-between;color:#fff;background:radial-gradient(130% 150% at 100% 0%,#ff9a4d 0%,#f27623 48%,#dc5f13 100%);box-shadow:0 30px 60px rgba(220,95,19,.32),inset 0 0 0 1px rgba(255,255,255,.14);transform:rotate(-4deg);position:relative;overflow:hidden}
+.gcard::after{content:'';position:absolute;right:-60px;bottom:-60px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(255,255,255,.22)}
 .gcard__top{display:flex;align-items:center;justify-content:space-between}
 .gcard__top img{height:30px;filter:brightness(0) invert(1)}
-.gcard__top span{font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#f3c9b3}
-.gcard__tit{font-family:'DM Serif Display',serif;font-size:1.75rem;line-height:1.1;color:#fff!important}
-.gcard__tit em{color:#f3b08e}
-.gcard__pe{display:flex;justify-content:space-between;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.gcard__top span{font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#fff3e6}
+.gcard__tit{font-family:'DM Serif Display',serif;font-size:clamp(1.7rem,2.4vw,2.35rem);line-height:1.08;color:#fff!important}
+.gcard__tit em{color:#fff3e6}
+.gcard__pe{display:flex;justify-content:space-between;align-items:baseline;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.85)}
+.gcard__pe b{font-size:.8rem;letter-spacing:.14em;color:#fff}
 .gtag{position:absolute;background:#fff;border-radius:16px;padding:12px 18px;box-shadow:0 12px 30px rgba(22,48,42,.12);display:flex;flex-direction:column;line-height:1.2;z-index:2}
 .gtag b{font-family:'DM Serif Display',serif;font-weight:400;font-size:1.2rem;color:var(--green)}
 .gtag span{font-size:.8rem;color:var(--muted)}
 .gtag--1{top:34px;left:28px}
-.gtag--1 b{font-size:1.9rem;color:var(--terra)}
+.gtag--1 b{font-size:1.9rem;color:#f27623}
 .gtag--2{top:46px;right:24px}
 .gtag--3{bottom:36px;right:40px}
 .gpassos{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:88px 0 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -514,7 +518,7 @@ body.lm-open{overflow:hidden}
 @media (max-width:560px){
   .wrap{padding:0 16px}
   .hero{padding:40px 0 60px}
-  .hero__visual{height:380px}
+  .hero__visual{height:380px;gap:10px}
   .hero__faixa{margin-top:36px;font-size:.7rem;display:grid;grid-template-columns:1fr 1fr;gap:14px 12px}
   .hero__faixa li+li::before{display:none}
   .hero__faixa li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--terra);flex:none}
@@ -571,9 +575,11 @@ body.lm-open{overflow:hidden}
         <a class="btn btn--ghost" href="#contato" data-lead="hero">Pedir orçamento</a>
       </div>
     </div>
-    <figure class="hero__visual reveal">
-      <img src="assets/mh-hero-pintura.jpg" alt="Colaboradoras pintando telas em uma experiência da Elarah">
-    </figure>
+    <div class="hero__visual reveal">
+      <img class="hv1" src="assets/mh-hero-pintura.jpg" alt="Colaboradoras pintando telas em uma experiência da Elarah">
+      <img class="hv2" src="assets/mh-hero-time.jpg" alt="Equipe de avental tirando uma selfie juntas depois da experiência">
+      <img class="hv3" src="assets/mh-hero-aquarela.jpg" alt="Time reunido ao redor da mesa pintando aquarelas">
+    </div>
   </div>
   <div class="wrap">
     <ul class="hero__faixa reveal">
@@ -891,13 +897,13 @@ body.lm-open{overflow:hidden}
         <span class="eyebrow">Benefício para o seu time</span>
         <h2>O presente é seu. <em>A escolha também.</em></h2>
         <p class="gc__lead">Com o <b>Gift Card Elarah</b>, sua empresa presenteia os colaboradores com algo que vai além de um presente: liberdade para escolher uma experiência que realmente faça sentido para cada pessoa.</p>
-        <p>São mais de 20 experiências disponíveis na Elarah — cerâmica, velas, gastronomia, pintura, perfumaria e muito mais. Cada colaborador escolhe:</p>
+        <p>O colaborador recebe o Gift Card, entra na Elarah e escolhe, entre todas as experiências disponíveis — são mais de 20: cerâmica, velas, gastronomia, pintura, perfumaria e muito mais —, aquela que quiser viver. Ele escolhe:</p>
         <ul class="gc__escolhe">
           <li><b>a experiência</b></li>
           <li><b>o dia</b></li>
           <li><b>o horário</b></li>
         </ul>
-        <p class="gc__assina">A empresa presenteia. Cada pessoa escolhe. <em>A experiência acontece no tempo dela.</em></p>
+        <p class="gc__assina">A empresa presenteia. <em>Quem recebe escolhe como quer viver o presente.</em></p>
         <div class="gc__ctas">
           <a class="btn btn--terra" href="#contato" data-lead="gift" data-plano="Gift cards">Quero presentear meu time →</a>
           <a class="gc__link" href="https://elarah.com.br/" target="_blank" rel="noopener">Conheça as experiências Elarah →</a>
@@ -907,12 +913,12 @@ body.lm-open{overflow:hidden}
       <div class="gc__vis" aria-hidden="true">
         <div class="gcard">
           <div class="gcard__top"><img src="assets/logo.png" alt=""><span>Gift Card</span></div>
-          <p class="gcard__tit">Uma experiência<br><em>à sua escolha.</em></p>
-          <div class="gcard__pe"><span>Para você</span><span>elarah.com.br</span></div>
+          <p class="gcard__tit">Uma experiência.<br><em>À sua escolha.</em></p>
+          <div class="gcard__pe"><span>Para você</span><b>elarah.com.br</b></div>
         </div>
-        <div class="gtag gtag--1"><b>20+</b><span>experiências</span></div>
-        <div class="gtag gtag--2"><b>Você escolhe</b><span>o que quer viver</span></div>
-        <div class="gtag gtag--3"><b>Dia e horário</b><span>que preferir</span></div>
+        <div class="gtag gtag--1"><b>20+</b><span>experiências para escolher</span></div>
+        <div class="gtag gtag--2"><b>Você escolhe</b><span>o que viver</span></div>
+        <div class="gtag gtag--3"><b>Você escolhe</b><span>o dia e o horário</span></div>
       </div>
     </div>
 
