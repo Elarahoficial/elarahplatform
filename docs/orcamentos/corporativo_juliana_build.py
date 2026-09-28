@@ -1,7 +1,7 @@
 # Proposta Elarah · Team building Juliana · 8 pessoas · 22/10 · Brooklin · budget ate R$2.000 (nao citar)
 # EVOLUCAO da proposta inicial (mesma identidade do deck de tufting/Lado B): mesma narrativa/tom/estetica (BFA verde/terracota).
-# Curadoria atualizada em 3 blocos: Sabonete, Vela, Croche. Opcionais: Fotografia R$450 · Mimo R$139.
-# Valores finais ao cliente. Destaque sutil (selo "dentro do orçamento") nas opcoes <= R$2.000 total. Fotos reais.
+# Somente Ateliê Meu Outro Lado. Curadoria: Vela e Sabonete (versoes base R$269/2.152 e premium/vinho R$309/2.472 p/8).
+# Vela com diferencial sazonal de Halloween. Opcionais: Fotografia R$450 · Mimo R$139. Fotos reais.
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
 
@@ -60,6 +60,14 @@ xcss = '''
   .opt p{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;flex:1}
   .opt .op{margin-top:12px;font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange-dark);line-height:1}
   .opt .op small{font-family:-apple-system,sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-left:5px}
+  /* faixa sazonal (Halloween) */
+  .season{display:flex;gap:16px;align-items:center;margin-top:16px;background:rgba(169,102,63,.10);border:1px solid rgba(169,102,63,.30);border-radius:16px;padding:14px 18px}
+  .season .sph{flex:0 0 120px;height:92px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  .season .sph img{width:100%;height:100%;object-fit:cover;display:block}
+  .season .sb{flex:1}
+  .season .stag{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:800}
+  .season .sb p{font-size:11.5px;color:var(--navy-soft);line-height:1.5;margin:5px 0 0}
+  .season .sb p b{color:var(--navy)}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -113,10 +121,12 @@ cover = f'''
         <div class="chips">
           <span class="chip"><b>8</b> pessoas</span>
           <span class="chip"><b>22/10</b></span>
-          <span class="chip">Brooklin</span>
+        </div>
+        <div class="chips" style="margin-top:10px">
+          <span class="chip">Ateliê Meu Outro Lado · Brooklin</span>
         </div>
       </div>
-      <div class="cover-photo">{img("capa-croche-cafe.jpg", "Grupo reunido em uma mesa criativa, com fios e materiais", "center 45%")}</div>
+      <div class="cover-photo">{img("corp-criativo.jpg", "Grupo criando junto, de mão na massa", "center 45%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Juliana")}
@@ -149,12 +159,12 @@ conceito = f'''
 sabonete = f'''
   <section class="slide">
 {head_simple("Experiências · Sabonete")}
-    <span class="eyebrow orange">◆ Bloco 01 · Sabonete</span>
+    <span class="eyebrow orange">◆ Experiências de Sabonete</span>
     <h2>Aromas, cores <em>e botânicos</em></h2>
-    <p class="lead">Um processo sensorial e relaxante: cada um escolhe aromas, cores e botânicos e cria os próprios sabonetes, do começo ao fim.</p>
+    <p class="lead">Um processo sensorial e relaxante: cada um escolhe aromas, cores e botânicos e cria os próprios sabonetes, do começo ao fim — tudo no Ateliê Meu Outro Lado.</p>
     <div class="egr">
-      {ecard("Sabonete Artesanal", "2 horas", "Cada um cria os próprios sabonetes escolhendo aromas, cores e botânicos.", "os próprios sabonetes", "219", "1.752", "saboneteroxo.jpg", "Sabonetes artesanais com lavanda e botânicos", "center 50%", budget=True)}
-      {ecard("Sabonete + Home Spray + Álcool em Gel", "2h30", "Além dos sabonetes, cada um leva um home spray e um álcool em gel autorais.", "sabonetes + home spray + álcool em gel", "319", "2.552", "sabonete2.jpg", "Sabonetes e frasco em composição natural", "center 50%")}
+      {ecard("Sabonete Artesanal", "Todo material incluso", "Cada um cria os próprios sabonetes, escolhendo aromas, cores e botânicos.", "os próprios sabonetes", "269", "2.152", "saboneteroxo.jpg", "Sabonetes artesanais com lavanda e botânicos", "center 50%")}
+      {ecard("Sabonete Artesanal + vinho", "Todo material incluso · com vinho", "A mesma experiência, com uma seleção de vinhos para acompanhar e brindar.", "os próprios sabonetes", "309", "2.472", "drinkspetisco.jpg", "Vinho e petiscos para acompanhar", "center 50%")}
     </div>
     {foot("Experiências · Sabonete")}
   </section>'''
@@ -163,30 +173,37 @@ sabonete = f'''
 vela = f'''
   <section class="slide">
 {head_simple("Experiências · Vela")}
-    <span class="eyebrow orange">◆ Bloco 02 · Vela</span>
+    <span class="eyebrow orange">◆ Experiências de Vela</span>
     <h2>Cera, aromas <em>e aconchego</em></h2>
-    <p class="lead">Cada um monta a própria vela — escolhendo aromas e detalhes — num ritual leve e cheio de charme.</p>
+    <p class="lead">Cada um monta a própria vela — escolhendo aromas e detalhes — num ritual leve e cheio de charme, no Ateliê Meu Outro Lado.</p>
     <div class="egr">
-      {ecard("Vela Aromática", "2 horas", "Cada um escolhe os aromas e cria a própria vela aromática.", "a própria vela", "229", "1.832", "vela-aromatica-real.jpg", "Preparo de vela aromática com flores secas", "center 50%", budget=True)}
-      {ecard("Vela Aromática Nordic Smells", "2h30", "Aromas de inspiração nórdica e clima cozy para uma vela mais sofisticada.", "a própria vela nórdica", "239", "1.912", "velaaromaticaaaa.jpg", "Velas aromáticas em tons neutros", "center 50%", budget=True)}
-      {ecard("Vela Café Gelado", "2 horas", "Uma vela decorativa inspirada no café gelado, cheia de personalidade.", "a vela café gelado", "319", "2.552", "velacafe.jpg", "Vela decorativa inspirada em café", "center 50%")}
-      {ecard("Vela Drinks", "2 horas", "Velas em formato de drinks — divertidas e cheias de estilo.", "as próprias velas-drink", "319", "2.552", "veladrink.jpg", "Velas em formato de coquetéis", "center 50%")}
+      {ecard("Vela Personalizada", "Todo material incluso", "Cada um escolhe aromas e detalhes e cria a própria vela, do começo ao fim.", "a própria vela", "269", "2.152", "vela-aromatica-real.jpg", "Preparo de vela aromática com flores secas", "center 50%")}
+      {ecard("Vela Personalizada + vinho", "Todo material incluso · com vinho", "A mesma experiência, com uma seleção de vinhos para brindar enquanto cria.", "a própria vela", "309", "2.472", "curadoria-vinhos.jpg", "Taças e vinhos para brindar", "center 45%")}
+    </div>
+    <div class="season">
+      <div class="sph">{img("velaaromaticaaaa4.jpg", "Vela decorada com especiarias, em clima de outono", "center 50%")}</div>
+      <div class="sb"><span class="stag">🎃 Edição especial de Halloween</span><p><b>Workshop Vela Halloween</b> &nbsp;·&nbsp; <b>Pinte sua Abóbora &amp; Faça sua Vela Aromática</b> — velas decoradas, abóboras e clima de outono para deixar o encontro ainda mais criativo e divertido.</p></div>
     </div>
     {foot("Experiências · Vela")}
   </section>'''
 
-# ============================ 5 · CROCHÊ ============================
-croche = f'''
+# ============================ 5 · O ATELIÊ MEU OUTRO LADO ============================
+atelie = f'''
   <section class="slide">
-{head_simple("Experiências · Crochê")}
-    <span class="eyebrow orange">◆ Bloco 03 · Crochê</span>
-    <h2>Fios, texturas <em>e mãos à obra</em></h2>
-    <p class="lead">Uma experiência criativa e absorvente: ponto a ponto, cada um desenvolve a própria peça de crochê pra levar pra casa.</p>
-    <div class="egr">
-      {ecard("Oficina de Bolsa de Crochê", "3h30", "Ponto a ponto, cada um desenvolve a própria bolsa de crochê, guiado do início ao fim.", "a própria bolsa de crochê", "279", "2.232", "croche-bolsa.jpg", "Bolsa de crochê colorida", "center 45%")}
-      {ecard("Oficina de Guirlanda em Crochê", "2 horas", "Uma peça decorativa em crochê, delicada e autoral, pra chamar de sua.", "a própria guirlanda de crochê", "149", "1.192", "capa-croche-cafe.jpg", "Fios e materiais de crochê sobre a mesa", "center 50%", budget=True)}
+{head_simple("O espaço")}
+    <span class="eyebrow orange">◆ Ateliê Meu Outro Lado · Brooklin</span>
+    <h2>Tudo acontece <em>no próprio ateliê</em></h2>
+    <p class="lead">A experiência é realizada no Ateliê Meu Outro Lado — um espaço acolhedor, criativo e cheio de personalidade, sem necessidade de contratar outro local. O time só chega e aproveita.</p>
+    <div class="vibe">
+      <figure>{img("meu-outro-lado.jpg", "Ateliê Meu Outro Lado, acolhedor e criativo", "center 50%")}<figcaption>O ateliê</figcaption></figure>
+      <figure>{img("teoriavela.jpg", "Mãos preparando uma vela com botânicos", "center 50%")}<figcaption>Mãos na obra</figcaption></figure>
+      <figure>{img("sabonete.jpg", "Materiais, aromas e botânicos", "center 50%")}<figcaption>Materiais &amp; aromas</figcaption></figure>
+      <figure>{img("corp-criativo.jpg", "Grupo criando junto, de mão na massa", "center 45%")}<figcaption>O grupo junto</figcaption></figure>
+      <figure>{img("velas.jpg", "Velas finalizadas", "center 50%")}<figcaption>O resultado</figcaption></figure>
+      <figure>{img("pizza-brinde.jpg", "Brinde entre o grupo", "center 50%")}<figcaption>Pra brindar</figcaption></figure>
     </div>
-    {foot("Experiências · Crochê")}
+    <div class="bnote" style="margin-top:16px">◆ <b>Sem locação adicional:</b> o espaço já faz parte da experiência — acolhedor, leve e ideal para um encontro de team building.</div>
+    {foot("O espaço · Meu Outro Lado")}
   </section>'''
 
 # ============================ 6 · OPCIONAIS ============================
@@ -228,9 +245,9 @@ proximos = f'''
     <p class="lead">A Elarah cuida de toda a produção pro encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolham a experiência</h3><p>Sabonete, vela ou crochê — a que mais combina com o time.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>Confirmamos a data</h3><p>Reservamos a agenda e o espaço para o dia 22/10, no Brooklin ou no espaço de vocês.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>A gente leva tudo</h3><p>Profissional, materiais e estrutura — o time só chega e cria.</p></div>
+      <div class="infocard"><div class="num">01</div><h3>Escolham a experiência</h3><p>Vela ou sabonete — base ou com vinho, a que mais combina com o time.</p></div>
+      <div class="infocard"><div class="num">02</div><h3>Confirmamos a data</h3><p>Reservamos a agenda do Ateliê Meu Outro Lado para o dia 22/10.</p></div>
+      <div class="infocard"><div class="num">03</div><h3>A gente cuida de tudo</h3><p>Profissional, materiais e estrutura — o time só chega e cria.</p></div>
     </div>
     <div class="quote" style="margin-top:22px">
       Juliana, me confirma a <strong>experiência</strong> que faz mais sentido que a gente reserva tudo e organiza cada detalhe pro time. ✦<br>
@@ -240,7 +257,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + conceito + sabonete + vela + croche + opcionais + proximos + '\n\n</div>\n\n')
+        + cover + vela + sabonete + atelie + opcionais + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/corporativo-juliana.html"
 open(out, "w", encoding="utf-8").write(html)

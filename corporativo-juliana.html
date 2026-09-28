@@ -224,6 +224,14 @@
   .opt p{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;flex:1}
   .opt .op{margin-top:12px;font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange-dark);line-height:1}
   .opt .op small{font-family:-apple-system,sans-serif;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-left:5px}
+  /* faixa sazonal (Halloween) */
+  .season{display:flex;gap:16px;align-items:center;margin-top:16px;background:rgba(169,102,63,.10);border:1px solid rgba(169,102,63,.30);border-radius:16px;padding:14px 18px}
+  .season .sph{flex:0 0 120px;height:92px;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+  .season .sph img{width:100%;height:100%;object-fit:cover;display:block}
+  .season .sb{flex:1}
+  .season .stag{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:800}
+  .season .sb p{font-size:11.5px;color:var(--navy-soft);line-height:1.5;margin:5px 0 0}
+  .season .sb p b{color:var(--navy)}
 </style>
 <style>
   :root{
@@ -485,10 +493,12 @@
         <div class="chips">
           <span class="chip"><b>8</b> pessoas</span>
           <span class="chip"><b>22/10</b></span>
-          <span class="chip">Brooklin</span>
+        </div>
+        <div class="chips" style="margin-top:10px">
+          <span class="chip">Ateliê Meu Outro Lado · Brooklin</span>
         </div>
       </div>
-      <div class="cover-photo"><img src="assets/capa-croche-cafe.jpg" alt="Grupo reunido em uma mesa criativa, com fios e materiais" style="object-position:center 45%"></div>
+      <div class="cover-photo"><img src="assets/corp-criativo.jpg" alt="Grupo criando junto, de mão na massa" style="object-position:center 45%"></div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Já realizado para times como <b>Compass</b>, <b>Natura</b> e <b>Hidratei</b></div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Team building · Juliana</span></div>
@@ -496,69 +506,53 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Por que funciona</span></div>
-    </div>
-    <span class="eyebrow orange">◆ O que o time leva junto</span>
-    <h2>Criar junto <em>aproxima o time</em></h2>
-    <p class="lead">Sem dinâmica forçada: a conexão acontece quando o time senta na mesma mesa pra criar algo com as próprias mãos. A gente cuida da curadoria e da produção — vocês só chegam e aproveitam.</p>
-    <div class="bfeat">
-      <div class="bphoto"><img src="assets/corp-criativo.jpg" alt="Grupo criando junto, de mão na massa" style="object-position:center 45%"></div>
-      <div class="bbody">
-        <span class="btag">Como acontece</span>
-        <h3>Do começo ao fim, com a gente</h3>
-        <ul class="feat">
-          <li><span class="st">1</span><b>Boas-vindas</b> — a mesa montada com todos os materiais.</li>
-          <li><span class="st">2</span><b>Mão na massa</b> — cada um cria a própria peça, guiado por um profissional.</li>
-          <li><span class="st">3</span><b>Pra levar</b> — cada um sai com a própria criação de recordação.</li>
-        </ul>
-      </div>
-    </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Tudo incluso:</b> profissional conduzindo · todos os materiais · montagem e estrutura · produção Elarah — em um espaço parceiro na região do Brooklin ou no espaço de vocês.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Por que funciona</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Experiências · Sabonete</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Bloco 01 · Sabonete</span>
-    <h2>Aromas, cores <em>e botânicos</em></h2>
-    <p class="lead">Um processo sensorial e relaxante: cada um escolhe aromas, cores e botânicos e cria os próprios sabonetes, do começo ao fim.</p>
-    <div class="egr">
-      <div class="ec"><span class="ebadge">✦ dentro do orçamento</span><div class="eph"><img src="assets/saboneteroxo.jpg" alt="Sabonetes artesanais com lavanda e botânicos" style="object-position:center 50%"></div><div class="eb"><div class="en">Sabonete Artesanal</div><div class="edur">2 horas</div><div class="ed">Cada um cria os próprios sabonetes escolhendo aromas, cores e botânicos.</div><div class="eleva">Leva pra casa: <b>os próprios sabonetes</b></div><div class="epr"><span class="pp">R$ 219<small>por pessoa</small></span><span class="tt">R$ 1.752 · 8 pessoas</span></div></div></div>
-      <div class="ec"><div class="eph"><img src="assets/sabonete2.jpg" alt="Sabonetes e frasco em composição natural" style="object-position:center 50%"></div><div class="eb"><div class="en">Sabonete + Home Spray + Álcool em Gel</div><div class="edur">2h30</div><div class="ed">Além dos sabonetes, cada um leva um home spray e um álcool em gel autorais.</div><div class="eleva">Leva pra casa: <b>sabonetes + home spray + álcool em gel</b></div><div class="epr"><span class="pp">R$ 319<small>por pessoa</small></span><span class="tt">R$ 2.552 · 8 pessoas</span></div></div></div>
-    </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiências · Sabonete</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Experiências · Vela</span></div>
     </div>
-    <span class="eyebrow orange">◆ Bloco 02 · Vela</span>
+    <span class="eyebrow orange">◆ Experiências de Vela</span>
     <h2>Cera, aromas <em>e aconchego</em></h2>
-    <p class="lead">Cada um monta a própria vela — escolhendo aromas e detalhes — num ritual leve e cheio de charme.</p>
+    <p class="lead">Cada um monta a própria vela — escolhendo aromas e detalhes — num ritual leve e cheio de charme, no Ateliê Meu Outro Lado.</p>
     <div class="egr">
-      <div class="ec"><span class="ebadge">✦ dentro do orçamento</span><div class="eph"><img src="assets/vela-aromatica-real.jpg" alt="Preparo de vela aromática com flores secas" style="object-position:center 50%"></div><div class="eb"><div class="en">Vela Aromática</div><div class="edur">2 horas</div><div class="ed">Cada um escolhe os aromas e cria a própria vela aromática.</div><div class="eleva">Leva pra casa: <b>a própria vela</b></div><div class="epr"><span class="pp">R$ 229<small>por pessoa</small></span><span class="tt">R$ 1.832 · 8 pessoas</span></div></div></div>
-      <div class="ec"><span class="ebadge">✦ dentro do orçamento</span><div class="eph"><img src="assets/velaaromaticaaaa.jpg" alt="Velas aromáticas em tons neutros" style="object-position:center 50%"></div><div class="eb"><div class="en">Vela Aromática Nordic Smells</div><div class="edur">2h30</div><div class="ed">Aromas de inspiração nórdica e clima cozy para uma vela mais sofisticada.</div><div class="eleva">Leva pra casa: <b>a própria vela nórdica</b></div><div class="epr"><span class="pp">R$ 239<small>por pessoa</small></span><span class="tt">R$ 1.912 · 8 pessoas</span></div></div></div>
-      <div class="ec"><div class="eph"><img src="assets/velacafe.jpg" alt="Vela decorativa inspirada em café" style="object-position:center 50%"></div><div class="eb"><div class="en">Vela Café Gelado</div><div class="edur">2 horas</div><div class="ed">Uma vela decorativa inspirada no café gelado, cheia de personalidade.</div><div class="eleva">Leva pra casa: <b>a vela café gelado</b></div><div class="epr"><span class="pp">R$ 319<small>por pessoa</small></span><span class="tt">R$ 2.552 · 8 pessoas</span></div></div></div>
-      <div class="ec"><div class="eph"><img src="assets/veladrink.jpg" alt="Velas em formato de coquetéis" style="object-position:center 50%"></div><div class="eb"><div class="en">Vela Drinks</div><div class="edur">2 horas</div><div class="ed">Velas em formato de drinks — divertidas e cheias de estilo.</div><div class="eleva">Leva pra casa: <b>as próprias velas-drink</b></div><div class="epr"><span class="pp">R$ 319<small>por pessoa</small></span><span class="tt">R$ 2.552 · 8 pessoas</span></div></div></div>
+      <div class="ec"><div class="eph"><img src="assets/vela-aromatica-real.jpg" alt="Preparo de vela aromática com flores secas" style="object-position:center 50%"></div><div class="eb"><div class="en">Vela Personalizada</div><div class="edur">Todo material incluso</div><div class="ed">Cada um escolhe aromas e detalhes e cria a própria vela, do começo ao fim.</div><div class="eleva">Leva pra casa: <b>a própria vela</b></div><div class="epr"><span class="pp">R$ 269<small>por pessoa</small></span><span class="tt">R$ 2.152 · 8 pessoas</span></div></div></div>
+      <div class="ec"><div class="eph"><img src="assets/curadoria-vinhos.jpg" alt="Taças e vinhos para brindar" style="object-position:center 45%"></div><div class="eb"><div class="en">Vela Personalizada + vinho</div><div class="edur">Todo material incluso · com vinho</div><div class="ed">A mesma experiência, com uma seleção de vinhos para brindar enquanto cria.</div><div class="eleva">Leva pra casa: <b>a própria vela</b></div><div class="epr"><span class="pp">R$ 309<small>por pessoa</small></span><span class="tt">R$ 2.472 · 8 pessoas</span></div></div></div>
+    </div>
+    <div class="season">
+      <div class="sph"><img src="assets/velaaromaticaaaa4.jpg" alt="Vela decorada com especiarias, em clima de outono" style="object-position:center 50%"></div>
+      <div class="sb"><span class="stag">🎃 Edição especial de Halloween</span><p><b>Workshop Vela Halloween</b> &nbsp;·&nbsp; <b>Pinte sua Abóbora &amp; Faça sua Vela Aromática</b> — velas decoradas, abóboras e clima de outono para deixar o encontro ainda mais criativo e divertido.</p></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiências · Vela</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Experiências · Crochê</span></div>
+      <div class="head-right"><span class="kicker">Experiências · Sabonete</span></div>
     </div>
-    <span class="eyebrow orange">◆ Bloco 03 · Crochê</span>
-    <h2>Fios, texturas <em>e mãos à obra</em></h2>
-    <p class="lead">Uma experiência criativa e absorvente: ponto a ponto, cada um desenvolve a própria peça de crochê pra levar pra casa.</p>
+    <span class="eyebrow orange">◆ Experiências de Sabonete</span>
+    <h2>Aromas, cores <em>e botânicos</em></h2>
+    <p class="lead">Um processo sensorial e relaxante: cada um escolhe aromas, cores e botânicos e cria os próprios sabonetes, do começo ao fim — tudo no Ateliê Meu Outro Lado.</p>
     <div class="egr">
-      <div class="ec"><div class="eph"><img src="assets/croche-bolsa.jpg" alt="Bolsa de crochê colorida" style="object-position:center 45%"></div><div class="eb"><div class="en">Oficina de Bolsa de Crochê</div><div class="edur">3h30</div><div class="ed">Ponto a ponto, cada um desenvolve a própria bolsa de crochê, guiado do início ao fim.</div><div class="eleva">Leva pra casa: <b>a própria bolsa de crochê</b></div><div class="epr"><span class="pp">R$ 279<small>por pessoa</small></span><span class="tt">R$ 2.232 · 8 pessoas</span></div></div></div>
-      <div class="ec"><span class="ebadge">✦ dentro do orçamento</span><div class="eph"><img src="assets/capa-croche-cafe.jpg" alt="Fios e materiais de crochê sobre a mesa" style="object-position:center 50%"></div><div class="eb"><div class="en">Oficina de Guirlanda em Crochê</div><div class="edur">2 horas</div><div class="ed">Uma peça decorativa em crochê, delicada e autoral, pra chamar de sua.</div><div class="eleva">Leva pra casa: <b>a própria guirlanda de crochê</b></div><div class="epr"><span class="pp">R$ 149<small>por pessoa</small></span><span class="tt">R$ 1.192 · 8 pessoas</span></div></div></div>
+      <div class="ec"><div class="eph"><img src="assets/saboneteroxo.jpg" alt="Sabonetes artesanais com lavanda e botânicos" style="object-position:center 50%"></div><div class="eb"><div class="en">Sabonete Artesanal</div><div class="edur">Todo material incluso</div><div class="ed">Cada um cria os próprios sabonetes, escolhendo aromas, cores e botânicos.</div><div class="eleva">Leva pra casa: <b>os próprios sabonetes</b></div><div class="epr"><span class="pp">R$ 269<small>por pessoa</small></span><span class="tt">R$ 2.152 · 8 pessoas</span></div></div></div>
+      <div class="ec"><div class="eph"><img src="assets/drinkspetisco.jpg" alt="Vinho e petiscos para acompanhar" style="object-position:center 50%"></div><div class="eb"><div class="en">Sabonete Artesanal + vinho</div><div class="edur">Todo material incluso · com vinho</div><div class="ed">A mesma experiência, com uma seleção de vinhos para acompanhar e brindar.</div><div class="eleva">Leva pra casa: <b>os próprios sabonetes</b></div><div class="epr"><span class="pp">R$ 309<small>por pessoa</small></span><span class="tt">R$ 2.472 · 8 pessoas</span></div></div></div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiências · Crochê</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiências · Sabonete</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">O espaço</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Ateliê Meu Outro Lado · Brooklin</span>
+    <h2>Tudo acontece <em>no próprio ateliê</em></h2>
+    <p class="lead">A experiência é realizada no Ateliê Meu Outro Lado — um espaço acolhedor, criativo e cheio de personalidade, sem necessidade de contratar outro local. O time só chega e aproveita.</p>
+    <div class="vibe">
+      <figure><img src="assets/meu-outro-lado.jpg" alt="Ateliê Meu Outro Lado, acolhedor e criativo" style="object-position:center 50%"><figcaption>O ateliê</figcaption></figure>
+      <figure><img src="assets/teoriavela.jpg" alt="Mãos preparando uma vela com botânicos" style="object-position:center 50%"><figcaption>Mãos na obra</figcaption></figure>
+      <figure><img src="assets/sabonete.jpg" alt="Materiais, aromas e botânicos" style="object-position:center 50%"><figcaption>Materiais &amp; aromas</figcaption></figure>
+      <figure><img src="assets/corp-criativo.jpg" alt="Grupo criando junto, de mão na massa" style="object-position:center 45%"><figcaption>O grupo junto</figcaption></figure>
+      <figure><img src="assets/velas.jpg" alt="Velas finalizadas" style="object-position:center 50%"><figcaption>O resultado</figcaption></figure>
+      <figure><img src="assets/pizza-brinde.jpg" alt="Brinde entre o grupo" style="object-position:center 50%"><figcaption>Pra brindar</figcaption></figure>
+    </div>
+    <div class="bnote" style="margin-top:16px">◆ <b>Sem locação adicional:</b> o espaço já faz parte da experiência — acolhedor, leve e ideal para um encontro de team building.</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O espaço · Meu Outro Lado</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -600,9 +594,9 @@
     <p class="lead">A Elarah cuida de toda a produção pro encontro ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolham a experiência</h3><p>Sabonete, vela ou crochê — a que mais combina com o time.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>Confirmamos a data</h3><p>Reservamos a agenda e o espaço para o dia 22/10, no Brooklin ou no espaço de vocês.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>A gente leva tudo</h3><p>Profissional, materiais e estrutura — o time só chega e cria.</p></div>
+      <div class="infocard"><div class="num">01</div><h3>Escolham a experiência</h3><p>Vela ou sabonete — base ou com vinho, a que mais combina com o time.</p></div>
+      <div class="infocard"><div class="num">02</div><h3>Confirmamos a data</h3><p>Reservamos a agenda do Ateliê Meu Outro Lado para o dia 22/10.</p></div>
+      <div class="infocard"><div class="num">03</div><h3>A gente cuida de tudo</h3><p>Profissional, materiais e estrutura — o time só chega e cria.</p></div>
     </div>
     <div class="quote" style="margin-top:22px">
       Juliana, me confirma a <strong>experiência</strong> que faz mais sentido que a gente reserva tudo e organiza cada detalhe pro time. ✦<br>
