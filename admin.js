@@ -4464,20 +4464,39 @@
       b._bairroResolvido = String((exp && exp.bairro) || _metaBairro.bairro || '').trim();
     });
 
-    // Popula filtro de fornecedores
+    // Popula filtro de fornecedores. Entram os fornecedores das compras
+    // E os cadastrados nas experiências — antes só entrava quem já tinha
+    // compra, então parceira nova (ex.: Giuliana Gini) não aparecia. E
+    // a lista era montada uma vez só: fornecedor cuja 1ª venda chegava
+    // depois ficava de fora até recarregar a página. Agora completa a
+    // cada render, sem perder a opção escolhida.
     const filterFornEl = document.getElementById('bookings-filter-fornecedor');
-    if (filterFornEl && filterFornEl.options.length <= 1) {
+    if (filterFornEl) {
       const seenForn = new Set();
       bookings.forEach(b => {
-        var fn = b._fornecedorResolvido || '';
-        if (fn && !seenForn.has(fn)) {
-          seenForn.add(fn);
-          var opt = document.createElement('option');
+        const fn = b && b._fornecedorResolvido;
+        if (fn) seenForn.add(fn);
+      });
+      (allExperiences || []).forEach(e => {
+        const fn = e && e.fornecedorNome && String(e.fornecedorNome).trim();
+        if (fn) seenForn.add(fn);
+      });
+      const jaNoSelect = new Set();
+      for (let i = 1; i < filterFornEl.options.length; i++) jaNoSelect.add(filterFornEl.options[i].value);
+      const faltando = [...seenForn].some(fn => !jaNoSelect.has(fn));
+      if (faltando) {
+        const atual = filterFornEl.value;
+        const nomes = [...new Set([...jaNoSelect, ...seenForn])]
+          .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        while (filterFornEl.options.length > 1) filterFornEl.remove(1);
+        nomes.forEach(fn => {
+          const opt = document.createElement('option');
           opt.value = fn;
           opt.textContent = fn;
           filterFornEl.appendChild(opt);
-        }
-      });
+        });
+        filterFornEl.value = atual;
+      }
     }
 
     // Filtro de experiência: agora é input com busca. Compara por
@@ -5972,6 +5991,20 @@
           '</div>' +
           '<div style="padding:18px 22px;">' +
             avisoPrazo +
+            // Nome/e-mail de quem vai à experiência. Caso típico: alguém
+            // comprou de presente e a confirmação tem que sair no nome
+            // (e pro e-mail) da pessoa presenteada — o "Reenviar
+            // confirmação" lê estes dois campos da reserva.
+            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">' +
+              '<div>' +
+                '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">Nome do cliente</label>' +
+                '<input id="admin-edit-booking-nome" type="text" value="' + escapeHtml(booking.nome || '') + '" autocomplete="off" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;">' +
+              '</div>' +
+              '<div>' +
+                '<label style="display:block;font-size:.74rem;color:#666;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-bottom:4px;">E-mail do cliente</label>' +
+                '<input id="admin-edit-booking-email" type="email" value="' + escapeHtml(booking.email || '') + '" autocomplete="off" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:.88rem;">' +
+              '</div>' +
+            '</div>' +
             // Trocar a experiência da reserva colando o link público
             // (experiencia.html?id=…) ou o ID — sem precisar caçar no
             // dropdown. Ao aplicar, seleciona a experiência no <select>
@@ -6309,6 +6342,21 @@
           return;
         }
 
+        var nomeInputEl = modal.querySelector('#admin-edit-booking-nome');
+        var emailInputEl = modal.querySelector('#admin-edit-booking-email');
+        var nomeAntigo = String(booking.nome || '').trim();
+        var emailAntigo = String(booking.email || '').trim();
+        var novoNome = nomeInputEl ? (nomeInputEl.value || '').trim() : nomeAntigo;
+        var novoEmail = emailInputEl ? (emailInputEl.value || '').trim().toLowerCase() : emailAntigo;
+        if (novoEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(novoEmail)) {
+          alert('E-mail inválido.');
+          return;
+        }
+        if (!novoNome && nomeAntigo) {
+          alert('O nome do cliente não pode ficar vazio.');
+          return;
+        }
+
         var update = {
           experiencia_id: chosenExp.id,
           experiencia_nome: chosenExp.nome || booking.experiencia_nome,
@@ -6316,6 +6364,10 @@
           horario: novoHorario,
           quantidade: novaQty,
         };
+        var nomeTrocado = novoNome !== nomeAntigo;
+        var emailTrocado = novoEmail !== emailAntigo.toLowerCase();
+        if (nomeTrocado) update.nome = novoNome;
+        if (emailTrocado) update.email = novoEmail || null;
         // Sempre sincroniza fornecedor + valores financeiros com a exp
         // escolhida (idempotente se nada mudou). Isso permite "corrigir"
         // bookings que ficaram com dados stale de edições anteriores —
@@ -6382,10 +6434,27 @@
             ? String(chosenExp.endereco).trim() : null;
           meta.bairro = (chosenExp.bairro != null && String(chosenExp.bairro).trim())
             ? String(chosenExp.bairro).trim() : null;
+          // Troca de titular: a lista de participantes (que a confirmação
+          // também mostra) costuma repetir o nome/e-mail de quem comprou.
+          // Atualiza só a entrada que era do titular antigo.
+          if ((nomeTrocado || emailTrocado) && Array.isArray(meta.participantes)) {
+            meta.participantes = meta.participantes.map(function (p) {
+              if (!p || typeof p !== 'object') return p;
+              var eraTitular = (nomeAntigo && String(p.nome || '').trim() === nomeAntigo) ||
+                (emailAntigo && String(p.email || '').trim().toLowerCase() === emailAntigo.toLowerCase());
+              if (!eraTitular) return p;
+              var np = Object.assign({}, p);
+              if (nomeTrocado && 'nome' in np) np.nome = novoNome;
+              if (emailTrocado && 'email' in np) np.email = novoEmail || null;
+              return np;
+            });
+          }
           var hist = Array.isArray(meta.admin_edit_history) ? meta.admin_edit_history.slice() : [];
           hist.push({
             at: new Date().toISOString(),
             from: {
+              nome: booking.nome,
+              email: booking.email,
               experiencia_id: booking.experiencia_id,
               experiencia_nome: booking.experiencia_nome,
               data: booking.data,
@@ -6393,6 +6462,8 @@
               quantidade: booking.quantidade,
             },
             to: {
+              nome: nomeTrocado ? update.nome : booking.nome,
+              email: emailTrocado ? update.email : booking.email,
               experiencia_id: update.experiencia_id,
               experiencia_nome: update.experiencia_nome,
               data: update.data,
