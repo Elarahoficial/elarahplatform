@@ -234,7 +234,7 @@ atelie = f'''
       <figure>{img("meu-outro-lado.jpg", "Ateliê Meu Outro Lado, acolhedor e criativo", "center 50%")}<figcaption>O ateliê</figcaption></figure>
       <figure>{img("teoriavela.jpg", "Mãos preparando uma vela com botânicos", "center 50%")}<figcaption>Mãos na obra</figcaption></figure>
       <figure>{img("sabonete.jpg", "Materiais, aromas e botânicos", "center 50%")}<figcaption>Materiais &amp; aromas</figcaption></figure>
-      <figure>{img("vela-grupo-oficina.jpg", "Grupo participando da oficina de velas no ateliê", "center 45%")}<figcaption>Mãos à obra em grupo</figcaption></figure>
+      <figure>{img("grupo-oficina-atelie.webp", "Grupo participando da oficina no ateliê, cada um criando a própria peça", "center 40%")}<figcaption>Mãos à obra em grupo</figcaption></figure>
       <figure>{img("velas.jpg", "Velas finalizadas", "center 50%")}<figcaption>O resultado</figcaption></figure>
       <figure>{img("curadoria-vinhos.jpg", "Taças de vinho para brindar", "center 50%")}<figcaption>Pra brindar</figcaption></figure>
     </div>
