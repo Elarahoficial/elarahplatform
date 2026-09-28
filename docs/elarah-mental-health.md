@@ -58,5 +58,3 @@ cronogramas (pontual, semestral ou anual) de experiências manuais.
   (marcados com "?") e abre a busca do RH no LinkedIn. Confirme antes de enviar.
 - A landing deixa claro que as experiências **complementam** a avaliação de
   riscos do SESMT e não substituem acompanhamento psicológico.
-- O post "Kintsugi e o seu time" em Captação tem um trecho entre colchetes pra
-  trocar por um caso real antes de publicar.
