@@ -62,7 +62,8 @@ section{padding:96px 0}
 .hero{padding:56px 0 84px;position:relative;overflow:hidden}
 .hero__grid{display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center;position:relative}
 .hero h1{font-size:clamp(2.3rem,4.3vw,3.5rem);line-height:1.06;margin:16px 0 20px}
-.hero__lead{font-size:1.08rem;color:#3d4a45;max-width:540px}
+.hero__lead{font-size:1.08rem;color:#3d4a45;max-width:560px}
+.hero__lead+.hero__lead{margin-top:10px}
 .hero__actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 22px}
 .hero__actions .btn{padding:14px 22px}
 .hero__trust{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:.84rem;color:var(--muted)}
@@ -72,8 +73,8 @@ section{padding:96px 0}
 .hero__visual img{position:absolute;object-fit:cover;border-radius:24px;box-shadow:0 30px 60px rgba(22,48,42,.18)}
 .hv1{width:76%;height:86%;right:0;top:0}
 .hv2{width:44%;height:40%;left:0;bottom:0;border:6px solid var(--cream)}
-.hero__badge{position:absolute;left:0;top:10%;background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 18px 40px rgba(22,48,42,.16);display:flex;gap:12px;align-items:center;max-width:250px;z-index:2}
-.hero__badge b{display:block;font-size:.92rem}
+.hero__badge{position:absolute;left:0;top:10%;background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 18px 40px rgba(22,48,42,.16);display:flex;gap:12px;align-items:center;max-width:340px;z-index:2}
+.hero__badge b{display:block;font-size:.92rem;white-space:nowrap}
 .hero__badge small{color:var(--muted);font-size:.78rem;line-height:1.3;display:block}
 .hero__badge .ic{width:42px;height:42px;border-radius:12px;background:var(--sage-soft);display:grid;place-items:center;font-size:1.3rem;flex-shrink:0}
 .hero__pill{position:absolute;right:4%;bottom:4%;background:var(--green);color:#fff;border-radius:999px;padding:10px 18px;font-size:.84rem;font-weight:600;box-shadow:0 14px 30px rgba(31,77,63,.3);z-index:2}
@@ -277,6 +278,7 @@ body.lm-open{overflow:hidden}
   .elarah__pics{height:300px}
 }
 @media (max-width:560px){
+  .hero__actions .btn{width:100%;font-size:.9rem;padding:14px 16px}
   body .exp{grid-template-columns:1fr}
   .brand img{height:28px}
   .nav .btn{white-space:nowrap;padding:9px 12px;font-size:.78rem}
@@ -342,22 +344,25 @@ body.lm-open{overflow:hidden}
     <div class="reveal">
       <span class="eyebrow">Arteterapia corporativa · NR-1</span>
       <h1>Saúde mental que o seu time <em>quer</em> participar.</h1>
-      <p class="hero__lead"><b>Cerâmica, gastronomia, pintura, velas aromáticas</b> e muito mais — com o olhar da Arteterapia. Para o time, é aquela pausa que todo mundo espera no mês. Para a empresa, é um <b>cronograma pontual, semestral ou anual</b> com os encontros que vocês quiserem, tudo organizado por nós e documentado para a NR-1.</p>
+      <p class="hero__lead">Experiências de <b>Arteterapia</b> conduzidas por arteterapeutas para promover pausa, expressão e conexão entre pessoas.</p>
+      <p class="hero__lead">Pintura, argila, colagem, kintsugi e outras experiências em formatos <b>pontuais, semestrais ou anuais</b> — na empresa, no ateliê ou online.</p>
+      <p class="hero__lead">A Elarah cuida da experiência, da condução e da documentação necessária para a NR-1.</p>
       <div class="hero__actions">
-        <a class="btn btn--terra" href="#contato" data-lead="hero">Receber meu cronograma grátis</a>
-        <a class="btn btn--ghost" href="#calendario">Ver o calendário</a>
+        <a class="btn btn--terra" href="#contato" data-lead="hero">Receber uma proposta personalizada</a>
+        <a class="btn btn--ghost" href="#experiencias">Conhecer as experiências</a>
       </div>
       <div class="hero__trust">
         <span>Na empresa, no ateliê ou online</span>
-        <span>Você escolhe os encontros</span>
-        <span>Relatório para a NR-1</span>
+        <span>Formato pontual ou programa contínuo</span>
+        <span>Condução por arteterapeutas</span>
+        <span>Documentação para a NR-1</span>
       </div>
     </div>
     <div class="hero__visual reveal">
       <img class="hv1" src="assets/mh-hero-gastronomia.jpg" alt="Equipe cozinhando junta em uma experiência de gastronomia">
       <img class="hv2" src="assets/mh-hero-mesa.jpg" alt="Time reunido à mesa depois da experiência">
-      <div class="hero__badge"><div class="ic">🍝</div><div><b>2 horas sem tela</b><small>Mão na massa, cabeça no presente.</small></div></div>
-      <div class="hero__pill">💚 A pausa que o time espera</div>
+      <div class="hero__badge"><div class="ic">🎨</div><div><b>Experiência com propósito</b><small>Arte, presença e conexão para equipes.</small></div></div>
+      <div class="hero__pill">✦ Arteterapia para empresas</div>
     </div>
   </div>
 </header>
@@ -510,7 +515,7 @@ body.lm-open{overflow:hidden}
 </section>
 
 <!-- ===== EXPERIÊNCIAS ===== -->
-<section>
+<section id="experiencias">
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">As experiências</span>
@@ -677,7 +682,7 @@ body.lm-open{overflow:hidden}
   <div class="wrap">
     <div class="cta reveal">
       <div style="position:relative;z-index:1">
-        <span class="eyebrow">Cronograma grátis</span>
+        <span class="eyebrow">Proposta personalizada</span>
         <h2>Receba o cronograma da <em>sua empresa</em> em 1 dia útil.</h2>
         <p>Conta pra gente o tamanho do time e o que você procura. Voltamos com um calendário sob medida e 3 opções de investimento — sem compromisso.</p>
         <ul>
@@ -698,7 +703,7 @@ body.lm-open{overflow:hidden}
         <input type="hidden" name="plano" value="">
         <label class="full">Algo que devemos saber? (opcional)<textarea name="mensagem" placeholder="Ex.: queremos algo pro Dia Mundial da Saúde Mental; time 100% remoto; temos 3 turnos…"></textarea></label>
         <input class="hp" name="site_url" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <button class="btn btn--terra" type="submit">Quero meu cronograma grátis →</button>
+        <button class="btn btn--terra" type="submit">Receber uma proposta personalizada →</button>
         <p class="fine">Respondemos em até 1 dia útil. Seus dados são usados só para este contato.</p>
       </form>
     </div>
