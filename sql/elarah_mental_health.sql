@@ -139,6 +139,8 @@ alter table public.mh_leads add column if not exists encontros int  check (encon
 alter table public.mh_leads add column if not exists utm       text check (char_length(utm) <= 300);
 alter table public.mh_leads add column if not exists pagina    text check (char_length(pagina) <= 300);
 alter table public.mh_leads add column if not exists referrer  text check (char_length(referrer) <= 300);
+-- Aceite da Política de Privacidade no formulário (LGPD).
+alter table public.mh_leads add column if not exists consentimento boolean;
 
 
 -- ===== 6. RLS =====

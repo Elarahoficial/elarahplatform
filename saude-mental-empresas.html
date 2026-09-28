@@ -129,6 +129,7 @@ section{padding:96px 0}
 .jornada b{display:block;margin:16px 0 6px;font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
 .jornada p{font-size:.93rem;color:var(--muted);max-width:260px}
 /* Simulador */
+#monte-experiencia{scroll-margin-top:110px}
 .sim{display:grid;grid-template-columns:1.35fr 1fr;border:1px solid var(--line);border-radius:26px;overflow:hidden;background:var(--paper)}
 .sim__perguntas{padding:34px 38px}
 .sim__perguntas h3{font-size:1.6rem;margin:10px 0 22px}
@@ -138,9 +139,19 @@ section{padding:96px 0}
 .sim__q button{font:inherit;font-size:.88rem;background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:9px 16px;margin:0 8px 8px 0;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
 .sim__q button:hover{border-color:var(--terra)}
 .sim__q button.on{background:var(--green);border-color:var(--green);color:#fff}
+.sim__q--freq .sim__opts button{display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.15;border-radius:14px;padding:9px 14px}
+.sim__q--freq .sim__opts button small{font-size:.7rem;color:var(--muted);margin-top:2px}
+.sim__q--freq .sim__opts button.on small{color:#cfe3d8}
+.sim__fixo{display:flex;align-items:center;gap:14px;background:var(--sage-soft);border-radius:14px;padding:12px 16px;font-size:.92rem;color:var(--green);font-weight:600}
+.sim__fixo[hidden]{display:none}
+.sim__alterar{font:inherit;font-size:.82rem;background:none;border:0;color:var(--terra-dark);text-decoration:underline;cursor:pointer;margin:0!important;padding:0!important}
+.sim.is-destaque{box-shadow:0 0 0 3px var(--terra-soft),0 24px 60px rgba(22,48,42,.12);transition:box-shadow .4s}
+.sim__selecao{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 16px}
+.sim__selecao span{font-size:.8rem;border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:4px 10px;color:#fff}
+.sim__selecao span.vazio{color:rgba(255,255,255,.5);border-style:dashed}
 .sim__previa{background:var(--green);color:#fff;padding:34px 34px;display:flex;flex-direction:column}
 .sim__tag{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f3b38f}
-.sim__previa h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:1.7rem;line-height:1.15;margin:12px 0 10px}
+.sim__previa h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:1.7rem;line-height:1.15;margin:4px 0 14px}
 .sim__resumo{font-size:.95rem;color:rgba(255,255,255,.85);margin-bottom:16px}
 .sim__lista{list-style:none;display:grid;gap:10px;margin-bottom:auto;padding-bottom:22px}
 .sim__lista li{font-size:.9rem;color:rgba(255,255,255,.9);padding-left:18px;position:relative}
@@ -152,6 +163,10 @@ section{padding:96px 0}
 .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
 .plan{background:var(--paper);border:1px solid var(--line);border-radius:26px;padding:32px 28px;display:flex;flex-direction:column}
 .plan--hot{background:var(--green);color:#fff;border-color:var(--green);transform:translateY(-10px);box-shadow:0 30px 60px rgba(31,77,63,.25)}
+.plan__n{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.plan__n i{font-style:normal;background:var(--terra);color:#fff;border-radius:999px;padding:4px 10px;font-size:.64rem}
+.plan--hot .plan__n{color:#f3b38f}
+.plans__micro{text-align:center;margin-top:34px;font-family:'DM Serif Display',serif;font-size:1.25rem;color:var(--green)}
 .plan .tag{align-self:flex-start;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border-radius:999px;background:var(--sage-soft);color:var(--green)}
 .plan--hot .tag{background:var(--terra);color:#fff}
 .plan h3{font-size:2rem;margin:16px 0 4px}
@@ -291,7 +306,8 @@ footer a{color:var(--muted)}
 .mon--off{opacity:.42;filter:grayscale(.4)}
 .mon--off .a{visibility:hidden}
 .picker__cta{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-top:24px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px 24px}
-.picker__cta p{font-size:1rem;max-width:720px}
+.picker__cta p{font-size:1rem;max-width:760px}
+.picker__tit{display:block;font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra);margin-bottom:4px}
 
 /* QUEM SOMOS */
 .team{display:grid;grid-template-columns:1fr 1fr;gap:24px}
@@ -320,6 +336,15 @@ footer a{color:var(--muted)}
 .lm__sub{color:var(--muted);font-size:.95rem;margin-bottom:16px}
 .lm__x{position:absolute;right:14px;top:10px;border:0;background:none;font-size:1.8rem;line-height:1;cursor:pointer;color:var(--muted)}
 .form--modal{padding:0;background:transparent}
+.lm__resumo{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;background:var(--sage-soft);border-radius:14px;padding:12px 16px;margin-bottom:16px}
+.lm__resumo[hidden]{display:none}
+.lm__resumo span{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green-2);width:100%}
+.lm__resumo b{font-size:.92rem;color:var(--ink);font-weight:600;flex:1}
+.lm__resumo button{font:inherit;font-size:.82rem;background:none;border:0;color:var(--terra-dark);text-decoration:underline;cursor:pointer}
+.form label[data-campo][hidden]{display:none}
+.lm__cons,.form .lm__cons{flex-direction:row!important;align-items:flex-start;gap:10px!important;font-weight:400!important;font-size:.8rem!important;color:var(--muted)}
+.lm__cons input{width:18px;height:18px;margin-top:1px;flex-shrink:0;accent-color:var(--green);padding:0}
+.lm__cons a{color:var(--green-2)}
 body.lm-open{overflow:hidden}
 .lm .form.form--modal{padding:0}
 
@@ -541,20 +566,21 @@ body.lm-open{overflow:hidden}
         <span class="eyebrow">Monte sua experiência</span>
         <h3>Não sabe qual formato faz sentido? Leva 1 minuto.</h3>
         <fieldset class="sim__q" data-q="pessoas"><legend><span>1</span> Quantas pessoas vão participar?</legend>
-          <button type="button" data-v="Até 20">Até 20</button><button type="button" data-v="21–50" class="on">21–50</button><button type="button" data-v="51–100">51–100</button><button type="button" data-v="100+">100+</button></fieldset>
-        <fieldset class="sim__q" data-q="formato"><legend><span>2</span> Qual formato você procura?</legend>
-          <button type="button" data-v="1 encontro">1 encontro</button><button type="button" data-v="Semestral" class="on">Semestral</button><button type="button" data-v="Anual">Anual</button><button type="button" data-v="Personalizado">Personalizado</button></fieldset>
+          <button type="button" data-v="Até 20">Até 20</button><button type="button" data-v="21–50">21–50</button><button type="button" data-v="51–100">51–100</button><button type="button" data-v="Mais de 100">Mais de 100</button></fieldset>
+        <fieldset class="sim__q sim__q--freq" data-q="freq"><legend><span>2</span> Com que frequência você quer realizar?</legend>
+          <div class="sim__fixo" hidden><span id="sim-freq-fixo"></span><button type="button" class="sim__alterar" data-sim-alterar>Alterar</button></div>
+          <div class="sim__opts"><button type="button" data-v="1"><b>1 encontro</b><small>Pontual</small></button><button type="button" data-v="2"><b>2 encontros</b><small>Semestral</small></button><button type="button" data-v="4"><b>4 encontros</b><small>Trimestral</small></button><button type="button" data-v="6"><b>6 encontros</b><small>Bimestral</small></button><button type="button" data-v="12"><b>12 encontros</b><small>Mensal</small></button><button type="button" data-v="ajuda"><b>Ainda não sei</b><small>Quero ajuda</small></button></div></fieldset>
         <fieldset class="sim__q" data-q="objetivo"><legend><span>3</span> Qual é o principal objetivo?</legend>
-          <button type="button" data-v="Bem-estar e pausa" class="on">Bem-estar e pausa</button><button type="button" data-v="Conexão entre equipes">Conexão entre equipes</button><button type="button" data-v="Criatividade">Criatividade</button><button type="button" data-v="Cuidado emocional">Cuidado emocional</button></fieldset>
+          <button type="button" data-v="Bem-estar e pausa">Bem-estar e pausa</button><button type="button" data-v="Conexão entre equipes">Conexão entre equipes</button><button type="button" data-v="Criatividade">Criatividade</button><button type="button" data-v="Cuidado emocional">Cuidado emocional</button></fieldset>
         <fieldset class="sim__q" data-q="local"><legend><span>4</span> Onde vai acontecer?</legend>
-          <button type="button" data-v="Na empresa" class="on">Na empresa</button><button type="button" data-v="Em um espaço parceiro">Em um espaço parceiro</button><button type="button" data-v="Online">Online</button><button type="button" data-v="Kit para casa">Kit para casa</button></fieldset>
+          <button type="button" data-v="Na empresa">Na empresa</button><button type="button" data-v="Em um espaço parceiro">Em um espaço parceiro</button><button type="button" data-v="Online">Online</button><button type="button" data-v="Kit para casa">Kit para casa</button></fieldset>
       </div>
       <aside class="sim__previa" aria-live="polite">
-        <span class="sim__tag">Prévia da sua experiência</span>
+        <span class="sim__tag">Sua seleção</span>
+        <p class="sim__selecao" id="sim-selecao"></p>
         <h4 id="sim-titulo">Uma experiência pensada para sua equipe.</h4>
-        <p class="sim__resumo" id="sim-resumo"></p>
         <ul class="sim__lista" id="sim-lista"></ul>
-        <p class="sim__nota">Proposta personalizada em até 1 dia útil, sem compromisso.</p>
+        <p class="sim__nota" id="sim-nota">Proposta personalizada em até 1 dia útil, sem compromisso.</p>
         <button type="button" class="btn btn--terra" id="sim-cta">Receber minha proposta</button>
       </aside>
     </div>
@@ -562,54 +588,58 @@ body.lm-open{overflow:hidden}
 </section>
 
 <!-- ===== PLANOS ===== -->
+<!-- Os botões não abrem formulário: levam ao simulador (#monte-experiencia)
+     já com a frequência escolhida. Plano → Simulador → Orçamento. -->
 <section id="planos">
   <div class="wrap">
     <div class="sec-head center reveal" style="text-align:center">
       <span class="eyebrow">Planos</span>
-      <h2>Comece do tamanho que fizer sentido.</h2>
-      <p>Todos os planos são montados sob medida: você escolhe quantos encontros quer, para quantas pessoas, e a gente cuida do resto.</p>
+      <h2>Cuide da sua equipe <em>do jeito que fizer sentido</em>.</h2>
+      <p>Escolha a frequência, o número de pessoas e o formato. A Elarah cuida de toda a experiência.</p>
     </div>
     <div class="plans">
       <div class="plan reveal">
-        <span class="tag">Pontual</span>
-        <h3>Uma data forte</h3>
-        <p class="for">Para começar numa campanha: Setembro Amarelo, Dia da Saúde Mental, SIPAT, fim de ano.</p>
+        <span class="plan__n">01 · Pontual</span>
+        <h3>Uma experiência pontual</h3>
+        <p class="for">Para uma ação específica, uma campanha ou uma data importante do calendário da empresa.</p>
         <ul>
           <li>1 experiência de 1h30 a 3h</li>
           <li>Materiais, facilitadora e registro fotográfico</li>
           <li>Lista de presença + relatório da ação</li>
           <li>Pode trocar o encontro por gift cards Elarah</li>
         </ul>
-        <a class="btn btn--ghost" href="#contato" data-lead="plano_pontual" data-plano="Pontual" data-encontros="1">Quero uma ação pontual</a>
-      </div>
-      <div class="plan plan--hot reveal">
-        <span class="tag">Mais escolhido</span>
-        <h3>Anual</h3>
-        <p class="for">O programa completo “12 meses de cuidado” — o que a NR-1 pede e o que o time lembra.</p>
-        <ul>
-          <li>Até 12 encontros no ano (vocês escolhem quantos)</li>
-          <li>Workshop NR-1 para lideranças</li>
-          <li>Rodas de conversa com psicóloga</li>
-          <li>Datas de presentear com gift cards Elarah — e a opção de trocar encontros por gift cards</li>
-          <li>Relatório semestral consolidado para o PGR</li>
-          <li>Check-in semanal com o RH</li>
-        </ul>
-        <a class="btn btn--terra" href="#contato" data-lead="plano_anual" data-plano="Anual" data-encontros="12">Quero o programa anual</a>
+        <a class="btn btn--ghost" href="#monte-experiencia" data-plano-sim="1">Montar minha ação</a>
       </div>
       <div class="plan reveal">
-        <span class="tag">Semestral</span>
+        <span class="plan__n">02 · Semestral</span>
         <h3>6 meses de cuidado</h3>
-        <p class="for">Para cobrir um semestre inteiro com consistência e medir o resultado antes de ampliar.</p>
+        <p class="for">Uma jornada de 6 meses para criar consistência, acompanhar a percepção da equipe e ajustar as ações ao longo do período.</p>
         <ul>
-          <li>6 ações mensais conectadas às datas do período</li>
+          <li>6 ações conectadas às datas e necessidades do período</li>
           <li>1 roda de conversa com psicóloga</li>
           <li>Pesquisa de pulso antes e depois</li>
-          <li>Relatório consolidado do semestre</li>
+          <li>Relatório consolidado para apoiar o PGR</li>
           <li>Qualquer encontro pode virar gift cards Elarah</li>
         </ul>
-        <a class="btn btn--ghost" href="#contato" data-lead="plano_semestral" data-plano="Semestral" data-encontros="6">Quero o semestral</a>
+        <a class="btn btn--ghost" href="#monte-experiencia" data-plano-sim="6">Montar meu programa semestral</a>
+      </div>
+      <div class="plan plan--hot reveal">
+        <span class="plan__n">03 · Anual <i>Mais escolhido</i></span>
+        <h3>12 meses de cuidado</h3>
+        <p class="for">Um programa contínuo para transformar ações pontuais em uma estratégia de cuidado ao longo do ano.</p>
+        <ul>
+          <li>Até 12 encontros no ano — vocês escolhem quantos</li>
+          <li>Workshop sobre fatores psicossociais e NR-1 para lideranças</li>
+          <li>Rodas de conversa com psicóloga</li>
+          <li>Pesquisa de pulso para acompanhar a percepção da equipe</li>
+          <li>Relatório consolidado para apoiar o PGR</li>
+          <li>Check-in periódico com o RH</li>
+          <li>Possibilidade de transformar encontros em gift cards Elarah</li>
+        </ul>
+        <a class="btn btn--terra" href="#monte-experiencia" data-plano-sim="12">Montar meu programa anual</a>
       </div>
     </div>
+    <p class="plans__micro reveal">Você escolhe o tamanho da jornada. A gente cuida do resto.</p>
   </div>
 </section>
 
@@ -619,20 +649,20 @@ body.lm-open{overflow:hidden}
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">Monte o seu cronograma</span>
-      <h2>Você escolhe <em>quantos encontros</em>. A gente monta o resto.</h2>
-      <p>O cronograma é criado a partir da quantidade de eventos que a sua empresa quer no ano. Nós distribuímos os encontros nas datas mais importantes para a saúde mental — e cuidamos de tudo: arteterapeutas, materiais, local, fotos e relatório.</p>
+      <h2>Você escolhe <em>o ritmo</em>. A gente cuida do resto.</h2>
+      <p>Escolha com que frequência sua empresa quer cuidar da equipe. A gente distribui os encontros ao longo do ano e monta cada experiência para fazer sentido para o seu momento.</p>
     </div>
-    <div class="picker reveal" role="group" aria-label="Quantos encontros por ano">
-      <span>Quantos encontros por ano?</span>
+    <div class="picker reveal" role="group" aria-label="Com que frequência">
+      <span>Com que frequência?</span>
       <button type="button" data-enc="1">1 <small>pontual</small></button>
-      <button type="button" data-enc="2">2 <small>1 por semestre</small></button>
-      <button type="button" data-enc="4" class="on">4 <small>essencial</small></button>
-      <button type="button" data-enc="6">6 <small>semestral</small></button>
-      <button type="button" data-enc="12">12 <small>anual</small></button>
+      <button type="button" data-enc="2">2 <small>semestral</small></button>
+      <button type="button" data-enc="4" class="on">4 <small>trimestral</small></button>
+      <button type="button" data-enc="6">6 <small>bimestral</small></button>
+      <button type="button" data-enc="12">12 <small>mensal</small></button>
     </div>
     <div class="cal" id="cal"></div>
     <div class="picker__cta reveal">
-      <p id="cal-resumo"></p>
+      <div><span class="picker__tit">Seu cronograma de cuidado</span><p id="cal-resumo"></p></div>
       <a class="btn btn--terra" href="#contato" data-lead="simulador" id="cal-cta">Quero esse cronograma</a>
     </div>
   </div>
@@ -822,12 +852,13 @@ body.lm-open{overflow:hidden}
         <label>Cargo<input name="cargo" placeholder="RH, SESMT, Diretoria…" autocomplete="organization-title"></label>
         <label>E-mail corporativo<input name="email" type="email" required autocomplete="email"></label>
         <label>WhatsApp<input name="whatsapp" type="tel" required placeholder="(11) 9…" autocomplete="tel"></label>
-        <label>Colaboradores<select name="colaboradores"><option value="">Selecione</option><option>até 50</option><option>51–200</option><option>201–500</option><option>501–1000</option><option>1000+</option></select></label>
-        <label class="full">Quantos encontros no ano?<select name="encontros"><option value="">Ainda não sei — quero ajuda</option><option value="1">1 (pontual)</option><option value="2">2</option><option value="4">4 (essencial)</option><option value="6">6 (semestral)</option><option value="12">12 (anual)</option></select></label>
+        <label>Pessoas na equipe<select name="colaboradores"><option value="">Selecione</option><option>Até 20</option><option>21–50</option><option>51–100</option><option>Mais de 100</option></select></label>
+        <label class="full">Com que frequência?<select name="encontros"><option value="">Selecione</option><option value="1">1 encontro — Pontual</option><option value="2">2 encontros — Semestral</option><option value="4">4 encontros — Trimestral</option><option value="6">6 encontros — Bimestral</option><option value="12">12 encontros — Mensal</option><option value="ajuda">Ainda não sei — Quero ajuda</option></select></label>
         <input type="hidden" name="plano" value="">
         <label class="full">Algo que devemos saber? (opcional)<textarea name="mensagem" placeholder="Ex.: queremos algo pro Dia Mundial da Saúde Mental; time 100% remoto; temos 3 turnos…"></textarea></label>
         <input class="hp" name="site_url" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <button class="btn btn--terra" type="submit">Receber uma proposta personalizada →</button>
+        <label class="full lm__cons"><input type="checkbox" name="consentimento" required> <span>Concordo em ser contatada(o) pela Elarah sobre esta proposta, conforme a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span></label>
+        <button class="btn btn--terra" type="submit">Receber minha proposta →</button>
         <p class="fine">Respondemos em até 1 dia útil. Seus dados são usados só para este contato.</p>
       </form>
     </div>
@@ -849,22 +880,24 @@ body.lm-open{overflow:hidden}
 <div class="lm" id="lead-modal" hidden>
   <div class="lm__box" role="dialog" aria-modal="true" aria-labelledby="lm-title">
     <button type="button" class="lm__x" data-lm-close aria-label="Fechar">×</button>
-    <span class="eyebrow">Orçamento em 1 dia útil</span>
-    <h3 id="lm-title">Conta rapidinho sobre a sua empresa</h3>
-    <p class="lm__sub">Assim já chegamos no WhatsApp com o cronograma pensado para vocês.</p>
+    <span class="eyebrow" id="lm-eyebrow">Proposta em 1 dia útil</span>
+    <h3 id="lm-title">Conte rapidinho sobre a sua empresa</h3>
+    <p class="lm__sub" id="lm-sub">Assim conseguimos chegar ao WhatsApp com uma proposta mais alinhada ao que vocês procuram.</p>
+    <div class="lm__resumo" id="lm-resumo" hidden><span>Sua experiência</span><b id="lm-resumo-txt"></b><button type="button" data-sim-editar>Alterar</button></div>
     <form class="form form--modal" id="lead-form-modal" novalidate>
       <label>Seu nome<input name="nome" required autocomplete="name"></label>
       <label>WhatsApp<input name="whatsapp" type="tel" required placeholder="(11) 9…" autocomplete="tel"></label>
       <label>E-mail<input name="email" type="email" required autocomplete="email"></label>
       <label>Empresa<input name="empresa" required autocomplete="organization"></label>
       <label>Cargo<input name="cargo" placeholder="RH, SESMT, Diretoria…" autocomplete="organization-title"></label>
-      <label>Colaboradores<select name="colaboradores"><option value="">Selecione</option><option>até 50</option><option>51–200</option><option>201–500</option><option>501–1000</option><option>1000+</option></select></label>
-      <label class="full">Quantos encontros no ano?<select name="encontros"><option value="">Ainda não sei — quero ajuda</option><option value="1">1 (pontual)</option><option value="2">2</option><option value="4">4 (essencial)</option><option value="6">6 (semestral)</option><option value="12">12 (anual)</option></select></label>
+      <label data-campo="pessoas">Pessoas na equipe<select name="colaboradores"><option value="">Selecione</option><option>Até 20</option><option>21–50</option><option>51–100</option><option>Mais de 100</option></select></label>
+      <label class="full" data-campo="freq">Com que frequência?<select name="encontros"><option value="">Selecione</option><option value="1">1 encontro — Pontual</option><option value="2">2 encontros — Semestral</option><option value="4">4 encontros — Trimestral</option><option value="6">6 encontros — Bimestral</option><option value="12">12 encontros — Mensal</option><option value="ajuda">Ainda não sei — Quero ajuda</option></select></label>
       <input type="hidden" name="plano" value="">
       <input type="hidden" name="mensagem" value="">
       <input class="hp" name="site_url" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="btn btn--terra" type="submit">Continuar no WhatsApp →</button>
-      <p class="fine">Seus dados ficam só com a Elarah e são usados apenas para este contato.</p>
+      <label class="full lm__cons"><input type="checkbox" name="consentimento" required> <span>Concordo em ser contatada(o) pela Elarah sobre esta proposta, conforme a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span></label>
+      <button class="btn btn--terra" type="submit">Receber minha proposta →</button>
+      <p class="fine">Respondemos em até 1 dia útil e seguimos a conversa pelo WhatsApp.</p>
     </form>
   </div>
 </div>
@@ -887,17 +920,17 @@ body.lm-open{overflow:hidden}
   function desenharCal() {
     var cal = document.getElementById('cal');
     if (!cal || !D) return;
-    var ativos = D.PRIORIDADE_MESES.slice(0, encSel);
+    // Encontros espalhados pelo ano, sem concentrar (e passando pelas
+    // datas fortes: Janeiro Branco, Abril Verde, Setembro Amarelo, 10/10).
+    var DIST = { 1: [10], 2: [4, 10], 4: [1, 4, 7, 10], 6: [1, 3, 5, 7, 9, 11], 12: [1,2,3,4,5,6,7,8,9,10,11,12] };
+    var ativos = DIST[encSel] || D.PRIORIDADE_MESES.slice(0, encSel);
     cal.innerHTML = D.PROGRAMA.map(function (p) {
       var a = D.atividade(p.atividade), on = ativos.indexOf(p.mes) >= 0;
-      return '<div class="mon in' + (on ? ' mon--key' : ' mon--off') + '"><span class="emo">' + (on ? a.emoji : '') + '</span><div class="m">' + MESES[p.mes - 1] + '</div>' +
+      return '<div class="mon in' + (on ? ' mon--key' : ' mon--off') + '"><div class="m">' + MESES[p.mes - 1] + '</div>' +
         '<b>' + esc(p.tema) + '</b><div class="a">' + esc(a.nome) + '</div></div>';
     }).join('');
-    var nomes = ativos.slice().sort(function (a, b) { return a - b; }).map(function (m) { return MESES[m - 1].toLowerCase(); });
     var res = document.getElementById('cal-resumo');
-    if (res) res.innerHTML = '<b>' + encSel + ' encontro' + (encSel > 1 ? 's' : '') + ' no ano</b> — ' +
-      (encSel === 12 ? 'um por mês, o ano inteiro.' : 'em ' + nomes.join(', ').replace(/, ([^,]*)$/, ' e $1') + '.') +
-      ' Arteterapeutas, materiais, local e relatório por nossa conta — e qualquer encontro pode virar gift cards Elarah pro time.';
+    if (res) res.innerHTML = '<b>' + encSel + ' encontro' + (encSel > 1 ? 's' : '') + (encSel > 1 ? ' distribuídos' : '') + ' ao longo do ano</b>, nas datas que mais fazem sentido para sua equipe. A Elarah cuida de arteterapeutas, materiais, local, registros e relatório.';
     var cta = document.getElementById('cal-cta'); if (cta) cta.setAttribute('data-encontros', String(encSel));
     document.querySelectorAll('[data-enc]').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-enc') === encSel); });
   }
@@ -927,22 +960,183 @@ body.lm-open{overflow:hidden}
     els.forEach(function (el) { io.observe(el); });
   } else els.forEach(function (el) { el.classList.add('in'); });
 
-  // ---------- Pedido de orçamento ----------
-  // Todo botão de orçamento/WhatsApp abre o formulário rápido. Os dados
-  // são SALVOS na plataforma (public.mh_leads) ANTES de abrir o WhatsApp.
+  // =============================================================
+  // JORNADA ÚNICA: Plano → Simulador → Orçamento → WhatsApp
+  // -------------------------------------------------------------
+  // Um só estado (EXP) guarda tudo que a pessoa já informou, em
+  // qualquer ponto da página (planos, simulador, "Monte o seu" ou os
+  // próprios formulários). Os formulários leem desse estado e só
+  // perguntam o que ainda falta. Fica salvo no navegador para quem
+  // volta à página.
+  // =============================================================
+  var FREQ = {
+    '1':  { n: 1,  label: '1 encontro',   nome: 'Pontual' },
+    '2':  { n: 2,  label: '2 encontros',  nome: 'Semestral' },
+    '4':  { n: 4,  label: '4 encontros',  nome: 'Trimestral' },
+    '6':  { n: 6,  label: '6 encontros',  nome: 'Bimestral' },
+    '12': { n: 12, label: '12 encontros', nome: 'Mensal' },
+    'ajuda': { n: null, label: 'Frequência a definir', nome: 'Quero ajuda' }
+  };
+  var TITULO = {
+    '1': 'Uma experiência pontual para sua equipe.',
+    '2': 'Dois encontros no ano, um por semestre.',
+    '4': 'Um encontro por trimestre ao longo do ano.',
+    '6': 'Um encontro a cada dois meses.',
+    '12': 'Um encontro por mês: cuidado contínuo o ano todo.',
+    'ajuda': 'Uma experiência pensada para sua equipe.'
+  };
+  var EXTRA = {
+    '6': ['1 roda de conversa com psicóloga', 'Pesquisa de pulso antes e depois'],
+    '12': ['Workshop sobre fatores psicossociais e NR-1 para lideranças', 'Check-in periódico com o RH']
+  };
+  var OBJ_EXP = {
+    'Bem-estar e pausa': 'Pausa com Arte: pintura, argila e aquarela para desacelerar',
+    'Conexão entre equipes': 'Criação em grupo: mosaico coletivo, cerâmica e rodas de conversa',
+    'Criatividade': 'Criatividade e novas perspectivas: colagem, pintura intuitiva e kintsugi',
+    'Cuidado emocional': 'Vivências de Arteterapia com espaço de escuta e expressão'
+  };
+  var LOCAL_TXT = {
+    'Na empresa': 'Na sua empresa — levamos todo o material',
+    'Em um espaço parceiro': 'Em um espaço parceiro da Elarah, fora da rotina do escritório',
+    'Online': 'Online, com materiais enviados para cada pessoa',
+    'Kit para casa': 'Kit em casa com orientação da arteterapeuta'
+  };
+  var CHAVE = 'elarah_mh_experiencia';
+  var EXP = { pessoas: '', freq: '', objetivo: '', local: '', via: '' };
+  try { var sv = JSON.parse(localStorage.getItem(CHAVE) || 'null'); if (sv) EXP = Object.assign(EXP, sv); } catch (_) {}
+  function salvarEXP() { try { localStorage.setItem(CHAVE, JSON.stringify(EXP)); } catch (_) {} }
+  function temEscolha() { return !!(EXP.pessoas || EXP.freq || EXP.objetivo || EXP.local); }
+  function freqTxt() {
+    var f = FREQ[EXP.freq]; if (!f) return '';
+    // O plano "6 meses de cuidado" concentra os 6 encontros num semestre.
+    if (EXP.freq === '6' && EXP.via === 'plano_semestral') return '6 encontros em 6 meses';
+    return f.n ? f.label + ' — ' + f.nome : f.label;
+  }
+  function resumoEXP() {
+    return [EXP.pessoas ? EXP.pessoas + ' pessoas' : '', freqTxt(), EXP.objetivo, EXP.local].filter(Boolean).join(' · ');
+  }
+
+  // Muda uma escolha e reflete em TODOS os lugares da página.
+  function definir(campo, valor, opts) {
+    opts = opts || {};
+    EXP[campo] = valor;
+    if (opts.via) EXP.via = opts.via;
+    salvarEXP();
+    sincronizar();
+  }
+
+  function sincronizar() {
+    // Simulador: botões marcados
+    document.querySelectorAll('.sim__q').forEach(function (fs) {
+      var v = EXP[fs.getAttribute('data-q')];
+      fs.querySelectorAll('button[data-v]').forEach(function (b) {
+        var on = b.getAttribute('data-v') === v;
+        b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    });
+    // Pergunta de frequência já respondida por um plano: vira linha fixa
+    var fixo = document.querySelector('.sim__fixo'), opts = document.querySelector('.sim__opts');
+    if (fixo && opts) {
+      var travado = EXP.via && EXP.freq && !EXP._freqAberta;
+      fixo.hidden = !travado; opts.hidden = !!travado;
+      if (travado) document.getElementById('sim-freq-fixo').textContent = freqTxt() + ' (escolhido no plano)';
+    }
+    // Prévia
+    var sel = document.getElementById('sim-selecao');
+    if (sel) {
+      sel.innerHTML = [
+        [EXP.pessoas ? EXP.pessoas + ' pessoas' : '', 'pessoas'],
+        [freqTxt(), 'frequência'], [EXP.objetivo, 'objetivo'], [EXP.local, 'local']
+      ].map(function (x) { return x[0] ? '<span>' + esc(x[0]) + '</span>' : '<span class="vazio">' + x[1] + '</span>'; }).join('');
+      document.getElementById('sim-titulo').textContent = TITULO[EXP.freq] || 'Uma experiência pensada para sua equipe.';
+      var itens = [];
+      if (EXP.objetivo) itens.push(OBJ_EXP[EXP.objetivo]);
+      if (EXP.local) itens.push(LOCAL_TXT[EXP.local]);
+      itens = itens.concat(EXTRA[EXP.freq] || []);
+      itens.push('Condução por arteterapeutas', 'Registros e documentação para a NR-1');
+      document.getElementById('sim-lista').innerHTML = itens.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('');
+      var falta = ['pessoas', 'freq', 'objetivo', 'local'].filter(function (k) { return !EXP[k]; }).length;
+      document.getElementById('sim-nota').textContent = falta
+        ? 'Escolha ' + (falta === 1 ? 'mais 1 opção' : 'mais ' + falta + ' opções') + ' para completar sua experiência — ou peça a proposta agora.'
+        : 'Sua experiência está montada. Proposta personalizada em até 1 dia útil, sem compromisso.';
+    }
+    // "Monte o seu" (calendário) acompanha a frequência
+    var n = FREQ[EXP.freq] && FREQ[EXP.freq].n;
+    if (n && n !== encSel) { encSel = n; desenharCal(); }
+    // Formulários
+    [formModal, formFinal].forEach(preencherForm);
+  }
+
+  function preencherForm(form) {
+    if (!form || !form.elements.colaboradores) return;
+    var f = form.elements;
+    if (EXP.pessoas) f.colaboradores.value = EXP.pessoas;
+    if (EXP.freq) f.encontros.value = EXP.freq;
+    f.plano.value = FREQ[EXP.freq] ? FREQ[EXP.freq].nome : '';
+  }
+
+  // Simulador: cliques
+  document.querySelectorAll('.sim__q').forEach(function (fs) {
+    fs.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-v]'); if (!b) return;
+      var q = fs.getAttribute('data-q');
+      if (q === 'freq') { EXP._freqAberta = false; EXP.via = ''; }
+      definir(q, b.getAttribute('data-v'));
+    });
+  });
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('[data-sim-alterar]')) { EXP._freqAberta = true; sincronizar(); }
+  });
+
+  // "Monte o seu": escolher encontros ali também atualiza a jornada
+  document.querySelectorAll('[data-enc]').forEach(function (b) {
+    b.addEventListener('click', function () { EXP.via = ''; definir('freq', b.getAttribute('data-enc')); });
+  });
+
+  // Planos → simulador já com a frequência do plano
+  function irParaSimulador() {
+    var sim = document.getElementById('monte-experiencia'); if (!sim) return;
+    sim.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    sim.classList.add('is-destaque');
+    setTimeout(function () { sim.classList.remove('is-destaque'); }, 1600);
+  }
+  document.querySelectorAll('[data-plano-sim]').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.preventDefault();
+      var v = b.getAttribute('data-plano-sim');
+      EXP._freqAberta = false;
+      definir('freq', v, { via: { '1': 'plano_pontual', '6': 'plano_semestral', '12': 'plano_anual' }[v] });
+      irParaSimulador();
+      try { if (window.ElarahAnalytics && ElarahAnalytics.track) ElarahAnalytics.track('mh_plano_simulador', { freq: v }); } catch (_) {}
+    });
+  });
+
+  // ---------- Orçamento ----------
+  // Os dados são SALVOS na plataforma (public.mh_leads) ANTES de abrir o WhatsApp.
   var params = new URLSearchParams(location.search);
   var utm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].map(function (k) { return params.get(k) ? k.replace('utm_', '') + '=' + params.get(k) : ''; }).filter(Boolean).join(' · ');
   var origemAtual = 'formulario';
   var modalEl = document.getElementById('lead-modal');
   var formModal = document.getElementById('lead-form-modal');
+  var formFinal = document.getElementById('lead-form');
 
-  function abrirModal(origem, plano, encontros, extra) {
-    extra = extra || {};
+  function abrirModal(origem, plano, encontros) {
     origemAtual = origem || 'botao';
-    formModal.elements.plano.value = plano || '';
-    formModal.elements.mensagem.value = extra.mensagem || '';
-    if (extra.colaboradores) formModal.elements.colaboradores.value = extra.colaboradores;
-    if (encontros) formModal.elements.encontros.value = String(encontros);
+    if (encontros && !EXP.freq) definir('freq', String(encontros));
+    var montou = temEscolha();
+    // Cabeçalho: quem já montou a experiência só completa os dados.
+    document.getElementById('lm-eyebrow').textContent = montou ? 'Último passo' : 'Proposta em 1 dia útil';
+    document.getElementById('lm-title').textContent = montou ? 'Sua experiência está quase pronta.' : 'Conte rapidinho sobre a sua empresa';
+    document.getElementById('lm-sub').textContent = montou
+      ? 'Você já definiu o formato. Agora só precisamos de alguns dados para preparar uma proposta mais alinhada ao que vocês procuram.'
+      : 'Assim conseguimos chegar ao WhatsApp com uma proposta mais alinhada ao que vocês procuram.';
+    document.getElementById('lm-resumo').hidden = !montou;
+    document.getElementById('lm-resumo-txt').textContent = resumoEXP();
+    // Só pergunta o que ainda não sabemos.
+    formModal.querySelector('[data-campo="pessoas"]').hidden = !!EXP.pessoas;
+    formModal.querySelector('[data-campo="freq"]').hidden = !!EXP.freq;
+    preencherForm(formModal);
+    formModal.elements.plano.value = plano || formModal.elements.plano.value;
     modalEl.hidden = false;
     document.body.classList.add('lm-open');
     setTimeout(function () { formModal.elements.nome.focus(); }, 50);
@@ -952,25 +1146,33 @@ body.lm-open{overflow:hidden}
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-lead]');
     if (t) { e.preventDefault(); abrirModal(t.getAttribute('data-lead'), t.getAttribute('data-plano'), t.getAttribute('data-encontros')); return; }
+    if (e.target.closest('[data-sim-editar]')) { fecharModal(); EXP._freqAberta = true; sincronizar(); irParaSimulador(); return; }
     if (e.target === modalEl || e.target.closest('[data-lm-close]')) fecharModal();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modalEl.hidden) fecharModal(); });
 
-  function planoDe(enc, plano) {
-    if (plano) return plano;
-    var n = parseInt(enc, 10);
-    return !n ? 'Não sei ainda' : n === 1 ? 'Pontual' : n <= 6 ? (n === 6 ? 'Semestral' : n + ' encontros') : 'Anual';
-  }
+  // O que a pessoa escolher nos selects dos formulários volta para a jornada.
+  [formModal, formFinal].forEach(function (form) {
+    if (!form) return;
+    form.addEventListener('change', function (e) {
+      if (e.target.name === 'colaboradores' && e.target.value) definir('pessoas', e.target.value);
+      if (e.target.name === 'encontros' && e.target.value) { EXP.via = ''; definir('freq', e.target.value); }
+    });
+  });
+
+  var simCta = document.getElementById('sim-cta');
+  if (simCta) simCta.addEventListener('click', function () { abrirModal(EXP.via ? EXP.via + '_simulador' : 'simulador_como'); });
+
   async function salvar(d) {
     var t0 = Date.now();
     while (!window.supabaseClient && Date.now() - t0 < 5000) await new Promise(function (r) { setTimeout(r, 150); });
     if (!window.supabaseClient) return false;
     var r = await window.supabaseClient.from('mh_leads').insert(d);
-    if (r.error && /column|origem|encontros|utm|pagina|referrer/i.test(r.error.message || '')) {
+    if (r.error && /column|origem|encontros|utm|pagina|referrer|consentimento/i.test(r.error.message || '')) {
       // Banco ainda sem as colunas novas: salva o essencial mesmo assim.
       var b = Object.assign({}, d);
       b.mensagem = [d.mensagem, d.encontros ? d.encontros + ' encontro(s)/ano' : '', d.origem ? 'origem: ' + d.origem : ''].filter(Boolean).join(' · ') || null;
-      delete b.origem; delete b.encontros; delete b.utm; delete b.pagina; delete b.referrer;
+      delete b.origem; delete b.encontros; delete b.utm; delete b.pagina; delete b.referrer; delete b.consentimento;
       r = await window.supabaseClient.from('mh_leads').insert(b);
     }
     if (r.error) console.warn('[MH lead]', r.error);
@@ -981,77 +1183,48 @@ body.lm-open{overflow:hidden}
       e.preventDefault();
       var f = form.elements;
       if (f.site_url.value) return; // robô
+      var fr = FREQ[f.encontros.value || EXP.freq];
+      var extraMsg = [
+        temEscolha() ? 'Experiência: ' + resumoEXP() : '',
+        EXP.via ? 'Começou pelo ' + EXP.via.replace('_', ' ') : ''
+      ].filter(Boolean).join(' · ');
+      var livre = f.mensagem ? f.mensagem.value.trim() : '';
       var d = {
         nome: f.nome.value.trim().slice(0, 120), empresa: f.empresa.value.trim().slice(0, 160),
         cargo: f.cargo.value.trim().slice(0, 120) || null, email: f.email.value.trim().slice(0, 160) || null,
-        whatsapp: f.whatsapp.value.trim().slice(0, 40) || null, colaboradores: f.colaboradores.value || null,
-        encontros: parseInt(f.encontros.value, 10) || null,
-        mensagem: f.mensagem ? (f.mensagem.value.trim().slice(0, 2000) || null) : null,
+        whatsapp: f.whatsapp.value.trim().slice(0, 40) || null,
+        colaboradores: (f.colaboradores.value || EXP.pessoas || '').slice(0, 20) || null,
+        encontros: fr && fr.n ? fr.n : null,
+        plano: fr ? fr.nome.slice(0, 20) : null,
+        mensagem: [livre, extraMsg].filter(Boolean).join(' — ').slice(0, 2000) || null,
         origem: (origem || origemAtual).slice(0, 60), utm: utm.slice(0, 300) || null,
-        pagina: location.pathname.slice(0, 300), referrer: (document.referrer || '').slice(0, 300) || null
+        pagina: location.pathname.slice(0, 300), referrer: (document.referrer || '').slice(0, 300) || null,
+        consentimento: true
       };
-      d.plano = planoDe(d.encontros, f.plano && f.plano.value).slice(0, 20);
       if (!d.nome || !d.empresa || !d.whatsapp || String(d.whatsapp).replace(/\D/g, '').length < 10 || !d.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) {
         alert('Preencha nome, empresa, WhatsApp (com DDD) e um e-mail válido.'); return;
       }
+      if (!f.consentimento.checked) { alert('Para enviar, confirme que concorda em ser contatada(o) pela Elarah.'); f.consentimento.focus(); return; }
       var btn = form.querySelector('button[type=submit]');
-      btn.disabled = true; btn.textContent = 'Salvando…';
+      btn.disabled = true; btn.textContent = 'Enviando…';
       var ok = false;
       try { ok = await salvar(d); } catch (err) { console.warn('[MH lead]', err); }
       try { if (window.ElarahAnalytics && ElarahAnalytics.track) ElarahAnalytics.track('mh_lead', { origem: d.origem, encontros: d.encontros }); } catch (_) {}
-      var msg = 'Olá! Sou ' + d.nome + (d.cargo ? ' (' + d.cargo + ')' : '') + ' da ' + d.empresa + '. Quero um orçamento da Elarah Mental Health' +
-        (d.encontros ? ' para ' + d.encontros + ' encontro' + (d.encontros > 1 ? 's' : '') + ' no ano' : '') +
-        (d.colaboradores ? ', time de ' + d.colaboradores + ' pessoas' : '') + '. E-mail: ' + d.email + (d.mensagem ? '. ' + d.mensagem : '');
+      var msg = 'Olá! Sou ' + d.nome + (d.cargo ? ' (' + d.cargo + ')' : '') + ' da ' + d.empresa + '. Quero receber a proposta da Elarah Mental Health' +
+        (temEscolha() ? ' para: ' + resumoEXP() : (d.encontros ? ' para ' + d.encontros + ' encontro(s)' : '')) + '. E-mail: ' + d.email + (livre ? '. ' + livre : '');
       var wa = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
-      form.innerHTML = '<div class="ok"><h3>Recebido! 💚</h3><p style="color:var(--muted);margin-bottom:18px">' +
-        (ok ? 'Seus dados já estão com a gente. Abrindo o WhatsApp pra continuar a conversa…' : 'Abrindo o WhatsApp com a mensagem pronta…') +
+      form.innerHTML = '<div class="ok"><h3>Recebido!</h3><p style="color:var(--muted);margin-bottom:18px">' +
+        (ok ? 'Sua experiência já está com a gente. Abrindo o WhatsApp pra continuar a conversa…' : 'Abrindo o WhatsApp com a mensagem pronta…') +
         '</p><a class="btn btn--terra" href="' + wa + '">Abrir o WhatsApp</a></div>';
       setTimeout(function () { location.href = wa; }, 900);
     });
   }
-  // ---------- Simulador "Monte sua experiência" ----------
-  var SIM = { pessoas: '21–50', formato: 'Semestral', objetivo: 'Bem-estar e pausa', local: 'Na empresa' };
-  var SIM_ENC = { '1 encontro': 1, 'Semestral': 6, 'Anual': 12, 'Personalizado': null };
-  var SIM_EXP = {
-    'Bem-estar e pausa': 'Pausa com Arte: pintura, argila e aquarela para desacelerar',
-    'Conexão entre equipes': 'Criação em grupo: mosaico coletivo, cerâmica e rodas de conversa',
-    'Criatividade': 'Criatividade e novas perspectivas: colagem, pintura intuitiva e kintsugi',
-    'Cuidado emocional': 'Vivências de Arteterapia com espaço de escuta e expressão'
-  };
-  var SIM_LOCAL = {
-    'Na empresa': 'Na sua empresa — levamos todo o material',
-    'Em um espaço parceiro': 'Em um espaço parceiro da Elarah, fora da rotina do escritório',
-    'Online': 'Online, com materiais enviados para cada pessoa',
-    'Kit para casa': 'Kit em casa com orientação da arteterapeuta'
-  };
-  function simRender() {
-    var r = document.getElementById('sim-resumo'); if (!r) return;
-    var enc = SIM_ENC[SIM.formato];
-    var freq = enc === 1 ? '1 encontro' : enc === 6 ? '6 encontros no semestre' : enc === 12 ? 'até 12 encontros no ano' : 'formato sob medida';
-    r.textContent = freq + ' · ' + SIM.pessoas.toLowerCase() + ' pessoas · ' + SIM.objetivo.toLowerCase();
-    document.getElementById('sim-lista').innerHTML = [SIM_EXP[SIM.objetivo], SIM_LOCAL[SIM.local], 'Condução por arteterapeutas', 'Registros e documentação para a NR-1'].map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('');
-  }
-  document.querySelectorAll('.sim__q').forEach(function (fs) {
-    fs.addEventListener('click', function (e) {
-      var b = e.target.closest('button'); if (!b) return;
-      fs.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-      SIM[fs.getAttribute('data-q')] = b.getAttribute('data-v');
-      simRender();
-    });
-  });
-  var simCta = document.getElementById('sim-cta');
-  if (simCta) simCta.addEventListener('click', function () {
-    var colab = SIM.pessoas === '100+' ? '' : (SIM.pessoas === '51–100' ? '51–200' : 'até 50');
-    abrirModal('simulador_como', SIM.formato === 'Personalizado' ? 'Personalizado' : SIM.formato, SIM_ENC[SIM.formato], {
-      colaboradores: colab,
-      mensagem: 'Simulador: ' + SIM.pessoas + ' pessoas · ' + SIM.formato + ' · ' + SIM.objetivo + ' · ' + SIM.local
-    });
-  });
-  simRender();
 
+  sincronizar();
   tratar(formModal, null);
-  tratar(document.getElementById('lead-form'), 'formulario');
+  tratar(formFinal, 'formulario');
 })();
 </script>
+
 </body>
 </html>

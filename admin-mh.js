@@ -1004,7 +1004,7 @@
   var STATUS_LEAD = { novo: 'Novo', em_contato: 'Em contato', convertido: 'Convertido', descartado: 'Descartado' };
   var ORIGEM_LABEL = {
     hero: 'Topo da página', nav: 'Menu', plano_pontual: 'Plano pontual', plano_semestral: 'Plano semestral', plano_anual: 'Plano anual',
-    simulador: 'Monte seu cronograma', simulador_como: 'Simulador (Como funciona)', problema: 'Seção “o problema”', gift: 'Gift cards', whatsapp_flutuante: 'Botão WhatsApp', formulario: 'Formulário final', quem_somos: 'Quem somos'
+    simulador: 'Monte seu cronograma', simulador_como: 'Simulador (Como funciona)', plano_pontual_simulador: 'Plano pontual → simulador', plano_semestral_simulador: 'Plano semestral → simulador', plano_anual_simulador: 'Plano anual → simulador', problema: 'Seção “o problema”', gift: 'Gift cards', whatsapp_flutuante: 'Botão WhatsApp', formulario: 'Formulário final', quem_somos: 'Quem somos'
   };
   function barras(titulo, contagem) {
     var ks = Object.keys(contagem).sort(function (a, b) { return contagem[b] - contagem[a]; });
