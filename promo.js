@@ -505,46 +505,44 @@
       '#elarah-promo-bar.mc{position:relative;z-index:101;display:flex;align-items:center;justify-content:center;',
       'gap:10px 26px;flex-wrap:wrap;padding:10px 16px;overflow:hidden;text-decoration:none;color:#fff;',
       'font-family:inherit;line-height:1;cursor:pointer;',
-      'background:radial-gradient(120% 180% at 12% 0%,#ff5a3c 0%,rgba(255,90,60,0) 45%),',
-      'radial-gradient(120% 180% at 88% 100%,#ff2e7e 0%,rgba(255,46,126,0) 45%),#1d0f1a;}',
+      'background:linear-gradient(90deg,#e2833c 0%,#f27623 35%,#f0a05e 65%,#e2833c 100%);',
+      'background-size:200% 100%;animation:mcFundo 8s ease-in-out infinite;}',
       '.mc__linha{display:flex;align-items:center;gap:14px;position:relative;z-index:2;}',
       // selo com texto em gradiente correndo
       '.mc__tag{font-weight:900;text-transform:uppercase;letter-spacing:2px;font-size:1.18rem;line-height:1.25;padding-top:2px;',
-      'text-shadow:0 0 18px rgba(255,209,102,.35);',
-      'background:linear-gradient(90deg,#ffe29a,#ffffff,#ffd166,#ffffff,#ffe29a);background-size:300% 100%;',
-      '-webkit-background-clip:text;background-clip:text;color:transparent;animation:mcGrad 4s linear infinite;}',
+      'color:#fff;text-shadow:0 2px 0 rgba(160,70,10,.35);}',
       // 15% OFF em selo girado
       '.mc__off{display:inline-flex;align-items:center;gap:4px;padding:6px 12px 6px 10px;border-radius:12px;',
-      'background:#fff;color:#1d0f1a;transform:rotate(-3deg);box-shadow:0 4px 18px rgba(255,90,60,.55);',
+      'background:#fff;color:#c55a12;transform:rotate(-3deg);box-shadow:0 4px 14px rgba(150,60,0,.3);',
       'animation:mcPulse 1.6s ease-in-out infinite;}',
       '.mc__off small{font-size:.62rem;font-weight:800;text-transform:uppercase;writing-mode:vertical-rl;',
-      'transform:rotate(180deg);letter-spacing:1px;color:#ff4f3c;}',
+      'transform:rotate(180deg);letter-spacing:1px;color:#e2833c;}',
       '.mc__off b{font-size:1.75rem;font-weight:900;letter-spacing:-1px;',
-      'background:linear-gradient(135deg,#ff4f3c,#ff2e7e);-webkit-background-clip:text;background-clip:text;color:transparent;}',
+      'color:#f27623;}',
       '.mc__off em{font-style:normal;font-weight:900;font-size:.95rem;}',
       // relógio em caixinhas
       '.mc__relogio{display:flex;align-items:center;gap:5px;}',
       '.mc__acaba{font-size:.68rem;text-transform:uppercase;letter-spacing:1px;opacity:.8;margin-right:3px;font-weight:700;}',
       '.mc__cx{display:inline-flex;align-items:baseline;gap:1px;min-width:36px;justify-content:center;padding:6px 6px;',
-      'border-radius:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);}',
+      'border-radius:8px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35);}',
       '.mc__cx b{font-size:1.02rem;font-weight:900;font-variant-numeric:tabular-nums;}',
       '.mc__cx small{font-size:.62rem;font-weight:700;opacity:.75;}',
       // botão
       '.mc__cta{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:999px;',
-      'background:linear-gradient(90deg,#ff8a3d,#ff4f8b);color:#fff;font-weight:900;font-size:.88rem;',
-      'box-shadow:0 4px 14px rgba(255,79,139,.45);white-space:nowrap;}',
+      'background:#fff;color:#e2682a;font-weight:900;font-size:.88rem;',
+      'box-shadow:0 4px 12px rgba(150,60,0,.25);white-space:nowrap;}',
       '.mc__seta{display:inline-block;animation:mcSeta 1.1s ease-in-out infinite;}',
       '#elarah-promo-bar.mc:hover .mc__cta{filter:brightness(1.08);}',
       // brilho que atravessa a faixa
       '.mc__brilho{position:absolute;inset:0;z-index:1;pointer-events:none;',
-      'background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.18) 50%,transparent 60%);',
+      'background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.28) 50%,transparent 60%);',
       'transform:translateX(-100%);animation:mcBrilho 3.5s ease-in-out infinite;}',
       // confete caindo
       '.mc__confete{position:absolute;inset:0;z-index:1;pointer-events:none;}',
       '.mc__confete i{position:absolute;top:-10px;width:6px;height:10px;border-radius:2px;opacity:.9;',
       'animation:mcCai 3.2s linear infinite;}',
     ];
-    var cores = ['#ffd166', '#ff8a3d', '#ff4f8b', '#7ee0c3', '#ffffff', '#b98cff', '#ffd166'];
+    var cores = ['#ffffff', '#ffe3c4', '#ffd166', '#ffffff', '#fff1dc', '#ffc27a'];
     for (var i = 0; i < 14; i++) css_push(i);
     function css_push(i) {
       var left = Math.round((i + 0.5) * (100 / 14));
@@ -554,7 +552,7 @@
         ';animation-delay:-' + delay + 's;animation-duration:' + dur + 's;}');
     }
     arr.push(
-      '@keyframes mcGrad{to{background-position:300% 0}}',
+      '@keyframes mcFundo{0%,100%{background-position:0 0}50%{background-position:100% 0}}',
       '@keyframes mcPulse{0%,100%{transform:rotate(-3deg) scale(1)}50%{transform:rotate(-3deg) scale(1.06)}}',
       '@keyframes mcSeta{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}',
       '@keyframes mcBrilho{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}',
@@ -570,7 +568,7 @@
       '.mc__cta{padding:7px 13px;font-size:.8rem;}',
       '}',
       '@media (prefers-reduced-motion:reduce){',
-      '.mc__tag,.mc__off,.mc__seta,.mc__brilho,.mc__confete i{animation:none!important;}',
+      '#elarah-promo-bar.mc,.mc__off,.mc__seta,.mc__brilho,.mc__confete i{animation:none!important;}',
       '.mc__confete{display:none;}',
       '}'
     );
