@@ -134,7 +134,7 @@ section{padding:96px 0}
 .mon--key .a{color:#cfe3d8}
 
 /* EXPERIENCES */
-.exp{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.exp{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
 .xcard{background:var(--paper);border-radius:22px;overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column}
 .xcard img{height:220px;width:100%;object-fit:cover}
 .xcard .in{padding:22px}
@@ -277,6 +277,7 @@ body.lm-open{overflow:hidden}
   .elarah__pics{height:300px}
 }
 @media (max-width:560px){
+  body .exp{grid-template-columns:1fr}
   .brand img{height:28px}
   .nav .btn{white-space:nowrap;padding:9px 12px;font-size:.78rem}
   .nav__in{height:72px}
@@ -295,7 +296,8 @@ body.lm-open{overflow:hidden}
   .hero__visual{height:440px;max-width:560px;width:100%;margin:0 auto}
   .urg__grid{grid-template-columns:1fr 1fr}
   .urg__grid>div:first-child{grid-column:1/-1}
-  .cards3,.plans,.exp,.pers{grid-template-columns:1fr}
+  .cards3,.plans,.pers{grid-template-columns:1fr}
+  .exp{grid-template-columns:repeat(2,1fr)}
   .plan--hot{transform:none}
   .steps{grid-template-columns:1fr 1fr}
   .cal{grid-template-columns:repeat(2,1fr)}
@@ -340,7 +342,7 @@ body.lm-open{overflow:hidden}
     <div class="reveal">
       <span class="eyebrow">Arteterapia corporativa · NR-1</span>
       <h1>Saúde mental que o seu time <em>quer</em> participar.</h1>
-      <p class="hero__lead">Workshops de <b>Arteterapia</b> conduzidos por arteterapeutas — pintura, argila, colagem, kintsugi — num <b>cronograma pontual, semestral ou anual</b>, com a quantidade de encontros que a sua empresa quiser. A gente cuida de tudo e entrega a documentação para a NR-1.</p>
+      <p class="hero__lead"><b>Cerâmica, gastronomia, pintura, velas aromáticas</b> e muito mais — com o olhar da Arteterapia. Para o time, é aquela pausa que todo mundo espera no mês. Para a empresa, é um <b>cronograma pontual, semestral ou anual</b> com os encontros que vocês quiserem, tudo organizado por nós e documentado para a NR-1.</p>
       <div class="hero__actions">
         <a class="btn btn--terra" href="#contato" data-lead="hero">Receber meu cronograma grátis</a>
         <a class="btn btn--ghost" href="#calendario">Ver o calendário</a>
@@ -518,7 +520,8 @@ body.lm-open{overflow:hidden}
     <div class="exp">
       <div class="xcard reveal"><img src="assets/ceramica.jpg" alt="Peças de cerâmica feitas à mão" loading="lazy"><div class="in"><h3>Cerâmica terapêutica</h3><p>Modelagem em argila: foco sensorial total, sem tela e sem pressa.</p><div class="why">Ajuda com: estresse e esgotamento</div></div></div>
       <div class="xcard reveal"><img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal acesa" loading="lazy"><div class="in"><h3>Velas aromáticas</h3><p>Cera vegetal e óleos essenciais: um ritual de pausa que cada pessoa leva pra casa.</p><div class="why">Ajuda com: estresse e falta de reconhecimento</div></div></div>
-      <div class="xcard reveal"><img src="assets/aquarela.jpg" alt="Pintura em aquarela" loading="lazy"><div class="in"><h3>Aquarela & pintura intuitiva</h3><p>Pincelada lenta, respiração guiada e zero autojulgamento.</p><div class="why">Ajuda com: ansiedade e pressão por entrega</div></div></div>
+      <div class="xcard reveal"><img src="assets/corp-grupo.jpg" alt="Equipe cozinhando junta" loading="lazy"><div class="in"><h3>Gastronomia afetiva</h3><p>Massas, pães e quitutes feitos juntos — e comidos juntos, na mesma mesa.</p><div class="why">Ajuda com: clima e conexão entre áreas</div></div></div>
+      <div class="xcard reveal"><img src="assets/aquarela.jpg" alt="Pintura em aquarela" loading="lazy"><div class="in"><h3>Pintura intuitiva</h3><p>Pincelada lenta, respiração guiada e zero autojulgamento.</p><div class="why">Ajuda com: ansiedade e pressão por entrega</div></div></div>
     </div>
     <div class="chips reveal">
       <span class="chip">🌿 Terrário & kokedama</span><span class="chip">✨ Kintsugi (consertar com ouro)</span><span class="chip">🧵 Bordado livre</span>
