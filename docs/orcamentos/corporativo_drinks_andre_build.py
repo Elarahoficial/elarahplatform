@@ -187,39 +187,29 @@ experiencias = f'''
     <h2>Escolham a experiência <em>do time</em></h2>
     <p class="lead">Cinco formatos, todos com comidinhas inclusas, profissional conduzindo e muita troca. Diferentes maneiras de transformar o encontro em confraternização.</p>
     <div class="dgrid">
-      {dcard("Workshop Caipirinha Brasileira", "com mini salgados", "O clássico brasileiro: técnica, cortes, equilíbrio de sabores e variações — com prática e degustação.", "489", "drinks.jpg", "Drink cítrico com limão", "center 50%")}
-      {dcard("Descobrindo o Universo do Gin", "com mini salgados", "Do gin tônica perfeito ao highball: história, rótulos, técnicas e combinações, degustando diferentes gins.", "569", "drinksclassicos.jpg", "Coquetel autoral", "center 50%")}
-      {dcard("Coffee &amp; Cocktails", "com pães de queijo &amp; acompanhamentos", "Coquetelaria encontra o café: fundamentos, preparo e apresentação de bebidas, com degustação.", "569", "drinksmoleculares.jpg", "Preparo de coquetel autoral", "center 50%")}
-      {dcard("Mocktail Experience", "com tábua de frios &amp; queijos curados", "Coquetelaria sem álcool: equilíbrio, xaropes e releituras de clássicos como Mojito e Espresso Martini.", "619", "harmonizacaoqueijos.jpg", "Tábua de frios e queijos curados", "center 50%")}
-      {dcard("Jornada pela Cerveja Artesanal", "com salgadinhos", "Estilos, ingredientes e análise sensorial: degustação técnica guiada de quatro cervejas.", "619", "salgadinho.jpg", "Salgadinhos para acompanhar", "center 50%")}
+      {dcard("Workshop Caipirinha Brasileira", "com mini salgados", "O clássico brasileiro: técnica, cortes, equilíbrio de sabores e variações — com prática e degustação.", "489", "andre-caipirinha.jpg", "Caipirinha com limão e gelo", "center 50%")}
+      {dcard("Descobrindo o Universo do Gin", "com mini salgados", "Do gin tônica perfeito ao highball: história, rótulos, técnicas e combinações, degustando diferentes gins.", "569", "andre-gin.jpg", "Preparo de gin tônica com botânicos", "center 45%")}
+      {dcard("Coffee &amp; Cocktails", "com pães de queijo &amp; acompanhamentos", "Coquetelaria encontra o café: fundamentos, preparo e apresentação de bebidas, com degustação.", "569", "andre-coffee-cocktail.jpg", "Coquetel de café sendo servido", "center 50%")}
+      {dcard("Mocktail Experience", "com tábua de frios &amp; queijos curados", "Coquetelaria sem álcool: equilíbrio, xaropes e releituras de clássicos como Mojito e Espresso Martini.", "619", "andre-mocktail.jpg", "Drinks sem álcool coloridos", "center 50%")}
+      {dcard("Jornada pela Cerveja Artesanal", "com salgadinhos", "Estilos, ingredientes e análise sensorial: degustação técnica guiada de quatro cervejas.", "619", "andre-cerveja.jpg", "Brinde com cervejas e petiscos", "center 40%")}
     </div>
     {foot("As experiências")}
   </section>'''
 
 # ============================ 5 · FORMATO ============================
-formato = f'''
-  <section class="slide">
-{head_simple("O formato")}
-    <span class="eyebrow orange">◆ Como acontece</span>
-    <h2>Um encontro <em>privativo do grupo</em></h2>
-    <p class="lead">Turma exclusiva, sem pressa, num espaço só de vocês.</p>
-    <div class="fmt">
-      <div class="fc"><div class="fi">✦</div><div class="ft">8 a 11</div><div class="fs">turma privada</div></div>
-      <div class="fc"><div class="fi">◷</div><div class="ft">≈ 2h30</div><div class="fs">duração da experiência</div></div>
-      <div class="fc"><div class="fi">◆</div><div class="ft">No seu espaço</div><div class="fs">a Elarah leva tudo</div></div>
-      <div class="fc"><div class="fi">✧</div><div class="ft">Drinks + comidinhas</div><div class="fs">tudo incluso</div></div>
-    </div>
-    <div class="bnote" style="margin-top:18px">◆ A Elarah cuida da <b>curadoria, da produção e da condução</b> — o time só chega, cria e confraterniza.</div>
-    {foot("O formato")}
-  </section>'''
-
-# ============================ 6 · INVESTIMENTO ============================
+# ============================ 6 · FORMATO & INVESTIMENTO ============================
 investimento = f'''
   <section class="slide">
-{head_simple("Investimento")}
-    <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Valores <em>por pessoa</em></h2>
-    <p class="lead">Cada experiência já inclui a condução profissional, a estrutura e as comidinhas. Valor por pessoa, para o grupo de 8 a 11.</p>
+{head_simple("Formato & investimento")}
+    <span class="eyebrow orange">◆ Formato &amp; investimento</span>
+    <h2>O formato <em>&amp; os valores</em></h2>
+    <p class="lead">Turma privada de 8 a 11, cerca de 2h30, no espaço de vocês. Cada experiência já inclui a condução profissional, a estrutura e as comidinhas.</p>
+    <div class="chips" style="margin-top:14px">
+      <span class="chip"><b>8 a 11</b> pessoas</span>
+      <span class="chip">≈ <b>2h30</b></span>
+      <span class="chip">No seu espaço</span>
+      <span class="chip">Drinks + comidinhas</span>
+    </div>
     <table class="itable">
       <thead><tr>
         <th>Experiência</th>
@@ -259,7 +249,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + conceito + atmosfera + espaco + experiencias + formato + investimento + proximos + '\n\n</div>\n\n')
+        + cover + conceito + atmosfera + espaco + experiencias + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/corporativo-drinks-andre.html"
 open(out, "w", encoding="utf-8").write(html)
