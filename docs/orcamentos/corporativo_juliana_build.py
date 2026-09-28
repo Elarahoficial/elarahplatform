@@ -1,7 +1,7 @@
 # Proposta Elarah · Team building Juliana · 8 pessoas · 22/10 · Brooklin · budget ate R$2.000 (nao citar)
 # EVOLUCAO da proposta inicial (mesma identidade do deck de tufting/Lado B): mesma narrativa/tom/estetica (BFA verde/terracota).
 # Somente Ateliê Meu Outro Lado. Curadoria: Vela e Sabonete (versoes base R$269/2.152 e premium/vinho R$309/2.472 p/8).
-# Vela com diferencial sazonal de Halloween. Opcionais: Fotografia R$450 · Mimo R$139. Fotos reais.
+# Vela com diferencial sazonal de Halloween (2 modalidades). Slide final de investimento (4 possibilidades). Sem opcionais. Fotos reais.
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
 
@@ -68,6 +68,32 @@ xcss = '''
   .season .stag{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:800}
   .season .sb p{font-size:11.5px;color:var(--navy-soft);line-height:1.5;margin:5px 0 0}
   .season .sb p b{color:var(--navy)}
+  /* halloween · duas modalidades */
+  .hwhead{display:flex;align-items:baseline;gap:12px;margin-top:16px;flex-wrap:wrap}
+  .hwhead .stag{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:800}
+  .hwhead p{font-size:10.5px;color:var(--navy-soft);margin:0;line-height:1.4}
+  .hw2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}
+  .hwc{display:flex;gap:12px;align-items:center;background:rgba(169,102,63,.10);border:1px solid rgba(169,102,63,.30);border-radius:14px;padding:10px 12px}
+  .hwc .hwph{flex:0 0 84px;height:84px;border-radius:11px;overflow:hidden;border:1px solid var(--line)}
+  .hwc .hwph img{width:100%;height:100%;object-fit:cover;display:block}
+  .hwc .hwb{flex:1}
+  .hwc .hwt{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-dark);font-weight:800}
+  .hwc h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:14.5px;color:var(--navy);line-height:1.05;margin:2px 0 0}
+  .hwc p{font-size:9.5px;color:var(--navy-soft);line-height:1.35;margin:4px 0 0}
+  /* investimento · matriz 4 possibilidades */
+  .inv2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+  .invc{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 14px 32px -26px rgba(0,0,0,.32)}
+  .invc .invhd{background:var(--navy);color:#fff;padding:13px 20px}
+  .invc .invhd .ik{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:rgba(255,255,255,.75)}
+  .invc .invhd h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:21px;line-height:1.05;margin:2px 0 0;color:#fff}
+  .invc .invrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 20px}
+  .invc .invrow + .invrow{border-top:1px solid var(--line)}
+  .invc .invrow .il{font-size:11px;color:var(--navy-soft);font-weight:600;line-height:1.25}
+  .invc .invrow .il small{display:block;font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .invc .invrow .ir{text-align:right;white-space:nowrap}
+  .invc .invrow .ir .pp{font-family:'DM Serif Display',serif;font-size:22px;color:var(--orange-dark);line-height:1}
+  .invc .invrow .ir .pp small{font-family:-apple-system,sans-serif;font-size:8px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-left:3px}
+  .invc .invrow .ir .tt{display:block;font-size:10px;color:var(--muted);margin-top:3px}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -126,7 +152,7 @@ cover = f'''
           <span class="chip">Ateliê Meu Outro Lado · Brooklin</span>
         </div>
       </div>
-      <div class="cover-photo">{img("corp-criativo.jpg", "Grupo criando junto, de mão na massa", "center 45%")}</div>
+      <div class="cover-photo">{img("porque-mesa-workshop.jpg", "Time reunido criando velas na mesa do ateliê, mãos no processo", "center 42%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Juliana")}
@@ -164,7 +190,7 @@ sabonete = f'''
     <p class="lead">Um processo sensorial e relaxante: cada um escolhe aromas, cores e botânicos e cria os próprios sabonetes, do começo ao fim — tudo no Ateliê Meu Outro Lado.</p>
     <div class="egr">
       {ecard("Sabonete Artesanal", "Todo material incluso", "Cada um cria os próprios sabonetes, escolhendo aromas, cores e botânicos.", "os próprios sabonetes", "269", "2.152", "saboneteroxo.jpg", "Sabonetes artesanais com lavanda e botânicos", "center 50%")}
-      {ecard("Sabonete Artesanal + vinho", "Todo material incluso · com vinho", "A mesma experiência, com uma seleção de vinhos para acompanhar e brindar.", "os próprios sabonetes", "309", "2.472", "drinkspetisco.jpg", "Vinho e petiscos para acompanhar", "center 50%")}
+      {ecard("Sabonete Artesanal + vinho", "Todo material incluso · com vinho", "A mesma experiência, com uma seleção de vinhos para acompanhar e brindar.", "os próprios sabonetes", "309", "2.472", "vinhotintos.jpg", "Vinhos e taças para brindar durante a experiência", "center 50%")}
     </div>
     {foot("Experiências · Sabonete")}
   </section>'''
@@ -180,9 +206,19 @@ vela = f'''
       {ecard("Vela Personalizada", "Todo material incluso", "Cada um escolhe aromas e detalhes e cria a própria vela, do começo ao fim.", "a própria vela", "269", "2.152", "vela-aromatica-real.jpg", "Preparo de vela aromática com flores secas", "center 50%")}
       {ecard("Vela Personalizada + vinho", "Todo material incluso · com vinho", "A mesma experiência, com uma seleção de vinhos para brindar enquanto cria.", "a própria vela", "309", "2.472", "curadoria-vinhos.jpg", "Taças e vinhos para brindar", "center 45%")}
     </div>
-    <div class="season">
-      <div class="sph">{img("velaaromaticaaaa4.jpg", "Vela decorada com especiarias, em clima de outono", "center 50%")}</div>
-      <div class="sb"><span class="stag">🎃 Edição especial de Halloween</span><p><b>Workshop Vela Halloween</b> &nbsp;·&nbsp; <b>Pinte sua Abóbora &amp; Faça sua Vela Aromática</b> — velas decoradas, abóboras e clima de outono para deixar o encontro ainda mais criativo e divertido.</p></div>
+    <div class="hwhead">
+      <span class="stag">🎃 Edição especial de Halloween</span>
+      <p>Duas modalidades sazonais — é só escolher a que combina com o time.</p>
+    </div>
+    <div class="hw2">
+      <div class="hwc">
+        <div class="hwph">{img("velaaromaticaaaa4.jpg", "Vela aromática decorada com especiarias, em clima de outono", "center 50%")}</div>
+        <div class="hwb"><span class="hwt">Opção 1</span><h4>Workshop Vela Halloween</h4><p>Cada um cria a própria vela aromática com aromas e detalhes decorativos em clima de outono.</p></div>
+      </div>
+      <div class="hwc">
+        <div class="hwph">{img("pinturaemvela.jpg", "Pintura artesanal à mão, no ateliê", "center 50%")}</div>
+        <div class="hwb"><span class="hwt">Opção 2</span><h4>Pinte sua Abóbora &amp; Faça sua Vela Aromática</h4><p>Pinte uma abóbora em resina e crie a própria vela aromática — duas lembranças pra levar.</p></div>
+      </div>
     </div>
     {foot("Experiências · Vela")}
   </section>'''
@@ -198,42 +234,35 @@ atelie = f'''
       <figure>{img("meu-outro-lado.jpg", "Ateliê Meu Outro Lado, acolhedor e criativo", "center 50%")}<figcaption>O ateliê</figcaption></figure>
       <figure>{img("teoriavela.jpg", "Mãos preparando uma vela com botânicos", "center 50%")}<figcaption>Mãos na obra</figcaption></figure>
       <figure>{img("sabonete.jpg", "Materiais, aromas e botânicos", "center 50%")}<figcaption>Materiais &amp; aromas</figcaption></figure>
-      <figure>{img("corp-criativo.jpg", "Grupo criando junto, de mão na massa", "center 45%")}<figcaption>O grupo junto</figcaption></figure>
+      <figure>{img("sais-grupo.jpg", "Pessoas criando com os materiais no ateliê", "center 45%")}<figcaption>Mãos à obra em grupo</figcaption></figure>
       <figure>{img("velas.jpg", "Velas finalizadas", "center 50%")}<figcaption>O resultado</figcaption></figure>
-      <figure>{img("pizza-brinde.jpg", "Brinde entre o grupo", "center 50%")}<figcaption>Pra brindar</figcaption></figure>
+      <figure>{img("tacalimao2.jpg", "Pessoas brindando com taças de vinho", "center 22%")}<figcaption>Pra brindar</figcaption></figure>
     </div>
     <div class="bnote" style="margin-top:16px">◆ <b>Sem locação adicional:</b> o espaço já faz parte da experiência — acolhedor, leve e ideal para um encontro de team building.</div>
     {foot("O espaço · Meu Outro Lado")}
   </section>'''
 
-# ============================ 6 · OPCIONAIS ============================
-opcionais = f'''
+# ============================ 6 · INVESTIMENTO ============================
+investimento = f'''
   <section class="slide">
-{head_simple("Opcionais")}
-    <span class="eyebrow orange">◆ Pra deixar ainda mais completo</span>
-    <h2>Dois toques que fazem <em>diferença</em></h2>
-    <div class="opts">
-      <div class="opt">
-        <div class="oph">{img("mimos-registro-itau.jpg", "Registro fotográfico espontâneo do time", "center 40%")}</div>
-        <div class="ob">
-          <span class="ot">Fotografia</span>
-          <h4>Registro da experiência</h4>
-          <p>Um fotógrafo cobre o encontro — o processo, os detalhes e os melhores momentos do time. Álbum digital pronto pra compartilhar.</p>
-          <div class="op">R$ 450<small>valor total</small></div>
-        </div>
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ Quatro possibilidades</span>
+    <h2>Escolham o que combina <em>com o time</em></h2>
+    <p class="lead">Duas experiências — Vela ou Sabonete — cada uma nas versões sem vinho e com vinho. Valores por pessoa e para o grupo fechado de 8 pessoas.</p>
+    <div class="inv2">
+      <div class="invc">
+        <div class="invhd"><span class="ik">Experiência</span><h3>Vela Personalizada</h3></div>
+        <div class="invrow"><div class="il">Sem vinho<small>Todo material incluso</small></div><div class="ir"><span class="pp">R$ 269<small>por pessoa</small></span><span class="tt">R$ 2.152 · 8 pessoas</span></div></div>
+        <div class="invrow"><div class="il">Com vinho<small>Seleção de vinhos para brindar</small></div><div class="ir"><span class="pp">R$ 309<small>por pessoa</small></span><span class="tt">R$ 2.472 · 8 pessoas</span></div></div>
       </div>
-      <div class="opt">
-        <div class="oph">{img("brinde-corp.jpg", "Mimo personalizado para o time", "center 50%")}</div>
-        <div class="ob">
-          <span class="ot">Mimo para o time</span>
-          <h4>Um detalhe especial</h4>
-          <p>Um mimo personalizado pra cada participante levar — um detalhe que complementa o encontro e lembra o dia depois.</p>
-          <div class="op">R$ 139<small>por pessoa</small></div>
-        </div>
+      <div class="invc">
+        <div class="invhd"><span class="ik">Experiência</span><h3>Sabonete Artesanal</h3></div>
+        <div class="invrow"><div class="il">Sem vinho<small>Todo material incluso</small></div><div class="ir"><span class="pp">R$ 269<small>por pessoa</small></span><span class="tt">R$ 2.152 · 8 pessoas</span></div></div>
+        <div class="invrow"><div class="il">Com vinho<small>Seleção de vinhos para brindar</small></div><div class="ir"><span class="pp">R$ 309<small>por pessoa</small></span><span class="tt">R$ 2.472 · 8 pessoas</span></div></div>
       </div>
     </div>
-    <p class="fineprint">Opcionais somados à experiência escolhida. Fotografia: R$ 450 (valor total). Mimo personalizado: R$ 139 por pessoa. O modelo do mimo é combinado antes do encontro.</p>
-    {foot("Opcionais")}
+    <div class="bnote" style="margin-top:16px">◆ <b>Tudo incluso em todas as versões:</b> profissional conduzindo · todos os materiais · montagem e estrutura · produção Elarah, no Ateliê Meu Outro Lado · Brooklin.</div>
+    {foot("Investimento")}
   </section>'''
 
 # ============================ 7 · PRÓXIMOS PASSOS ============================
@@ -257,7 +286,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + vela + sabonete + atelie + opcionais + proximos + '\n\n</div>\n\n')
+        + cover + vela + sabonete + atelie + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/corporativo-juliana.html"
 open(out, "w", encoding="utf-8").write(html)
