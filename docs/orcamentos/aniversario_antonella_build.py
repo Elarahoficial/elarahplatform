@@ -58,6 +58,19 @@ xcss = '''
   .stp .num{font-family:'DM Serif Display',serif;color:var(--orange);font-size:24px;line-height:1}
   .stp h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy);line-height:1.1;margin:7px 0 5px}
   .stp p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  /* comparativo de 2 experiencias */
+  .cpg{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px;align-items:start}
+  .cpc{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 16px 36px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .cpc .cpph{height:170px;overflow:hidden;background:#eee}
+  .cpc .cpph img{width:100%;height:100%;object-fit:cover;display:block}
+  .cpc .cpb{padding:16px 20px 18px}
+  .cpc .cptag{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .cpc .cpn{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);line-height:1.06;margin:4px 0 0}
+  .cpc .cpdur{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:6px}
+  .cpc .cpd{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:9px}
+  .cpc ul.cpi{list-style:none;margin:11px 0 0;padding:0;display:flex;flex-direction:column;gap:5px}
+  .cpc ul.cpi li{position:relative;padding-left:18px;font-size:10.5px;color:var(--ink);line-height:1.35}
+  .cpc ul.cpi li:before{content:"✓";position:absolute;left:0;top:0;color:var(--orange);font-size:9px;font-weight:800}
 </style>'''
 head = head.replace("</style>", xcss, 1)
 
@@ -110,27 +123,48 @@ cover = f'''
     {foot("Aniversário · Antonella")}
   </section>'''
 
-# ============================ 2 · A EXPERIÊNCIA ============================
+# ============================ 2 · AS EXPERIÊNCIAS ============================
 experiencia = f'''
   <section class="slide">
-{head_simple("A experiência")}
-    <span class="eyebrow orange">◆ Oficina de escova &amp; presilha</span>
-    <h2>Cada uma cria a <em>própria escova &amp; presilha</em></h2>
-    <p class="lead">Uma oficina delicada e divertida: cada convidada personaliza a própria escova e a própria presilha, escolhendo cores e detalhes — e leva tudo pra casa como lembrança da festa.</p>
-    <div class="bfeat">
-      <div class="bphoto">{img("pinturatacameninas.jpg", "Meninas personalizando seus acessórios com as próprias mãos", "center 40%")}</div>
-      <div class="bbody">
-        <span class="btag">Como funciona 🎀</span>
-        <h3>Do jeitinho de cada uma</h3>
-        <ul class="feat">
-          <li><span class="st">1</span><b>Boas-vindas</b> — a mesa montada com todos os materiais.</li>
-          <li><span class="st">2</span><b>Mãos à obra</b> — cada uma personaliza a própria escova e presilha.</li>
-          <li><span class="st">3</span><b>Pra levar</b> — cada convidada sai com a sua criação de recordação.</li>
-        </ul>
+{head_simple("As experiências")}
+    <span class="eyebrow orange">◆ Dois estilos para escolher</span>
+    <h2>Qual combina mais <em>com a Antonella?</em></h2>
+    <p class="lead">Duas oficinas conduzidas, no mesmo formato — uma mais artística e colorida, outra mais glam e cheia de brilho. Em ambas, cada convidada leva as próprias peças pra casa.</p>
+    <div class="cpg">
+      <div class="cpc">
+        <div class="cpph">{img("pinturatacameninas.jpg", "Meninas pintando e decorando seus acessórios", "center 40%")}</div>
+        <div class="cpb">
+          <div class="cptag">Pintura &amp; personalização</div>
+          <div class="cpn">Customize sua Escova &amp; Presilha</div>
+          <div class="cpdur">Duração · 2h</div>
+          <div class="cpd">Cada convidada personaliza uma escova de madeira e uma presilha, escolhendo cores, flores, adesivos e detalhes — bem a cara dela.</div>
+          <ul class="cpi">
+            <li>Oficina conduzida</li>
+            <li>1 escova de madeira + 1 presilha por convidada</li>
+            <li>Tintas, adesivos e materiais de decoração</li>
+            <li>Avental e acessórios</li>
+            <li>Peças prontas para levar pra casa</li>
+          </ul>
+        </div>
+      </div>
+      <div class="cpc">
+        <div class="cpph">{img("piranhapersonalizada.jpg", "Presilhas personalizadas com cristais e iniciais", "center 50%")}</div>
+        <div class="cpb">
+          <div class="cptag">Personalização com brilho</div>
+          <div class="cpn">Piranha &amp; Escova Bedazzled</div>
+          <div class="cpdur">Duração · a confirmar</div>
+          <div class="cpd">Uma customização glam: cada convidada decora a própria piranha e escova com cristais e a própria inicial, pra deixar tudo ainda mais especial.</div>
+          <ul class="cpi">
+            <li>Oficina conduzida</li>
+            <li>1 piranha + 1 escova por convidada</li>
+            <li>Cristais e materiais de customização</li>
+            <li>Personalização com a inicial</li>
+            <li>Peças prontas para levar pra casa</li>
+          </ul>
+        </div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Tudo incluso:</b> profissional conduzindo · escova e presilha para cada convidada · materiais de personalização · montagem e produção Elarah.</div>
-    {foot("A experiência")}
+    {foot("As experiências")}
   </section>'''
 
 # ============================ 3 · A VIBE ============================
@@ -186,16 +220,16 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>O valor da <em>festa</em></h2>
-    <p class="lead">O valor por convidada inclui a condução, a escova e a presilha de cada uma e todos os materiais. O total acompanha o número final de convidadas.</p>
+    <p class="lead">Cada experiência tem um valor por convidada, que inclui a condução, as peças de cada uma e todos os materiais. O total acompanha o número final de convidadas.</p>
     <div class="invhi">
-      <span class="il">Valor por convidada</span>
-      <span class="iv"><em>a confirmar</em></span>
+      <span class="il">Duas experiências · escolham o estilo</span>
+      <span class="iv"><em>valores a confirmar</em></span>
     </div>
     <div class="invcards">
-      <div class="ic2"><span class="icn">A experiência</span><div class="icv">Oficina de escova &amp; presilha</div><div class="ics">Condução, escova e presilha personalizadas e materiais para cada convidada.</div></div>
-      <div class="ic2"><span class="icn">Total · 15 convidadas</span><div class="icv"><em>a confirmar</em></div><div class="ics">Fechamos o valor por convidada e o total assim que definirmos o espaço e o formato.</div></div>
+      <div class="ic2"><span class="icn">Opção 1 · Pintura &amp; personalização</span><div class="icv">Customize sua Escova &amp; Presilha</div><div class="ics"><em>Valor por convidada a confirmar</em> · condução, escova e presilha e materiais inclusos.</div></div>
+      <div class="ic2"><span class="icn">Opção 2 · Personalização com brilho</span><div class="icv">Piranha &amp; Escova Bedazzled</div><div class="ics"><em>Valor por convidada a confirmar</em> · condução, piranha e escova, cristais e inicial inclusos.</div></div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Estimativa em confirmação.</b> Fechamos o valor por convidada e o total para as 15 assim que confirmarmos o espaço (casa ou parceiro), a data e as comidinhas/bebidas — antes de fechar a proposta com vocês.</div>
+    <div class="bnote" style="margin-top:16px">◆ <b>Estimativa em confirmação.</b> Fechamos o valor por convidada de cada experiência e o total para as 15 assim que confirmarmos o espaço (casa ou parceiro), a data e as comidinhas/bebidas — antes de fechar a proposta com vocês.</div>
     <p class="fineprint">Aniversário de 13 anos da Antonella, para 15 convidadas, em outubro (sábado ou domingo), em São Paulo (região da Mooca). Valor por convidada e total confirmados após a definição do espaço, da data e dos opcionais de comidinhas e bebidas.</p>
     {foot("Investimento")}
   </section>'''
