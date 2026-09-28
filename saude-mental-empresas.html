@@ -197,7 +197,8 @@ section{padding:96px 0}
 .xcard h3{font-size:1.35rem;margin-bottom:6px}
 .xcard p{font-size:.93rem;color:var(--muted)}
 .xcard .why{margin-top:12px;font-size:.84rem;color:var(--green-2);font-weight:600}
-.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;justify-content:center}
+.chips__tit{text-align:center;margin-top:34px;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;justify-content:center}
 .chip{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:.9rem}
 
 /* NR-1 DELIVERABLES */
@@ -297,8 +298,17 @@ footer a{color:var(--muted)}
 .arte__cta p{color:rgba(255,255,255,.8);font-size:.95rem}
 
 /* MONTE SEU CRONOGRAMA */
-.picker{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:22px}
-.picker>span{font-weight:700;margin-right:6px}
+.picker{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-bottom:26px}
+.picker>span{font-weight:700;margin-right:6px;width:100%;text-align:center;margin-bottom:4px}
+.picker button b{font-size:1.25rem}
+.picker button em{font-style:normal;font-size:.72rem;font-weight:500;color:var(--muted);margin-top:2px}
+.picker button.on em{color:rgba(255,255,255,.75)}
+.picker button{min-width:118px!important}
+.cal.is-vazio .mon{opacity:.55}
+.mais20{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin-top:18px;padding:18px 24px;border-top:1px solid var(--line)}
+.mais20 b{font-family:'DM Serif Display',serif;font-weight:400;font-size:1.3rem;color:var(--green)}
+.mais20 p{font-size:.92rem;color:var(--muted);max-width:760px;margin-top:4px}
+.mais20 a{font-weight:700;color:var(--terra-dark);text-decoration:none;white-space:nowrap}
 .picker button{font:inherit;font-weight:700;font-size:1.05rem;border:2px solid var(--line);background:#fff;border-radius:16px;padding:10px 18px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;align-items:center;line-height:1.1;min-width:64px}
 .picker button small{font-size:.66rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
 .picker button.on{background:var(--green);border-color:var(--green);color:#fff}
@@ -356,6 +366,11 @@ body.lm-open{overflow:hidden}
   .elarah__pics{height:300px}
 }
 @media (max-width:560px){
+  .picker{gap:6px;flex-wrap:nowrap}
+  .picker>span{display:none}
+  .picker button{min-width:0!important;flex:1;padding:8px 2px!important}
+  .picker button em{display:none}
+  .picker button small{font-size:.56rem!important;letter-spacing:.02em!important}
   .arte__dois{grid-template-columns:1fr}
   .arte__cta{padding:22px}
   .vcard__foto{aspect-ratio:5/4}
@@ -644,26 +659,33 @@ body.lm-open{overflow:hidden}
 </section>
 
 <!-- ===== MONTE SEU CRONOGRAMA ===== -->
+<!-- Os meses "acendem" conforme a quantidade de encontros. Nenhuma opção
+     vem marcada: a empresa escolhe. A escolha entra na mesma jornada do
+     simulador e do orçamento (estado EXP). -->
 <section class="soft" id="monte">
   <span id="calendario"></span>
   <div class="wrap">
-    <div class="sec-head reveal">
+    <div class="sec-head center reveal" style="text-align:center">
       <span class="eyebrow">Monte o seu cronograma</span>
-      <h2>Você escolhe <em>o ritmo</em>. A gente cuida do resto.</h2>
-      <p>Escolha com que frequência sua empresa quer cuidar da equipe. A gente distribui os encontros ao longo do ano e monta cada experiência para fazer sentido para o seu momento.</p>
+      <h2>Você escolhe quantos encontros quer. <em>A gente monta o cronograma.</em></h2>
+      <p>Escolha de 1 a 12 encontros e combine diferentes experiências da Elarah ao longo do ano. Temos mais de 20 opções para criar um calendário que faça sentido para a sua equipe.</p>
     </div>
-    <div class="picker reveal" role="group" aria-label="Com que frequência">
-      <span>Com que frequência?</span>
-      <button type="button" data-enc="1">1 <small>pontual</small></button>
-      <button type="button" data-enc="2">2 <small>semestral</small></button>
-      <button type="button" data-enc="4" class="on">4 <small>trimestral</small></button>
-      <button type="button" data-enc="6">6 <small>bimestral</small></button>
-      <button type="button" data-enc="12">12 <small>mensal</small></button>
+    <div class="picker reveal" role="group" aria-label="Quantos encontros por ano">
+      <span>Quantos encontros por ano?</span>
+      <button type="button" data-enc="1"><b>1</b><small>Pontual</small><em>uma vez no ano</em></button>
+      <button type="button" data-enc="2"><b>2</b><small>Semestral</small><em>1 por semestre</em></button>
+      <button type="button" data-enc="4"><b>4</b><small>Trimestral</small><em>1 a cada 3 meses</em></button>
+      <button type="button" data-enc="6"><b>6</b><small>Bimestral</small><em>1 a cada 2 meses</em></button>
+      <button type="button" data-enc="12"><b>12</b><small>Mensal</small><em>1 por mês</em></button>
     </div>
-    <div class="cal" id="cal"></div>
+    <div class="cal is-vazio" id="cal"></div>
     <div class="picker__cta reveal">
       <div><span class="picker__tit">Seu cronograma de cuidado</span><p id="cal-resumo"></p></div>
-      <a class="btn btn--terra" href="#contato" data-lead="simulador" id="cal-cta">Quero esse cronograma</a>
+      <a class="btn btn--terra" href="#contato" data-lead="cronograma" id="cal-cta">Quero esse cronograma</a>
+    </div>
+    <div class="mais20 reveal">
+      <div><b>Mais de 20 experiências para escolher</b><p>Cerâmica, velas, pintura, gastronomia, kintsugi, perfumaria e muito mais. Os temas do calendário são uma sugestão: a empresa escolhe o que faz mais sentido para o momento e o perfil da equipe.</p></div>
+      <a href="#experiencias">Ver as experiências →</a>
     </div>
   </div>
 </section>
@@ -672,21 +694,19 @@ body.lm-open{overflow:hidden}
 <section id="experiencias">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="eyebrow">As experiências</span>
+      <span class="eyebrow">Mais de 20 experiências</span>
       <h2>Mãos ocupadas, <em>mente descansada</em>.</h2>
-      <p>Atividades manuais tiram o cérebro do modo alerta: foco no presente, conversa leve, resultado nas mãos. E ninguém precisa “saber fazer”.</p>
+      <p>Atividades manuais tiram o cérebro do modo alerta: foco no presente, conversa leve e algo criado com as próprias mãos. Ninguém precisa saber fazer — e a empresa combina as experiências como quiser ao longo do ano.</p>
     </div>
     <div class="exp">
-      <div class="xcard reveal"><img src="assets/ceramica.jpg" alt="Peças de cerâmica feitas à mão" loading="lazy"><div class="in"><h3>Cerâmica terapêutica</h3><p>Modelagem em argila: foco sensorial total, sem tela e sem pressa.</p><div class="why">Ajuda com: estresse e esgotamento</div></div></div>
-      <div class="xcard reveal"><img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal acesa" loading="lazy"><div class="in"><h3>Velas aromáticas</h3><p>Cera vegetal e óleos essenciais: um ritual de pausa que cada pessoa leva pra casa.</p><div class="why">Ajuda com: estresse e falta de reconhecimento</div></div></div>
-      <div class="xcard reveal"><img src="assets/corp-grupo.jpg" alt="Equipe cozinhando junta" loading="lazy"><div class="in"><h3>Gastronomia afetiva</h3><p>Massas, pães e quitutes feitos juntos — e comidos juntos, na mesma mesa.</p><div class="why">Ajuda com: clima e conexão entre áreas</div></div></div>
-      <div class="xcard reveal"><img src="assets/aquarela.jpg" alt="Pintura em aquarela" loading="lazy"><div class="in"><h3>Pintura intuitiva</h3><p>Pincelada lenta, respiração guiada e zero autojulgamento.</p><div class="why">Ajuda com: ansiedade e pressão por entrega</div></div></div>
+      <div class="xcard reveal"><img src="assets/ceramica.jpg" alt="Peças de cerâmica feitas à mão" loading="lazy"><div class="in"><h3>Cerâmica terapêutica</h3><p>Modelar a argila com as mãos: atenção total ao presente, sem telas e sem pressa.</p><div class="why">Ajuda com: estresse e esgotamento</div></div></div>
+      <div class="xcard reveal"><img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal acesa" loading="lazy"><div class="in"><h3>Velas aromáticas</h3><p>Cera vegetal e óleos essenciais em um ritual de pausa que cada pessoa leva para casa.</p><div class="why">Ajuda com: estresse e reconhecimento</div></div></div>
+      <div class="xcard reveal"><img src="assets/corp-grupo.jpg" alt="Equipe cozinhando junta" loading="lazy"><div class="in"><h3>Gastronomia afetiva</h3><p>Receitas preparadas em grupo e compartilhadas à mesa: cozinhar junto aproxima as pessoas.</p><div class="why">Ajuda com: clima e conexão entre áreas</div></div></div>
+      <div class="xcard reveal"><img src="assets/aquarela.jpg" alt="Pintura em aquarela" loading="lazy"><div class="in"><h3>Pintura intuitiva</h3><p>Tinta, pincel e nenhuma regra: pinceladas livres, respiração guiada e zero autojulgamento.</p><div class="why">Ajuda com: ansiedade e pressão por entrega</div></div></div>
     </div>
+    <p class="chips__tit reveal">E muitas outras para combinar no cronograma</p>
     <div class="chips reveal">
-      <span class="chip">🌿 Terrário & kokedama</span><span class="chip">✨ Kintsugi (consertar com ouro)</span><span class="chip">🧵 Bordado livre</span>
-      <span class="chip">🧩 Mosaico coletivo</span><span class="chip">🌸 Perfumaria botânica</span><span class="chip">📓 Journaling</span>
-      <span class="chip">🍵 Chá & mindfulness</span><span class="chip">🫶 Roda com psicóloga</span><span class="chip">🧭 Workshop NR-1 para líderes</span>
-      <span class="chip">💬 Comunicação não-violenta</span><span class="chip">🧘 Yoga na empresa</span><span class="chip">📦 Kit em casa (times remotos)</span>
+      <span class="chip">Kintsugi</span><span class="chip">Aquarela botânica</span><span class="chip">Terrário e kokedama</span><span class="chip">Bordado livre</span><span class="chip">Macramê</span><span class="chip">Mosaico coletivo</span><span class="chip">Perfumaria botânica</span><span class="chip">Sabonete artesanal</span><span class="chip">Arranjo floral</span><span class="chip">Colagem de intenções</span><span class="chip">Journaling</span><span class="chip">Pintura em ecobag</span><span class="chip">Chá e mindfulness</span><span class="chip">Respiração guiada</span><span class="chip">Yoga na empresa</span><span class="chip">Roda de conversa com psicóloga</span><span class="chip">Workshop NR-1 para lideranças</span><span class="chip">Comunicação não-violenta</span><span class="chip">Kit em casa para times remotos</span>
     </div>
   </div>
 </section>
@@ -916,22 +936,28 @@ body.lm-open{overflow:hidden}
   // ---------- Monte seu cronograma ----------
   // A empresa escolhe quantos encontros; os meses acendem na ordem de
   // força das datas (mesma regra do painel da equipe).
-  var encSel = 4;
+  var encSel = 0; // nada marcado até a empresa escolher
   function desenharCal() {
     var cal = document.getElementById('cal');
     if (!cal || !D) return;
     // Encontros espalhados pelo ano, sem concentrar (e passando pelas
     // datas fortes: Janeiro Branco, Abril Verde, Setembro Amarelo, 10/10).
     var DIST = { 1: [10], 2: [4, 10], 4: [1, 4, 7, 10], 6: [1, 3, 5, 7, 9, 11], 12: [1,2,3,4,5,6,7,8,9,10,11,12] };
-    var ativos = DIST[encSel] || D.PRIORIDADE_MESES.slice(0, encSel);
+    var ativos = encSel ? (DIST[encSel] || D.PRIORIDADE_MESES.slice(0, encSel)) : [];
+    cal.classList.toggle('is-vazio', !encSel);
     cal.innerHTML = D.PROGRAMA.map(function (p) {
       var a = D.atividade(p.atividade), on = ativos.indexOf(p.mes) >= 0;
       return '<div class="mon in' + (on ? ' mon--key' : ' mon--off') + '"><div class="m">' + MESES[p.mes - 1] + '</div>' +
         '<b>' + esc(p.tema) + '</b><div class="a">' + esc(a.nome) + '</div></div>';
     }).join('');
     var res = document.getElementById('cal-resumo');
-    if (res) res.innerHTML = '<b>' + encSel + ' encontro' + (encSel > 1 ? 's' : '') + (encSel > 1 ? ' distribuídos' : '') + ' ao longo do ano</b>, nas datas que mais fazem sentido para sua equipe. A Elarah cuida de arteterapeutas, materiais, local, registros e relatório.';
-    var cta = document.getElementById('cal-cta'); if (cta) cta.setAttribute('data-encontros', String(encSel));
+    if (res) {
+      var nomesM = ativos.slice().sort(function (a, b) { return a - b; }).map(function (m) { return MESES[m - 1].toLowerCase(); });
+      res.innerHTML = !encSel ? 'Escolha quantos encontros por ano e veja seu cronograma ganhar forma.'
+        : '<b>' + encSel + ' encontro' + (encSel > 1 ? 's' : '') + ' — ' + (encSel === 12 ? 'um por mês' : 'em ' + nomesM.join(', ').replace(/, ([^,]*)$/, ' e $1')) + '.</b> ' +
+          'Cada experiência pode ser escolhida ou trocada entre as mais de 20 da Elarah. A gente cuida de facilitadores, materiais, local (quando aplicável), fotos e relatório.';
+    }
+    var cta = document.getElementById('cal-cta'); if (cta) { if (encSel) cta.setAttribute('data-encontros', String(encSel)); else cta.removeAttribute('data-encontros'); }
     document.querySelectorAll('[data-enc]').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-enc') === encSel); });
   }
   document.querySelectorAll('[data-enc]').forEach(function (b) {
