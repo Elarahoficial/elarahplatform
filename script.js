@@ -4206,13 +4206,17 @@ if (groupForm) {
       const ctx = currentReservationCtx;
       const root = modalRoot;
       const qty = Math.max(1, ctx.quantidade || 1);
-      // Preço da experiência ANTES do desconto do carrinho (o do site ou o
-      // da variação). unitPrice é o que o servidor cobra por pessoa:
-      // 10% OFF com 1 pessoa, 15% OFF por pessoa com 2+ (promo.js).
-      const unitSemCarrinho = ctx.precoCentavos || 0;
-      const unitPrice = (window.ElarahPromo && ElarahPromo.carrinhoCentavos)
-        ? ElarahPromo.carrinhoCentavos(unitSemCarrinho, qty)
-        : unitSemCarrinho;
+      // ctx.precoCentavos é o preço de VITRINE (já com os 10% de 1 pessoa,
+      // ou com a campanha geral). unitSemCarrinho = preço do site, antes
+      // do desconto do carrinho — é o que aparece no Subtotal. unitPrice é
+      // o que o servidor cobra por pessoa: 10% OFF com 1, 15% OFF com 2+.
+      const _promo = window.ElarahPromo;
+      const vitrineUnit = ctx.precoCentavos || 0;
+      const temCarrinho = !!(_promo && _promo.carrinhoPct && _promo.carrinhoPct(qty) > 0);
+      const unitSemCarrinho = (temCarrinho && _promo.baseDe) ? _promo.baseDe(vitrineUnit) : vitrineUnit;
+      const unitPrice = (temCarrinho && _promo.carrinhoCentavos)
+        ? _promo.carrinhoCentavos(vitrineUnit, qty)
+        : vitrineUnit;
       const subtotalCents = unitPrice * qty;
       console.log('[Elarah PRICE] refreshPriceBreakdown: qty=' + qty + ' unitPrice=' + unitPrice + ' subtotal=' + subtotalCents);
       const cupomCents = Number(ctx.cupomCentavos || 0);
@@ -4240,7 +4244,7 @@ if (groupForm) {
       // Nas experiências By Elarah o cheio é igual ao praticado, então
       // cheioUnit > unitPrice é falso e nada aparece. Sem flag, sem
       // configuração: o próprio dado decide.
-      const usaPrecoBase = !ctx.baseCentavos || unitSemCarrinho === ctx.baseCentavos;
+      const usaPrecoBase = !ctx.baseCentavos || vitrineUnit === ctx.baseCentavos;
       const cheioUnit = Number(ctx.valorCheioCentavos) || 0;
       const temOffElarah = usaPrecoBase && cheioUnit > unitSemCarrinho;
       const cheioSubtotal = cheioUnit * qty;
