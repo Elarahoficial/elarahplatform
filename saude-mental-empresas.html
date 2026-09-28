@@ -58,24 +58,25 @@ section{padding:96px 0}
 .nav .btn{padding:10px 18px;font-size:.88rem}
 
 /* HERO */
-.hero{padding:64px 0 90px;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;right:-200px;top:-200px;width:620px;height:620px;border-radius:50%;background:radial-gradient(circle,rgba(143,179,160,.35),transparent 65%)}
-.hero__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;position:relative}
-.hero h1{font-size:clamp(2.6rem,5.6vw,4.4rem);margin:18px 0 22px}
-.hero__lead{font-size:1.16rem;color:#3d4a45;max-width:560px}
-.hero__actions{display:flex;gap:12px;flex-wrap:wrap;margin:32px 0 26px}
-.hero__trust{display:flex;gap:20px;flex-wrap:wrap;font-size:.86rem;color:var(--muted)}
+.hero{padding:56px 0 84px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;right:-120px;top:10%;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,rgba(143,179,160,.35),transparent 65%)}
+.hero__grid{display:grid;grid-template-columns:1.1fr .9fr;gap:44px;align-items:center;position:relative}
+.hero h1{font-size:clamp(2.3rem,4.3vw,3.5rem);line-height:1.06;margin:16px 0 20px}
+.hero__lead{font-size:1.08rem;color:#3d4a45;max-width:540px}
+.hero__actions{display:flex;gap:12px;flex-wrap:wrap;margin:28px 0 22px}
+.hero__actions .btn{padding:14px 22px}
+.hero__trust{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:.84rem;color:var(--muted)}
 .hero__trust span{display:inline-flex;align-items:center;gap:6px}
 .hero__trust span::before{content:'✓';color:var(--green-2);font-weight:700}
-.hero__visual{position:relative;height:540px}
+.hero__visual{position:relative;height:560px}
 .hero__visual img{position:absolute;object-fit:cover;border-radius:24px;box-shadow:0 30px 60px rgba(22,48,42,.18)}
-.hv1{width:68%;height:78%;right:0;top:0}
-.hv2{width:46%;height:48%;left:0;bottom:0;border:6px solid var(--cream)}
-.hero__badge{position:absolute;left:4%;top:12%;background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 18px 40px rgba(22,48,42,.16);display:flex;gap:12px;align-items:center;max-width:250px;z-index:2}
+.hv1{width:76%;height:86%;right:0;top:0}
+.hv2{width:44%;height:40%;left:0;bottom:0;border:6px solid var(--cream)}
+.hero__badge{position:absolute;left:0;top:10%;background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 18px 40px rgba(22,48,42,.16);display:flex;gap:12px;align-items:center;max-width:250px;z-index:2}
 .hero__badge b{display:block;font-size:.92rem}
 .hero__badge small{color:var(--muted);font-size:.78rem;line-height:1.3;display:block}
 .hero__badge .ic{width:42px;height:42px;border-radius:12px;background:var(--sage-soft);display:grid;place-items:center;font-size:1.3rem;flex-shrink:0}
-.hero__pill{position:absolute;right:6%;bottom:8%;background:var(--green);color:#fff;border-radius:999px;padding:10px 18px;font-size:.84rem;font-weight:600;box-shadow:0 14px 30px rgba(31,77,63,.3);z-index:2}
+.hero__pill{position:absolute;right:4%;bottom:4%;background:var(--green);color:#fff;border-radius:999px;padding:10px 18px;font-size:.84rem;font-weight:600;box-shadow:0 14px 30px rgba(31,77,63,.3);z-index:2}
 
 /* URGENCY */
 .urg{background:var(--green);color:#fff;padding:72px 0}
@@ -270,6 +271,7 @@ footer a{color:var(--muted)}
 body.lm-open{overflow:hidden}
 .lm .form.form--modal{padding:0}
 
+@media (max-width:1120px){.nav__links{display:none}}
 @media (max-width:980px){
   .arte,.elarah,.team{grid-template-columns:1fr}
   .elarah__pics{height:300px}
@@ -287,7 +289,7 @@ body.lm-open{overflow:hidden}
 @media (max-width:980px){
   section{padding:72px 0}
   .hero__grid,.nr,.gift,.cta{grid-template-columns:1fr}
-  .hero__visual{height:420px}
+  .hero__visual{height:440px;max-width:560px;width:100%;margin:0 auto}
   .urg__grid{grid-template-columns:1fr 1fr}
   .urg__grid>div:first-child{grid-column:1/-1}
   .cards3,.plans,.exp,.pers{grid-template-columns:1fr}
@@ -337,12 +339,12 @@ body.lm-open{overflow:hidden}
       <p class="hero__lead">Workshops de <b>Arteterapia</b> conduzidos por arteterapeutas — pintura, argila, colagem, kintsugi — num <b>cronograma pontual, semestral ou anual</b>, com a quantidade de encontros que a sua empresa quiser. A gente cuida de tudo e entrega a documentação para a NR-1.</p>
       <div class="hero__actions">
         <a class="btn btn--terra" href="#contato" data-lead="hero">Receber meu cronograma grátis</a>
-        <a class="btn btn--ghost" href="#calendario">Ver o calendário do ano</a>
+        <a class="btn btn--ghost" href="#calendario">Ver o calendário</a>
       </div>
       <div class="hero__trust">
-        <span>Na sua empresa, no ateliê ou online</span>
-        <span>Você escolhe quantos encontros</span>
-        <span>Relatório pronto pro PGR</span>
+        <span>Na empresa, no ateliê ou online</span>
+        <span>Você escolhe os encontros</span>
+        <span>Relatório para a NR-1</span>
       </div>
     </div>
     <div class="hero__visual reveal">
