@@ -18,12 +18,11 @@ cronogramas (pontual, semestral ou anual) de experiências manuais.
 
 - **Visão geral** — eventos dos próximos 30 dias, faturamento, funil, meta de prospecção (100/semana), datas pra oferecer ao RH, pedidos do site.
 - **O que fazer hoje** — lista montada sozinha: meta de abordagens do dia, follow-ups, pedidos do site, eventos da semana, orçamentos parados, check-ins, janela de venda das datas.
-- **Agenda de eventos** — eventos in company / ateliê / online / kit, do orçamento ao realizado.
+- **Agenda & datas do RH** — eventos in company / ateliê / online / kit (do orçamento ao realizado), datas fortes pro RH, agenda de captação e o "Hora de oferecer" com pitch pronto.
 - **Acompanhamento semanal** — check-in por empresa (termômetro 1–5, adesão, feito, próximo passo, 🚩 alerta).
 - **Cronogramas** — gera o plano pontual/semestral/anual em 1 minuto, com estimativa de investimento; copia texto, imprime em PDF, salva.
 - **Pedidos do site** — leads da landing page.
 - **Ideias & programa anual** — "12 meses de cuidado" + biblioteca de 24 experiências com o fator de risco psicossocial que cada uma trabalha.
-- **Datas para o RH** — calendário corporativo (campanhas de saúde, profissões, datas de presentear com gift card) com pitch pronto.
 - **Prospecção** — empresas com telefone, WhatsApp, e-mails sugeridos, busca do RH no LinkedIn e mensagens prontas (e-mail, LinkedIn, WhatsApp, roteiro de ligação).
 - **Captação** — ações de marketing/parcerias e posts prontos.
 
@@ -45,7 +44,7 @@ cronogramas (pontual, semestral ou anual) de experiências manuais.
 - **Landing:** seções de Arteterapia, “Monte seu cronograma” (a empresa escolhe quantos encontros), Quem somos e Conheça a Elarah. Encontros podem ser trocados por gift cards Elarah.
 - **Fotos do Quem somos:** salve como `assets/mh-fundadora.jpg` e `assets/mh-larissa.jpg` — aparecem sozinhas.
 - **O que fazer hoje:** rotina de uma pessoa só (seg a sex, com horário e tempo estimado) + alertas do sistema.
-- **Agenda e Datas para o RH:** calendário do ano com bolinhas por dia (igual ao painel Elarah), com opção de lista.
+- **Agenda & datas do RH:** uma aba só (antes eram duas iguais), com calendário do ano com bolinhas por dia e opção de lista.
 - **Acompanhamento semanal:** placar automático da operação (abordagens, respostas, reuniões, propostas, fechamentos) + histórico de 4 semanas.
 - **Cronogramas:** modelos prontos (1, 4, 6 e 12 encontros) e montagem pela quantidade de encontros.
 - **Prospecção:** mensagens personalizadas por setor, assinatura Larissa Setzer e botão “↺ Desfazer” para abordagem marcada sem querer. Cliques de teste feitos antes de 29/09/2026 são desfeitos automaticamente na primeira abertura do painel.

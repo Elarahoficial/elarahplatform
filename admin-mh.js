@@ -5,9 +5,9 @@
 // cronogramas de experiências manuais. Abas:
 //
 //   Hoje       → Visão geral · O que fazer hoje
-//   Clientes   → Agenda de eventos · Acompanhamento semanal ·
+//   Clientes   → Agenda & datas do RH · Acompanhamento semanal ·
 //                Cronogramas · Pedidos do site
-//   Conteúdo   → Ideias & programa anual · Datas para o RH
+//   Conteúdo   → Ideias & programa anual
 //   Comercial  → Prospecção (100 empresas/semana) · Captação
 //
 // Banco: sql/elarah_mental_health.sql. Se as tabelas mh_* ainda não
@@ -231,13 +231,12 @@
     { key: 'visao', ico: '◎', label: 'Visão geral' },
     { key: 'hoje', ico: '☀', label: 'O que fazer hoje', badge: function () { return tarefasHoje().filter(function (t) { return !t.feita; }).length; } },
     { grupo: 'Clientes' },
-    { key: 'eventos', ico: '🗓', label: 'Agenda de eventos' },
+    { key: 'eventos', ico: '🗓', label: 'Agenda & datas do RH' },
     { key: 'acomp', ico: '📈', label: 'Acompanhamento semanal' },
     { key: 'cronograma', ico: '🧭', label: 'Cronogramas' },
     { key: 'leads', ico: '📥', label: 'Pedidos do site', badge: function () { return S.leads.filter(function (l) { return l.status === 'novo'; }).length; } },
     { grupo: 'Conteúdo' },
     { key: 'ideias', ico: '💡', label: 'Ideias & programa anual' },
-    { key: 'datas', ico: '🎁', label: 'Datas para o RH' },
     { grupo: 'Comercial' },
     { key: 'prosp', ico: '🎯', label: 'Prospecção' },
     { key: 'captacao', ico: '📣', label: 'Captação' }
@@ -281,7 +280,7 @@
     renderNav();
     var fn = {
       visao: rVisao, hoje: rHoje, eventos: rEventos, acomp: rAcomp, cronograma: rCronograma,
-      leads: rLeads, ideias: rIdeias, datas: rDatas, prosp: rProsp, captacao: rCaptacao
+      leads: rLeads, ideias: rIdeias, datas: rEventos, prosp: rProsp, captacao: rCaptacao
     }[S.panel] || rVisao;
     $('mh-main').innerHTML = fn();
     var after = AFTER[S.panel]; if (after) after();
@@ -548,7 +547,7 @@
       desc: follow.slice(0, 6).map(function (p) { return p.nome; }).join(', ') + (follow.length > 6 ? '…' : '') + '. Use a mensagem “Follow-up (3 dias depois)”.' });
     if (util) datasProximas(45, 3).forEach(function (x) {
       var n = diasAte(x.data);
-      if (n >= 20 && n <= 45) t.push({ id: 'data-' + dayKey(x.data) + x.nome, prio: 2, titulo: '🎁 Janela de venda: ' + x.nome + ' (' + fmtDia(x.data) + ')', go: 'datas', min: 20, tipo: 'alerta', desc: 'Faltam ' + n + ' dias. Mande o pitch pros clientes e prospects quentes. Sugestão: ' + x.presente + '.' });
+      if (n >= 20 && n <= 45) t.push({ id: 'data-' + dayKey(x.data) + x.nome, prio: 2, titulo: '🎁 Janela de venda: ' + x.nome + ' (' + fmtDia(x.data) + ')', go: 'eventos', min: 20, tipo: 'alerta', desc: 'Faltam ' + n + ' dias. Mande o pitch pros clientes e prospects quentes. Sugestão: ' + x.presente + '.' });
     });
 
     t.forEach(function (x) { x.feita = !!feitas[x.id]; });
@@ -634,10 +633,10 @@
       ordenarDia(porDia);
       var leg = legItem(COR_EVT.confirmado[0], COR_EVT.confirmado[1], 'Evento confirmado (cheio)') + legItem(COR_EVT.proposta_enviada[0], COR_EVT.proposta_enviada[1], 'Proposta / orçamento') +
         legItem('#e8edf8', '#2d4f8a', 'Data forte pro RH') + legItem('#fbe9df', '#b95c32', 'Agenda de captação (Café com RHs, live)');
-      return head('Agenda de eventos', 'O ano inteiro de longe: eventos das empresas, datas fortes e a agenda de captação. Toque num dia colorido pra ver os detalhes.', acts) + resumo +
+      return head('Agenda & datas do RH', 'O ano inteiro de longe: eventos das empresas, datas fortes pro RH e a agenda de captação. Comece a oferecer cada data ~30 dias antes. Toque num dia colorido pra ver os detalhes e copiar o pitch.', acts) + radarRH() + resumo +
         '<div class="mh-toolbar">' + toggleVista('eventos', vista) +
           '<select class="mh-select" data-ano-kind="eventos">' + [ano - 1, ano, ano + 1].map(function (a) { return '<option' + (a === ano ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select></div>' +
-        calendarioAno(ano, porDia, 'eventos', leg);
+        calendarioAno(ano, porDia, 'eventos', leg, CAMPANHA_MES);
     }
 
     var f = S.ui.evtFiltro || 'futuros';
@@ -651,7 +650,7 @@
       (porMes[k] = porMes[k] || []).push(e);
     });
     var filtros = { futuros: 'Próximos', orcamento: 'Orçamentos', proposta_enviada: 'Propostas', confirmado: 'Confirmados', realizado: 'Realizados', cancelado: 'Cancelados', todos: 'Todos' };
-    return head('Agenda de eventos', 'Eventos in company, no ateliê, online ou kits em casa — do orçamento ao relatório final.', acts) + resumo +
+    return head('Agenda & datas do RH', 'Eventos in company, no ateliê, online ou kits em casa — do orçamento ao relatório final.', acts) + radarRH() + resumo +
       '<div class="mh-toolbar">' + toggleVista('eventos', vista) + Object.keys(filtros).map(function (k) {
         return '<button class="mh-btn mh-btn--sm ' + (f === k ? '' : 'mh-btn--ghost') + '" data-evt-filtro="' + k + '">' + filtros[k] + '</button>';
       }).join('') + '</div>' +
@@ -1076,43 +1075,16 @@
   }
 
   // =============================================================
-  // DATAS PARA O RH — calendário do ano com bolinhas (igual Elarah)
+  // DATAS PARA O RH — agora dentro da Agenda (aba única)
   // =============================================================
   var CAMPANHA_MES = ['Janeiro Branco', 'Volta às aulas / Carnaval', 'Mês da Mulher', 'Abril Verde', 'Maio Amarelo', 'Festa junina / Dia do RH', 'Férias / Dia do Amigo', 'Agosto Lilás', 'Setembro Amarelo', 'Outubro Rosa / Saúde Mental', 'Novembro Azul', 'Fim de ano'];
-  function rDatas() {
-    var ano = S.ui.ano || today0().getFullYear();
-    var cat = S.ui.cat || '';
-    var vista = S.ui.vistaDatas || 'cal';
-    var lista = D.datasDoAno(ano).filter(function (x) { return !cat || x.cat === cat; });
-    var topo = '<div class="mh-toolbar">' + toggleVista('datas', vista) +
-      '<select class="mh-select" data-ano>' + [ano - 1, ano, ano + 1].map(function (a) { return '<option' + (a === ano ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select>' +
-      '<button class="mh-btn mh-btn--sm ' + (!cat ? '' : 'mh-btn--ghost') + '" data-cat="">Todas</button>' +
-      Object.keys(D.CATS_DATA).map(function (k) { var c = D.CATS_DATA[k]; return '<button class="mh-btn mh-btn--sm ' + (cat === k ? '' : 'mh-btn--ghost') + '" data-cat="' + k + '">' + c.emoji + ' ' + c.label + '</button>'; }).join('') +
-      '</div>';
+  // "Hora de oferecer": datas com janela de venda aberta (7 a 45 dias),
+  // com o pitch pronto pra copiar. Aparece no topo da Agenda.
+  function radarRH() {
     var radar = datasProximas(45, 2).filter(function (x) { return diasAte(x.data) >= 7; });
-    var radarHtml = radar.length ? '<div class="mh-card" style="margin-bottom:16px;border-left:4px solid var(--mh-terra)"><h3>📡 Hora de oferecer <small>janela de venda aberta</small></h3><div class="mh-radar">' +
-      radar.map(function (x) { return '<button class="mh-radar-item" data-pitch="' + esc(dayKey(x.data) + '|' + x.nome) + '"><b>' + esc(x.nome) + '</b><span>' + fmtDia(x.data) + ' · em ' + diasAte(x.data) + ' dias · copiar pitch</span></button>'; }).join('') + '</div></div>' : '';
-    var intro = head('Datas para o RH', 'Calendário corporativo: campanhas de saúde, homenagens por profissão e datas de presentear. Comece a oferecer ~30 dias antes. Toque num dia colorido pra ver o gancho e copiar o pitch.');
-    if (vista === 'cal') {
-      var porDia = {};
-      lista.forEach(function (x) {
-        var c = D.CATS_DATA[x.cat];
-        add(porDia, dayKey(x.data), { label: x.nome, bg: c.bg, fg: c.fg, forte: x.rel === 3, peso: x.rel, html: rowData(x) });
-      });
-      ordenarDia(porDia);
-      var leg = Object.keys(D.CATS_DATA).map(function (k) { var c = D.CATS_DATA[k]; return legItem(c.bg, c.fg, c.label); }).join('') + legItem('#1f4d3f', '#1f4d3f', 'Círculo cheio = data forte ★');
-      return intro + radarHtml + topo + calendarioAno(ano, porDia, 'datas', leg, CAMPANHA_MES);
-    }
-    var porMes = {};
-    lista.forEach(function (x) { (porMes[x.data.getMonth()] = porMes[x.data.getMonth()] || []).push(x); });
-    return intro + radarHtml + topo +
-      Object.keys(porMes).map(function (m) {
-        return '<div class="mh-card" style="margin-bottom:14px"><h3>' + MESES[m] + ' <small>' + CAMPANHA_MES[m] + '</small></h3><div class="mh-list">' + porMes[m].map(function (x) {
-          var n = diasAte(x.data);
-          var tag = n < 0 ? '<span class="mh-chip mh-chip--gray">passou</span>' : n <= 30 ? '<span class="mh-chip mh-chip--danger">em ' + n + ' dias</span>' : n <= 60 ? '<span class="mh-chip mh-chip--warn">oferecer agora</span>' : '';
-          return rowData(x).replace('</strong>', '</strong>' + (x.rel === 3 ? ' <span class="mh-chip mh-chip--terra">★ forte</span> ' : ' ') + tag);
-        }).join('') + '</div></div>';
-      }).join('');
+    if (!radar.length) return '';
+    return '<div class="mh-card" style="margin-bottom:16px;border-left:4px solid var(--mh-terra)"><h3>📡 Hora de oferecer <small>janela de venda aberta</small></h3><div class="mh-radar">' +
+      radar.map(function (x) { return '<button class="mh-radar-item" data-pitch="' + esc(dayKey(x.data) + '|' + x.nome) + '"><b>' + esc(x.nome) + '</b><span>' + fmtDia(x.data) + ' · em ' + diasAte(x.data) + ' dias · copiar pitch</span></button>'; }).join('') + '</div></div>';
   }
 
   // =============================================================
