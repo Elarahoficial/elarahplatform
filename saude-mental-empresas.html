@@ -121,11 +121,32 @@ section{padding:96px 0}
 
 /* HOW */
 .soft{background:var(--paper)}
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;counter-reset:s}
-.step{position:relative;padding:26px 22px;border-radius:22px;background:var(--cream);border:1px solid var(--line)}
-.step::before{counter-increment:s;content:'0' counter(s);font-family:'DM Serif Display',serif;font-size:2.4rem;color:var(--terra);line-height:1}
-.step h3{font-size:1.25rem;margin:14px 0 8px}
-.step p{font-size:.92rem;color:var(--muted)}
+/* Jornada: linha horizontal com 4 etapas */
+.jornada{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:28px;position:relative;margin:4px 0 44px;padding-top:6px}
+.jornada::before{content:'';position:absolute;left:22px;right:22px;top:28px;height:1px;background:var(--line)}
+.jornada li{position:relative}
+.jornada__n{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--paper);border:1px solid var(--terra);color:var(--terra);font-family:'DM Serif Display',serif;font-size:1.05rem;position:relative;z-index:1}
+.jornada b{display:block;margin:16px 0 6px;font-size:.8rem;letter-spacing:.16em;text-transform:uppercase;color:var(--green)}
+.jornada p{font-size:.93rem;color:var(--muted);max-width:260px}
+/* Simulador */
+.sim{display:grid;grid-template-columns:1.35fr 1fr;border:1px solid var(--line);border-radius:26px;overflow:hidden;background:var(--paper)}
+.sim__perguntas{padding:34px 38px}
+.sim__perguntas h3{font-size:1.6rem;margin:10px 0 22px}
+.sim__q{border:0;padding:0;margin:0 0 20px}
+.sim__q legend{font-size:.9rem;font-weight:600;color:var(--ink);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.sim__q legend span{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--sage-soft);color:var(--green);font-size:.72rem;font-weight:700}
+.sim__q button{font:inherit;font-size:.88rem;background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:9px 16px;margin:0 8px 8px 0;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+.sim__q button:hover{border-color:var(--terra)}
+.sim__q button.on{background:var(--green);border-color:var(--green);color:#fff}
+.sim__previa{background:var(--green);color:#fff;padding:34px 34px;display:flex;flex-direction:column}
+.sim__tag{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#f3b38f}
+.sim__previa h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:1.7rem;line-height:1.15;margin:12px 0 10px}
+.sim__resumo{font-size:.95rem;color:rgba(255,255,255,.85);margin-bottom:16px}
+.sim__lista{list-style:none;display:grid;gap:10px;margin-bottom:auto;padding-bottom:22px}
+.sim__lista li{font-size:.9rem;color:rgba(255,255,255,.9);padding-left:18px;position:relative}
+.sim__lista li::before{content:'';position:absolute;left:0;top:.62em;width:8px;height:1px;background:#f3b38f}
+.sim__nota{font-size:.78rem;color:rgba(255,255,255,.6);margin-bottom:12px}
+.sim__previa .btn{align-self:flex-start}
 
 /* PLANS */
 .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:stretch}
@@ -337,7 +358,9 @@ body.lm-open{overflow:hidden}
   .cards3,.plans,.pers{grid-template-columns:1fr}
   .exp{grid-template-columns:repeat(2,1fr)}
   .plan--hot{transform:none}
-  .steps{grid-template-columns:1fr 1fr}
+  .jornada{grid-template-columns:1fr 1fr;row-gap:30px}
+  .jornada::before{display:none}
+  .sim{grid-template-columns:1fr}
   .cal{grid-template-columns:repeat(2,1fr)}
   .nav__links{display:none}
   .gift,.cta{padding:36px 24px}
@@ -351,7 +374,14 @@ body.lm-open{overflow:hidden}
   .hero__pill{right:auto;left:50%;transform:translateX(-50%);bottom:-16px;white-space:nowrap;font-size:.76rem;padding:8px 14px}
   .hero__visual{margin-bottom:16px}
   .hero__badge{padding:10px 12px}
-  .urg__grid,.steps{grid-template-columns:1fr}
+  .urg__grid{grid-template-columns:1fr}
+  .jornada{grid-template-columns:1fr;row-gap:18px}
+  .jornada::before{display:block;left:22px;right:auto;top:22px;bottom:22px;width:1px;height:auto}
+  .jornada li{display:grid;grid-template-columns:44px 1fr;column-gap:16px}
+  .jornada__n{grid-row:1/3}
+  .jornada b{margin:4px 0 4px}
+  .sim__perguntas,.sim__previa{padding:24px 20px}
+  .sim__previa .btn{align-self:stretch}
   .dates{grid-template-columns:1fr}
   .form{grid-template-columns:1fr;padding:20px}
   .brand span{font-size:.68rem;padding-left:10px}
@@ -466,25 +496,23 @@ body.lm-open{overflow:hidden}
       <div class="arte__txt reveal">
         <span class="eyebrow">O que é Arteterapia</span>
         <h2>Criatividade que <em>também cuida</em>.</h2>
-        <p class="arte__sub">Um espaço para criar, respirar e se reconectar.</p>
-        <p>A Arteterapia usa a criação como ponto de partida para desacelerar, se expressar e se reconectar. <b>Não é preciso ter nenhuma experiência artística</b> — o foco está no processo, não no resultado.</p>
+        <p class="arte__sub">Uma experiência para desacelerar, criar e se reconectar.</p>
+        <p>A Arteterapia usa a criação como caminho para desacelerar, se expressar e se reconectar. <b>Não é preciso saber desenhar, pintar ou ter qualquer experiência artística</b> — o foco está no processo e na experiência de cada pessoa.</p>
         <dl class="arte__dois">
-          <div><dt>Para quem participa</dt><dd>Mais espaço para respirar, criar e se expressar.</dd></div>
-          <div><dt>Para a empresa</dt><dd>Uma forma concreta de promover bem-estar, conexão e cuidado.</dd></div>
+          <div><dt>Para quem participa</dt><dd>Uma pausa na rotina para desacelerar, experimentar e se expressar.</dd></div>
+          <div><dt>Para a empresa</dt><dd>Uma experiência de cuidado que estimula bem-estar, conexão e novas formas de olhar para o cotidiano.</dd></div>
         </dl>
       </div>
-      <!-- FOTO: salve assets/mh-arteterapia.jpg (pessoas + mãos criando, luz
-           quente, tons terrosos). Enquanto não existir, usa a foto de aquarela. -->
-      <div class="arte__foto reveal"><img src="assets/mh-arteterapia.jpg" alt="Pessoas criando juntas em uma experiência de Arteterapia" loading="lazy" onerror="this.onerror=null;this.src='assets/mh-hero-aquarela.jpg'"></div>
+      <div class="arte__foto reveal"><img src="assets/mh-arteterapia.jpg" style="object-position:50% 40%" alt="Grupo sorrindo e mostrando os desenhos criados em uma experiência de Arteterapia" loading="lazy"></div>
     </div>
     <div class="arte__cards">
-      <article class="acard reveal"><span class="acard__n">01</span><h3>Desacelerar</h3><p>Um momento para sair do automático e aliviar as tensões do dia.</p></article>
-      <article class="acard reveal"><span class="acard__n">02</span><h3>Criar</h3><p>Experimentar, brincar com novas possibilidades e estimular a criatividade.</p></article>
-      <article class="acard reveal"><span class="acard__n">03</span><h3>Conectar</h3><p>Criar junto, conversar, escutar e fortalecer vínculos.</p></article>
+      <article class="acard reveal"><span class="acard__n">01</span><h3>Desacelerar</h3><p>Um momento para sair do automático, respirar e aliviar as tensões do dia.</p></article>
+      <article class="acard reveal"><span class="acard__n">02</span><h3>Criar</h3><p>Experimentar novas possibilidades, despertar a criatividade e se permitir fazer sem a pressão do resultado.</p></article>
+      <article class="acard reveal"><span class="acard__n">03</span><h3>Conectar</h3><p>Criar junto, conversar, escutar e fortalecer vínculos de forma leve e significativa.</p></article>
     </div>
-    <p class="arte__quote reveal">Cuidar antes que o sofrimento se intensifique também é uma forma de cuidar da empresa.</p>
+    <p class="arte__quote reveal">Cuidar antes que o desgaste se intensifique também é uma forma de cuidar da empresa.</p>
     <div class="arte__cta reveal">
-      <div><h3>Quer levar essa experiência para sua empresa?</h3><p>Criamos formatos pontuais, semestrais ou anuais, adaptados à rotina da sua equipe.</p></div>
+      <div><h3>Quer levar essa experiência para a sua equipe?</h3><p>Criamos formatos pontuais, semestrais ou anuais, adaptados à rotina e aos objetivos da sua empresa.</p></div>
       <a class="btn btn--terra" href="#planos">Conheça os formatos</a>
     </div>
   </div>
@@ -495,14 +523,40 @@ body.lm-open{overflow:hidden}
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">Como funciona</span>
-      <h2>Do diagnóstico ao relatório, <em>a gente cuida de tudo</em>.</h2>
-      <p>Você aprova as datas. A Elarah organiza arteterapeutas, materiais, local e registros — o RH não precisa se preocupar com nada.</p>
+      <h2>Você define o objetivo. A Elarah <em>cuida do resto</em>.</h2>
+      <p>Você escolhe o formato e as datas. A Elarah organiza profissionais, materiais, logística e registros para que a experiência aconteça de ponta a ponta.</p>
     </div>
-    <div class="steps">
-      <div class="step reveal"><h3>Conversa de 20 min</h3><p>Entendemos o time, os turnos, o momento da empresa e os fatores de risco que o SESMT já mapeou.</p></div>
-      <div class="step reveal"><h3>Cronograma sob medida</h3><p>Você diz quantos encontros quer — 1, 4, 6, 12… — e a gente distribui nas datas que mais importam (Janeiro Branco, Setembro Amarelo, 10/10…).</p></div>
-      <div class="step reveal"><h3>Arteterapia que engaja</h3><p>Na empresa, no ateliê, online ou com kit em casa. Conduzida por arteterapeutas — ninguém precisa saber desenhar.</p></div>
-      <div class="step reveal"><h3>Relatório para o PGR</h3><p>Presença, fotos, pesquisa de pulso e o fator psicossocial trabalhado em cada ação. Pronto pra anexar.</p></div>
+
+    <ol class="jornada reveal">
+      <li><span class="jornada__n">01</span><b>Entender</b><p>Conversamos sobre o time, o objetivo e o período ideal.</p></li>
+      <li><span class="jornada__n">02</span><b>Planejar</b><p>Montamos o formato — pontual, semestral ou anual — e as experiências.</p></li>
+      <li><span class="jornada__n">03</span><b>Viver</b><p>Arteterapeuta, materiais e espaço prontos. Você só aprova as datas.</p></li>
+      <li><span class="jornada__n">04</span><b>Registrar</b><p>Presença, registros da ação, pesquisa de percepção e documentação para a NR-1.</p></li>
+    </ol>
+
+    <!-- Simulador: monta a prévia da experiência e abre o formulário de
+         proposta já preenchido com as escolhas (origem "simulador_como"). -->
+    <div class="sim reveal" id="monte-experiencia">
+      <div class="sim__perguntas">
+        <span class="eyebrow">Monte sua experiência</span>
+        <h3>Não sabe qual formato faz sentido? Leva 1 minuto.</h3>
+        <fieldset class="sim__q" data-q="pessoas"><legend><span>1</span> Quantas pessoas vão participar?</legend>
+          <button type="button" data-v="Até 20">Até 20</button><button type="button" data-v="21–50" class="on">21–50</button><button type="button" data-v="51–100">51–100</button><button type="button" data-v="100+">100+</button></fieldset>
+        <fieldset class="sim__q" data-q="formato"><legend><span>2</span> Qual formato você procura?</legend>
+          <button type="button" data-v="1 encontro">1 encontro</button><button type="button" data-v="Semestral" class="on">Semestral</button><button type="button" data-v="Anual">Anual</button><button type="button" data-v="Personalizado">Personalizado</button></fieldset>
+        <fieldset class="sim__q" data-q="objetivo"><legend><span>3</span> Qual é o principal objetivo?</legend>
+          <button type="button" data-v="Bem-estar e pausa" class="on">Bem-estar e pausa</button><button type="button" data-v="Conexão entre equipes">Conexão entre equipes</button><button type="button" data-v="Criatividade">Criatividade</button><button type="button" data-v="Cuidado emocional">Cuidado emocional</button></fieldset>
+        <fieldset class="sim__q" data-q="local"><legend><span>4</span> Onde vai acontecer?</legend>
+          <button type="button" data-v="Na empresa" class="on">Na empresa</button><button type="button" data-v="Em um espaço parceiro">Em um espaço parceiro</button><button type="button" data-v="Online">Online</button><button type="button" data-v="Kit para casa">Kit para casa</button></fieldset>
+      </div>
+      <aside class="sim__previa" aria-live="polite">
+        <span class="sim__tag">Prévia da sua experiência</span>
+        <h4 id="sim-titulo">Uma experiência pensada para sua equipe.</h4>
+        <p class="sim__resumo" id="sim-resumo"></p>
+        <ul class="sim__lista" id="sim-lista"></ul>
+        <p class="sim__nota">Proposta personalizada em até 1 dia útil, sem compromisso.</p>
+        <button type="button" class="btn btn--terra" id="sim-cta">Receber minha proposta</button>
+      </aside>
     </div>
   </div>
 </section>
@@ -807,6 +861,7 @@ body.lm-open{overflow:hidden}
       <label>Colaboradores<select name="colaboradores"><option value="">Selecione</option><option>até 50</option><option>51–200</option><option>201–500</option><option>501–1000</option><option>1000+</option></select></label>
       <label class="full">Quantos encontros no ano?<select name="encontros"><option value="">Ainda não sei — quero ajuda</option><option value="1">1 (pontual)</option><option value="2">2</option><option value="4">4 (essencial)</option><option value="6">6 (semestral)</option><option value="12">12 (anual)</option></select></label>
       <input type="hidden" name="plano" value="">
+      <input type="hidden" name="mensagem" value="">
       <input class="hp" name="site_url" tabindex="-1" autocomplete="off" aria-hidden="true">
       <button class="btn btn--terra" type="submit">Continuar no WhatsApp →</button>
       <p class="fine">Seus dados ficam só com a Elarah e são usados apenas para este contato.</p>
@@ -881,9 +936,12 @@ body.lm-open{overflow:hidden}
   var modalEl = document.getElementById('lead-modal');
   var formModal = document.getElementById('lead-form-modal');
 
-  function abrirModal(origem, plano, encontros) {
+  function abrirModal(origem, plano, encontros, extra) {
+    extra = extra || {};
     origemAtual = origem || 'botao';
     formModal.elements.plano.value = plano || '';
+    formModal.elements.mensagem.value = extra.mensagem || '';
+    if (extra.colaboradores) formModal.elements.colaboradores.value = extra.colaboradores;
     if (encontros) formModal.elements.encontros.value = String(encontros);
     modalEl.hidden = false;
     document.body.classList.add('lm-open');
@@ -951,6 +1009,46 @@ body.lm-open{overflow:hidden}
       setTimeout(function () { location.href = wa; }, 900);
     });
   }
+  // ---------- Simulador "Monte sua experiência" ----------
+  var SIM = { pessoas: '21–50', formato: 'Semestral', objetivo: 'Bem-estar e pausa', local: 'Na empresa' };
+  var SIM_ENC = { '1 encontro': 1, 'Semestral': 6, 'Anual': 12, 'Personalizado': null };
+  var SIM_EXP = {
+    'Bem-estar e pausa': 'Pausa com Arte: pintura, argila e aquarela para desacelerar',
+    'Conexão entre equipes': 'Criação em grupo: mosaico coletivo, cerâmica e rodas de conversa',
+    'Criatividade': 'Criatividade e novas perspectivas: colagem, pintura intuitiva e kintsugi',
+    'Cuidado emocional': 'Vivências de Arteterapia com espaço de escuta e expressão'
+  };
+  var SIM_LOCAL = {
+    'Na empresa': 'Na sua empresa — levamos todo o material',
+    'Em um espaço parceiro': 'Em um espaço parceiro da Elarah, fora da rotina do escritório',
+    'Online': 'Online, com materiais enviados para cada pessoa',
+    'Kit para casa': 'Kit em casa com orientação da arteterapeuta'
+  };
+  function simRender() {
+    var r = document.getElementById('sim-resumo'); if (!r) return;
+    var enc = SIM_ENC[SIM.formato];
+    var freq = enc === 1 ? '1 encontro' : enc === 6 ? '6 encontros no semestre' : enc === 12 ? 'até 12 encontros no ano' : 'formato sob medida';
+    r.textContent = freq + ' · ' + SIM.pessoas.toLowerCase() + ' pessoas · ' + SIM.objetivo.toLowerCase();
+    document.getElementById('sim-lista').innerHTML = [SIM_EXP[SIM.objetivo], SIM_LOCAL[SIM.local], 'Condução por arteterapeutas', 'Registros e documentação para a NR-1'].map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('');
+  }
+  document.querySelectorAll('.sim__q').forEach(function (fs) {
+    fs.addEventListener('click', function (e) {
+      var b = e.target.closest('button'); if (!b) return;
+      fs.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      SIM[fs.getAttribute('data-q')] = b.getAttribute('data-v');
+      simRender();
+    });
+  });
+  var simCta = document.getElementById('sim-cta');
+  if (simCta) simCta.addEventListener('click', function () {
+    var colab = SIM.pessoas === '100+' ? '' : (SIM.pessoas === '51–100' ? '51–200' : 'até 50');
+    abrirModal('simulador_como', SIM.formato === 'Personalizado' ? 'Personalizado' : SIM.formato, SIM_ENC[SIM.formato], {
+      colaboradores: colab,
+      mensagem: 'Simulador: ' + SIM.pessoas + ' pessoas · ' + SIM.formato + ' · ' + SIM.objetivo + ' · ' + SIM.local
+    });
+  });
+  simRender();
+
   tratar(formModal, null);
   tratar(document.getElementById('lead-form'), 'formulario');
 })();
