@@ -254,10 +254,10 @@ footer a{color:var(--muted)}
 .elarah{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;position:relative}
 .elarah h2{font-size:clamp(2rem,4vw,2.9rem);margin:12px 0 14px}
 .elarah p{color:#3d4a45;margin-bottom:10px}
-.elarah__pics{display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:1fr 1fr;gap:12px;height:380px}
-.elarah__pics img{width:100%;height:100%;object-fit:cover;border-radius:20px}
+.elarah__pics{display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:12px;height:380px;overflow:hidden}
+.elarah__pics img{width:100%;height:100%;min-height:0;min-width:0;object-fit:cover;border-radius:20px;display:block}
 .elarah__pics img:first-child{grid-row:1/3}
-.elarah__tag{position:absolute;right:0;bottom:-34px;font-family:'DM Serif Display',serif;font-style:italic;color:var(--terra)}
+.elarah__tag{margin-top:18px;font-family:'DM Serif Display',serif;font-style:italic;font-size:1.2rem;color:var(--terra)!important}
 
 /* MODAL DE ORÇAMENTO */
 .lm{position:fixed;inset:0;z-index:100;background:rgba(15,30,26,.55);display:flex;align-items:center;justify-content:center;padding:16px;overflow-y:auto}
@@ -273,7 +273,6 @@ body.lm-open{overflow:hidden}
 @media (max-width:980px){
   .arte,.elarah,.team{grid-template-columns:1fr}
   .elarah__pics{height:300px}
-  .elarah__tag{position:static}
 }
 @media (max-width:560px){
   .person{grid-template-columns:1fr;padding:22px}
@@ -489,7 +488,7 @@ body.lm-open{overflow:hidden}
     <div class="picker reveal" role="group" aria-label="Quantos encontros por ano">
       <span>Quantos encontros por ano?</span>
       <button type="button" data-enc="1">1 <small>pontual</small></button>
-      <button type="button" data-enc="2">2</button>
+      <button type="button" data-enc="2">2 <small>1 por semestre</small></button>
       <button type="button" data-enc="4" class="on">4 <small>essencial</small></button>
       <button type="button" data-enc="6">6 <small>semestral</small></button>
       <button type="button" data-enc="12">12 <small>anual</small></button>
@@ -635,13 +634,13 @@ body.lm-open{overflow:hidden}
           <a class="btn btn--ghost" href="index.html" target="_blank" rel="noopener">Ver as experiências da Elarah</a>
           <a class="btn btn--ghost" href="sobre.html" target="_blank" rel="noopener">Sobre a Elarah</a>
         </div>
+        <p class="elarah__tag">Offline is a feeling.</p>
       </div>
       <div class="elarah__pics">
         <img src="assets/ceramica.jpg" alt="Experiência de cerâmica da Elarah" loading="lazy">
         <img src="assets/velaaromatica.jpg" alt="Vela aromática artesanal" loading="lazy">
         <img src="assets/aquarela.jpg" alt="Aquarela" loading="lazy">
       </div>
-      <p class="elarah__tag">Offline is a feeling.</p>
     </div>
   </div>
 </section>
@@ -731,7 +730,7 @@ body.lm-open{overflow:hidden}
   </div>
 </div>
 
-<script src="admin-mh-data.js?v=2"></script>
+<script src="admin-mh-data.js?v=3"></script>
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script>
@@ -752,7 +751,7 @@ body.lm-open{overflow:hidden}
     var ativos = D.PRIORIDADE_MESES.slice(0, encSel);
     cal.innerHTML = D.PROGRAMA.map(function (p) {
       var a = D.atividade(p.atividade), on = ativos.indexOf(p.mes) >= 0;
-      return '<div class="mon in' + (on ? ' mon--key' : ' mon--off') + '"><span class="emo">' + (on ? a.emoji : '·') + '</span><div class="m">' + MESES[p.mes - 1] + '</div>' +
+      return '<div class="mon in' + (on ? ' mon--key' : ' mon--off') + '"><span class="emo">' + (on ? a.emoji : '') + '</span><div class="m">' + MESES[p.mes - 1] + '</div>' +
         '<b>' + esc(p.tema) + '</b><div class="a">' + esc(a.nome) + '</div></div>';
     }).join('');
     var nomes = ativos.slice().sort(function (a, b) { return a - b; }).map(function (m) { return MESES[m - 1].toLowerCase(); });

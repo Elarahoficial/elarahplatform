@@ -434,7 +434,9 @@
       desc: 'O programa completo, com reforços nos meses-chave e datas de presentear com gift card.' }
   ];
   // Ordem de prioridade dos meses quando a empresa quer menos de 12 encontros.
-  var PRIORIDADE_MESES = [10, 9, 1, 4, 12, 3, 5, 6, 8, 11, 7, 2];
+  // 2 encontros = um por semestre (Janeiro Branco + 10/10), por isso
+  // janeiro vem antes de setembro na fila.
+  var PRIORIDADE_MESES = [10, 1, 9, 4, 12, 3, 5, 6, 8, 11, 7, 2];
 
   // ---------- Rotina de uma pessoa só ----------
   // Pensada pra Larissa tocar sozinha: ~4 a 5 horas de trabalho comercial
