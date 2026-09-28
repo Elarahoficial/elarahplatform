@@ -294,9 +294,11 @@
         var titulo = (o.titulo_custom && o.titulo_custom.trim()) || e.nome;
         var badge = (o.badge_text && o.badge_text.trim()) || 'Especial Dia dos Namorados';
         // Padronização: usa formatPrecoBR pra garantir "R$ 248" / "R$ 1.290"
+        var _precoE = (window.ElarahData && ElarahData.precoVigente)
+          ? ElarahData.precoVigente(e) : e.preco;
         var preco = (window.ElarahData && ElarahData.formatPrecoBR)
-          ? ElarahData.formatPrecoBR(e.preco)
-          : (e.preco || '');
+          ? ElarahData.formatPrecoBR(_precoE)
+          : (_precoE || '');
 
         // Proxima data NA JANELA DDN como badge no canto superior
         // esquerdo da imagem — mesmo padrao visual dos cards normais
@@ -334,7 +336,7 @@
             media +
           '</div>' +
           '<div class="ddn-card__body">' +
-            (e.categoria ? '<span class="ddn-card__categoria">' + esc(e.categoria) + '</span>' : '') +
+            (e.categoria ? '<span class="ddn-card__categoria">' + esc((window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(e) : e.categoria) + '</span>' : '') +
             '<h3 class="ddn-card__title">' + esc(titulo) + '</h3>' +
             (meta.length ? '<div class="ddn-card__meta">' + meta.join('') + '</div>' : '') +
             '<div class="ddn-card__price">' +
@@ -487,17 +489,22 @@
       }
       var nome = document.getElementById('ddn-waitlist-nome').value.trim();
       var email = document.getElementById('ddn-waitlist-email').value.trim();
-      var tel = document.getElementById('ddn-waitlist-tel').value.trim();
+      var telEl = document.getElementById('ddn-waitlist-tel');
+      var telInfo = window.ElarahPhone ? window.ElarahPhone.get(telEl) : null;
+      var tel = telInfo ? telInfo.e164 : telEl.value.trim();
       if (!email || email.length < 5) {
         alert('Informe um e-mail válido.');
         return;
       }
-      // Telefone obrigatório — comercial precisa contactar leads
-      var telDigits = String(tel || '').replace(/\D+/g, '');
-      if (telDigits.length < 10) {
-        alert('Telefone obrigatório (com DDD). Ex: (11) 91234-5678');
-        var telInput = document.getElementById('ddn-waitlist-tel');
-        if (telInput) telInput.focus();
+      // Telefone obrigatório — comercial precisa contactar leads. Com o
+      // país escolhido no campo, o aviso diz o que falta.
+      var telOk = telInfo
+        ? telInfo.valid
+        : String(tel || '').replace(/\D+/g, '').length >= 10;
+      if (!telOk) {
+        alert('Telefone obrigatório. ' +
+          ((telInfo && telInfo.error) || 'Use DDD + número. Ex: (11) 91234-5678'));
+        if (telEl) telEl.focus();
         return;
       }
 

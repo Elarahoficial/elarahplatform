@@ -6,11 +6,12 @@
   <meta name="description" content="Elarah Originals — todas as experiências autorais criadas e organizadas pela Elarah. Momentos criativos para viver e presentear.">
   <title>By Elarah — Experiências Originais | Elarah</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=18">
+  <link rel="stylesheet" href="styles.css?v=22">
   <link rel="stylesheet" href="auth.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <script>(function(){var t=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href="assets/app-skin.css?t="+t;document.head.appendChild(l);var s=document.createElement("script");s.src="assets/app-skin.js?t="+t;s.defer=true;document.head.appendChild(s);})();</script>
 </head>
 <body data-originals="all">
 
@@ -44,12 +45,13 @@
             <a href="categoria.html?cat=Macramê" class="header__dropdown-item">Macramê</a>
             <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
             <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
-            <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+            <a href="categoria.html?cat=Tufting%20%26%20Punch" class="header__dropdown-item">Tufting &amp; Punch</a>
             <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
           </div>
         </div>
         <!-- Aba Elarah Kids oculta temporariamente (sem experiencias infantis no momento). Para reativar, remova este comentario: <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a> -->
-        <a href="elarah-em-casa.html" class="header__nav-link" style="color:#b9764f;font-weight:600;">Elarah em Casa</a>
+        <a href="elarah-em-casa.html" class="header__nav-link">Kits Elarah</a>
+        <!-- Aba Dia dos Pais oculta (campanha encerrada). Para reativar na proxima edicao, remova este comentario: <a href="dia-dos-pais.html" class="header__nav-link header__nav-link--ddp">Dia dos Pais</a> -->
         <a href="presentear.html" class="header__nav-link">Presentear</a>
         <a href="blog.html" class="header__nav-link">Blog</a>
         <a href="oferecer.html" class="header__nav-link">Ser Parceiro</a>
@@ -123,7 +125,7 @@
           </div>
           <div class="originals-modal__field">
             <label for="originals-telefone">Telefone</label>
-            <input type="tel" id="originals-telefone" name="telefone" placeholder="(11) 99999-9999" required>
+            <input type="tel" id="originals-telefone" name="telefone" data-phone-intl placeholder="(11) 99999-9999" required>
           </div>
           <button type="submit" class="originals-modal__submit" id="originals-modal-submit">Confirmar interesse</button>
         </form>
@@ -182,7 +184,7 @@
         <a href="categoria.html?cat=Macramê">Macramê</a>
         <a href="categoria.html?cat=Pintura">Pintura</a>
         <a href="categoria.html?cat=Sabonete">Sabonete</a>
-        <a href="categoria.html?cat=Tufting">Tufting</a>
+        <a href="categoria.html?cat=Tufting%20%26%20Punch">Tufting &amp; Punch</a>
         <a href="categoria.html?cat=Vela">Vela</a>
       </div>
 
@@ -210,14 +212,17 @@
     </div>
   </footer>
 
+<script src="promo.js?v=6"></script>
   <script src="supabase-loader.js?v=11"></script>
   <script src="supabase-client.js?v=12"></script>
   <script src="explorar-menu.js?v=2" defer></script>
-  <script src="auth.js?v=12"></script>
-  <script src="experiences-data.js?v=31"></script>
+  <script src="phone-input.js?v=1"></script>
+<script src="password-toggle.js?v=1"></script>
+<script src="auth.js?v=14"></script>
+  <script src="experiences-data.js?v=42"></script>
   <script src="date-filter.js?v=3"></script>
-  <script src="byelarah-data.js?v=7"></script>
+  <script src="byelarah-data.js?v=8"></script>
   <script src="analytics.js?v=3"></script>
-  <script src="script.js?v=78"></script>
+  <script src="script.js?v=92"></script>
   <script src="capacitor-bridge.js" defer></script>
 </body></html>

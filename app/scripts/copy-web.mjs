@@ -7,7 +7,8 @@
 // Regenera de forma determinística e idempotente. Roda no build (npm run build)
 // antes de `npx cap sync ios`.
 import { execSync } from 'node:child_process';
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, copyFileSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 
 const REPO = execSync('git rev-parse --show-toplevel', { encoding: 'utf8' }).trim();
 const WWW = `${REPO}/app/www`;
@@ -41,4 +42,28 @@ for (const rel of wwwFiles) {
     }
   }
 }
-console.log(`[copy-web] ${copied} arquivos copiados, bridge injetado em ${injected} HTML`);
+// Arquivos NOVOS do site que as páginas do app referenciam.
+// A lista acima só cobre o que o bundle já rastreava — um script criado
+// depois (promo.js, phone-input.js...) ficava fora do app e a página
+// carregava com 404: o app mostrava preço sem desconto, sem máscara de
+// telefone etc. Aqui varremos os HTML do bundle e trazemos da raiz todo
+// .js/.css local que eles pedem e ainda não existe em app/www.
+const refRe = /(?:src|href)\s*=\s*["']([^"'?#:]+\.(?:js|css))(?:[?#][^"']*)?["']/g;
+let added = 0;
+for (const rel of wwwFiles.filter(f => f.endsWith('.html'))) {
+  const dst = `${WWW}/${rel}`;
+  if (!existsSync(dst)) continue;
+  const html = readFileSync(dst, 'utf8');
+  for (const m of html.matchAll(refRe)) {
+    const ref = m[1].replace(/^\.?\//, '');
+    if (ref.startsWith('/') || ref.includes('..') || appOnly.has(ref)) continue;
+    const src = `${REPO}/${ref}`;
+    const out = `${WWW}/${ref}`;
+    if (existsSync(out) || !existsSync(src)) continue;
+    mkdirSync(dirname(out), { recursive: true });
+    copyFileSync(src, out);
+    added++;
+    console.log(`[copy-web] + ${ref} (novo no site, faltava no app)`);
+  }
+}
+console.log(`[copy-web] ${copied} arquivos copiados, ${added} novos, bridge injetado em ${injected} HTML`);

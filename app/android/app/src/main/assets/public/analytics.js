@@ -296,6 +296,44 @@
     });
   }
 
+  // PWA: detecta se o site está rodando como app instalado (tela inicial)
+  // e registra instalações/aberturas. Funciona no iPhone (navigator.standalone)
+  // e no Android/desktop (display-mode: standalone + evento appinstalled).
+  function isStandalone() {
+    try {
+      return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+        || window.navigator.standalone === true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function trackPwa() {
+    try {
+      var iosInstalled = window.navigator.standalone === true;
+      var standalone = isStandalone();
+      var platform = iosInstalled ? 'ios' : (standalone ? 'android_desktop' : 'browser');
+
+      // Toda abertura pelo app instalado conta como uso do app instalado.
+      if (standalone) {
+        track('pwa_open', {
+          category: 'pwa',
+          targetLabel: 'App instalado aberto',
+          metadata: { platform: platform }
+        });
+      }
+
+      // Android/desktop: dispara no momento em que o usuário instala.
+      window.addEventListener('appinstalled', function () {
+        track('pwa_installed', {
+          category: 'pwa',
+          targetLabel: 'App instalado',
+          metadata: { platform: 'android_desktop' }
+        });
+      });
+    } catch (e) {}
+  }
+
   // Auto-instrumentação por data-attributes:
   //   <button data-analytics="cta-comprar"
   //           data-analytics-category="cta"
@@ -440,6 +478,7 @@
     primeUser();
     wireAutoClicks();
     wireHomeHeuristics();
+    trackPwa();
     // page view é disparado após carregar DOM — aguarda um tick
     // pra garantir que document.title já está pronto.
     setTimeout(() => trackPageView(), 50);

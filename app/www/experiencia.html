@@ -6,7 +6,7 @@
   <meta name="description" id="meta-desc" content="Experiência na Elarah — descubra, reserve e viva.">
   <title id="page-title">Experiência — Elarah</title>
   <link rel="icon" href="assets/logo.png" type="image/png">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=21">
   <link rel="stylesheet" href="auth.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,6 +23,9 @@
     .exp-detail__meta-item { display: flex; align-items: center; gap: 6px; font-size: .9rem; color: #555; }
     .exp-detail__meta-item svg { width: 16px; height: 16px; flex-shrink: 0; }
     .exp-detail__price { font-size: 1.5rem; font-weight: 700; color: #1a1a1a; margin-bottom: 20px; }
+    /* Preço cheio riscado (valor_cheio_centavos). Ausente nas By Elarah,
+       onde o valor cheio é igual ao praticado. */
+    .exp-detail__price-de { font-size: .95rem; font-weight: 500; color: #9a8d7e; text-decoration: line-through; margin-right: 7px; }
     .exp-detail__horarios { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
     .exp-detail__horario-btn { padding: 8px 16px; font-size: .88rem; font-weight: 600; border: 1.5px solid #ddd; border-radius: 10px; background: #fff; color: #555; cursor: pointer; transition: all .15s; }
     .exp-detail__horario-btn:hover { border-color: var(--orange, #f0a05e); color: var(--orange, #f0a05e); }
@@ -44,6 +47,20 @@
       .exp-detail__data-btn { padding: 8px 12px; font-size: .78rem; min-width: 80px; }
       .exp-detail__horario-btn { padding: 8px 14px; font-size: .82rem; }
     }
+    /* ===== Agendamento livre (voucher) ===== */
+    .exp-detail__freepick { margin-bottom: 24px; }
+    .exp-detail__hours { padding: 14px 18px; background: #faf6f0; border: 1px solid #efe3d3; border-radius: 12px; margin-bottom: 18px; }
+    .exp-detail__hours-label { font-size: .7rem; font-weight: 700; color: #a4663b; text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+    .exp-detail__hours-text { font-size: .95rem; color: #3a2f28; line-height: 1.5; font-weight: 600; }
+    .exp-detail__freepick-fields { display: flex; flex-wrap: wrap; gap: 12px; }
+    .exp-detail__freepick-field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 150px; }
+    .exp-detail__freepick-field span { font-size: .72rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .5px; }
+    .exp-detail__freepick-field input { padding: 11px 14px; font-size: .95rem; font-family: inherit; color: #1a1a1a; border: 1.5px solid #ddd; border-radius: 10px; background: #fff; transition: border-color .15s, box-shadow .15s; }
+    .exp-detail__freepick-field input:focus { outline: none; border-color: var(--orange, #f0a05e); box-shadow: 0 0 0 3px rgba(240,160,94,.18); }
+    .exp-detail__freepick-hint { margin: 14px 0 0; font-size: .84rem; color: #6b5744; line-height: 1.5; padding: 12px 14px; background: #fbf3e6; border: 1px solid #f0dcc0; border-radius: 10px; }
+    .exp-detail__freepick-hint strong { color: #a4663b; }
+    .exp-detail__freepick--error .exp-detail__freepick-field input { border-color: #c0392b; }
+    .exp-detail__freepick--error .exp-detail__freepick-hint { color: #c0392b; font-weight: 600; }
     .exp-detail__includes { font-size: .9rem; color: #666; margin-bottom: 24px; padding: 14px 18px; background: #faf6f0; border-radius: 12px; }
     .exp-detail__includes strong { color: #1a1a1a; }
     /* PR K — Section destacada "O que você vai viver".
@@ -203,6 +220,7 @@
       .exp-detail__booking { position: sticky; top: 88px; align-self: start; margin: 0; }
     }
   </style>
+  <script>(function(){var t=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href="assets/app-skin.css?t="+t;document.head.appendChild(l);var s=document.createElement("script");s.src="assets/app-skin.js?t="+t;s.defer=true;document.head.appendChild(s);})();</script>
 </head>
 <body>
 
@@ -237,12 +255,13 @@
             <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macrame</a>
             <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
             <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
-            <a href="categoria.html?cat=Tufting" class="header__dropdown-item">Tufting</a>
+            <a href="categoria.html?cat=Tufting%20%26%20Punch" class="header__dropdown-item">Tufting &amp; Punch</a>
             <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
           </div>
         </div>
         <!-- Aba Elarah Kids oculta temporariamente (sem experiencias infantis no momento). Para reativar, remova este comentario: <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a> -->
-        <a href="elarah-em-casa.html" class="header__nav-link" style="color:#b9764f;font-weight:600;">Elarah em Casa</a>
+        <a href="elarah-em-casa.html" class="header__nav-link">Kits Elarah</a>
+        <!-- Aba Dia dos Pais oculta (campanha encerrada). Para reativar na proxima edicao, remova este comentario: <a href="dia-dos-pais.html" class="header__nav-link header__nav-link--ddp">Dia dos Pais</a> -->
         <a href="presentear.html" class="header__nav-link">Presentear</a>
         <a href="blog.html" class="header__nav-link">Blog</a>
         <a href="oferecer.html" class="header__nav-link">Ser Parceiro</a>
@@ -269,6 +288,24 @@
     </div>
   </header>
 
+  <!-- ========== FAIXA DE PRESENTE ========== -->
+  <!-- Aparece só quando a pessoa chega pela aba Presentear (?presente=1).
+       Deixa claro que ela está reservando pra presentear: escolhe a data,
+       o horário e a quantidade de pessoas normalmente. -->
+  <div id="presente-banner" style="display:none;background:linear-gradient(90deg,#fff4e6,#ffeede);border-bottom:1px solid #f0d9bd;color:#a4663b;text-align:center;padding:12px 20px;font-size:.9rem;font-weight:600;">
+    🎁 Você está presenteando esta experiência — escolha a data, o horário e a quantidade de pessoas. A reserva vai no nome de quem for viver.
+  </div>
+  <script>
+    (function () {
+      try {
+        if (new URLSearchParams(window.location.search).get('presente') === '1') {
+          var b = document.getElementById('presente-banner');
+          if (b) b.style.display = 'block';
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   <!-- ========== CONTENT ========== -->
   <div id="exp-content" class="exp-detail">
     <div class="exp-detail__loading">Carregando experiencia...</div>
@@ -290,7 +327,7 @@
         <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
         <a href="categoria.html?cat=Cer%C3%A2mica">Ceramica</a>
         <a href="categoria.html?cat=Pintura">Pintura</a>
-        <a href="categoria.html?cat=Tufting">Tufting</a>
+        <a href="categoria.html?cat=Tufting%20%26%20Punch">Tufting &amp; Punch</a>
         <a href="categoria.html?cat=Vela">Vela</a>
       </div>
       <div class="footer__column">
@@ -309,14 +346,17 @@
     <div class="footer__bottom"><p>&copy; 2026 Elarah. Todos os direitos reservados.</p></div>
   </footer>
 
+<script src="promo.js?v=6"></script>
 <script src="supabase-loader.js?v=11"></script>
 <script src="supabase-client.js?v=12"></script>
 <script src="explorar-menu.js?v=2" defer></script>
-<script src="auth.js?v=12"></script>
-<script src="experiences-data.js?v=31"></script>
+<script src="phone-input.js?v=1"></script>
+<script src="password-toggle.js?v=1"></script>
+<script src="auth.js?v=14"></script>
+<script src="experiences-data.js?v=42"></script>
 <script src="analytics.js?v=3"></script>
-<script src="kit-checkout.js?v=3"></script>
-<script src="script.js?v=78"></script><script>(function () {
+<script src="kit-checkout.js?v=4"></script>
+<script src="script.js?v=92"></script><script>(function () {
   'use strict';
 
   function esc(s) {
@@ -466,7 +506,12 @@
         'brand': { '@type': 'Brand', 'name': 'Elarah' },
         'url': pageUrl
       };
-      if (exp.categoria) ld.category = exp.categoria;
+      // Categoria pode ter várias abas ("Barismo | Bartenderia") — no
+      // JSON-LD usamos a principal (primeira) pra manter o valor limpo.
+      var _catPrincipal = (window.ElarahData && ElarahData.categoriaPrimary)
+        ? ElarahData.categoriaPrimary(exp)
+        : (exp.categoria || '');
+      if (_catPrincipal) ld.category = _catPrincipal;
       if (priceNum) {
         ld.offers = {
           '@type': 'Offer',
@@ -486,8 +531,8 @@
 
       // Breadcrumb: Início › Categoria › Experiência (breadcrumb rich result)
       var crumbs = [{ '@type': 'ListItem', 'position': 1, 'name': 'Início', 'item': 'https://elarah.com.br/' }];
-      if (exp.categoria) {
-        crumbs.push({ '@type': 'ListItem', 'position': 2, 'name': exp.categoria, 'item': 'https://elarah.com.br/categoria.html?cat=' + encodeURIComponent(exp.categoria) });
+      if (_catPrincipal) {
+        crumbs.push({ '@type': 'ListItem', 'position': 2, 'name': _catPrincipal, 'item': 'https://elarah.com.br/categoria.html?cat=' + encodeURIComponent(_catPrincipal) });
       }
       crumbs.push({ '@type': 'ListItem', 'position': crumbs.length + 1, 'name': exp.nome, 'item': pageUrl });
       var bc = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', 'itemListElement': crumbs };
@@ -547,7 +592,13 @@
     // prazo mínimo de compra (default 24h). Sem isso, o chip aparecia mas a
     // reserva era recusada pelo backend ("falta menos de 24h") — opção que
     // não deveria existir. Mesma regra de isPubliclyVisible/booking_guard.
-    var cutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+    // Mesmo cálculo da listagem: cutoff da experiência quando preenchido,
+    // senão o padrão da categoria (Gastronomia 48h, demais 24h). Ler isso
+    // por conta própria já fez os chips de horário divergirem do que o
+    // site listava.
+    var cutoffH = (window.ElarahData && typeof ElarahData.effectiveCutoffHours === 'function')
+      ? ElarahData.effectiveCutoffHours(exp)
+      : (Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24);
     var cutoffMs = now.getTime() + cutoffH * 60 * 60 * 1000;
     var futureSlots = allSlots
       .filter(function (s) { return s.isActive !== false; })
@@ -605,23 +656,76 @@
     // legado exp.horarios (sem datas) — preserva fluxo antigo.
     var firstAvailable = -1;
     var horariosHtml = '';
-    var useScheduleNew = futureSlots.length > 0;
+    // Agendamento livre (voucher): quando a experiência tem "horário de
+    // funcionamento" preenchido, o cliente escolhe o dia e a hora que quiser.
+    var useFreePick = !!(exp.horarioFuncionamento && String(exp.horarioFuncionamento).trim());
+    var useScheduleNew = !useFreePick && futureSlots.length > 0;
+    // Experiência é gerenciada por slots (recorrência/manual) quando tem
+    // QUALQUER slot cadastrado — mesmo que nenhum esteja disponível agora.
+    // Nesse caso NUNCA caímos no horário legado exp.horarios: ele pode estar
+    // defasado (ex.: "13h00 – 15h00") e não corresponder a nenhum slot real,
+    // levando o cliente a comprar um horário que não existe. Só o fluxo
+    // legado puro (experiência sem slot algum) usa exp.horarios.
+    var slotManaged = !useFreePick && allSlots.length > 0;
 
-    if (useScheduleNew) {
-      // Agrupa por data (chave: YYYY-MM-DD do event_at).
+    if (useFreePick) {
+      var _now = new Date();
+      var _minDate = _now.getFullYear() + '-' +
+        String(_now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(_now.getDate()).padStart(2, '0');
+      horariosHtml =
+        '<div class="exp-detail__freepick">' +
+          '<div class="exp-detail__hours">' +
+            '<div class="exp-detail__hours-label">Horário de funcionamento</div>' +
+            '<div class="exp-detail__hours-text">' + esc(exp.horarioFuncionamento).replace(/\n/g, '<br>') + '</div>' +
+          '</div>' +
+          '<div class="exp-detail__schedule-label">Dia e hora de preferência <span style="text-transform:none;letter-spacing:0;color:#a89b8c;">(opcional)</span></div>' +
+          '<div class="exp-detail__freepick-fields">' +
+            '<label class="exp-detail__freepick-field"><span>Dia</span>' +
+              '<input type="date" id="exp-freepick-date" min="' + _minDate + '"></label>' +
+            '<label class="exp-detail__freepick-field"><span>Hora</span>' +
+              '<input type="time" id="exp-freepick-time"></label>' +
+          '</div>' +
+          '<p class="exp-detail__freepick-hint">' +
+            '<strong>Como funciona:</strong> é só reservar. Se quiser, deixe acima um dia e horário de preferência — ' +
+            'mas não precisa. <strong>No momento da compra, a Elarah entra em contato com você no mesmo dia</strong> ' +
+            'para acertar o melhor horário pra você, dentro do horário de funcionamento. 🤍' +
+          '</p>' +
+        '</div>';
+    } else if (useScheduleNew) {
+      // Agrupa por data (chave: YYYY-MM-DD do event_at). IMPORTANTE: os
+      // componentes de dia/mês/dia-da-semana são derivados NO FUSO DE SÃO
+      // PAULO, não no fuso do visitante — senão uma turma de 21h (event_at
+      // 00:00Z do dia seguinte) aparece com o dia da semana errado pra quem
+      // acessa de outro fuso (ex.: presenteando alguém no exterior).
+      var _spParts = function (date) {
+        try {
+          var p = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+          }).formatToParts(date).reduce(function (o, x) { o[x.type] = x.value; return o; }, {});
+          var wd = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short' })
+            .format(date).replace('.', '');
+          return { key: p.year + '-' + p.month + '-' + p.day, wd: wd, dm: p.day + '/' + p.month };
+        } catch (e) {
+          return {
+            key: date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'),
+            wd: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+            dm: String(date.getDate()).padStart(2, '0') + '/' + String(date.getMonth() + 1).padStart(2, '0'),
+          };
+        }
+      };
       var byDate = {};
       var dateOrder = [];
       futureSlots.forEach(function (s) {
         var d = new Date(s.eventAt);
-        var key = d.getFullYear() + '-' +
-                  String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                  String(d.getDate()).padStart(2, '0');
+        var parts = _spParts(d);
+        var key = parts.key;
         if (!byDate[key]) {
           byDate[key] = {
             key: key,
             dt: d,
-            wd: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
-            dm: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+            wd: parts.wd,
+            dm: parts.dm,
             slots: [],
           };
           dateOrder.push(key);
@@ -717,6 +821,17 @@
         renderHorariosFor: renderHorariosFor,
         initialKey: initialKey,
       };
+    } else if (slotManaged) {
+      // Gerenciada por slots, porém SEM data disponível agora (todas
+      // passadas/esgotadas/dentro do cutoff). NÃO oferecemos o horário
+      // legado da experiência — ele não corresponde a nenhum slot real e
+      // gerava compra de horário inexistente. Mostra aviso; a reserva fica
+      // desabilitada no wire-up abaixo.
+      horariosHtml =
+        '<div class="exp-detail__no-dates" style="border:1px solid #e7d9c6;background:#fbf6ee;border-radius:12px;padding:16px 18px;color:#6b5d4f;font-size:.9rem;line-height:1.5;">' +
+          '<strong style="display:block;color:#a4663b;margin-bottom:4px;">Sem datas disponíveis no momento</strong>' +
+          'As próximas turmas ainda não foram abertas. Toque em <strong>Copiar link</strong> pra salvar a experiência ou nos chame no Instagram <strong>@elarahoficial</strong> — avisamos assim que abrir. 🤍' +
+        '</div>';
     } else if (horarios.length > 0) {
       // Fallback legado: experiência sem slots configurados.
       horariosHtml = '<div class="exp-detail__horarios">';
@@ -785,8 +900,14 @@
     // seletor funciona como preview/destaque na página; a escolha vinculante
     // por pessoa acontece no modal de checkout (script.js, via variantOptions).
     var _kitItems = (function () {
-      // Formato rico (nome + preço + foto).
-      if (Array.isArray(exp.variantItems) && exp.variantItems.length) return exp.variantItems;
+      // Formato rico (nome + preço + foto). Os preços das opções saem
+      // daqui JÁ com o desconto da promoção (cópia — nunca mexe no
+      // dado de cadastro que o admin edita).
+      if (Array.isArray(exp.variantItems) && exp.variantItems.length) {
+        return (window.ElarahPromo && ElarahPromo.itensComDesconto)
+          ? ElarahPromo.itensComDesconto(exp.variantItems)
+          : exp.variantItems;
+      }
       // Fallback: formato antigo (só nomes) — vira item simples { nome }.
       if (Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
         return exp.variantOptions
@@ -843,7 +964,7 @@
           '</div>'
         : '') +
       '<div class="exp-detail__meta">' +
-        ((!useScheduleNew && exp.data) ? '<span class="exp-detail__meta-item">' +
+        ((!useScheduleNew && !useFreePick && exp.data) ? '<span class="exp-detail__meta-item">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
           esc(exp.data) +
         '</span>' : '') +
@@ -853,7 +974,12 @@
       '</div>' +
       '</div>' +
       '<aside class="exp-detail__booking">' +
-      '<div class="exp-detail__price" id="exp-detail-price">' + esc((window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(exp.preco) : exp.preco) + '</div>' +
+      '<div class="exp-detail__price" id="exp-detail-price">' +
+        ((window.ElarahData && ElarahData.precoDeHTML) ? ElarahData.precoDeHTML(exp, 'exp-detail__price-de') : '') +
+        esc((window.ElarahData && ElarahData.formatPrecoBR)
+          ? ElarahData.formatPrecoBR(ElarahData.precoVigente ? ElarahData.precoVigente(exp) : exp.preco)
+          : exp.preco) +
+      '</div>' +
       '<div class="exp-detail__installments" style="font-size:.85rem;color:#6b5d4f;margin-top:2px;">ou em até <strong>12x</strong> no cartão</div>' +
       variantSelectorHtml +
       horariosHtml +
@@ -906,7 +1032,20 @@
           b.style.fontWeight = on ? '700' : '400';
         });
         if (it.imagem && heroImg) heroImg.src = it.imagem;
-        if (priceEl) priceEl.textContent = fmtPreco(it.preco ? it.preco : exp.preco);
+        // O "de" vem de valor_cheio_centavos, que é o cheio do preço BASE
+        // da experiência. Quando a opção escolhida tem preço PRÓPRIO, esse
+        // cheio não vale mais pra ela — então mostra só o preço da opção,
+        // sem riscado. Inventar um "de" pra variação seria anunciar um
+        // desconto que ninguém calculou.
+        if (priceEl) {
+          var usaPrecoDaVariante = !!(it.preco && String(it.preco).trim());
+          var deHtml = (!usaPrecoDaVariante && window.ElarahData && ElarahData.precoDeHTML)
+            ? ElarahData.precoDeHTML(exp, 'exp-detail__price-de')
+            : '';
+          var _precoBase = (window.ElarahData && ElarahData.precoVigente)
+            ? ElarahData.precoVigente(exp) : exp.preco;
+          priceEl.innerHTML = deHtml + esc(fmtPreco(usaPrecoDaVariante ? it.preco : _precoBase));
+        }
         window.__elarahKitVariant = {
           expId: exp.id,
           label: exp.variantLabel || 'Escolha a sua opção',
@@ -950,7 +1089,37 @@
       }
     }
 
-    if (useScheduleNew && window.__expScheduleData) {
+    if (useFreePick) {
+      // Agendamento livre: os seletores de dia/hora são OPCIONAIS. Quando
+      // preenchidos, viram a preferência do cliente e vão pro pedido pela
+      // mesma via que o checkout já lê. SEM bloqueio: clicar em Reservar
+      // sempre segue — a Elarah acerta o melhor horário no contato.
+      var fpDate = document.getElementById('exp-freepick-date');
+      var fpTime = document.getElementById('exp-freepick-time');
+      var fpReserve = document.getElementById('exp-reserve-btn');
+      function fpFmtBR(iso) {
+        if (!iso) return '';
+        var p = String(iso).split('-');
+        return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : iso;
+      }
+      function fpSync() {
+        if (!fpReserve) return;
+        var d = (fpDate && fpDate.value) || '';
+        var t = (fpTime && fpTime.value) || '';
+        var label = d ? fpFmtBR(d) : '';
+        var pref = '';
+        if (label && t) pref = label + ' às ' + t;
+        else if (label) pref = label;
+        else if (t) pref = 'às ' + t;
+        fpReserve.dataset.data = d;
+        fpReserve.dataset.dataLabel = label;
+        fpReserve.dataset.horario = pref;   // vazio = Elarah acerta no contato
+        fpReserve.dataset.slotId = '';
+      }
+      if (fpDate) fpDate.addEventListener('change', fpSync);
+      if (fpTime) fpTime.addEventListener('change', fpSync);
+      fpSync();
+    } else if (useScheduleNew && window.__expScheduleData) {
       var schedData = window.__expScheduleData;
       var horariosEl = document.getElementById('exp-horarios');
 
@@ -977,6 +1146,18 @@
       var firstHorario = container.querySelector('.exp-detail__horario-btn--active') ||
                         container.querySelector('.exp-detail__horario-btn:not([disabled])');
       syncReserveButton(firstHorario);
+    } else if (slotManaged) {
+      // Sem datas disponíveis → nada pra comprar. Desabilita a reserva e
+      // limpa qualquer horário herdado, pra não enviar horário fantasma.
+      var reserveBtnND = document.getElementById('exp-reserve-btn');
+      if (reserveBtnND) {
+        reserveBtnND.disabled = true;
+        reserveBtnND.textContent = 'Sem datas disponíveis';
+        reserveBtnND.dataset.horario = '';
+        reserveBtnND.dataset.data = '';
+        reserveBtnND.dataset.dataLabel = '';
+        reserveBtnND.dataset.slotId = '';
+      }
     } else {
       // Fluxo legado (sem slots configurados)
       wireHorarioButtons();
@@ -1072,6 +1253,14 @@
       }
     });
     stickyBtn.dataset.analyticsLabel = hostBtn.dataset.experienceNome || '';
+    // Espelha o estado desabilitado (ex.: "Sem datas disponíveis") pra que
+    // o sticky não permita disparar checkout de horário inexistente.
+    stickyBtn.disabled = !!hostBtn.disabled;
+    if (hostBtn.disabled) {
+      stickyBtn.textContent = hostBtn.textContent || 'Indisponível';
+    } else if (stickyBtn.textContent !== 'Reservar') {
+      stickyBtn.textContent = 'Reservar';
+    }
     var priceEl = document.querySelector('.exp-detail__price');
     if (priceEl && stickyPriceEl) {
       var t = (priceEl.textContent || '').trim();

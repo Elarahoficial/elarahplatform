@@ -1,3 +1,18 @@
+// Atalhos pro campo de telefone com seletor de país (phone-input.js).
+// Se aquele arquivo não carregar, o campo segue como input comum — a
+// página inteira não pode quebrar por causa do seletor.
+function _contaSetPhone(input, valor) {
+  if (!input) return;
+  if (window.ElarahPhone) window.ElarahPhone.set(input, valor || '');
+  else input.value = valor || '';
+}
+
+function _contaReadPhone(input) {
+  if (!input) return { valid: true, e164: '', error: null };
+  if (window.ElarahPhone) return window.ElarahPhone.get(input);
+  return { valid: true, e164: String(input.value || '').trim(), error: null };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   async function startPage() {
     await ElarahAuth.ready;
@@ -91,16 +106,33 @@ if (badgeEl) {
 
   if (dadosNome) dadosNome.value = user.nome || '';
   if (dadosEmail) dadosEmail.value = user.email || '';
-  if (dadosTelefone) dadosTelefone.value = user.telefone || '';
+  // Pelo componente, pra bandeira do país vir junto com o número salvo
+  // (um "+39 …" no banco abre a tela já com a Itália selecionada).
+  if (dadosTelefone) _contaSetPhone(dadosTelefone, user.telefone || '');
   if (dadosCidade) dadosCidade.value = user.cidade || '';
 
   if (formDados) {
     formDados.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      // Barra o salvamento de número incompleto: com o país na mão dá
+      // pra dizer quantos dígitos faltam em vez de aceitar calado e
+      // descobrir depois, na hora de chamar a pessoa no WhatsApp.
+      const telInfo = _contaReadPhone(dadosTelefone);
+      const erroEl = document.getElementById('dados-erro');
+      if (dadosTelefone && !telInfo.valid) {
+        if (erroEl) {
+          erroEl.textContent = 'WhatsApp: ' + (telInfo.error || 'número inválido.');
+          erroEl.style.display = 'block';
+        }
+        try { dadosTelefone.focus({ preventScroll: true }); } catch (err) {}
+        return;
+      }
+      if (erroEl) { erroEl.textContent = ''; erroEl.style.display = 'none'; }
+
       const result = await ElarahAuth.updateUser({
         nome: dadosNome ? dadosNome.value.trim() : '',
-        telefone: dadosTelefone ? dadosTelefone.value.trim() : '',
+        telefone: telInfo.e164,
         cidade: dadosCidade ? dadosCidade.value.trim() : ''
       });
 
@@ -169,6 +201,7 @@ if (currentUser.partnerStatus === 'approved') {
       <div class="account__partner-detail"><strong>Bairro / Local de atuação</strong><span>${pd.bairro || '-'}</span></div>
       <div class="account__partner-detail"><strong>Cidade</strong><span>${pd.cidade || '-'}</span></div>
       <div class="account__partner-detail"><strong>Instagram ou site</strong><span>${formatSocialHandle(pd.social) || '-'}</span></div>
+      <div class="account__partner-detail"><strong>WhatsApp para contato</strong><span>${pd.whatsapp || currentUser.telefone || '-'}</span></div>
       <div class="account__partner-detail"><strong>Conte sobre sua experiência</strong><span>${pd.descricao || '-'}</span></div>
     `;
   }
@@ -186,7 +219,15 @@ if (currentUser.partnerStatus === 'rejected') {
   return;
 }
 
-if (formWrap) formWrap.style.display = 'block';
+if (formWrap) {
+  formWrap.style.display = 'block';
+  // Pré-preenche o WhatsApp com o telefone da conta (se houver e o campo
+  // estiver vazio) — o parceiro pode trocar por um número comercial.
+  const waInput = document.getElementById('parceiro-whatsapp');
+  if (waInput && !waInput.value && currentUser.telefone) {
+    _contaSetPhone(waInput, currentUser.telefone);
+  }
+}
 }
 
 renderPartnerSection();
@@ -203,6 +244,7 @@ renderPartnerSection();
         bairro: document.getElementById('parceiro-bairro')?.value.trim() || '',
         cidade: document.getElementById('parceiro-cidade')?.value.trim() || '',
         social: document.getElementById('parceiro-social')?.value.trim() || '',
+        whatsapp: _contaReadPhone(document.getElementById('parceiro-whatsapp')).e164,
         descricao: document.getElementById('parceiro-descricao')?.value.trim() || ''
       };
 
@@ -458,6 +500,104 @@ renderFavoritos();
     return map[status] || (status || '');
   }
 
+  // =====================================================
+  //  PRAZO DE REMARCAÇÃO NO CARD DA COMPRA
+  // -----------------------------------------------------
+  // Remarcar sem custo tem prazo por categoria (bartenderia 5 dias,
+  // gastronomia 72h, demais 48h) — ver /cancelamento.html. O prazo foi
+  // CONGELADO em metadata.politica_remarcacao_horas no momento da
+  // compra; reserva antiga, sem o campo, cai no padrão de 48h.
+  //
+  // Mostrar a contagem aqui é o ponto: a regra estava só no checkout e
+  // no e-mail de confirmação, dois lugares que a pessoa vê uma vez. Na
+  // hora em que ela lembra que precisa remarcar, ela abre "Minhas
+  // compras" — e é aqui que o prazo tem que estar.
+  // =====================================================
+
+  // Momento de início da experiência, em ms. Combina a data (já
+  // resolvida por parseDataDMYtoDate, que trata a virada de ano) com a
+  // hora inicial do rótulo ("19h00 – 22h30" → 19:00). Sem hora
+  // reconhecível, assume 00:00 do dia — sempre a favor da cliente, já
+  // que antecipa o fim do prazo em vez de atrasá-lo.
+  //
+  // Usa o fuso do navegador de propósito: a cliente está no Brasil e é
+  // o relógio dela que importa pra decidir se "ainda dá tempo".
+  function bookingStartAt(booking) {
+    const d = parseDataDMYtoDate(booking && booking.data);
+    if (!d) return null;
+    const head = String((booking && booking.horario) || '').split(/[–—-]/)[0].trim();
+    const hm = head.match(/^(\d{1,2})\s*[h:]\s*(\d{0,2})/i);
+    if (hm) {
+      const hh = Number(hm[1]);
+      const mm = hm[2] ? Number(hm[2]) : 0;
+      if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) d.setHours(hh, mm, 0, 0);
+    }
+    const t = d.getTime();
+    return isNaN(t) ? null : t;
+  }
+
+  // "faltam 5 dias" / "faltam 7 horas" / "falta menos de 1 hora".
+  function tempoRestanteLabel(ms) {
+    const horas = ms / 3600000;
+    if (horas >= 48) return 'faltam ' + Math.floor(horas / 24) + ' dias';
+    if (horas >= 2) return 'faltam ' + Math.floor(horas) + ' horas';
+    if (horas >= 1) return 'falta 1 hora';
+    return 'falta menos de 1 hora';
+  }
+
+  function doisDigitos(n) { return (n < 10 ? '0' : '') + n; }
+
+  // Linha de prazo do card. Devolve '' quando não há o que dizer com
+  // segurança: compra passada, não paga, sem data reconhecível ou
+  // experiência que já aconteceu. Preferimos não mostrar nada a
+  // mostrar "prazo encerrado" numa reserva cuja data não entendemos.
+  function renderPrazoRemarcacao(booking, group) {
+    if (group === 'past') return '';
+    if ((booking.status || 'pending') !== 'pago') return '';
+    const inicio = bookingStartAt(booking);
+    if (inicio == null) return '';
+    const agora = Date.now();
+    if (inicio <= agora) return '';
+
+    const meta = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
+    const horasRaw = Number(meta.politica_remarcacao_horas);
+    const prazoHoras = (isFinite(horasRaw) && horasRaw > 0) ? horasRaw : 48;
+    const limite = inicio - prazoHoras * 3600000;
+    const restante = limite - agora;
+
+    // WhatsApp, não e-mail: a pessoa está no celular olhando a reserva.
+    // É o mesmo canal do rodapé e do header do site inteiro, e é onde ela
+    // responde. A mensagem já vai preenchida com experiência, data e a
+    // referência da reserva — assim a conversa começa com o que a Elarah
+    // precisa pra localizar a compra, sem o vaivém de "qual reserva?".
+    const refCurta = String(booking.id || '').slice(-8).toUpperCase();
+    const msgWpp = 'Olá! Gostaria de remarcar minha reserva.\n\n' +
+      '*' + (booking.experiencia_nome || 'Experiência') + '*\n' +
+      (booking.data ? booking.data + ' ' : '') + (booking.horario || '') + '\n' +
+      (refCurta ? 'Ref. ' + refCurta : '');
+    const contatoUrl = 'https://wa.me/5511914455930?text=' + encodeURIComponent(msgWpp);
+
+    if (restante > 0) {
+      const dl = new Date(limite);
+      const quando = doisDigitos(dl.getDate()) + '/' + doisDigitos(dl.getMonth() + 1) +
+        ' às ' + doisDigitos(dl.getHours()) + 'h' + doisDigitos(dl.getMinutes());
+      return '<p class="purchase-card__prazo">' +
+        '<span aria-hidden="true">🔄</span> ' +
+        'Remarcação sem custo até <strong>' + escapeHtmlLocal(quando) + '</strong> · ' +
+        escapeHtmlLocal(tempoRestanteLabel(restante)) +
+        ' <a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Pedir no WhatsApp</a>' +
+        '</p>';
+    }
+    // Passou do prazo de remarcação sem custo. Não trava nada — só
+    // deixa claro antes de a pessoa pedir, pra a conversa começar do
+    // lugar certo em vez de virar negociação.
+    return '<p class="purchase-card__prazo purchase-card__prazo--encerrado">' +
+      '<span aria-hidden="true">⏳</span> ' +
+      'Prazo de remarcação sem custo encerrado ' +
+      '<a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Falar no WhatsApp</a>' +
+      '</p>';
+  }
+
   function renderBookingCard(booking, group) {
     const nome = booking.experiencia_nome || 'Experiência';
     const data = booking.data || '';
@@ -510,6 +650,7 @@ renderFavoritos();
           '<h3 class="purchase-card__title">' + escapeHtmlLocal(nome) + '</h3>' +
           '<div class="purchase-card__meta">' + metaParts.join('') + '</div>' +
           localHtml +
+          renderPrazoRemarcacao(booking, group) +
         '</div>' +
       '</article>'
     );

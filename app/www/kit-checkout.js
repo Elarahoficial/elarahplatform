@@ -33,8 +33,18 @@
   }
   function isKit(exp) {
     if (!exp) return false;
+    // Presencial (data + horário marcados, ou slot event_at) nunca é kit,
+    // mesmo com "em casa"/"kit" no nome. Ex.: "Café Bom & em Casa" (aula).
+    if (exp.event_at) return false;
+    var temData = exp.data && String(exp.data).trim() !== '';
+    var temHora = (exp.horario && String(exp.horario).trim() !== '')
+      || (exp.horarios && exp.horarios.length > 0);
+    if (temData && temHora) return false;
     var hay = norm((exp.nome || '') + ' ' + (exp.categoria || ''));
-    return hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1 || /\bem casa\b/.test(hay); // "em casa" como palavra inteira (não "Bem Casado")
+    if (hay.indexOf('kit') !== -1 || hay.indexOf('diy') !== -1) return true;
+    // "em casa" conta SÓ na categoria (não no nome). Mesma regra do
+    // isHomeKit / isCasaKit.
+    return /\bem casa\b/.test(norm(exp.categoria || '')); // palavra inteira (não "Bem Casado")
   }
   // Variação escolhida na página do produto (experiencia.html). Só vale
   // se for do MESMO kit aberto. Devolve {nome, preco, label} ou null.
@@ -275,9 +285,14 @@
   function updateSummary() {
     if (!selectedOption || !kitExp) return;
     var variant = getSelectedVariant();
+    // variant.preco vem de window.__elarahKitVariant, que a página da
+    // experiência já grava com o desconto da promoção aplicado. O preço
+    // do kit sem variação precisa do mesmo tratamento aqui.
+    var kitPrecoVigente = (window.ElarahData && ElarahData.precoVigente)
+      ? ElarahData.precoVigente(kitExp) : kitExp.preco;
     var kitCents = (variant && variant.preco && precoToCents(variant.preco) > 0)
       ? precoToCents(variant.preco)
-      : precoToCents(kitExp.preco);
+      : precoToCents(kitPrecoVigente);
     var freteCents = selectedOption.cost_centavos;
     // Mostra o nome da variação escolhida no resumo, se houver.
     var kitLabelEl = document.querySelector('#kc-summary .kc-line span');

@@ -170,19 +170,25 @@ if (categoriaURL) activeCategoria = categoriaURL;
     const categoriasOriginalCase = new Map();
     (experiences || []).forEach(function (exp) {
       if (!exp || !exp.categoria) return;
-      const c = String(exp.categoria).trim();
-      if (!c) return;
-      const k = c.toLowerCase();
       // Kits "em casa" (Kit em casa / Lar em casa) não entram na navegação
       // (menu/faixa de categorias) — acessíveis só pelo link "Elarah em
       // Casa" no topo do header. Mesmo critério de ElarahData.isHomeKit.
       if ((window.ElarahData && ElarahData.isHomeKit)
         ? ElarahData.isHomeKit(exp)
-        : k.indexOf('em casa') !== -1) return;
-      if (!categoriasSet.has(k)) {
-        categoriasSet.add(k);
-        categoriasOriginalCase.set(k, c);
-      }
+        : String(exp.categoria).toLowerCase().indexOf('em casa') !== -1) return;
+      // Uma experiência pode estar em mais de uma aba (ex.: "Barismo |
+      // Bartenderia") — cada categoria vira um link/opção separada.
+      const cats = (window.ElarahData && ElarahData.categoriasOf)
+        ? ElarahData.categoriasOf(exp)
+        : [String(exp.categoria).trim()];
+      cats.forEach(function (c) {
+        if (!c) return;
+        const k = c.toLowerCase();
+        if (!categoriasSet.has(k)) {
+          categoriasSet.add(k);
+          categoriasOriginalCase.set(k, c);
+        }
+      });
     });
     const categorias = Array.from(categoriasOriginalCase.values()).sort(function (a, b) {
       return a.localeCompare(b, 'pt-BR', { sensitivity: 'base' });
@@ -296,7 +302,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
   // Atualizado depois da geração dinâmica (links novos).
   const categoryLinks = document.querySelectorAll('.category-link');
 
-  const MAX_HOME_CARDS = 3;
+  const MAX_HOME_CARDS = 4;
 
   function renderCards() {
     if (!grid || !countEl || !emptyEl) return;
@@ -305,7 +311,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // Kits "Elarah em Casa" são produto, não experiência: fora da
       // listagem (só aparecem na vitrine própria em-casa.html).
       if (window.ElarahData && ElarahData.isHomeKit && ElarahData.isHomeKit(exp)) return false;
-      const matchCat = !activeCategoria || exp.categoria === activeCategoria;
+      const matchCat = !activeCategoria ||
+        ((window.ElarahData && ElarahData.matchesCategoria)
+          ? ElarahData.matchesCategoria(exp, activeCategoria)
+          : exp.categoria === activeCategoria);
       const matchBairro = !activeBairro || exp.bairro === activeBairro;
 
       const textoBusca = activeBusca.toLowerCase();
@@ -325,17 +334,18 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return matchCat && matchBairro && matchBusca && matchData;
     });
 
-    // Ordem manual do admin primeiro (arrastar pra cima = aparece antes);
-    // empate/sem ordem cai no cronológico pela proxima ocorrencia futura.
-    // Experiencias sem data conhecida (recorrente sem slot programado,
-    // one-off com data ausente, etc) vao pro fim.
+    // Ordem CRONOLÓGICA: a próxima experiência a acontecer aparece
+    // primeiro (proxima ocorrencia futura). Empate no mesmo horário cai
+    // na ordem manual do admin. Experiencias sem data conhecida
+    // (recorrente sem slot programado, one-off com data ausente, etc)
+    // vao pro fim.
     filtered.sort(function (a, b) {
-      var oa = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
-      var ob = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
-      if (oa !== ob) return oa - ob;
       var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
       var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
-      return ta - tb;
+      if (ta !== tb) return ta - tb;
+      var oa = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
+      var ob = (window.ElarahData && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
+      return oa - ob;
     });
 
     grid.innerHTML = '';
@@ -362,6 +372,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         }
       }
       toShow = arr;
+    } else if (activeBusca && document.documentElement.classList.contains('is-app')) {
+      // No APP: quando a pessoa DIGITA uma busca ("vela"), a home mostra
+      // TODOS os resultados daquele termo e mantém a barra de busca no topo.
+      // Antes cortava em MAX_HOME_CARDS e o "Ver todas" ia pra listagem geral
+      // (categoria.html), perdendo o que foi digitado. No site normal (sem
+      // .is-app) o comportamento continua exatamente igual.
+      toShow = filtered;
     } else {
       toShow = isFiltered ? filtered.slice(0, MAX_HOME_CARDS) : filtered.slice(0, MAX_HOME_CARDS * 3);
     }
@@ -416,17 +433,35 @@ if (categoriaURL) activeCategoria = categoriaURL;
     window.__elarahRenderCards = renderCards;
   }
 
+  // Preço que a cliente paga hoje: o vigente (com a promoção sazonal
+  // quando ela está no ar) e nunca o preço de cadastro.
+  function precoVigenteDe(exp) {
+    return (window.ElarahData && ElarahData.precoVigente)
+      ? ElarahData.precoVigente(exp)
+      : ((exp && exp.preco) || '');
+  }
+
   function createCard(exp) {
     const colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
     const card = document.createElement('article');
     card.className = 'card';
 
+    // Horários do card: prioriza os horários REAIS das turmas (slots),
+    // incluindo os gerados por recorrência. Assim experiências que só têm
+    // horário na recorrência (campo "Horários" vazio) também mostram os
+    // botões. Cai pro campo horarios/horario da experiência quando não há
+    // slot futuro.
+    const _slotHorarios = (typeof ElarahData !== 'undefined' && ElarahData.distinctSlotHorarios)
+      ? ElarahData.distinctSlotHorarios(exp._slots || [], Date.now())
+      : [];
     // Dedup textual + ordem original. Recorrência popula exp.horarios
     // com 1 entrada por slot (ex: 8 datas × 2 horários = 16 entradas
     // repetidas). Sem dedup, o card mostra 16 chips idênticos.
-    const horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
-      ? exp.horarios
-      : (exp.horario ? [exp.horario] : []);
+    const horariosRaw = _slotHorarios.length
+      ? _slotHorarios
+      : (Array.isArray(exp.horarios) && exp.horarios.length
+          ? exp.horarios
+          : (exp.horario ? [exp.horario] : []));
     const seenHorarios = new Set();
     const horarios = [];
     horariosRaw.forEach(function (h) {
@@ -471,6 +506,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       'perfumaria':  'assets/perfumaria.jpg',
       'ceramica':    'assets/ceramica-fria.jpg',
       'tufting':     'assets/tufting1.jpg',
+      'tufting & punch': 'assets/tufting1.jpg',
       'pintura':     'assets/pinturataca.jpg',
       'vela':        'assets/velaaromatica.jpg',
       'gastronomia': 'assets/cookies.jpg',
@@ -487,7 +523,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // Encodado em data-attribute pra que o onerror possa trocar inline.
     const placeholderHtml = `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
     const primaryImg = normalizeImg(exp.imagem);
-    const catFallback = defaultImgForCategory(exp.categoria);
+    const catFallback = ""; /* fotos genericas de categoria desativadas: mostra placeholder neutro ate a foto real carregar */
     const imgSrc = primaryImg || catFallback;
     const imageContent = imgSrc
       ? `<img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" loading="lazy" ` +
@@ -563,7 +599,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ${scarcePill}
       </div>
       <div class="card__body">
-        <span class="card__category">${exp.categoria}</span>
+        <span class="card__category">${(window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : exp.categoria}</span>
         <h3 class="card__title"><a href="experiencia.html?id=${encodeURIComponent(exp.id)}" class="card__title-link">${exp.nome}</a></h3>
         <div class="card__details">
           <p class="card__detail">
@@ -586,7 +622,8 @@ if (categoriaURL) activeCategoria = categoriaURL;
           </p>
         </div>
         <div class="card__footer">
-          <p class="card__price"><strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco) : exp.preco)}</strong></p>
+          <p class="card__price">${(window.ElarahData && ElarahData.precoDeHTML ? ElarahData.precoDeHTML(exp) : '')}<strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(precoVigenteDe(exp)) : precoVigenteDe(exp))}</strong></p>
+          ${/\d/.test(String(exp.preco || '')) ? '<p class="card__installments" style="margin:-6px 0 8px;font-size:.72rem;color:#8a7a68;line-height:1.2;">ou até <strong>12x</strong> no cartão</p>' : ''}
           <button type="button" class="card__reserve-btn"
             data-reserve
             data-experience-id="${exp.id}"
@@ -864,6 +901,149 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
   }
 
+  // ===== CARROSSEL DA FAIXA BY ELARAH =====
+  // Na home a faixa mostra TODAS as experiências Originals numa
+  // esteira horizontal: dá pra arrastar com o mouse, rolar com o
+  // trackpad, deslizar o dedo no celular ou clicar nas setas.
+  // Em modo desligado (byelarah.html, que já lista tudo em grid) a
+  // função desmonta o carrossel e devolve o grid normal.
+
+  var ORIGINALS_NAV_SVG = {
+    prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="15 18 9 12 15 6"/></svg>',
+    next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="9 18 15 12 9 6"/></svg>'
+  };
+
+  function setupOriginalsCarousel(grid, enabled) {
+    if (!grid) return;
+    var wrap = grid.parentNode && grid.parentNode.classList &&
+      grid.parentNode.classList.contains('originals__carousel')
+      ? grid.parentNode : null;
+
+    if (!enabled) {
+      // Desmonta: tira o grid do wrapper e devolve pro lugar original.
+      grid.classList.remove('originals__grid--carousel');
+      if (wrap && wrap.parentNode) {
+        wrap.parentNode.insertBefore(grid, wrap);
+        wrap.parentNode.removeChild(wrap);
+      }
+      return;
+    }
+
+    grid.classList.add('originals__grid--carousel');
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'originals__carousel';
+      grid.parentNode.insertBefore(wrap, grid);
+      wrap.appendChild(grid);
+    }
+
+    var prev = wrap.querySelector('.originals__nav--prev');
+    var next = wrap.querySelector('.originals__nav--next');
+    if (!prev) {
+      prev = document.createElement('button');
+      prev.type = 'button';
+      prev.className = 'originals__nav originals__nav--prev';
+      prev.setAttribute('aria-label', 'Ver experiências anteriores');
+      prev.innerHTML = ORIGINALS_NAV_SVG.prev;
+      prev.addEventListener('click', function () { scrollOriginals(grid, -1); });
+      wrap.appendChild(prev);
+    }
+    if (!next) {
+      next = document.createElement('button');
+      next.type = 'button';
+      next.className = 'originals__nav originals__nav--next';
+      next.setAttribute('aria-label', 'Ver mais experiências');
+      next.innerHTML = ORIGINALS_NAV_SVG.next;
+      next.addEventListener('click', function () { scrollOriginals(grid, 1); });
+      wrap.appendChild(next);
+    }
+
+    var sync = function () { syncOriginalsNav(grid, prev, next); };
+    if (!grid.dataset.navWired) {
+      grid.dataset.navWired = '1';
+      grid.addEventListener('scroll', sync, { passive: true });
+      window.addEventListener('resize', sync);
+    }
+    // Espera o layout assentar (larguras dos cards) antes de decidir
+    // se as setas aparecem.
+    if (window.requestAnimationFrame) window.requestAnimationFrame(sync);
+    else sync();
+
+    setupOriginalsDragScroll(grid);
+  }
+
+  // Rola exatamente um card por clique — previsível e sempre
+  // deixando o próximo card alinhado na borda.
+  function scrollOriginals(grid, dir) {
+    var card = grid.querySelector('.originals__card');
+    var step = grid.clientWidth * 0.8;
+    if (card) {
+      var cs = window.getComputedStyle(grid);
+      var gap = parseFloat(cs.columnGap || cs.gap || '24') || 24;
+      step = card.getBoundingClientRect().width + gap;
+    }
+    grid.scrollBy({ left: dir * step, behavior: 'smooth' });
+  }
+
+  // Esconde a seta que não leva a lugar nenhum (início / fim da faixa)
+  // e as duas quando tudo já cabe na tela.
+  function syncOriginalsNav(grid, prev, next) {
+    var max = grid.scrollWidth - grid.clientWidth;
+    var overflowing = max > 4;
+    var atStart = grid.scrollLeft <= 4;
+    var atEnd = grid.scrollLeft >= max - 4;
+    if (prev) prev.disabled = !overflowing || atStart;
+    if (next) next.disabled = !overflowing || atEnd;
+  }
+
+  // Arrastar com o mouse (no celular o scroll de toque já é nativo).
+  function setupOriginalsDragScroll(grid) {
+    if (grid.dataset.dragScroll === '1') return;
+    grid.dataset.dragScroll = '1';
+
+    var down = false, moved = false, startX = 0, startScroll = 0;
+
+    function swallowClick(e) { e.stopPropagation(); e.preventDefault(); }
+
+    grid.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'touch') return;      // toque rola sozinho
+      if (e.button !== 0) return;
+      // Não sequestra o clique de botões/links: o arrasto nunca começa
+      // em cima de um CTA, então "Quero participar" continua clicável.
+      if (e.target && e.target.closest &&
+          e.target.closest('button, a, input, select, textarea')) return;
+      down = true;
+      moved = false;
+      startX = e.clientX;
+      startScroll = grid.scrollLeft;
+      grid.classList.add('is-grabbing');
+    });
+
+    window.addEventListener('pointermove', function (e) {
+      if (!down) return;
+      var dx = e.clientX - startX;
+      if (!moved && Math.abs(dx) > 4) moved = true;
+      if (!moved) return;
+      grid.scrollLeft = startScroll - dx;
+      e.preventDefault();
+    });
+
+    function endDrag() {
+      if (!down) return;
+      down = false;
+      grid.classList.remove('is-grabbing');
+      if (!moved) return;
+      // Engole o clique que o navegador dispara no fim do arrasto —
+      // sem isso, soltar em cima de um card abriria a experiência.
+      grid.addEventListener('click', swallowClick, true);
+      setTimeout(function () {
+        grid.removeEventListener('click', swallowClick, true);
+      }, 0);
+    }
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+  }
+
   // ===== ELARAH ORIGINALS DYNAMIC RENDER =====
   // Re-renderiza os cards da seção By Elarah a partir do Supabase
   // assim que estiver disponível, mantendo o HTML estático como
@@ -872,10 +1052,14 @@ if (categoriaURL) activeCategoria = categoriaURL;
     var grid = document.querySelector('.originals__grid');
     if (!grid || !Array.isArray(items) || !items.length) return;
 
-    // opts.limit  → mostra só os N primeiros (home). null = todos.
-    // opts.verMaisHref → URL do botão "Ver mais" quando há mais que N.
+    // opts.carousel → renderiza TODOS os cards numa faixa horizontal
+    //                 que arrasta pro lado (+ setas no desktop).
+    // opts.limit    → mostra só os N primeiros. null = todos.
+    //                 Ignorado quando carousel = true.
+    // opts.verMaisHref → URL do botão abaixo da faixa.
     opts = opts || {};
-    var limit = (typeof opts.limit === 'number' && opts.limit > 0) ? opts.limit : null;
+    var carousel = opts.carousel === true;
+    var limit = (!carousel && typeof opts.limit === 'number' && opts.limit > 0) ? opts.limit : null;
     var verMaisHref = opts.verMaisHref || '';
     var totalCount = items.length;
     var renderList = limit ? items.slice(0, limit) : items;
@@ -908,14 +1092,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // entram aqui: a imagem do admin é fonte da verdade. Se ela
     // falhar, exibe placeholder neutro — nunca substitui pela foto
     // de outra experiência (era o bug "cadastrei foto X mas aparece Y").
-    var ORIGINALS_IMAGE_FALLBACKS = {
-      'pintura-aperol': 'assets/pintura-aperol.png',
-      'perfumaria-criativa': 'assets/perfumariaa.jpg',
-      'ourivesaria-joia': 'assets/ourivesariaa.jpg',
-      'pintura de quadro com cristal & aperol spritz': 'assets/pintura-aperol.png',
-      'oficina de perfumaria criativa': 'assets/perfumariaa.jpg',
-      'workshop de ourivesaria: crie sua joia': 'assets/ourivesariaa.jpg'
-    };
+    // Fotos fixas antigas desativadas: os cards Originals agora usam SOMENTE a
+    // imagem real cadastrada; se faltar, mostram o placeholder neutro (logo) —
+    // nunca uma foto antiga hardcoded.
+    var ORIGINALS_IMAGE_FALLBACKS = {};
     // Placeholder neutro: a logo. Reusa asset que já está no site.
     // Usado quando uma imagem custom falha de carregar — bem melhor
     // que servir foto aleatória de outra experiência.
@@ -1069,8 +1249,13 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ? 'Quero participar'
         : 'Entrar na lista de espera';
 
-      var imgSrc = resolveImage(it);
-      var imgFallback = resolveOnErrorFallback(it);
+      // SOMENTE a imagem real cadastrada. Sem foto real, o espaco fica VAZIO
+      // (nada aparece) ate a foto real carregar — nunca mostra foto antiga nem
+      // logo no lugar. Se a foto real falhar, some (fica vazio tambem).
+      var realImg = normalizeImagePath(it.imagem);
+      var imgHtml = realImg
+        ? '<img src="' + esc(realImg) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" draggable="false" onerror="this.style.display=&quot;none&quot;;">'
+        : '';
 
       // Atributos data-* identificam o tipo de fluxo no click handler.
       // CRÍTICO: cards compráveis recebem `data-reserve` — o listener
@@ -1084,7 +1269,15 @@ if (categoriaURL) activeCategoria = categoriaURL;
         ' data-experience="' + esc(it.nome) + '"' +
         ' data-cta-mode="' + esc(ctaMode) + '"' +
         ' data-type="' + esc(it.tipo || '') + '"';
-      if (it.fromExperience && it.experienceId) {
+      // data-reserve (→ startCheckout) SOMENTE para cards compráveis
+      // (ctaMode === 'buy'). Cards de lista de espera NUNCA podem receber
+      // data-reserve: se recebem, o listener global de checkout intercepta
+      // o clique em "Entrar na lista de espera" e leva a pessoa pra um
+      // "pagamento" de R$ 0,00 — em vez de coletar nome/telefone/e-mail.
+      // Sem data-reserve, o clique cai no handler local → openOriginalsModal
+      // → submitInterest → byelarah_submissions (aparece em "Respostas do
+      // formulário" no admin), que é o comportamento correto de waitlist.
+      if (it.fromExperience && it.experienceId && ctaMode === 'buy') {
         dataAttrs += ' data-experience-id="' + esc(it.experienceId) + '"';
         // ✅ data-reserve = listener global vai pegar esse click e
         // disparar startCheckout. Garantia de que cards compráveis
@@ -1122,16 +1315,7 @@ if (categoriaURL) activeCategoria = categoriaURL;
       return '' +
         '<article class="' + cardClass + '" style="position:relative;">' +
           '<div class="originals__card-image">' +
-            '<img src="' + esc(imgSrc) + '" alt="' + esc(it.nome) + '" class="originals__image" loading="lazy" ' +
-              // onerror: loga URL que falhou (admin vê no DevTools)
-              // e troca pro placeholder neutro. Flag dataset.fb evita
-              // loop se o próprio fallback der erro.
-              'onerror="if(this.dataset.fb!==&quot;1&quot;){' +
-                'this.dataset.fb=&quot;1&quot;;' +
-                'console.warn(&quot;[Elarah] imagem do card falhou — usando placeholder. URL original: &quot;+this.dataset.originalSrc);' +
-                'this.classList.add(&quot;originals__image--placeholder&quot;);' +
-                'this.src=&quot;' + esc(imgFallback) + '&quot;;' +
-              '}" data-original-src="' + esc(imgSrc) + '">' +
+            imgHtml +
             '<span class="originals__card-badge">' + esc(badgeLabel) + '</span>' +
             shareBtnHtml +
           '</div>' +
@@ -1146,6 +1330,11 @@ if (categoriaURL) activeCategoria = categoriaURL;
     }).join('');
 
     grid.innerHTML = html;
+
+    // Modo carrossel: transforma o grid numa faixa horizontal e
+    // pendura as setas. Feito antes do bloco do "Ver mais" porque
+    // envolve o grid num wrapper (muda o parentNode).
+    setupOriginalsCarousel(grid, carousel);
 
     // Descrições da lista de espera: clampadas em 3 linhas via CSS. O
     // botão "ver mais" só aparece quando o texto realmente estoura as 3
@@ -1171,19 +1360,28 @@ if (categoriaURL) activeCategoria = categoriaURL;
     // Em páginas que exibem tudo (sem limit), remove qualquer botão
     // remanescente pra não duplicar.
     (function () {
-      var inner = grid.parentNode;
+      // .originals__inner é o container da seção. Não dá pra usar
+      // grid.parentNode aqui: em modo carrossel o grid fica dentro do
+      // wrapper .originals__carousel e o botão iria parar lá dentro.
+      var inner = (grid.closest && grid.closest('.originals__inner')) || grid.parentNode;
       if (!inner) return;
       var existing = inner.querySelector('.originals__ver-mais');
-      if (limit && verMaisHref && totalCount > limit) {
+      var showVerMais = carousel
+        ? !!verMaisHref
+        : !!(limit && verMaisHref && totalCount > limit);
+      if (showVerMais) {
         if (!existing) {
           existing = document.createElement('div');
           existing.className = 'originals__ver-mais';
-          if (grid.nextSibling) inner.insertBefore(existing, grid.nextSibling);
-          else inner.appendChild(existing);
+          inner.appendChild(existing);
         }
+        // O título "Elarah Originals" está logo acima, então repetir a
+        // marca aqui não acrescentaria nada — o número sim: avisa que
+        // tem mais do que os 3 cards que aparecem sem arrastar.
+        var verMaisLabel = 'Ver todas as ' + totalCount + ' experiências';
         existing.innerHTML =
           '<a href="' + esc(verMaisHref) + '" class="originals__ver-mais-btn">' +
-            'Ver todas as ' + totalCount + ' experiências By Elarah' +
+            verMaisLabel +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>' +
           '</a>';
       } else if (existing) {
@@ -1386,7 +1584,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
       var telefoneEl = document.getElementById('originals-telefone');
       var nome = (nomeEl && nomeEl.value) || '';
       var email = (emailEl && emailEl.value) || '';
-      var telefone = (telefoneEl && telefoneEl.value) || '';
+      // Valor com "+DDI" na frente — o lead pode não ser do Brasil.
+      var telefone = (telefoneEl && window.ElarahPhone)
+        ? window.ElarahPhone.value(telefoneEl)
+        : ((telefoneEl && telefoneEl.value) || '');
       var horarioEl = document.getElementById('originals-horario');
       var horarioField = document.getElementById('originals-horario-field');
       var horario = (horarioField && horarioField.style.display !== 'none' && horarioEl)
@@ -1486,7 +1687,15 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // CTA: respeita cta_mode da experiência (default 'buy').
       tipo: exp.ctaMode === 'waitlist' ? 'espera' : 'participar',
       ctaMode: exp.ctaMode === 'waitlist' ? 'waitlist' : 'buy',
-      ordem: 0,
+      // Posição na faixa By Elarah (1 = primeiro card), definida
+      // arrastando os grupos na aba By Elarah do admin. É a coluna
+      // byelarah_ordem — separada da `ordem` global do site, que
+      // manda no grid da home e nas páginas de categoria.
+      // 0/null = sem posição → vai pro fim da faixa.
+      ordem: (function () {
+        var n = Number(exp.byelarahOrdem);
+        return Number.isFinite(n) && n > 0 ? n : 0;
+      })(),
       ativo: exp.isActive !== false,
       // "O que está incluso" — mesmo campo `inclui` do cadastro da
       // experiência. Exibido como lista com check no card.
@@ -1495,7 +1704,10 @@ if (categoriaURL) activeCategoria = categoriaURL;
       // e aplicar o visual premium.
       fromExperience: true,
       experienceId: exp.id,
-      precoLabel: exp.preco || ''
+      // Preço vigente (com a promoção sazonal quando ativa) — é ele
+      // que vira o data-attribute lido pelo checkout.
+      precoLabel: ((window.ElarahData && ElarahData.precoVigente)
+        ? ElarahData.precoVigente(exp) : exp.preco) || ''
     };
   }
 
@@ -1690,13 +1902,25 @@ if (categoriaURL) activeCategoria = categoriaURL;
     });
 
     if (combined.length) {
-      // Home: só os 3 primeiros + botão "Ver mais" → byelarah.html.
-      // Página dedicada (body[data-originals="all"]): mostra todas.
+      // Ordem da faixa: 1 = primeiro card. Quem ainda não foi
+      // posicionado no admin (0/null) vai pro fim, preservando a
+      // ordem natural de hoje — o sort do JS é estável.
+      combined.sort(function (a, b) {
+        var na = Number(a && a.ordem);
+        var nb = Number(b && b.ordem);
+        var ka = Number.isFinite(na) && na > 0 ? na : Infinity;
+        var kb = Number.isFinite(nb) && nb > 0 ? nb : Infinity;
+        return ka - kb;
+      });
+
+      // Home: carrossel com TODAS as experiências — arrasta pro lado
+      // ou usa as setas. O botão leva pra página dedicada.
+      // Página dedicada (body[data-originals="all"]): grid com todas.
       var showAllOriginals = document.body &&
         document.body.getAttribute('data-originals') === 'all';
       renderOriginalsGrid(
         combined,
-        showAllOriginals ? {} : { limit: 3, verMaisHref: 'byelarah.html' }
+        showAllOriginals ? {} : { carousel: true, verMaisHref: 'byelarah.html' }
       );
     } else {
       // Nada cadastrado em byelarah_items + nenhuma experience marcada
@@ -1765,7 +1989,10 @@ if (groupForm) {
     e.preventDefault();
 
     var nome = document.getElementById('group-nome').value;
-    var whatsapp = document.getElementById('group-whatsapp').value;
+    var whatsappEl = document.getElementById('group-whatsapp');
+    var whatsapp = window.ElarahPhone
+      ? window.ElarahPhone.value(whatsappEl)
+      : whatsappEl.value;
     var tipoEvento = document.getElementById('group-tipo').value;
     var pessoas = document.getElementById('group-pessoas').value;
     var data = document.getElementById('group-data').value;
@@ -1882,25 +2109,204 @@ if (groupForm) {
       CHECKOUT_FN_BASE + '/create-mp-card-payment';
     const REDEEM_FN_URL =
       CHECKOUT_FN_BASE + '/redeem-gift-card';
+    const PAGARME_CHECKOUT_FN_URL =
+      CHECKOUT_FN_BASE + '/create-pagarme-checkout';
+    // Checkout TRANSPARENTE Pagar.me (cartão com gross-up por parcela + PIX
+    // no valor-base, sem redirect). Ver create-pagarme-card-payment /
+    // create-pagarme-pix-payment.
+    const PAGARME_CARD_FN_URL =
+      CHECKOUT_FN_BASE + '/create-pagarme-card-payment';
+    const PAGARME_PIX_FN_URL =
+      CHECKOUT_FN_BASE + '/create-pagarme-pix-payment';
 
-    // ===== Chave de migração do cartão: Stripe → Mercado Pago =====
-    // LIGADO (go-live): o cartão vai pro Checkout Pro da Mercado Pago
-    // (conta CNPJ), com parcelamento em até 12x e juros repassados ao
-    // cliente. O PIX NÃO é afetado por esta chave.
-    // Escotilha de emergência: ?mpcard=0 na URL força o cartão de volta
-    // pro Stripe (rollback rápido pra testar sem depender de deploy).
+    // ===== Roteamento do CARTÃO: Pagar.me é o PADRÃO (oficial) =====
+    // Validado em produção: CARTÃO (1x + parcelado) = Pagar.me · PIX = Mercado
+    // Pago. Agora é o comportamento OFICIAL do checkout — NÃO precisa mais de
+    // ?pay=pagarme. (Nome da flag mantido de propósito pra não refatorar os
+    // usos já validados; o que muda é só o DEFAULT.)
+    // Escotilha de emergência: ?pay=off (ou ?pay=normal) devolve o CARTÃO pro
+    // fluxo antigo (MP/Stripe) e PERSISTE na sessão até reativar com ?pay=pagarme.
+    // O PIX é SEMPRE Mercado Pago, independente desta flag.
+    const PAY_PAGARME_TEST = (function () {
+      var KEY = 'elarah_pay_pagarme';
+      try {
+        var v = new URLSearchParams(window.location.search).get('pay');
+        if (v === 'pagarme') {
+          try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
+          return true;
+        }
+        if (v === 'off' || v === 'normal') {
+          // Escotilha PERSISTENTE: cartão volta pro fluxo antigo até reativar.
+          try { sessionStorage.setItem(KEY, '0'); } catch (e) {}
+          return false;
+        }
+        // Sem parâmetro: PADRÃO = Pagar.me (true), exceto se a escotilha
+        // ('0') tiver sido acionada nesta sessão.
+        try { return sessionStorage.getItem(KEY) !== '0'; } catch (e) {}
+      } catch (e) {}
+      return true; // default oficial: cartão no Pagar.me
+    })();
+
+    // ===== Chave de migração do cartão: Mercado Pago → Stripe =====
+    // DESLIGADO: o cartão vai pro STRIPE (Checkout), enquanto o motor de
+    // risco do Mercado Pago recusa 100% dos cartões (cc_rejected_high_risk).
+    // O PIX NÃO é afetado por esta chave — continua no Mercado Pago.
+    // Escotilha de emergência: ?mpcard=1 na URL força o cartão de volta
+    // pro Mercado Pago (rollback rápido sem depender de deploy).
     const MP_CARD_ENABLED = (function () {
       try {
         var q = new URLSearchParams(window.location.search);
-        if (q.get('mpcard') === '0') return false; // força Stripe (rollback)
-        if (q.get('mpcard') === '1') return true;
+        if (q.get('mpcard') === '0') return false; // força Stripe
+        if (q.get('mpcard') === '1') return true;   // força Mercado Pago
       } catch (e) {}
-      return true; // ← cartão via Mercado Pago LIGADO
+      return false; // ← cartão via STRIPE (MP recusando no cartão)
     })();
     // Anon key do Supabase (JWT). Pode ficar exposta no front — é o
     // "publishable key" do projeto, sem privilégios além do RLS.
     const SUPABASE_ANON_KEY =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
+
+    // =============================================================
+    // MercadoPago.js V2 — Checkout Transparente (Secure Fields + Device ID)
+    // -------------------------------------------------------------
+    // Carrega o SDK oficial da MP sob demanda e busca a PUBLIC KEY do
+    // backend (get-mp-public-key). Quando ambos existem, o cartão usa o
+    // Checkout Transparente (formulário inline com Secure Fields + Device
+    // ID → /v1/payments). Sem public key ou se o SDK falhar, o cartão cai
+    // automaticamente no Checkout Pro (redirect) — zero regressão.
+    //
+    // O SDK, ao inicializar, também injeta o script de segurança da MP
+    // (security.js) que popula window.MP_DEVICE_SESSION_ID — o Device ID
+    // que enviamos no header X-meli-session-id via backend.
+    //
+    // Escotilha: ?mptransparent=0 força o Checkout Pro (rollback rápido).
+    const MP_SDK_URL = 'https://sdk.mercadopago.com/js/v2';
+    const MP_TRANSPARENT_FORCED_OFF = (function () {
+      try {
+        var q = new URLSearchParams(window.location.search);
+        return q.get('mptransparent') === '0';
+      } catch (e) { return false; }
+    })();
+
+    let _mpSdkPromise = null;
+    function loadMercadoPagoSdk() {
+      if (window.MercadoPago) return Promise.resolve(window.MercadoPago);
+      if (_mpSdkPromise) return _mpSdkPromise;
+      _mpSdkPromise = new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = MP_SDK_URL;
+        s.async = true;
+        s.onload = function () {
+          if (window.MercadoPago) resolve(window.MercadoPago);
+          else reject(new Error('MercadoPago.js carregou sem global MercadoPago'));
+        };
+        s.onerror = function () { reject(new Error('Falha ao carregar MercadoPago.js')); };
+        document.head.appendChild(s);
+      });
+      return _mpSdkPromise;
+    }
+
+    // undefined = ainda não buscado; null = indisponível; string = chave.
+    let _mpPublicKey;
+    let _mpPublicKeyPromise = null;
+    function getMpPublicKey() {
+      if (typeof _mpPublicKey !== 'undefined') return Promise.resolve(_mpPublicKey);
+      if (_mpPublicKeyPromise) return _mpPublicKeyPromise;
+      _mpPublicKeyPromise = fetch(CHECKOUT_FN_BASE + '/get-mp-public-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: '{}',
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          _mpPublicKey = (d && d.public_key) ? String(d.public_key) : null;
+          if (_mpPublicKey) {
+            console.log('[Elarah Payment/MP] Checkout Transparente disponível (public key carregada).');
+          } else {
+            console.log('[Elarah Payment/MP] sem public key — cartão usará Checkout Pro.');
+          }
+          return _mpPublicKey;
+        })
+        .catch(function (e) {
+          console.warn('[Elarah Payment/MP] get-mp-public-key falhou — cartão usará Checkout Pro.', e);
+          _mpPublicKey = null;
+          return null;
+        });
+      return _mpPublicKeyPromise;
+    }
+
+    // Pré-aquece SDK + chave quando o cliente ABRE o checkout (não no
+    // load da página, pra não gerar invocações à toa em cada pageview).
+    // Chamado por openReservationModal.
+    //
+    // IMPORTANTE (captura do fingerprint): além de baixar o SDK, já
+    // INSTANCIA o MercadoPago aqui. É a instanciação (`new MercadoPago`)
+    // que faz o SDK carregar o security.js e gerar o Device ID
+    // (window.MP_DEVICE_SESSION_ID). Fazendo isso na ABERTURA do modal, o
+    // fingerprint tem vários segundos de folga pra ficar pronto antes de o
+    // cliente clicar em pagar — elimina a race que mandava device_id vazio.
+    function warmUpMercadoPago() {
+      if (MP_TRANSPARENT_FORCED_OFF) return;
+      try {
+        getMpPublicKey().then(function (pk) {
+          if (!pk) return;
+          loadMercadoPagoSdk().then(function () {
+            try {
+              getMpInstance(); // dispara security.js + geração do Device ID
+            } catch (e) {}
+          }).catch(function () {});
+        });
+      } catch (e) {}
+    }
+
+    // Instância única do MercadoPago (criada quando a public key chega).
+    let _mpInstance = null;
+    function getMpInstance() {
+      if (_mpInstance) return _mpInstance;
+      if (!window.MercadoPago || !_mpPublicKey) return null;
+      // advancedFraudPrevention:true (default do SDK) é o que carrega o
+      // security.js e popula window.MP_DEVICE_SESSION_ID. Deixamos EXPLÍCITO
+      // pra não depender do default e pra documentar a intenção.
+      _mpInstance = new window.MercadoPago(_mpPublicKey, {
+        locale: 'pt-BR',
+        advancedFraudPrevention: true,
+      });
+      console.log('[Elarah MP] MercadoPago instanciado — security.js/fingerprint iniciando…');
+      return _mpInstance;
+    }
+
+    // Espera o Device ID (fingerprint gerado pelo security.js) ficar
+    // disponível. O security.js é carregado de forma assíncrona pelo SDK ao
+    // instanciar o MercadoPago; o window.MP_DEVICE_SESSION_ID só aparece um
+    // instante depois. Sem esperar, um submit rápido mandaria device_id
+    // vazio pro MP (foi o que a análise do MP apontou). Resolve com o valor
+    // assim que existir, ou com '' após o timeout (nunca trava pra sempre).
+    function waitForDeviceId(timeoutMs) {
+      if (typeof timeoutMs !== 'number' || timeoutMs < 0) timeoutMs = 8000;
+      var start = Date.now();
+      function current() {
+        var v = window.MP_DEVICE_SESSION_ID;
+        return (typeof v === 'string' && v.length > 0) ? v : '';
+      }
+      var immediate = current();
+      if (immediate) return Promise.resolve({ id: immediate, waitedMs: 0 });
+      return new Promise(function (resolve) {
+        var poll = setInterval(function () {
+          var v = current();
+          if (v) {
+            clearInterval(poll);
+            resolve({ id: v, waitedMs: Date.now() - start });
+          } else if (Date.now() - start > timeoutMs) {
+            clearInterval(poll);
+            resolve({ id: '', waitedMs: Date.now() - start });
+          }
+        }, 100);
+      });
+    }
 
     // ===== Tradução de erros do checkout =====
     // O backend pode retornar códigos técnicos (ex.: vagas_check_failed,
@@ -1935,9 +2341,13 @@ if (groupForm) {
       stripe_line_items_mismatch:
         'Erro interno no cálculo do total. Recarregue a página e tente de novo.',
       mp_create_failed:
-        'Não foi possível gerar o PIX agora. Tente de novo ou pague no cartão.',
+        'Não foi possível processar o pagamento agora. Tente de novo ou use outro método.',
       mp_qr_missing:
         'Mercado Pago não devolveu o QR code. Tente novamente ou pague no cartão.',
+      payment_method_id_required:
+        'Dados do cartão incompletos. Recarregue a página e tente novamente.',
+      booking_failed_after_charge:
+        'O pagamento foi processado, mas houve um erro ao registrar a reserva. Guarde o código exibido e nos chame no WhatsApp.',
       amount_mismatch:
         'Erro interno no cálculo do total. Recarregue a página e tente novamente.',
       booking_failed:
@@ -2002,6 +2412,140 @@ if (groupForm) {
       return null;
     }
 
+    // Partes da data no FUSO DE SÃO PAULO (não no do visitante): uma
+    // turma de 21h tem event_at no dia seguinte em UTC, e agrupar pelo
+    // fuso local mostraria o dia errado pra quem acessa de fora do -03.
+    function spDayParts(dateLike) {
+      var date = (dateLike instanceof Date) ? dateLike : new Date(dateLike);
+      try {
+        var p = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+        }).formatToParts(date).reduce(function (o, x) { o[x.type] = x.value; return o; }, {});
+        var wd = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short' })
+          .format(date).replace('.', '');
+        return { key: p.year + '-' + p.month + '-' + p.day, wd: wd, dm: p.day + '/' + p.month };
+      } catch (e) {
+        return {
+          key: date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'),
+          wd: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+          dm: String(date.getDate()).padStart(2, '0') + '/' + String(date.getMonth() + 1).padStart(2, '0'),
+        };
+      }
+    }
+
+    // Horários REAIS da data escolhida — um por slot, cada um com o seu
+    // próprio id.
+    //
+    // BUG que isso corrige: o seletor de horário do checkout era montado
+    // com exp.horarios, que é a união dos horários de TODAS as datas da
+    // experiência. Numa data que só tem turma às 15h, o modal oferecia
+    // também 09h e 14h — horários inexistentes naquele dia. E trocar de
+    // horário lá dentro mexia só no rótulo: o slot_id continuava o da
+    // escolha anterior, então a vaga baixava numa turma e a pessoa era
+    // registrada em outra.
+    //
+    // Retorna { slotManaged, options }. slotManaged = a experiência tem
+    // slots de verdade; nesse caso a lista daqui é a única válida.
+    async function loadHorarioSlotsForDate(experienceId, sel, cutoffHours) {
+      var empty = { slotManaged: false, options: [] };
+      if (!experienceId) return empty;
+      var all = [];
+      try {
+        if (window.ElarahData && ElarahData.getSlotsForExperience) {
+          all = await ElarahData.getSlotsForExperience(experienceId) || [];
+        }
+      } catch (e) { return empty; }
+      all = all.filter(function (s) { return s && s.isActive !== false && s.eventAt; });
+      if (!all.length) return empty;
+
+      // Qual data? O slot clicado é a fonte confiável; o rótulo "DD/MM"
+      // que veio da UI é o fallback.
+      var dayKey = null;
+      if (sel && sel.slotId) {
+        var picked = all.filter(function (s) { return String(s.id) === String(sel.slotId); })[0];
+        if (picked) dayKey = spDayParts(picked.eventAt).key;
+      }
+      if (!dayKey && sel && sel.data) {
+        var alvo = String(sel.data).trim();
+        var hit = all.filter(function (s) {
+          return spDayParts(s.eventAt).dm === alvo || String(s.data || '').trim() === alvo;
+        })[0];
+        if (hit) dayKey = spDayParts(hit.eventAt).key;
+      }
+      // Sem data resolvida, qualquer lista que montássemos misturaria
+      // dias. Melhor não oferecer troca nenhuma do que oferecer horário
+      // de outro dia — quem chamou mantém o horário já escolhido fora.
+      if (!dayKey) return { slotManaged: true, options: [] };
+
+      // Os MESMOS filtros da página de detalhe, senão o modal volta a
+      // oferecer horário que a página esconde — só que agora do dia certo:
+      //   • esgotado sai da lista;
+      //   • dentro da janela de antecedência (cutoff, default 24h) sai —
+      //     o backend recusaria a compra com "falta menos de 24h".
+      // O slot que a pessoa já escolheu fora nunca é removido: sumir com
+      // ele trocaria a escolha dela sem avisar.
+      var cutH = Number.isFinite(Number(cutoffHours)) ? Number(cutoffHours) : 24;
+      var cutoffMs = Date.now() + cutH * 60 * 60 * 1000;
+      var selId = sel && sel.slotId ? String(sel.slotId) : null;
+
+      var options = all
+        .filter(function (s) { return spDayParts(s.eventAt).key === dayKey; })
+        .filter(function (s) {
+          if (selId && String(s.id) === selId) return true;
+          if (new Date(s.eventAt).getTime() < cutoffMs) return false;
+          if (s.vagasTotal == null) return true;
+          var rest = s.vagasRestantes != null ? Number(s.vagasRestantes) : Number(s.vagasTotal);
+          return rest > 0;
+        })
+        .sort(function (a, b) { return new Date(a.eventAt) - new Date(b.eventAt); })
+        .map(function (s) {
+          var parts = spDayParts(s.eventAt);
+          var cap = s.vagasTotal == null ? null : Number(s.vagasTotal);
+          var rest = cap == null ? null : (s.vagasRestantes != null ? Number(s.vagasRestantes) : cap);
+          return {
+            horario: s.horario,
+            slotId: s.id,
+            data: s.data || parts.dm,
+            dataLabel: parts.wd + ', ' + parts.dm,
+            soldOut: rest !== null && rest <= 0,
+          };
+        });
+
+      // Dedup por rótulo: se o mesmo dia tiver dois slots com o texto
+      // idêntico (resquício de recorrência duplicada), o seletor mostraria
+      // dois botões iguais e a escolha viraria sorteio. Mantém um só —
+      // preferindo o slot que a pessoa já tinha escolhido.
+      var vistos = Object.create(null);
+      options = options.filter(function (o) {
+        var k = String(o.horario || '').trim();
+        if (vistos[k] === undefined) { vistos[k] = o.slotId; return true; }
+        return false;
+      });
+      if (selId) {
+        var jaTem = options.some(function (o) { return String(o.slotId) === selId; });
+        if (!jaTem) {
+          // O escolhido perdeu o dedup pra um gêmeo: devolve o dele.
+          var selOpt = null;
+          all.forEach(function (sl) {
+            if (String(sl.id) !== selId) return;
+            var parts = spDayParts(sl.eventAt);
+            selOpt = {
+              horario: sl.horario, slotId: sl.id,
+              data: sl.data || parts.dm,
+              dataLabel: parts.wd + ', ' + parts.dm,
+              soldOut: false,
+            };
+          });
+          if (selOpt) {
+            options = options.map(function (o) {
+              return String(o.horario || '').trim() === String(selOpt.horario || '').trim() ? selOpt : o;
+            });
+          }
+        }
+      }
+      return { slotManaged: true, options: options };
+    }
+
     // Lê seleção completa de schedule (data + horario + slot_id) do
     // botão de reserva ou do horário ativo na página de detalhe.
     // Retorna { horario, data, dataLabel, slotId } — qualquer campo
@@ -2034,7 +2578,15 @@ if (groupForm) {
       if (!card) return '';
       const el = card.querySelector('[data-experience-preco], .card__price, .card__preco');
       if (!el) return '';
-      return (el.getAttribute('data-experience-preco') || el.textContent || '').trim();
+      const attr = el.getAttribute('data-experience-preco');
+      if (attr) return attr.trim();
+      // O bloco de preço tem DOIS valores quando há desconto: o "de"
+      // riscado (<span class="card__price-de">) e o que se paga
+      // (<strong>). Ler o textContent inteiro devolveria
+      // "R$ 162 R$ 129,60" — que não é preço nenhum. O <strong> é o
+      // valor cobrado; só caímos no textContent quando ele não existe.
+      const forte = el.querySelector('strong');
+      return ((forte ? forte.textContent : el.textContent) || '').trim();
     }
 
     // "R$ 1.234,50" / "R$383" / "383,00" -> 38300
@@ -2042,16 +2594,25 @@ if (groupForm) {
       if (raw == null) return null;
       const text = String(raw).replace(/\s/g, '').replace(/^R\$/i, '');
       if (!text) return null;
+      // Formato brasileiro: a vírgula é o separador DECIMAL e o ponto é
+      // separador de MILHAR. Sem vírgula, qualquer ponto é milhar — por
+      // isso "1.320" = 1320 (e não 1.32). Antes o código usava o texto
+      // direto e Number("1.320") virava 1.32, cobrando R$1,32 por R$1.320.
       const norm = text.indexOf(',') !== -1
         ? text.replace(/\./g, '').replace(',', '.')
-        : text;
+        : text.replace(/\./g, '');
       const num = Number(norm);
       if (!isFinite(num) || num <= 0) return null;
       return Math.round(num * 100);
     }
 
     function brl(centavos) {
-      return 'R$ ' + (Number(centavos || 0) / 100).toFixed(2).replace('.', ',');
+      var v = Number(centavos || 0) / 100;
+      try {
+        return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      } catch (e) {
+        return 'R$ ' + v.toFixed(2).replace('.', ',');
+      }
     }
 
     // Pega e-mail + nome do usuário logado (para pré-preencher o modal
@@ -2129,7 +2690,8 @@ if (groupForm) {
       modalRoot.id = 'elarah-reserve-modal';
       modalRoot.style.cssText = 'position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(20,12,4,.55);padding:20px;font-family:"DM Sans",sans-serif;';
       modalRoot.innerHTML = ''
-        + '<div style="background:#fff;border-radius:18px;max-width:440px;width:100%;padding:28px 28px 24px;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:90vh;overflow-y:auto;">'
+        + '<div style="background:#fff;border-radius:18px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.18);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;">'
+        + '<div id="erm-scroll" style="padding:28px 28px 24px;overflow-y:auto;overscroll-behavior:contain;">'
         +   '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px;">'
         +     '<h3 id="erm-title" style="font-family:\'DM Serif Display\',serif;font-size:1.35rem;color:#1a1a1a;margin:0;">Confirmar reserva</h3>'
         +     '<button type="button" id="erm-close" aria-label="Fechar" style="background:none;border:none;font-size:24px;line-height:1;color:#999;cursor:pointer;padding:0 4px;">&times;</button>'
@@ -2138,6 +2700,16 @@ if (groupForm) {
             '<div id="erm-form-section">'
         +   '<p id="erm-exp" style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;"></p>'
         +   '<p id="erm-meta" style="margin:0 0 18px;color:#666;font-size:.88rem;"></p>'
+        +   // ===== INFO COMPLETA (voucher) — descrição, inclui, onde acontece,
+            // horário de funcionamento e aviso, tudo numa tela só (sem tela de
+            // descrição separada). Escondido por padrão; ligado via ctx.showFullInfo.
+            '<div id="erm-info" style="display:none;margin:0 0 18px;">'
+        +     '<div id="erm-info-hours" style="display:none;padding:14px 16px;background:#fbf3e6;border:1px solid #f0dcc0;border-radius:12px;margin-bottom:14px;"><div style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#a4663b;margin-bottom:6px;">Horário de funcionamento</div><div id="erm-info-hours-text" style="font-size:.92rem;color:#3a2f28;line-height:1.5;font-weight:600;"></div></div>'
+        +     '<div id="erm-info-desc" style="font-size:.92rem;color:#3a2f28;line-height:1.6;white-space:pre-line;margin-bottom:14px;"></div>'
+        +     '<div id="erm-info-inclui" style="display:none;padding:14px 16px;background:#fff8ee;border:1px solid #f0cfa0;border-radius:12px;margin-bottom:12px;"><div style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#a4663b;margin-bottom:6px;">O que está incluso</div><div id="erm-info-inclui-text" style="font-size:.9rem;color:#3a2410;line-height:1.5;"></div></div>'
+        +     '<div id="erm-info-local" style="display:none;padding:14px 16px;background:#faf6f0;border:1px solid #eadfce;border-radius:12px;margin-bottom:12px;"><div style="font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#888;margin-bottom:6px;">Onde acontece</div><div id="erm-info-local-text" style="font-size:.9rem;color:#3a2410;line-height:1.5;"></div></div>'
+        +     '<div id="erm-info-note" style="display:none;padding:12px 14px;background:#fbf3e6;border:1px solid #f0dcc0;border-radius:10px;font-size:.84rem;color:#6b5744;line-height:1.5;"></div>'
+        +   '</div>'
         +   // ===== SELETOR DE HORÁRIO (escondido por padrão) =====
             // Renderizado em openReservationModal quando exp.horarios > 1.
             // Sem isso, usuário ficava preso no horário escolhido fora do
@@ -2181,6 +2753,14 @@ if (groupForm) {
         +   '</div>'
         +   '<div style="background:#faf6f0;border-radius:12px;padding:14px 16px;margin-bottom:16px;">'
         +     '<div style="display:flex;justify-content:space-between;font-size:.88rem;color:#666;"><span>Subtotal</span><span id="erm-subtotal"></span></div>'
+        +     // Desconto Elarah — a diferença entre o valor cheio cadastrado
+              // na experiência e o preço praticado. Fica escondido quando não
+              // há desconto (By Elarah, valor cheio em branco) ou quando a
+              // pessoa escolheu uma variação com preço próprio.
+              '<div id="erm-elarah-off-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span id="erm-elarah-off-label">Desconto Elarah</span><span id="erm-elarah-off"></span></div>'
+        +     // Desconto do carrinho — 10% com 1 pessoa, 15% por pessoa com 2+.
+              // Some quando a campanha "Desconto geral" está no ar (não acumula).
+              '<div id="erm-cart-off-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span id="erm-cart-off-label">Desconto do carrinho</span><span id="erm-cart-off"></span></div>'
         +     '<div id="erm-discount-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span>Gift card</span><span id="erm-discount"></span></div>'
         +     '<div id="erm-fee-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#666;margin-top:6px;"><span>Taxa do cartão</span><span id="erm-fee"></span></div>'
         +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
@@ -2215,7 +2795,24 @@ if (groupForm) {
         +     '<button type="button" id="erm-validate" style="padding:11px 14px;border:1px solid #f0a05e;background:#fff;color:#f0a05e;border-radius:10px;font-weight:600;font-size:.88rem;cursor:pointer;white-space:nowrap;">Aplicar</button>'
         +   '</div>'
         +   '<p id="erm-cupom-msg" style="margin:6px 0 0;font-size:.82rem;min-height:1.1em;"></p>'
-        +   '<button type="button" id="erm-confirm" style="width:100%;margin-top:18px;padding:14px;border:none;border-radius:12px;background:#f0a05e;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Confirmar e pagar</button>'
+        +   // ===== Aceite dos prazos de remarcação / cancelamento =====
+            // Sem um aceite explícito no checkout, todo pedido de última hora
+            // vira negociação caso a caso. O aceite vai pro metadata da
+            // reserva com o prazo que estava na tela, pra ela carregar a prova
+            // de que a regra foi informada antes do pagamento.
+            //
+            // O texto abaixo é só o FALLBACK (regra geral). O texto real é
+            // escrito na abertura da modal, porque o prazo de remarcação
+            // depende da categoria — ver ElarahData.prazoRemarcacaoDe.
+            '<label id="erm-policy-wrap" style="display:flex;gap:9px;align-items:flex-start;margin-top:18px;cursor:pointer;">'
+        +     '<input type="checkbox" id="erm-policy" style="margin-top:2px;width:17px;height:17px;flex-shrink:0;accent-color:#f0a05e;cursor:pointer;">'
+        +     '<span id="erm-policy-text" style="font-size:.82rem;color:#555;line-height:1.45;">'
+        +       'Confirmo que posso remarcar sem custo até <strong>48 horas antes</strong> desta experiência, e cancelar com reembolso até <strong>48 horas antes</strong>. '
+        +       '<a href="/cancelamento.html" target="_blank" rel="noopener" style="color:#b9764f;text-decoration:underline;">Ver política</a>'
+        +     '</span>'
+        +   '</label>'
+        +   '<button type="button" id="erm-confirm" style="width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:#f0a05e;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Confirmar e pagar</button>'
+        +   '<p id="erm-confirm-hint" style="color:#8a6a4a;font-size:.82rem;margin:8px 0 0;text-align:center;min-height:1em;"></p>'
         +   '<p id="erm-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></p>'
         +   '</div>' // fim erm-form-section
         +   // ===== SEÇÃO PIX QR CODE (só aparece após gerar o PIX) =====
@@ -2240,6 +2837,59 @@ if (groupForm) {
         +     '<button type="button" id="erm-pix-cancel" style="width:100%;padding:11px;border:none;background:transparent;color:#999;border-radius:10px;font-size:.85rem;cursor:pointer;">Cancelar e voltar</button>'
         +     '<style>@keyframes erm-spin { to { transform: rotate(360deg); } }</style>'
         +   '</div>' // fim erm-pix-section
+        +   // ===== SEÇÃO CARTÃO — Checkout Transparente (Secure Fields) =====
+            // Só aparece quando o cliente escolhe cartão E o Checkout
+            // Transparente está disponível. Os campos número/validade/CVV
+            // são iframes seguros da MP (Secure Fields → PCI). O restante
+            // (nome, CPF, parcelas) são inputs nossos. O Device ID é
+            // coletado automaticamente pelo SDK (window.MP_DEVICE_SESSION_ID).
+            '<div id="erm-card-section" style="display:none;">'
+        +     '<p style="margin:0 0 4px;color:#1a1a1a;font-size:1rem;font-weight:600;">Pague com cartão</p>'
+        +     '<p id="erm-card-exp" style="margin:0 0 14px;color:#666;font-size:.85rem;"></p>'
+        +     '<form id="erm-card-form">'
+        +       '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Número do cartão</label>'
+        +       '<div id="erm-cc-number" style="height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;background:#fff;"></div>'
+        +       '<div style="display:flex;gap:10px;">'
+        +         '<div style="flex:1;">'
+        +           '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Validade</label>'
+        +           '<div id="erm-cc-exp" style="height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;background:#fff;"></div>'
+        +         '</div>'
+        +         '<div style="flex:1;">'
+        +           '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">CVV</label>'
+        +           '<div id="erm-cc-cvv" style="height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;margin-bottom:10px;background:#fff;"></div>'
+        +         '</div>'
+        +       '</div>'
+        +       '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Nome impresso no cartão</label>'
+        +       '<input id="erm-cc-name" type="text" autocomplete="cc-name" placeholder="Como está no cartão" style="width:100%;height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:10px;box-sizing:border-box;">'
+        +       '<div style="display:flex;gap:10px;">'
+        +         '<div style="width:120px;">'
+        +           '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Documento</label>'
+        +           '<select id="erm-cc-idtype" style="width:100%;height:44px;padding:0 8px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;margin-bottom:10px;background:#fff;box-sizing:border-box;"></select>'
+        +         '</div>'
+        +         '<div style="flex:1;">'
+        +           '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Número do documento</label>'
+        +           '<input id="erm-cc-idnumber" type="text" inputmode="numeric" placeholder="000.000.000-00" style="width:100%;height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:10px;box-sizing:border-box;">'
+        +         '</div>'
+        +       '</div>'
+        +       '<label style="display:block;font-size:.82rem;color:#333;margin-bottom:4px;font-weight:600;">Parcelas</label>'
+        +       '<select id="erm-cc-installments" style="width:100%;height:44px;padding:0 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:10px;background:#fff;box-sizing:border-box;"></select>'
+        +       '<select id="erm-cc-issuer" style="display:none;"></select>'
+        +       '<input id="erm-cc-email" type="hidden">'
+        +       '<button type="submit" id="erm-card-pay" style="width:100%;margin-top:8px;padding:14px;border:none;border-radius:12px;background:#f0a05e;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;">Pagar</button>'
+        +     '</form>'
+        +     '<p id="erm-card-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></p>'
+        +     '<div id="erm-card-status" style="display:none;padding:12px 14px;border-radius:10px;background:#fff8ef;border:1px solid #f4c48a;color:#8a5a1a;font-size:.88rem;text-align:center;margin-top:12px;">'
+        +       '<span id="erm-card-status-text">Confirmando pagamento...</span>'
+        +       '<div style="display:inline-block;width:12px;height:12px;border:2px solid #f0a05e;border-top-color:transparent;border-radius:50%;margin-left:8px;vertical-align:middle;animation:erm-spin 0.8s linear infinite;"></div>'
+        +     '</div>'
+        +     '<div id="erm-card-3ds" style="display:none;margin-top:12px;">'
+        +       '<p style="margin:0 0 8px;font-size:.82rem;color:#666;text-align:center;">Autenticação do seu banco — conclua abaixo pra aprovar o pagamento.</p>'
+        +       '<iframe id="erm-card-3ds-frame" name="erm-card-3ds-frame" style="width:100%;height:420px;border:1px solid #eee;border-radius:10px;background:#fff;"></iframe>'
+        +     '</div>'
+        +     '<button type="button" id="erm-card-back" style="width:100%;margin-top:10px;padding:11px;border:none;background:transparent;color:#999;border-radius:10px;font-size:.85rem;cursor:pointer;">Cancelar e voltar</button>'
+        +     '<p style="margin:12px 0 0;font-size:.72rem;color:#aaa;text-align:center;">🔒 Dados do cartão protegidos pela Mercado Pago (Secure Fields).</p>'
+        +   '</div>' // fim erm-card-section
+        + '</div>'   // fim erm-scroll
         + '</div>';
       document.body.appendChild(modalRoot);
 
@@ -2248,20 +2898,23 @@ if (groupForm) {
       });
       modalRoot.querySelector('#erm-close').addEventListener('click', closeReservationModal);
 
-      // Máscara simples de telefone BR: formata enquanto digita.
-      // (11) 91234-5678 ou (11) 1234-5678 — aceita ambos.
+      // Seletor de país + máscara. O país escolhido é o que permite
+      // dizer se faltou dígito: 10 dígitos no Brasil pode ser celular
+      // sem o 9, mas em Portugal é número completo.
       const telInput = modalRoot.querySelector('#erm-telefone');
       if (telInput) {
-        telInput.addEventListener('input', function () {
-          const raw = telInput.value.replace(/\D+/g, '').slice(0, 11);
-          let formatted = raw;
-          if (raw.length >= 1) formatted = '(' + raw.slice(0, 2);
-          if (raw.length >= 3) formatted += ') ' + raw.slice(2, raw.length >= 11 ? 7 : 6);
-          if (raw.length >= 7) {
-            formatted += '-' + raw.slice(raw.length >= 11 ? 7 : 6);
-          }
-          telInput.value = formatted;
-        });
+        mountPhone(telInput);
+        // Volta a mensagem de ajuda ao normal assim que a pessoa mexe no
+        // campo — o erro vermelho do submit não fica pendurado enquanto
+        // ela corrige. Trocar de país também dispara.
+        const telHelp = modalRoot.querySelector('#erm-telefone-msg');
+        const resetTelHelp = function () {
+          if (!telHelp || telHelp.style.color !== 'rgb(192, 57, 43)') return;
+          telHelp.style.color = '#888';
+          telHelp.textContent = 'Usamos pra te avisar sobre a experiência e mudanças de horário.';
+        };
+        telInput.addEventListener('input', resetTelHelp);
+        telInput.addEventListener('elarahphone:change', resetTelHelp);
       }
 
       // Máscara CPF: 000.000.000-00
@@ -2272,19 +2925,44 @@ if (groupForm) {
         });
       }
 
+      // ===== Sinalização do botão "Confirmar e pagar" =====
+      // Delegado no modal inteiro (e não campo a campo) de propósito: os
+      // cards de Pessoa 2..N são criados depois, a cada mudança de
+      // quantidade. Listener delegado pega esses campos novos sem precisar
+      // reatar nada em renderParticipantFields().
+      //   input/change → digitação, checkbox dos prazos, selects
+      //   click        → botões de variante, ± da quantidade, cupom, PIX/cartão
+      // No click o repaint vai pro fim da fila (setTimeout 0) pra rodar
+      // DEPOIS do handler que muda o estado — senão leria o valor antigo.
+      modalRoot.addEventListener('input', function () { updateConfirmBtnVisual(); });
+      modalRoot.addEventListener('change', function () { updateConfirmBtnVisual(); });
+      modalRoot.addEventListener('click', function () {
+        setTimeout(updateConfirmBtnVisual, 0);
+      });
+
       return modalRoot;
+    }
+
+    // O modal de reserva está aberto na tela agora?
+    // Aberto = display 'flex' (openReservationModal);
+    // fechado = 'none' (cssText inicial e closeReservationModal).
+    function isReservationModalOpen() {
+      return !!(modalRoot && modalRoot.style.display !== 'none');
     }
 
     function closeReservationModal() {
       if (!modalRoot) return;
       stopPixPolling();
+      stopCardPolling();
       modalRoot.style.display = 'none';
       document.body.style.overflow = '';
       // Volta o modal pro estado "formulário" pra próxima abertura.
       const form = modalRoot.querySelector('#erm-form-section');
       const pix = modalRoot.querySelector('#erm-pix-section');
+      const card = modalRoot.querySelector('#erm-card-section');
       if (form) form.style.display = 'block';
       if (pix) pix.style.display = 'none';
+      if (card) card.style.display = 'none';
     }
 
     // ===== PIX polling state =====
@@ -2370,10 +3048,13 @@ if (groupForm) {
       if (form) form.style.display = 'none';
       if (pix) pix.style.display = 'block';
 
-      // QR code (imagem PNG base64)
+      // QR code — MP manda base64 (qr_code_base64); Pagar.me manda a URL
+      // da imagem (qr_code_url). Aceita os dois.
       const img = modalRoot.querySelector('#erm-pix-qr');
       if (img && resp.qr_code_base64) {
         img.src = 'data:image/png;base64,' + resp.qr_code_base64;
+      } else if (img && resp.qr_code_url) {
+        img.src = resp.qr_code_url;
       }
       // Código copia-e-cola
       const codeInput = modalRoot.querySelector('#erm-pix-code');
@@ -2449,6 +3130,880 @@ if (groupForm) {
       startPixPolling(resp.booking_id);
     }
 
+    // =============================================================
+    // PAGAR.ME — Checkout Transparente (cartão com gross-up + PIX base)
+    // -------------------------------------------------------------
+    // Cartão: o cliente digita no site, tokenizamos DIRETO no Pagar.me
+    // (o cartão nunca passa pelo nosso servidor) e mandamos só o
+    // card_token + a parcela escolhida pra create-pagarme-card-payment.
+    // Cada parcela mostra o total grossed-up (tabela idêntica ao backend
+    // _shared/pagarme.ts → o servidor recomputa e é autoritativo).
+    // =============================================================
+
+    // Tabela de taxas — DEVE bater com PAGARME_FEES do backend.
+    const PAGARME_FEE_FIXED_CENTS = 99; // R$0,55 proc + R$0,44 antifraude
+    const PAGARME_FEE_RATES = {
+      1: 5.59, 2: 8.59, 3: 9.84, 4: 11.09, 5: 12.34, 6: 13.59,
+      7: 15.34, 8: 16.59, 9: 17.84, 10: 19.09, 11: 20.34, 12: 21.59,
+    };
+    function pagarmeInstallmentOptions(baseCents) {
+      const out = [];
+      const b = Math.max(0, Math.floor(baseCents || 0));
+      for (let n = 1; n <= 12; n++) {
+        const r = PAGARME_FEE_RATES[n];
+        if (!r) continue;
+        // Espelha buildInstallmentOptions: ceil((B + F) / (1 - r)).
+        out.push({ number: n, total: Math.ceil((b + PAGARME_FEE_FIXED_CENTS) / (1 - r / 100)) });
+      }
+      return out;
+    }
+
+    // Chave pública do Pagar.me (pk_test_/pk_live_). undefined=não buscado,
+    // null=indisponível, {key,isTest}=ok.
+    let _pgPk;
+    let _pgPkPromise = null;
+    function getPagarmePublicKey() {
+      if (typeof _pgPk !== 'undefined') return Promise.resolve(_pgPk);
+      if (_pgPkPromise) return _pgPkPromise;
+      _pgPkPromise = fetch(CHECKOUT_FN_BASE + '/get-pagarme-public-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        },
+        body: '{}',
+      })
+        .then(function (r) {
+          return r.json().catch(function () { return null; }).then(function (d) {
+            return { httpStatus: r.status, data: d };
+          });
+        })
+        .then(function (res) {
+          const d = res.data;
+          _pgPk = (d && d.public_key)
+            ? { key: String(d.public_key), isTest: !!d.is_test }
+            : null;
+          if (!_pgPk) {
+            // Diagnóstico explícito (só console): distingue "função respondeu
+            // sem chave" (secret PAGARME_PUBLIC_KEY ausente no Supabase) de
+            // erro de rota (função não deployada / 404).
+            if (res.httpStatus === 200) {
+              console.error('[Elarah Payment/Pagarme] chave pública AUSENTE: a função respondeu 200 mas sem public_key. Configure o secret PAGARME_PUBLIC_KEY (pk_test_…) no Supabase.');
+            } else {
+              console.error('[Elarah Payment/Pagarme] get-pagarme-public-key http=' + res.httpStatus + ' — a função pode não estar deployada.');
+            }
+          }
+          return _pgPk;
+        })
+        .catch(function (e) {
+          console.error('[Elarah Payment/Pagarme] get-pagarme-public-key falhou (rede/CORS)', e);
+          _pgPk = null;
+          return null;
+        });
+      return _pgPkPromise;
+    }
+
+    // Tokeniza o cartão DIRETO no Pagar.me (browser → Pagar.me; o cartão
+    // NUNCA passa pelo nosso servidor). Retorna { ok, status, body }; o
+    // card_token = body.id. A tokenização autentica só pela chave PÚBLICA no
+    // appId (a secret nunca vai pro front).
+    //
+    // Host: a doc oficial usa api.pagar.me/core/v5/tokens?appId=pk_ (a chave
+    // pk_test_/pk_live_ define o ambiente). Como fallback (só no teste),
+    // tenta o sdx-api — assim ficamos robustos a qualquer divergência de
+    // host sem depender de tentativa/erro.
+    function pagarmeTokenizeCard(pk, card) {
+      const hosts = pk.isTest
+        ? ['https://api.pagar.me/core/v5', 'https://sdx-api.pagar.me/core/v5']
+        : ['https://api.pagar.me/core/v5'];
+      const payload = JSON.stringify({ type: 'card', card: card });
+      function attempt(i) {
+        if (i >= hosts.length) return Promise.resolve({ ok: false, status: 0, body: null });
+        return fetch(hosts[i] + '/tokens?appId=' + encodeURIComponent(pk.key), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: payload,
+        }).then(function (r) {
+          return r.json().catch(function () { return null; }).then(function (j) {
+            if (r.ok && j && j.id) return { ok: true, status: r.status, body: j };
+            // Só troca de host quando parece problema de ROTA (404/401/403),
+            // nunca em 422 de validação de cartão (o host está certo).
+            if ((r.status === 404 || r.status === 401 || r.status === 403) && i + 1 < hosts.length) {
+              return attempt(i + 1);
+            }
+            return { ok: false, status: r.status, body: j };
+          });
+        }).catch(function () { return attempt(i + 1); });
+      }
+      return attempt(0);
+    }
+
+    // Injeta (uma vez) e devolve a seção do cartão Pagar.me no modal.
+    function ensurePagarmeCardSection() {
+      if (!modalRoot) return null;
+      let sec = modalRoot.querySelector('#erm-pgcard-section');
+      if (sec) return sec;
+      sec = document.createElement('div');
+      sec.id = 'erm-pgcard-section';
+      sec.style.display = 'none';
+      sec.innerHTML =
+        '<h3 style="margin:0 0 4px;font-size:1.05rem;color:#2a2a2a;">Pagamento no cartão</h3>'
+        + '<p style="margin:0 0 10px;color:#888;font-size:.82rem;">Seus dados vão criptografados direto pro Pagar.me. Não guardamos o cartão.</p>'
+        + '<div id="erm-pg-summary" style="background:#faf6f0;border:1px solid #f0e2d0;border-radius:10px;padding:10px 12px;margin:0 0 14px;font-size:.85rem;color:#4a4a4a;line-height:1.5;"></div>'
+        + '<div style="display:flex;flex-direction:column;gap:10px;">'
+        + '  <input id="erm-pg-number" inputmode="numeric" autocomplete="cc-number" placeholder="Número do cartão" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  <input id="erm-pg-holder" autocomplete="cc-name" placeholder="Nome impresso no cartão" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  <div style="display:flex;gap:10px;">'
+        + '    <input id="erm-pg-exp" inputmode="numeric" autocomplete="cc-exp" placeholder="Validade (MM/AA)" style="flex:1;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '    <input id="erm-pg-cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="CVV" style="width:110px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  </div>'
+        + '  <label style="font-size:.82rem;color:#666;margin-top:6px;">Endereço de cobrança</label>'
+        + '  <div style="display:flex;gap:10px;">'
+        + '    <input id="erm-pg-cep" inputmode="numeric" autocomplete="postal-code" placeholder="CEP" style="width:130px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '    <input id="erm-pg-num" inputmode="numeric" placeholder="Número" style="flex:1;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  </div>'
+        + '  <input id="erm-pg-street" autocomplete="address-line1" placeholder="Endereço (rua/avenida)" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '  <div style="display:flex;gap:10px;">'
+        + '    <input id="erm-pg-city" autocomplete="address-level2" placeholder="Cidade" style="flex:1;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;">'
+        + '    <input id="erm-pg-uf" autocomplete="address-level1" maxlength="2" placeholder="UF" style="width:80px;padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;text-transform:uppercase;">'
+        + '  </div>'
+        + '  <label style="font-size:.82rem;color:#666;margin-top:2px;">Parcelas</label>'
+        + '  <select id="erm-pg-installments" style="padding:12px 14px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;box-sizing:border-box;background:#fff;"></select>'
+        + '</div>'
+        + '<div id="erm-pg-error" style="color:#c0392b;font-size:.85rem;margin:10px 0 0;min-height:1em;"></div>'
+        + '<div id="erm-pg-status" style="display:none;padding:12px 14px;border-radius:10px;background:#fff8ef;border:1px solid #f4c48a;color:#8a5a1a;font-size:.88rem;text-align:center;margin-top:10px;"><span id="erm-pg-status-text">Confirmando pagamento...</span></div>'
+        + '<button type="button" id="erm-pg-pay" style="width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:#f0a05e;color:#fff;font-weight:700;font-size:1rem;cursor:pointer;">Pagar</button>'
+        + '<button type="button" id="erm-pg-back" style="width:100%;margin-top:8px;padding:11px;border:none;background:transparent;color:#999;font-size:.85rem;cursor:pointer;">Voltar</button>';
+      const formSec = modalRoot.querySelector('#erm-form-section');
+      if (formSec && formSec.parentNode) formSec.parentNode.appendChild(sec);
+      else modalRoot.appendChild(sec);
+
+      // ===== Máscaras VISUAIS + autofill de CEP (UX apenas) =====
+      // Não alteram o payload: o handler de pagamento já normaliza tudo com
+      // replace(/\D+/g,'') (número/validade/CVV/CEP) e toUpperCase() (UF).
+      // As máscaras só formatam o que o usuário vê enquanto digita.
+      const numEl = sec.querySelector('#erm-pg-number');
+      const expEl = sec.querySelector('#erm-pg-exp');
+      const cvvEl = sec.querySelector('#erm-pg-cvv');
+      const cepEl = sec.querySelector('#erm-pg-cep');
+      const ufEl = sec.querySelector('#erm-pg-uf');
+      const streetEl = sec.querySelector('#erm-pg-street');
+      const cityEl = sec.querySelector('#erm-pg-city');
+      if (numEl) numEl.addEventListener('input', function () {
+        const d = this.value.replace(/\D+/g, '').slice(0, 19); // até 19 (Amex/Elo)
+        this.value = d.replace(/(.{4})/g, '$1 ').trim();
+      });
+      if (expEl) expEl.addEventListener('input', function () {
+        const d = this.value.replace(/\D+/g, '').slice(0, 4);
+        this.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+      });
+      if (cvvEl) cvvEl.addEventListener('input', function () {
+        this.value = this.value.replace(/\D+/g, '').slice(0, 4);
+      });
+      if (ufEl) ufEl.addEventListener('input', function () {
+        this.value = this.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 2);
+      });
+      if (cepEl) {
+        cepEl.addEventListener('input', function () {
+          const d = this.value.replace(/\D+/g, '').slice(0, 8);
+          this.value = d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d;
+        });
+        // Autofill por CEP (ViaCEP). SÓ conveniência: falha nunca bloqueia o
+        // pagamento nem gera erro — o usuário pode preencher manualmente.
+        cepEl.addEventListener('blur', function () {
+          const d = cepEl.value.replace(/\D+/g, '');
+          if (d.length !== 8) return;
+          fetch('https://viacep.com.br/ws/' + d + '/json/')
+            .then(function (r) { return r.json(); })
+            .then(function (j) {
+              if (!j || j.erro) return;
+              if (j.logradouro && streetEl) streetEl.value = j.logradouro;
+              if (j.localidade && cityEl) cityEl.value = j.localidade;
+              if (j.uf && ufEl) ufEl.value = String(j.uf).toUpperCase().slice(0, 2);
+            })
+            .catch(function () { /* silencioso — autofill é opcional */ });
+        });
+      }
+      return sec;
+    }
+
+    function pgCardError(msg) {
+      const e = modalRoot && modalRoot.querySelector('#erm-pg-error');
+      if (e) e.textContent = msg || '';
+      const pay = modalRoot && modalRoot.querySelector('#erm-pg-pay');
+      if (pay) { pay.disabled = false; pay.textContent = 'Pagar'; }
+      const st = modalRoot && modalRoot.querySelector('#erm-pg-status');
+      if (st) st.style.display = 'none';
+    }
+
+    let _pgCardPollHandle = null;
+    function stopPagarmeCardPolling() {
+      if (_pgCardPollHandle) { clearInterval(_pgCardPollHandle); _pgCardPollHandle = null; }
+    }
+    function startPagarmeCardPolling(bookingId) {
+      stopPagarmeCardPolling();
+      const startedAt = Date.now();
+      const tick = async function () {
+        if (Date.now() - startedAt > 3 * 60 * 1000) {
+          stopPagarmeCardPolling();
+          const t = modalRoot && modalRoot.querySelector('#erm-pg-status-text');
+          if (t) t.textContent = 'Ainda confirmando… você receberá um e-mail assim que aprovar.';
+          return;
+        }
+        const status = await pollBookingStatus(bookingId);
+        if (status === 'pago') {
+          stopPagarmeCardPolling();
+          window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(bookingId);
+        } else if (status === 'cancelado' || status === 'reembolsado' || status === 'expirado') {
+          stopPagarmeCardPolling();
+          pgCardError('Pagamento não aprovado. Tente outro cartão ou pague no PIX.');
+        }
+      };
+      _pgCardPollHandle = setInterval(tick, 2500);
+      tick();
+    }
+
+    // Mostra o painel de cartão Pagar.me e assume o fluxo. `extra` traz
+    // authEmail, cpfDigits, telefoneRaw, telefoneNormalized.
+    async function showPagarmeCardPanel(ctx, extra) {
+      const pk = await getPagarmePublicKey();
+      if (!pk) throw new Error('pagarme_public_key_indisponivel');
+
+      const sec = ensurePagarmeCardSection();
+      if (!sec) throw new Error('modal_indisponivel');
+      const formSec = modalRoot.querySelector('#erm-form-section');
+      if (formSec) formSec.style.display = 'none';
+      sec.style.display = 'block';
+
+      // Popula as parcelas com os totais grossed-up.
+      const baseCents = ctx.totalCentavos || 0;
+      const opts = pagarmeInstallmentOptions(baseCents);
+      const sel = sec.querySelector('#erm-pg-installments');
+      if (sel) {
+        sel.innerHTML = opts.map(function (o) {
+          const per = Math.round(o.total / o.number);
+          const label = o.number === 1
+            ? '1x de ' + brl(o.total)
+            : o.number + 'x de ' + brl(per) + ' (total ' + brl(o.total) + ')';
+          return '<option value="' + o.number + '">' + label + '</option>';
+        }).join('');
+      }
+      pgCardError('');
+
+      // ===== Resumo do que está sendo pago =====
+      // O painel de cartão não mostrava a quantidade em lugar nenhum: se o
+      // checkout perdesse uma pessoa no caminho, a cobrança saía menor e
+      // ninguém via antes de pagar. Agora "N pessoas" e os nomes ficam na
+      // frente de quem está digitando o cartão.
+      // Montado com textContent (e não string de HTML) porque nome de
+      // participante é texto do usuário.
+      const sumEl = sec.querySelector('#erm-pg-summary');
+      if (sumEl) {
+        const pQty = Math.max(1, ctx.quantidade || 1);
+        const pNomes = (ctx.participantes || [])
+          .map(function (p) { return (p && p.nome) || ''; })
+          .filter(Boolean);
+        sumEl.innerHTML =
+          '<strong id="erm-pg-sum-qty"></strong><span id="erm-pg-sum-who"></span>'
+          + '<br><span id="erm-pg-sum-exp" style="color:#777;"></span>';
+        sec.querySelector('#erm-pg-sum-qty').textContent =
+          pQty + (pQty > 1 ? ' pessoas' : ' pessoa');
+        sec.querySelector('#erm-pg-sum-who').textContent =
+          pNomes.length ? ' · ' + pNomes.join(', ') : '';
+        sec.querySelector('#erm-pg-sum-exp').textContent =
+          (ctx.experienceNome || 'Experiência') + ' — total ' + brl(ctx.totalCentavos || 0);
+      }
+
+      const payBtn = sec.querySelector('#erm-pg-pay');
+      const backBtn = sec.querySelector('#erm-pg-back');
+      if (backBtn) {
+        backBtn.onclick = function () {
+          stopPagarmeCardPolling();
+          sec.style.display = 'none';
+          if (formSec) formSec.style.display = 'block';
+          // O submit deixou "Confirmar e pagar" com disabled = true e texto
+          // "Processando..." porque o painel de cartão assumiu o fluxo. Ao
+          // voltar, o painel DEVOLVE o controle pro formulário. Sem isto o
+          // botão continuava travado pra sempre: a pessoa clicava várias
+          // vezes e não acontecia nada.
+          const cBtn = modalRoot && modalRoot.querySelector('#erm-confirm');
+          if (cBtn) cBtn.disabled = false;
+          refreshPriceBreakdown();  // devolve o texto do botão
+          updateConfirmBtnVisual(); // e a cor
+        };
+      }
+      if (payBtn) {
+        payBtn.onclick = async function () {
+          // ===== TRAVA DE QUANTIDADE =====
+          // ctx.participantes é montado no submit como comprador + Pessoas
+          // 2..N, então tem que ter exatamente ctx.quantidade itens. Se
+          // divergir, alguma coisa perdeu uma pessoa no caminho e cobrar
+          // assim geraria reserva com vaga a menos que o combinado — o
+          // prejuízo é do cliente e o acerto é manual. Melhor não cobrar.
+          const expectedQty = Math.max(1, ctx.quantidade || 1);
+          const partCount = (ctx.participantes || []).length;
+          if (partCount !== expectedQty) {
+            console.error('[Elarah Payment/Pagarme] quantidade divergente — cobrança bloqueada', {
+              expectedQty: expectedQty,
+              partCount: partCount,
+            });
+            return pgCardError(
+              'A reserva é de ' + expectedQty + (expectedQty > 1 ? ' pessoas' : ' pessoa')
+              + ', mas só ' + partCount + ' apareceu aqui. Clique em "Voltar", confira os dados '
+              + 'de cada pessoa e tente de novo — assim não corremos o risco de cobrar a menos.'
+            );
+          }
+
+          const numRaw = (sec.querySelector('#erm-pg-number').value || '').replace(/\D+/g, '');
+          const holder = (sec.querySelector('#erm-pg-holder').value || '').trim();
+          const expRaw = (sec.querySelector('#erm-pg-exp').value || '').replace(/\D+/g, '');
+          const cvv = (sec.querySelector('#erm-pg-cvv').value || '').replace(/\D+/g, '');
+          const installments = Math.max(1, Math.min(12, parseInt(sel && sel.value, 10) || 1));
+          // Endereço de cobrança (exigido pelo antifraude — doc V5).
+          const cep = (sec.querySelector('#erm-pg-cep').value || '').replace(/\D+/g, '');
+          const num = (sec.querySelector('#erm-pg-num').value || '').trim();
+          const street = (sec.querySelector('#erm-pg-street').value || '').trim();
+          const city = (sec.querySelector('#erm-pg-city').value || '').trim();
+          const uf = (sec.querySelector('#erm-pg-uf').value || '').trim().toUpperCase();
+
+          if (numRaw.length < 13) return pgCardError('Confira o número do cartão.');
+          if (!holder) return pgCardError('Informe o nome impresso no cartão.');
+          if (expRaw.length < 4) return pgCardError('Confira a validade (MM/AA).');
+          if (cvv.length < 3) return pgCardError('Confira o CVV.');
+          if (cep.length !== 8) return pgCardError('Confira o CEP (8 dígitos).');
+          if (!street) return pgCardError('Informe o endereço (rua/avenida).');
+          if (!num) return pgCardError('Informe o número do endereço.');
+          if (!city) return pgCardError('Informe a cidade.');
+          if (uf.length !== 2) return pgCardError('Informe a UF (2 letras).');
+          const expMonth = parseInt(expRaw.slice(0, 2), 10);
+          let expYear = parseInt(expRaw.slice(2), 10);
+          if (expRaw.length === 4) expYear = 2000 + expYear; // AA → 20AA
+          if (!(expMonth >= 1 && expMonth <= 12)) return pgCardError('Mês de validade inválido.');
+
+          payBtn.disabled = true;
+          payBtn.textContent = 'Processando...';
+          pgCardError('');
+
+          // purchase_id ESTÁVEL desta tentativa de compra. Reenviado em toda
+          // retentativa de rede (idempotência) → o backend/Pagar.me colapsam
+          // na MESMA cobrança em vez de cobrar duas vezes.
+          var purchaseId = (window.crypto && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : ('pg-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+
+          // 1) Tokeniza direto no Pagar.me.
+          let tok;
+          try {
+            tok = await pagarmeTokenizeCard(pk, {
+              number: numRaw,
+              holder_name: holder,
+              holder_document: extra.cpfDigits || undefined,
+              exp_month: expMonth,
+              exp_year: expYear,
+              cvv: cvv,
+            });
+          } catch (e) {
+            console.error('[Elarah Payment/Pagarme] tokenização falhou', e);
+            return pgCardError('Não foi possível validar o cartão. Confira os dados e tente de novo.');
+          }
+          if (!tok.ok || !tok.body || !tok.body.id) {
+            console.error('[Elarah Payment/Pagarme] token inválido', 'http=' + tok.status, JSON.stringify(tok.body));
+            return pgCardError('Confira os dados do cartão e tente novamente.');
+          }
+          const cardToken = tok.body.id;
+
+          // 2) Cria a Order no backend (amount = total grossed-up da parcela).
+          const body = {
+            experiencia_id: ctx.experienceId,
+            purchase_id: purchaseId,
+            horario: ctx.horario,
+            data: ctx.data || null,
+            slot_id: ctx.slotId || null,
+            email: extra.authEmail,
+            nome: ctx.nome || null,
+            cpf: extra.cpfDigits,
+            telefone: extra.telefoneRaw,
+            telefone_digits: extra.telefoneNormalized,
+            cupom: ctx.cupomCode || null,
+            quantidade: ctx.quantidade || 1,
+            participantes: ctx.participantes || [],
+            acompanhantes: ctx.acompanhantes || [],
+            variant_label: ctx.variantLabel || null,
+            variant_selected: ctx.variantSelected || null,
+            variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
+            // Aceite dos prazos, marcado no checkout, com o prazo de
+            // remarcação que estava na tela. Congelado no metadata da reserva.
+            politica_aceita_em: ctx.politicaAceitaEm || null,
+            politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
+            card_token: cardToken,
+            installments: installments,
+            // Endereço de cobrança pro antifraude (customer.address no pedido).
+            address: {
+              zip_code: cep,
+              line_1: num + ', ' + street,
+              city: city,
+              state: uf,
+              country: 'BR',
+            },
+          };
+          const stEl = sec.querySelector('#erm-pg-status');
+          const stText = sec.querySelector('#erm-pg-status-text');
+          if (stEl) stEl.style.display = 'block';
+          if (stText) stText.textContent = 'Confirmando pagamento...';
+
+          // Envio COM RETRY IDEMPOTENTE. Um erro de REDE não significa que a
+          // cobrança não caiu — a resposta pode ter se perdido DEPOIS da
+          // captura. Antes, o catch reabilitava o botão e um novo clique
+          // gerava uma SEGUNDA cobrança. Agora reenviamos a MESMA compra
+          // (mesmo purchase_id) — o backend faz dedupe e o Pagar.me usa
+          // X-Idempotency-Key, então nunca cobra duas vezes. Só reabilitamos
+          // o botão em erro DEFINITIVO do servidor (HTTP 4xx/5xx com corpo),
+          // nunca em incerteza de rede.
+          let data = null;
+          let networkFailed = false;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const res = await fetch(PAGARME_CARD_FN_URL, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'apikey': SUPABASE_ANON_KEY,
+                  'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify(body),
+              });
+              data = await res.json().catch(function () { return null; });
+              if (!res.ok || !data) {
+                console.error('[Elarah Payment/Pagarme] card create falhou', 'http=' + res.status, JSON.stringify(data));
+                return pgCardError((data && data.message) || 'Não foi possível processar o cartão. Tente novamente ou pague no PIX.');
+              }
+              networkFailed = false;
+              break; // resposta HTTP recebida (aprovado / recusado / dedupe)
+            } catch (e) {
+              networkFailed = true;
+              console.warn('[Elarah Payment/Pagarme] tentativa ' + (attempt + 1) + ' falhou (rede) — reenviando MESMA compra (idempotente)', e);
+              if (stText) stText.textContent = 'Confirmando pagamento... (reconectando)';
+              await new Promise(function (r) { setTimeout(r, 1200 * (attempt + 1)); });
+            }
+          }
+          if (networkFailed) {
+            // Todas as tentativas falharam na rede. A cobrança é idempotente
+            // (purchase_id) → no MÁXIMO uma cobrança existe. NÃO reabilita o
+            // botão pra não arriscar nova cobrança; orienta o cliente.
+            if (stText) {
+              stText.textContent = 'Instabilidade na conexão. Se o pagamento foi aprovado, você receberá o e-mail de confirmação em instantes. Para evitar cobrança duplicada, não recarregue nem tente de novo agora.';
+            }
+            return;
+          }
+
+          if (data.direct === true) {
+            window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(data.booking_id || '');
+            return;
+          }
+          if (data.rejected === true) {
+            return pgCardError(data.message || 'Pagamento recusado. Tente outro cartão ou pague no PIX.');
+          }
+          if (!data.booking_id) {
+            return pgCardError('Resposta inesperada do servidor.');
+          }
+          // Aprovado / em captura — o webhook finaliza. Poll até 'pago'.
+          if (stText) stText.textContent = 'Pagamento enviado! Confirmando...';
+          startPagarmeCardPolling(data.booking_id);
+        };
+      }
+    }
+
+    // =============================================================
+    // CARTÃO — Checkout Transparente (Secure Fields + Device ID)
+    // =============================================================
+    let _cardFormInstance = null;
+    // Guard de reentrância: impede que um duplo-clique / duplo-submit
+    // (ex.: Enter + clique) reenvie o MESMO card_token_id → o MP responde
+    // 3003 Invalid card_token_id (o token é de uso único).
+    let _cardSubmitInFlight = false;
+    // Contexto da tentativa atual — guardado pra permitir RE-MONTAR o
+    // cardForm a cada nova tentativa (cada montagem gera um token novo).
+    let _cardCtx = null;
+    let _cardExtra = null;
+    let cardPollingHandle = null;
+    let cardPollingStartedAt = 0;
+    const CARD_POLLING_INTERVAL_MS = 2500;
+    const CARD_POLLING_TIMEOUT_MS = 3 * 60 * 1000; // 3 min
+
+    function cardEl(sel) { return modalRoot ? modalRoot.querySelector(sel) : null; }
+
+    function setCardStatus(text) {
+      const st = cardEl('#erm-card-status');
+      const t = cardEl('#erm-card-status-text');
+      if (st) st.style.display = 'block';
+      if (t) t.textContent = text;
+    }
+    function showCardError(msg) {
+      const e = cardEl('#erm-card-error');
+      if (e) e.textContent = msg || '';
+      const pay = cardEl('#erm-card-pay');
+      if (pay) { pay.disabled = false; pay.textContent = 'Pagar'; }
+      const st = cardEl('#erm-card-status');
+      if (st) st.style.display = 'none';
+      // Libera um novo submit. (A regeneração do token — quando o anterior
+      // foi consumido — é feita por remountCardFormFresh nas branches de
+      // falha pós-envio, não aqui, pra não limpar os campos à toa em erros
+      // de validação que nem chegaram a criar token.)
+      _cardSubmitInFlight = false;
+    }
+    function setCardProcessing() {
+      const pay = cardEl('#erm-card-pay');
+      if (pay) { pay.disabled = true; pay.textContent = 'Processando...'; }
+      const e = cardEl('#erm-card-error');
+      if (e) e.textContent = '';
+      setCardStatus('Confirmando pagamento...');
+    }
+
+    function stopCardPolling() {
+      if (cardPollingHandle) { clearInterval(cardPollingHandle); cardPollingHandle = null; }
+    }
+
+    function startCardPolling(bookingId) {
+      stopCardPolling();
+      cardPollingStartedAt = Date.now();
+      const tick = async function () {
+        if (Date.now() - cardPollingStartedAt > CARD_POLLING_TIMEOUT_MS) {
+          stopCardPolling();
+          setCardStatus('Ainda confirmando… você receberá um e-mail assim que o pagamento aprovar.');
+          return;
+        }
+        // Backup do webhook: força reconciliação server-side.
+        try {
+          await fetch(CHECKOUT_FN_BASE + '/check-mp-payment-status', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ booking_id: bookingId }),
+          });
+        } catch (e) {}
+        const status = await pollBookingStatus(bookingId);
+        if (status === 'pago') {
+          stopCardPolling();
+          window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(bookingId);
+        } else if (status === 'cancelado' || status === 'reembolsado' || status === 'expirado') {
+          stopCardPolling();
+          showCardError('Pagamento não aprovado. Digite os dados do cartão novamente para tentar, ou pague no PIX.');
+          remountCardFormFresh(); // token já foi consumido → recria pra gerar um novo
+        }
+      };
+      cardPollingHandle = setInterval(tick, CARD_POLLING_INTERVAL_MS);
+      tick();
+    }
+
+    // Traduz status_detail da MP em mensagens claras pro cliente. Cobre
+    // os motivos de recusa mais comuns (documentação oficial da MP).
+    function translateCardStatusDetail(detail) {
+      const map = {
+        cc_rejected_bad_filled_card_number: 'Confira o número do cartão.',
+        cc_rejected_bad_filled_date: 'Confira a data de validade.',
+        cc_rejected_bad_filled_security_code: 'Confira o código de segurança (CVV).',
+        cc_rejected_bad_filled_other: 'Confira os dados do cartão.',
+        cc_rejected_insufficient_amount: 'Cartão sem saldo/limite suficiente.',
+        cc_rejected_high_risk: 'Pagamento recusado por segurança. Tente outro cartão ou pague no PIX.',
+        cc_rejected_max_attempts: 'Muitas tentativas. Aguarde um pouco ou use outro cartão.',
+        cc_rejected_call_for_authorize: 'Autorize o pagamento com seu banco e tente de novo.',
+        cc_rejected_card_disabled: 'Cartão desabilitado. Ligue pro seu banco ou use outro cartão.',
+        cc_rejected_duplicated_payment: 'Pagamento duplicado. Confira se já não foi aprovado.',
+        cc_rejected_card_error: 'Não foi possível processar o cartão. Tente novamente.',
+        cc_rejected_blacklist: 'Pagamento recusado. Tente outro cartão ou pague no PIX.',
+        cc_rejected_invalid_installments: 'Parcelamento indisponível pra este cartão.',
+        cc_rejected_other_reason: 'O banco recusou o pagamento. Tente outro cartão ou pague no PIX.',
+      };
+      return (detail && map[detail]) || null;
+    }
+
+    // Renderiza o desafio 3-D Secure 2 do banco dentro de um iframe.
+    function renderThreeDsChallenge(threeds) {
+      const wrap = cardEl('#erm-card-3ds');
+      const frame = cardEl('#erm-card-3ds-frame');
+      if (!wrap || !frame || !threeds || !threeds.external_resource_url) return;
+      setCardStatus('Aguardando a autenticação do seu banco...');
+      wrap.style.display = 'block';
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = threeds.external_resource_url;
+      form.target = 'erm-card-3ds-frame';
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'creq';
+      input.value = threeds.creq || '';
+      form.appendChild(input);
+      document.body.appendChild(form);
+      try { form.submit(); } catch (e) { console.warn('[Elarah MP card] 3DS submit falhou', e); }
+      setTimeout(function () { try { document.body.removeChild(form); } catch (e) {} }, 1500);
+    }
+
+    // Monta e exibe o painel de cartão (Secure Fields). PODE LANÇAR
+    // (SDK/chave indisponível) — o chamador cai no Checkout Pro nesse caso.
+    async function showCardPanel(ctx, extra) {
+      const pk = await getMpPublicKey();
+      if (!pk) throw new Error('sem_public_key');
+      await loadMercadoPagoSdk();
+      const mp = getMpInstance();
+      if (!mp || typeof mp.cardForm !== 'function') throw new Error('mp_indisponivel');
+
+      // Só troca o modal DEPOIS de garantir que o SDK está pronto.
+      const formSec = modalRoot.querySelector('#erm-form-section');
+      const pixSec = modalRoot.querySelector('#erm-pix-section');
+      const cardSec = modalRoot.querySelector('#erm-card-section');
+      if (formSec) formSec.style.display = 'none';
+      if (pixSec) pixSec.style.display = 'none';
+      if (cardSec) cardSec.style.display = 'block';
+
+      // Reset visual do painel.
+      const errEl = cardEl('#erm-card-error'); if (errEl) errEl.textContent = '';
+      const statusEl = cardEl('#erm-card-status'); if (statusEl) statusEl.style.display = 'none';
+      const threeDsEl = cardEl('#erm-card-3ds'); if (threeDsEl) threeDsEl.style.display = 'none';
+      const payBtn = cardEl('#erm-card-pay');
+      if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar ' + brl(ctx.totalCentavos || 0); }
+      const expEl = cardEl('#erm-card-exp');
+      if (expEl) expEl.textContent = [ctx.experienceNome, ctx.horario].filter(Boolean).join(' · ');
+
+      const authEmail = (extra && extra.authEmail) || ctx.email || '';
+      const emailHidden = cardEl('#erm-cc-email'); if (emailHidden) emailHidden.value = authEmail;
+      const nameInput = cardEl('#erm-cc-name'); if (nameInput && ctx.nome) nameInput.value = ctx.nome;
+      const idNumber = cardEl('#erm-cc-idnumber'); if (idNumber && ctx.cpf) idNumber.value = formatCpf(ctx.cpf);
+
+      const backBtn = cardEl('#erm-card-back');
+      if (backBtn) backBtn.onclick = function () { closeReservationModal(); };
+
+      // Guarda o contexto da tentativa e monta o cardForm. Guardar ctx/extra
+      // permite RE-MONTAR o formulário a cada nova tentativa (token de uso
+      // único → recriar garante um card_token_id novo por tentativa).
+      _cardCtx = ctx;
+      _cardExtra = extra;
+      _cardSubmitInFlight = false;
+      buildCardForm(ctx, extra);
+    }
+
+    // Cria (ou recria) a instância do cardForm num estado limpo. Cada
+    // montagem produz um cardForm que gera um token NOVO no próximo submit.
+    // Como o token do Mercado Pago é de USO ÚNICO, recriar aqui é o que
+    // garante um card_token_id novo por tentativa e elimina o 3003
+    // (Invalid card_token_id) em retries. Não afeta o pagamento aprovado:
+    // a 1ª tentativa sempre usa o token fresco desta montagem.
+    function buildCardForm(ctx, extra) {
+      const mp = getMpInstance();
+      if (!mp || typeof mp.cardForm !== 'function') return null;
+      // Desmonta a instância anterior (descarta qualquer token já usado).
+      if (_cardFormInstance && typeof _cardFormInstance.unmount === 'function') {
+        try { _cardFormInstance.unmount(); } catch (e) {}
+      }
+      _cardFormInstance = null;
+      const amountReais = ((ctx.totalCentavos || 0) / 100).toFixed(2);
+      _cardFormInstance = mp.cardForm({
+        amount: amountReais,
+        iframe: true,
+        form: {
+          id: 'erm-card-form',
+          cardNumber: { id: 'erm-cc-number', placeholder: '0000 0000 0000 0000' },
+          expirationDate: { id: 'erm-cc-exp', placeholder: 'MM/AA' },
+          securityCode: { id: 'erm-cc-cvv', placeholder: 'CVV' },
+          cardholderName: { id: 'erm-cc-name', placeholder: 'Nome impresso no cartão' },
+          cardholderEmail: { id: 'erm-cc-email' },
+          issuer: { id: 'erm-cc-issuer' },
+          installments: { id: 'erm-cc-installments' },
+          identificationType: { id: 'erm-cc-idtype' },
+          identificationNumber: { id: 'erm-cc-idnumber' },
+        },
+        callbacks: {
+          onFormMounted: function (error) {
+            if (error) {
+              console.error('[Elarah MP card] cardForm mount error', error);
+              showCardError('Não foi possível carregar o formulário do cartão. Recarregue ou pague no PIX.');
+            }
+          },
+          onSubmit: function (event) {
+            event.preventDefault();
+            submitCardPayment(ctx, extra);
+          },
+          onError: function (error) {
+            console.warn('[Elarah MP card] cardForm error', error);
+          },
+        },
+      });
+      return _cardFormInstance;
+    }
+
+    // Re-monta o cardForm após uma tentativa que CONSUMIU o token (recusa,
+    // erro do backend/MP, ou falha de rede após o envio). A instância antiga
+    // — e o token que ela já usou — são descartados; o próximo submit gera
+    // um card_token_id NOVO. É a garantia definitiva contra reuso de token.
+    function remountCardFormFresh() {
+      if (!_cardCtx) return;
+      try { buildCardForm(_cardCtx, _cardExtra); }
+      catch (e) { console.warn('[Elarah MP card] remount do cardForm falhou', e); }
+    }
+
+    // Tokeniza (já feito pelo cardForm) + envia pro backend criar o
+    // pagamento no /v1/payments com Device ID.
+    async function submitCardPayment(ctx, extra) {
+      // Guard de reentrância: se já existe um submit em andamento, ignora
+      // este (duplo-clique / Enter + clique). Sem isso, dois submits leriam
+      // o mesmo token e o segundo tomaria 3003 Invalid card_token_id.
+      if (_cardSubmitInFlight) {
+        console.warn('[Elarah MP card] submit já em andamento — ignorando envio duplicado');
+        return;
+      }
+      if (!_cardFormInstance || typeof _cardFormInstance.getCardFormData !== 'function') {
+        showCardError('Formulário do cartão não está pronto. Recarregue e tente de novo.');
+        return;
+      }
+      _cardSubmitInFlight = true;
+      setCardProcessing();
+
+      let cardData;
+      try { cardData = _cardFormInstance.getCardFormData(); }
+      catch (e) { showCardError('Confira os dados do cartão.'); return; }
+      if (!cardData || !cardData.token) {
+        showCardError('Não conseguimos validar o cartão. Confira número, validade e CVV.');
+        return;
+      }
+
+      // Device ID (fingerprint do security.js). ESPERA ficar disponível
+      // antes de criar o pagamento — elimina a race condition que mandava
+      // device_id vazio pro MP. Como a instância já foi criada na abertura
+      // do modal, na prática ele já está pronto aqui (waitedMs ~0).
+      const deviceInfo = await waitForDeviceId(8000);
+      const deviceId = deviceInfo.id;
+
+      // ===== Logs de diagnóstico do fingerprint (SEM dado sensível) =====
+      // Exposto em window.__elarahMpDeviceDiag pra inspeção fácil no
+      // console em produção. NÃO logamos o valor do device id — só se
+      // carregou, se gerou, o tamanho e quanto tempo esperamos.
+      try {
+        window.__elarahMpDeviceDiag = {
+          sdk_loaded: !!window.MercadoPago,
+          mp_instance_created: !!_mpInstance,
+          fingerprint_ready: !!deviceId,
+          mp_device_session_id_present: (typeof window.MP_DEVICE_SESSION_ID === 'string' && window.MP_DEVICE_SESSION_ID.length > 0),
+          device_id_len: deviceId ? deviceId.length : 0,
+          waited_ms: deviceInfo.waitedMs,
+          at: new Date().toISOString(),
+        };
+        console.log('[Elarah MP card] fingerprint diag →', window.__elarahMpDeviceDiag);
+      } catch (e) {}
+
+      if (!deviceId) {
+        console.warn(
+          '[Elarah MP card] MP_DEVICE_SESSION_ID vazio após ' + deviceInfo.waitedMs +
+          'ms — security.js pode estar bloqueado (rede/adblock do cliente). ' +
+          'O pagamento segue, mas SEM fingerprint. Verifique CSP/extensões.'
+        );
+      }
+
+      const body = {
+        token: cardData.token,
+        payment_method_id: cardData.paymentMethodId,
+        issuer_id: cardData.issuerId,
+        installments: Number(cardData.installments) || 1,
+        identification_type: cardData.identificationType || 'CPF',
+        device_id: deviceId,
+        experiencia_id: ctx.experienceId,
+        horario: ctx.horario,
+        data: ctx.data || null,
+        slot_id: ctx.slotId || null,
+        email: ctx.email || (extra && extra.authEmail) || null,
+        nome: ctx.nome || null,
+        telefone: (extra && extra.telefoneRaw) || null,
+        telefone_digits: (extra && extra.telefoneNormalized) || null,
+        cupom: ctx.cupomCode || null,
+        quantidade: ctx.quantidade || 1,
+        participantes: ctx.participantes || [],
+        acompanhantes: ctx.acompanhantes || [],
+        variant_label: ctx.variantLabel || null,
+        variant_selected: ctx.variantSelected || null,
+        // Preço unitário da opção escolhida (centavos) — dica de segurança
+        // pro backend não sair com o valor individual se o banco não
+        // resolver o preço da variação. Backend só aceita pra cima.
+        variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
+        // Aceite dos prazos, marcado no checkout, com o prazo de
+        // remarcação que estava na tela. Congelado no metadata da reserva.
+        politica_aceita_em: ctx.politicaAceitaEm || null,
+        politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
+        cpf: String(cardData.identificationNumber || '').replace(/\D+/g, ''),
+      };
+
+      try {
+        const res = await fetch(MP_CARD_FN_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify(body),
+        });
+        const resp = await res.json().catch(function () { return null; });
+
+        if (!res.ok || !resp) {
+          // O token JÁ foi enviado ao /v1/payments — está consumido.
+          // Recria o cardForm pra a próxima tentativa nascer com token novo.
+          showCardError(translateCheckoutError(resp, 'Não foi possível processar o cartão. Digite os dados novamente e tente, ou pague no PIX.'));
+          remountCardFormFresh();
+          return;
+        }
+        if (resp.direct === true) {
+          window.location.href = '/success.html?direct=1&booking_id=' + encodeURIComponent(resp.booking_id || '');
+          return;
+        }
+        if (resp.rejected === true || resp.status === 'rejected' || resp.status === 'cancelled') {
+          // Recusa = token consumido. Recria pra o retry gerar um token novo
+          // (senão o reenvio do mesmo token daria 3003 Invalid card_token_id).
+          showCardError(translateCardStatusDetail(resp.status_detail) || resp.message || 'Pagamento recusado. Digite os dados do cartão novamente para tentar, ou pague no PIX.');
+          remountCardFormFresh();
+          return;
+        }
+
+        // Funil — cartão enviado, aguardando confirmação.
+        try {
+          if (window.ElarahAnalytics && ElarahAnalytics.track) {
+            ElarahAnalytics.track('payment_pending', {
+              category: 'checkout',
+              targetId: ctx.experienceId || null,
+              targetLabel: (ctx.experienceNome || '').slice(0, 120),
+              metadata: {
+                payment_method: 'card',
+                provider: 'mercado_pago',
+                integration: 'checkout_transparente',
+                booking_id: resp.booking_id,
+                total_centavos: ctx.totalCentavos || 0,
+              },
+            });
+          }
+        } catch (_) {}
+
+        // 3-D Secure 2: banco pediu autenticação → renderiza o desafio.
+        if (resp.three_ds && resp.three_ds.external_resource_url && resp.three_ds.creq) {
+          renderThreeDsChallenge(resp.three_ds);
+          startCardPolling(resp.booking_id);
+          return;
+        }
+
+        if (resp.status === 'approved' || resp.status === 'authorized') {
+          setCardStatus('Pagamento aprovado! Confirmando sua reserva...');
+        } else {
+          setCardStatus('Pagamento em análise. Assim que aprovar, você recebe a confirmação por e-mail.');
+        }
+        startCardPolling(resp.booking_id);
+      } catch (e) {
+        console.error('[Elarah MP card] submit exception', e);
+        // A requisição pode ter saído (token possivelmente consumido) —
+        // recria por segurança pra o retry não reusar o mesmo token.
+        showCardError('Erro de conexão ao processar o cartão. Digite os dados novamente e tente de novo.');
+        remountCardFormFresh();
+      }
+    }
+
     let currentReservationCtx = null;
 
     // ===== Fee config cache =====
@@ -2515,6 +4070,135 @@ if (groupForm) {
       return pct + feeConfig.fixedCents;
     }
 
+    // =============================================================
+    // ESTADO VISUAL DO BOTÃO "CONFIRMAR E PAGAR"
+    // -------------------------------------------------------------
+    // Antes o botão tinha um laranja claro FIXO: preenchido ou não,
+    // sempre a mesma cor apagada. Quem terminava de preencher não
+    // recebia nenhum sinal de que podia seguir e ficava achando que
+    // ainda faltava alguma coisa. Agora ele escurece quando TODOS os
+    // obrigatórios estão ok.
+    //
+    // De propósito o botão NÃO é bloqueado quando falta algo: quem
+    // clica incompleto continua recebendo a mensagem exata do que
+    // falta, campo a campo, na validação do submit. Cor é sinalização;
+    // travar o clique só esconderia o motivo de não dar pra seguir.
+    // =============================================================
+    // Mesmo laranja do botão "Reservar" (--orange, #F27623): quem
+    // clicou em Reservar reencontra a mesma cor no "pode pagar".
+    const CONFIRM_BTN_READY_BG = '#F27623'; // completo — laranja da marca
+    const CONFIRM_BTN_IDLE_BG = '#f0a05e';  // incompleto — apagado (com opacity .5)
+
+    // Espelha a validação do submit (handleConfirmReservation), porém SEM
+    // escrever erro nem mexer em foco/scroll. Devolve o NOME do primeiro
+    // obrigatório que falta, ou null quando está tudo certo.
+    //
+    // Devolve o nome, e não um booleano, porque um botão só apagado não
+    // diz nada: quem preencheu e continua vendo a cor de "pendente" não
+    // tem como descobrir o que falta e conclui que o site travou. A dica
+    // embaixo do botão sai daqui.
+    //
+    // A ordem segue a da tela, pra apontar sempre o primeiro pendente de
+    // cima pra baixo. Se um obrigatório novo entrar no formulário, ele
+    // precisa entrar aqui também.
+    function checkoutMissingField() {
+      if (!currentReservationCtx || !modalRoot) return 'carregando';
+      const ctx = currentReservationCtx;
+      const root = modalRoot;
+      const val = function (sel) {
+        const el = root.querySelector(sel);
+        return el ? String(el.value || '').trim() : '';
+      };
+
+      const hasVariants = !!(ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length);
+
+      // Variante (ex.: Pintura) da Pessoa 1 — seletor fica no topo
+      if (hasVariants && !ctx.variantSelected) {
+        return 'escolher ' + (ctx.variantLabel || 'a opção');
+      }
+
+      // Pessoas 2..N — nome, WhatsApp e variante de cada uma
+      const qty = Math.max(1, ctx.quantidade || 1);
+      if (qty > 1) {
+        const nomes = root.querySelectorAll('.erm-part-nome');
+        const tels = root.querySelectorAll('.erm-part-telefone');
+        if (nomes.length < qty - 1) return 'os dados das outras pessoas';
+        for (let i = 0; i < nomes.length; i++) {
+          const pessoa = 'da Pessoa ' + (i + 2);
+          const pn = String(nomes[i].value || '').trim();
+          if (!pn || pn.length < 3) return 'o nome ' + pessoa;
+          if (!readPhone(tels[i]).valid) return 'o WhatsApp ' + pessoa;
+          if (hasVariants && !(ctx.variantByParticipant && ctx.variantByParticipant[i + 2])) {
+            return (ctx.variantLabel || 'a opção') + ' ' + pessoa;
+          }
+        }
+      }
+
+      // Nome + WhatsApp do comprador
+      const nome = val('#erm-nome').replace(/\s+/g, ' ');
+      if (!nome || nome.length < 3) return 'seu nome completo';
+      if (!readPhone(root.querySelector('#erm-telefone')).valid) return 'seu WhatsApp com DDD';
+
+      // E-mail — só no checkout convidado
+      if (ctx.isGuest) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('#erm-email').toLowerCase())) {
+          return 'seu e-mail';
+        }
+      }
+
+      // CPF — PIX sempre exige; no modo Pagar.me o cartão também
+      if (ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST) {
+        if (!isValidCpfFront(val('#erm-cpf').replace(/\D+/g, ''))) return 'um CPF válido';
+      }
+
+      // Aceite dos prazos — última coisa antes do botão
+      const policyEl = root.querySelector('#erm-policy');
+      if (policyEl && !policyEl.checked) return 'marcar o aceite dos prazos';
+
+      return null;
+    }
+
+    // Mantida pelo nome antigo — é o mesmo teste, só que em booleano.
+    function isCheckoutFormComplete() {
+      return checkoutMissingField() === null;
+    }
+
+    // Pinta o botão conforme o estado do formulário.
+    //
+    // TUDO dentro de try/catch de propósito. Esta função é chamada de
+    // dentro de refreshPriceBreakdown(), que desenha subtotal/desconto/
+    // total. Cor de botão é enfeite; preço na tela não é. Se algum dia
+    // isCheckoutFormComplete() estourar (campo novo, ctx em formato
+    // inesperado), o erro NÃO pode derrubar o preço nem o checkout —
+    // o botão só fica com a cor que já estava e a venda segue.
+    function updateConfirmBtnVisual() {
+      try {
+        if (!modalRoot) return;
+        const btn = modalRoot.querySelector('#erm-confirm');
+        if (!btn) return;
+        // Submit em voo ("Processando..."): quem manda na aparência é o
+        // fluxo de pagamento, não o formulário.
+        if (btn.disabled) return;
+        btn.style.transition = 'background-color .18s ease, opacity .18s ease, box-shadow .18s ease';
+        const faltando = checkoutMissingField();
+        const hint = modalRoot.querySelector('#erm-confirm-hint');
+        if (faltando === null) {
+          btn.style.background = CONFIRM_BTN_READY_BG;
+          btn.style.opacity = '1';
+          btn.style.boxShadow = '0 6px 16px rgba(242,118,35,.32)';
+          if (hint) hint.textContent = '';
+        } else {
+          btn.style.background = CONFIRM_BTN_IDLE_BG;
+          btn.style.opacity = '.5';
+          btn.style.boxShadow = 'none';
+          // 'carregando' = modal ainda montando; não é falha da pessoa.
+          if (hint) hint.textContent = (faltando === 'carregando') ? '' : ('Falta ' + faltando + '.');
+        }
+      } catch (e) {
+        console.warn('[Elarah checkout] não foi possível repintar o botão:', e);
+      }
+    }
+
     // Re-renderiza subtotal / desconto / taxa / total baseado no
     // estado atual do ctx (cupom aplicado + método escolhido).
     function refreshPriceBreakdown() {
@@ -2522,14 +4206,23 @@ if (groupForm) {
       const ctx = currentReservationCtx;
       const root = modalRoot;
       const qty = Math.max(1, ctx.quantidade || 1);
-      const unitPrice = ctx.precoCentavos || 0;
+      // Preço da experiência ANTES do desconto do carrinho (o do site ou o
+      // da variação). unitPrice é o que o servidor cobra por pessoa:
+      // 10% OFF com 1 pessoa, 15% OFF por pessoa com 2+ (promo.js).
+      const unitSemCarrinho = ctx.precoCentavos || 0;
+      const unitPrice = (window.ElarahPromo && ElarahPromo.carrinhoCentavos)
+        ? ElarahPromo.carrinhoCentavos(unitSemCarrinho, qty)
+        : unitSemCarrinho;
       const subtotalCents = unitPrice * qty;
       console.log('[Elarah PRICE] refreshPriceBreakdown: qty=' + qty + ' unitPrice=' + unitPrice + ' subtotal=' + subtotalCents);
       const cupomCents = Number(ctx.cupomCentavos || 0);
       const baseAfterCupom = Math.max(0, subtotalCents - cupomCents);
 
       let feeCents = 0;
-      if (ctx.paymentMethod === 'card' && baseAfterCupom > 0 && ctx.feeConfig) {
+      // No modo Pagar.me transparente NÃO há taxa fixa: o total do modal é o
+      // VALOR-BASE (o que o PIX cobra). O acréscimo do cartão é por parcela e
+      // aparece dentro do painel de cartão (gross-up), não aqui.
+      if (!PAY_PAGARME_TEST && ctx.paymentMethod === 'card' && baseAfterCupom > 0 && ctx.feeConfig) {
         feeCents = computeCardFee(baseAfterCupom, ctx.feeConfig);
       }
       const total = baseAfterCupom + feeCents;
@@ -2537,9 +4230,64 @@ if (groupForm) {
       ctx.totalCentavos = total;
       ctx.feeCents = feeCents;
 
+      // ===== Desconto Elarah — o "de" que a cliente nunca viu =====
+      // ctx.valorCheioCentavos é o preço original cadastrado na experiência
+      // (campo "Valor cheio" do admin). Ele descreve o preço BASE: se a
+      // pessoa escolheu uma variação com preço próprio, esse cheio não
+      // corresponde mais àquela opção e o riscado some — melhor não mostrar
+      // "de" nenhum do que mostrar um que não confere.
+      //
+      // Nas experiências By Elarah o cheio é igual ao praticado, então
+      // cheioUnit > unitPrice é falso e nada aparece. Sem flag, sem
+      // configuração: o próprio dado decide.
+      const usaPrecoBase = !ctx.baseCentavos || unitSemCarrinho === ctx.baseCentavos;
+      const cheioUnit = Number(ctx.valorCheioCentavos) || 0;
+      const temOffElarah = usaPrecoBase && cheioUnit > unitSemCarrinho;
+      const cheioSubtotal = cheioUnit * qty;
+      const semCarrinhoSubtotal = unitSemCarrinho * qty;
+      const carrinhoOffCents = semCarrinhoSubtotal - subtotalCents;
+
+      // Quando há desconto Elarah, o SUBTOTAL exibido é o preço CHEIO e a
+      // linha de desconto logo abaixo faz o abatimento — assim o resumo
+      // fecha de cima pra baixo (1.220 − 122 = 1.098). Mostrar o subtotal
+      // já descontado E uma linha de desconto embaixo daria a impressão de
+      // que o total ainda ia cair mais, e a conta não bateria na tela.
+      //
+      // Só a EXIBIÇÃO muda: subtotalCents (usado no cupom, na taxa e no
+      // total) continua sendo o preço praticado × quantidade.
+      const subtotalExibido = temOffElarah ? cheioSubtotal : semCarrinhoSubtotal;
+      const unitExibido = temOffElarah ? cheioUnit : unitSemCarrinho;
       root.querySelector('#erm-subtotal').textContent = qty > 1
-        ? qty + 'x ' + brl(unitPrice) + ' = ' + brl(subtotalCents)
-        : brl(unitPrice);
+        ? qty + 'x ' + brl(unitExibido) + ' = ' + brl(subtotalExibido)
+        : brl(unitExibido);
+
+      const offRow = root.querySelector('#erm-elarah-off-row');
+      if (offRow) {
+        if (temOffElarah) {
+          offRow.style.display = 'flex';
+          const offCents = cheioSubtotal - semCarrinhoSubtotal;
+          const offPct = Math.round((offCents / cheioSubtotal) * 100);
+          root.querySelector('#erm-elarah-off-label').textContent = 'Desconto Elarah (' + offPct + '%)';
+          root.querySelector('#erm-elarah-off').textContent = '− ' + brl(offCents);
+        } else {
+          offRow.style.display = 'none';
+        }
+      }
+
+      const cartOffRow = root.querySelector('#erm-cart-off-row');
+      if (cartOffRow) {
+        if (carrinhoOffCents > 0) {
+          cartOffRow.style.display = 'flex';
+          const cartPct = (window.ElarahPromo && ElarahPromo.carrinhoPct) ? ElarahPromo.carrinhoPct(qty) : 0;
+          root.querySelector('#erm-cart-off-label').textContent = qty > 1
+            ? 'Desconto do carrinho (' + cartPct + '% por pessoa)'
+            : 'Desconto do carrinho (' + cartPct + '%)';
+          root.querySelector('#erm-cart-off').textContent = '− ' + brl(carrinhoOffCents);
+        } else {
+          cartOffRow.style.display = 'none';
+        }
+      }
+
       root.querySelector('#erm-total').textContent = brl(total);
 
       const feeRow = root.querySelector('#erm-fee-row');
@@ -2559,6 +4307,9 @@ if (groupForm) {
       } else {
         confirmBtn.textContent = 'Confirmar e pagar com cartão';
       }
+      // Quantidade, cupom e troca de método mudam o que é obrigatório
+      // (ex.: PIX passa a exigir CPF) — repinta junto com o preço.
+      updateConfirmBtnVisual();
     }
 
     // Visual toggle dos botões Cartão / PIX. Também mostra/esconde
@@ -2581,16 +4332,34 @@ if (groupForm) {
       });
       const hint = modalRoot.querySelector('#erm-pm-hint');
       if (hint) {
-        hint.textContent = ctx.paymentMethod === 'pix'
-          ? 'PIX via Mercado Pago — sem taxa. Pague pelo QR Code e a reserva confirma sozinha.'
-          : 'Cartão via Stripe — taxa de processamento é repassada ao cliente.';
+        if (PAY_PAGARME_TEST) {
+          // Modo teste Pagar.me (transparente): cartão inline com parcelas
+          // e PIX por QR, sem sair do site. Nada de "Mercado Pago".
+          hint.textContent = ctx.paymentMethod === 'pix'
+            ? 'PIX no valor à vista — pague pelo QR Code e a reserva confirma sozinha.'
+            : 'Cartão em até 12x — o acréscimo do parcelamento é do processamento (Pagar.me).';
+        } else {
+          hint.textContent = ctx.paymentMethod === 'pix'
+            ? 'PIX via Mercado Pago — sem taxa. Pague pelo QR Code e a reserva confirma sozinha.'
+            : 'Cartão via Mercado Pago — taxa de processamento é repassada ao cliente.';
+        }
       }
       // Mostra/esconde campo CPF. O reset do valor NÃO acontece aqui
       // pra preservar o que o usuário digitou se ele alternar entre
       // os dois métodos.
       const cpfWrap = modalRoot.querySelector('#erm-cpf-wrap');
       if (cpfWrap) {
-        cpfWrap.style.display = ctx.paymentMethod === 'pix' ? 'block' : 'none';
+        // Pagar.me exige CPF no cartão E no PIX. No modo teste, sempre
+        // mostra o campo (senão não há onde digitar e a validação falha).
+        const needsCpf = ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST;
+        cpfWrap.style.display = needsCpf ? 'block' : 'none';
+        if (PAY_PAGARME_TEST) {
+          // Sem "Mercado Pago" no modo Pagar.me.
+          const cpfMsg = modalRoot.querySelector('#erm-cpf-msg');
+          if (cpfMsg && !/inválido|obrigat/i.test(cpfMsg.textContent || '')) {
+            cpfMsg.textContent = 'Exigido para emitir o pagamento no Pagar.me.';
+          }
+        }
       }
     }
 
@@ -2621,22 +4390,152 @@ if (groupForm) {
       return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9);
     }
 
+    // Linha de contexto do checkout: data · horário · preço. A data
+    // entrou aqui de propósito — o cliente precisa reconferir o dia que
+    // escolheu antes de pagar, não só o horário.
+    function renderErmMeta(root, c) {
+      var el = root && root.querySelector('#erm-meta');
+      if (!el || !c) return;
+      var precoFmt = (window.ElarahData && ElarahData.formatPrecoBR)
+        ? ElarahData.formatPrecoBR(c.precoLabel) : c.precoLabel;
+      el.textContent = [c.dataLabel, c.horario, precoFmt].filter(Boolean).join(' · ');
+    }
+
+    // Estilo dos botões de horário do checkout (pill). Fica fora do laço
+    // pra o estado ativo/esgotado ser sempre redesenhado igual.
+    function ermHorarioBtnCss(active, soldOut) {
+      return 'padding:9px 16px;border:1.5px solid ' +
+        (active ? '#f0a05e' : '#ddd') + ';background:' +
+        (active ? '#fff8ef' : '#fff') + ';color:' +
+        (active ? '#1a1a1a' : (soldOut ? '#aaa' : '#444')) +
+        ';border-radius:999px;font-size:.86rem;font-weight:600;cursor:' +
+        (soldOut ? 'not-allowed' : 'pointer') + ';opacity:' +
+        (soldOut ? '.5' : '1') + ';transition:all .15s;';
+    }
+
+    // =============================================================
+    // ABERTURA DO MODAL — TUDO OU NADA
+    // -------------------------------------------------------------
+    // openReservationModalInner() publica `currentReservationCtx = ctx`
+    // logo na 4ª linha, mas só termina de preparar esse ctx ~340 linhas
+    // depois (quantidade, participantes, handlers do stepper). Se
+    // qualquer coisa estourar nesse meio — e é um trecho que mexe em
+    // horários, slots e variantes —, o resultado era o pior estado
+    // possível: `currentReservationCtx` já apontando pro ctx NOVO e pela
+    // metade, enquanto a tela continuava mostrando o formulário ANTERIOR,
+    // preenchido. Nada avisava. A pessoa clicava em pagar e a cobrança
+    // saía com os dados do ctx capenga (quantidade 1, total = preço
+    // unitário) em vez do que estava na tela.
+    //
+    // Agora: os campos que o fluxo de pagamento lê são normalizados ANTES
+    // de publicar, e uma falha na montagem FECHA o checkout em vez de
+    // deixá-lo pela metade. Modal que não abre é um problema visível;
+    // modal que abre errado cobra errado.
+    // =============================================================
     function openReservationModal(ctx) {
+      // Normaliza antes de publicar — o ctx nunca existe sem estes.
+      ctx.quantidade = Math.max(1, Math.min(10, Number(ctx.quantidade) || 1));
+      ctx.participantes = [];
+      ctx.acompanhantes = [];
+      ctx.variantByParticipant = {};
+      ctx.totalCentavos = ctx.precoCentavos;
+      try {
+        openReservationModalInner(ctx);
+      } catch (e) {
+        console.error('[Elarah checkout] falha ao montar o modal — abortando pra não deixar o checkout pela metade', e);
+        try { closeReservationModal(); } catch (_e) {}
+        currentReservationCtx = null;
+        try { if (window.ElarahReserveSpinner) window.ElarahReserveSpinner.hide(); } catch (_e) {}
+        try { document.body.style.overflow = ''; } catch (_e) {}
+        alert('Não foi possível abrir o checkout agora. Recarregue a página e tente de novo.');
+      }
+    }
+
+    function openReservationModalInner(ctx) {
       // Esconde o spinner do clique de Reservar IMEDIATAMENTE quando o
       // modal abre — antes era escondido com 80ms de atraso no finally
       // do startCheckout, o que causava o spinner aparecer sobreposto
       // ao modal por um piscar. Agora a transição é limpa: modal abriu
       // = spinner some.
       try { if (window.ElarahReserveSpinner) window.ElarahReserveSpinner.hide(); } catch (e) {}
+      // Pré-aquece o MercadoPago.js (SDK + public key) já na abertura do
+      // checkout, pra que os Secure Fields do cartão apareçam sem espera.
+      try { warmUpMercadoPago(); } catch (e) {}
       const root = buildReservationModal();
       currentReservationCtx = ctx;
       root.querySelector('#erm-exp').textContent = ctx.experienceNome || 'Experiência';
-      var precoFmt = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(ctx.precoLabel) : ctx.precoLabel;
-      root.querySelector('#erm-meta').textContent = [ctx.horario, precoFmt]
-        .filter(Boolean).join(' · ');
+      renderErmMeta(root, ctx);
+
+      // Info completa numa tela só (voucher): descrição, inclui, onde
+      // acontece, horário de funcionamento e aviso — pra não ter uma tela
+      // de descrição separada com a mesma capa.
+      (function fillFullInfo() {
+        var wrap = root.querySelector('#erm-info');
+        if (!wrap) return;
+        if (!ctx.showFullInfo) { wrap.style.display = 'none'; return; }
+        wrap.style.display = 'block';
+        function setBlock(boxId, textId, val) {
+          var box = root.querySelector(boxId), txt = root.querySelector(textId);
+          var v = (val == null ? '' : String(val)).trim();
+          if (box) box.style.display = v ? 'block' : 'none';
+          if (txt && v) txt.textContent = v;
+        }
+        setBlock('#erm-info-hours', '#erm-info-hours-text', ctx.horarioFuncionamento);
+        var descEl = root.querySelector('#erm-info-desc');
+        if (descEl) {
+          var d = (ctx.descricao == null ? '' : String(ctx.descricao)).trim();
+          descEl.textContent = d;
+          descEl.style.display = d ? 'block' : 'none';
+        }
+        setBlock('#erm-info-inclui', '#erm-info-inclui-text', ctx.inclui);
+        setBlock('#erm-info-local', '#erm-info-local-text', ctx.endereco);
+        var note = root.querySelector('#erm-info-note');
+        if (note) {
+          if (ctx.horarioFuncionamento) {
+            note.style.display = 'block';
+            note.innerHTML = 'É só reservar. Se quiser, deixe um dia/horário de preferência — mas não precisa. ' +
+              '<strong>No momento da compra, a Elarah entra em contato com você no mesmo dia</strong> para acertar o melhor horário, dentro do horário de funcionamento. 🤍';
+          } else {
+            note.style.display = 'none';
+          }
+        }
+      })();
       root.querySelector('#erm-subtotal').textContent = brl(ctx.precoCentavos);
       root.querySelector('#erm-total').textContent = brl(ctx.precoCentavos);
+      // Aceite da política começa sempre desmarcado — é um ato consciente
+      // por compra, não um estado que sobra da reserva anterior.
+      var _policyReset = root.querySelector('#erm-policy');
+      if (_policyReset) _policyReset.checked = false;
+      ctx.politicaAceitaEm = null;
+
+      // Prazo de remarcação SEM CUSTO varia por categoria (bartenderia
+      // 5 dias, gastronomia 72h, resto 48h). Cancelar com reembolso é
+      // sempre 48h. O texto é montado aqui, com o prazo desta
+      // experiência, e o número vai junto no payload pra ser congelado
+      // na reserva — o e-mail de confirmação exibe o mesmo número.
+      var _prazo = (window.ElarahData && ElarahData.prazoRemarcacaoDe)
+        ? ElarahData.prazoRemarcacaoDe({ categoria: ctx.categoria })
+        : { horas: 48, rotulo: '48 horas' };
+      ctx.politicaRemarcacaoHoras = _prazo.horas;
+      var _policyTextReset = root.querySelector('#erm-policy-text');
+      if (_policyTextReset) {
+        _policyTextReset.style.color = '#555';
+        // Na maioria das categorias os dois prazos são 48h; separar em duas
+        // frases idênticas soaria burocrático e ninguém leria. Só quando a
+        // categoria tem prazo de remarcação MAIOR é que vale distinguir.
+        var _msg = _prazo.horas === 48
+          ? 'Confirmo que remarcações e cancelamentos precisam ser pedidos com no mínimo ' +
+            '<strong>48 horas de antecedência</strong> desta experiência. '
+          : 'Confirmo que posso remarcar sem custo até <strong>' + _prazo.rotulo +
+            ' antes</strong> desta experiência, e cancelar com reembolso até ' +
+            '<strong>48 horas antes</strong>. ';
+        _policyTextReset.innerHTML = _msg +
+          '<a href="/cancelamento.html" target="_blank" rel="noopener" ' +
+          'style="color:#b9764f;text-decoration:underline;">Ver política</a>';
+      }
       root.querySelector('#erm-discount-row').style.display = 'none';
+      var _offRowReset = root.querySelector('#erm-elarah-off-row');
+      if (_offRowReset) _offRowReset.style.display = 'none';
       root.querySelector('#erm-cupom').value = '';
       root.querySelector('#erm-cupom-msg').textContent = '';
       root.querySelector('#erm-cupom-msg').style.color = '#666';
@@ -2654,7 +4553,11 @@ if (groupForm) {
       // Reset telefone field — cada reserva começa limpa.
       const telefoneInput = root.querySelector('#erm-telefone');
       if (telefoneInput) {
-        telefoneInput.value = '';
+        // Limpa pelo componente pra o país voltar pro Brasil junto com o
+        // número; mexer só no .value deixaria a bandeira da reserva
+        // anterior no campo.
+        if (window.ElarahPhone) window.ElarahPhone.set(telefoneInput, '');
+        else telefoneInput.value = '';
         root.querySelector('#erm-telefone-msg').style.color = '#888';
         root.querySelector('#erm-telefone-msg').textContent =
           'Usamos pra te avisar sobre a experiência e mudanças de horário.';
@@ -2688,7 +4591,9 @@ if (groupForm) {
         const cpfMsgReset = root.querySelector('#erm-cpf-msg');
         if (cpfMsgReset) {
           cpfMsgReset.style.color = '#888';
-          cpfMsgReset.textContent = 'Exigido pelo Mercado Pago pra gerar o PIX.';
+          cpfMsgReset.textContent = PAY_PAGARME_TEST
+            ? 'Exigido para emitir o pagamento no Pagar.me.'
+            : 'Exigido pelo Mercado Pago pra gerar o PIX.';
         }
       }
       // Garante o estado "formulário" (pode estar no PIX section
@@ -2708,49 +4613,57 @@ if (groupForm) {
       ctx.totalCentavos = ctx.precoCentavos;
 
       // ===== Seletor de horário =====
-      // Quando a experiência tem múltiplos horários, renderiza botões
-      // pill pra usuário trocar dentro do modal. ctx.horario começa
-      // com o que foi clicado fora (ou o primeiro) e atualiza on-click.
+      // As opções são os SLOTS DA DATA ESCOLHIDA (ctx.horarioSlots), cada
+      // um com o seu id. Antes vinham de ctx.horarios — a união dos
+      // horários de todas as datas da experiência —, então numa data com
+      // uma única turma o modal oferecia horários de outros dias e a
+      // pessoa comprava um horário que não existia ali.
+      //
+      // ctx.horarios continua sendo o fallback só pra experiência SEM
+      // slots (agenda legada por rótulo de texto).
       var horarioSection = root.querySelector('#erm-horario-section');
       var horarioOptsEl = root.querySelector('#erm-horario-options');
-      var horariosList = Array.isArray(ctx.horarios) ? ctx.horarios : [];
+      var horarioLabelEl = horarioSection ? horarioSection.querySelector('label') : null;
+      var slotOpts = Array.isArray(ctx.horarioSlots) ? ctx.horarioSlots : [];
+      var horariosList = slotOpts.length
+        ? slotOpts
+        : (Array.isArray(ctx.horarios) ? ctx.horarios : []).map(function (h) {
+            return { horario: h, slotId: null, data: null, dataLabel: null, soldOut: false };
+          });
+      // Deixa explícito de que dia são esses horários.
+      if (horarioLabelEl) {
+        horarioLabelEl.textContent = ctx.dataLabel
+          ? ('Horário — ' + ctx.dataLabel + ' *')
+          : 'Horário *';
+      }
       if (horarioSection && horarioOptsEl && horariosList.length > 1) {
         horarioSection.style.display = 'block';
         horarioOptsEl.innerHTML = '';
-        horariosList.forEach(function (h) {
+        horariosList.forEach(function (opt) {
+          var h = opt.horario;
           var b = document.createElement('button');
           b.type = 'button';
           b.className = 'erm-horario-btn';
           b.dataset.value = h;
-          b.textContent = h;
-          var isActive = h === ctx.horario;
-          b.style.cssText = 'padding:9px 16px;border:1.5px solid ' +
-            (isActive ? '#f0a05e' : '#ddd') + ';background:' +
-            (isActive ? '#fff8ef' : '#fff') + ';color:' +
-            (isActive ? '#1a1a1a' : '#444') +
-            ';border-radius:999px;font-size:.86rem;font-weight:600;cursor:pointer;transition:all .15s;';
+          b.textContent = opt.soldOut ? (h + ' (esgotado)') : h;
+          b.disabled = !!opt.soldOut;
+          b.style.cssText = ermHorarioBtnCss(!opt.soldOut && h === ctx.horario, opt.soldOut);
           b.addEventListener('click', function () {
-            if (!currentReservationCtx) return;
+            if (opt.soldOut || !currentReservationCtx) return;
             currentReservationCtx.horario = h;
-            // Atualiza linha de meta com o novo horário.
-            var metaEl = root.querySelector('#erm-meta');
-            if (metaEl) {
-              var preco2 = (window.ElarahData && ElarahData.formatPrecoBR)
-                ? ElarahData.formatPrecoBR(currentReservationCtx.precoLabel)
-                : currentReservationCtx.precoLabel;
-              metaEl.textContent = [h, preco2].filter(Boolean).join(' · ');
+            // CRÍTICO: trocar de horário é trocar de SLOT. Sem atualizar o
+            // slot_id aqui, a reserva ia com o rótulo novo e o id do
+            // horário anterior — a vaga baixava numa turma e a pessoa
+            // aparecia em outra.
+            if (opt.slotId) {
+              currentReservationCtx.slotId = opt.slotId;
+              currentReservationCtx.data = opt.data || currentReservationCtx.data;
+              currentReservationCtx.dataLabel = opt.dataLabel || currentReservationCtx.dataLabel;
             }
+            renderErmMeta(root, currentReservationCtx);
             // Reset visual e marca o escolhido.
             horarioOptsEl.querySelectorAll('.erm-horario-btn').forEach(function (other) {
-              if (other.dataset.value === h) {
-                other.style.background = '#fff8ef';
-                other.style.borderColor = '#f0a05e';
-                other.style.color = '#1a1a1a';
-              } else {
-                other.style.background = '#fff';
-                other.style.borderColor = '#ddd';
-                other.style.color = '#444';
-              }
+              other.style.cssText = ermHorarioBtnCss(other.dataset.value === h && !other.disabled, other.disabled);
             });
           });
           horarioOptsEl.appendChild(b);
@@ -2771,12 +4684,22 @@ if (groupForm) {
       // recebe variant_selected antes do submit.
       ctx.variantSelected = null;
       ctx.variantByParticipant = {};
+      // Preço-base (usado quando a variante escolhida não tem preço próprio).
+      ctx.baseCentavos = ctx.precoCentavos || 0;
       var variantSection = root.querySelector('#erm-variant-section');
       var variantLabelEl = root.querySelector('#erm-variant-label');
       var variantOptsEl = root.querySelector('#erm-variant-options');
       var variantMsgEl = root.querySelector('#erm-variant-msg');
+      // Presença de variação = TER OPÇÕES. O rótulo é opcional: se vier
+      // vazio, usa "Escolha a sua opção" (mesmo padrão do detalhe e do
+      // modal de descrição). Antes isso exigia ctx.variantLabel truthy e
+      // uma variação salva sem rótulo sumia do checkout — o cliente
+      // escolhia no detalhe mas nunca virava escolha obrigatória aqui.
+      if (!ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length) {
+        ctx.variantLabel = 'Escolha a sua opção';
+      }
       var hasVariantsForExp = !!(
-        ctx.variantLabel && Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
+        Array.isArray(ctx.variantOptions) && ctx.variantOptions.length
       );
 
       // Helper: atualiza o rótulo do seletor do comprador conforme a
@@ -2831,6 +4754,23 @@ if (groupForm) {
               variantMsgEl.style.color = '#1a8a4a';
               variantMsgEl.textContent = '✓ ' + ctx.variantLabel + ': ' + opt;
             }
+            // Aplica o PREÇO da opção escolhida (Individual/Dupla/Trio com
+            // valores diferentes). Sem preço próprio → mantém o preço-base.
+            (function applyVariantPrice() {
+              var cr = currentReservationCtx;
+              var items = cr.variantItems;
+              var it = Array.isArray(items)
+                ? items.filter(function (x) { return x && x.nome === opt; })[0]
+                : null;
+              var pc = (it && it.preco && String(it.preco).trim())
+                ? parsePrecoToCents(it.preco) : null;
+              cr.precoCentavos = pc || cr.baseCentavos || cr.precoCentavos || 0;
+              if (pc && it && it.preco) cr.precoLabel = it.preco;
+              try {
+                renderErmMeta(root, cr);
+              } catch (_e) {}
+              try { refreshPriceBreakdown(); } catch (_e) {}
+            })();
           });
           variantOptsEl.appendChild(btn);
         });
@@ -2871,6 +4811,10 @@ if (groupForm) {
       // ===== Quantidade + Participantes =====
       ctx.quantidade = 1;
       ctx.participantes = [];
+      // Acompanhantes (só as Pessoas 2..N, sem o comprador) no formato que
+      // vai pra coluna `acompanhantes` (jsonb) da tabela bookings:
+      // [{ nome, telefone }] com telefone em dígitos (DDD + número).
+      ctx.acompanhantes = [];
       var qtyEl = root.querySelector('#erm-qty');
       var participantsEl = root.querySelector('#erm-participants');
       if (qtyEl) qtyEl.textContent = '1';
@@ -2947,6 +4891,11 @@ if (groupForm) {
             })(i);
           }
         }
+        // Os cards de Pessoa 2..N nascem agora (innerHTML), então o
+        // seletor de país precisa ser ligado aqui — o upgrade automático
+        // do phone-input.js só varre o que já existia no carregamento.
+        var novosTels = participantsEl.querySelectorAll('.erm-part-telefone');
+        Array.prototype.forEach.call(novosTels, function (el) { mountPhone(el); });
       }
 
       function updateQty(delta) {
@@ -3119,7 +5068,18 @@ if (groupForm) {
       // encontrado". Chamando direto via RPC, ignoramos qualquer drift
       // de deploy de Edge Function.
 
-      const amountCentavos = currentReservationCtx.precoCentavos;
+      // Base do desconto = preço UNITÁRIO × quantidade (o subtotal real).
+      // Antes usava só o unitário: pra cupom de porcentagem com 2+
+      // ingressos, a tela mostrava um desconto menor (e total maior) do
+      // que o backend de fato aplica (que calcula sobre unit × qty).
+      // Agora o preview do cupom bate exatamente com o valor cobrado.
+      const _qtyForCoupon = Math.max(1, currentReservationCtx.quantidade || 1);
+      // Unitário JÁ com o desconto do carrinho — é sobre ele que o servidor
+      // calcula o cupom (booking_guard: baseCents × quantidade).
+      const _unitParaCupom = (window.ElarahPromo && ElarahPromo.carrinhoCentavos)
+        ? ElarahPromo.carrinhoCentavos(currentReservationCtx.precoCentavos || 0, _qtyForCoupon)
+        : (currentReservationCtx.precoCentavos || 0);
+      const amountCentavos = _unitParaCupom * _qtyForCoupon;
       const experienciaId = currentReservationCtx.experienceId || null;
 
       // ----- Camada 1: preview_coupon via supabaseClient -----
@@ -3132,7 +5092,7 @@ if (groupForm) {
               p_code: code,
               p_experience_id: experienciaId,
               p_amount_centavos: amountCentavos,
-              p_quantidade: Math.max(1, (currentReservationCtx.quantidade || 1)),
+              p_quantidade: _qtyForCoupon,
             }
           );
           if (!cpErr) {
@@ -3197,6 +5157,7 @@ if (groupForm) {
             code: code,
             amount_centavos: amountCentavos,
             experiencia_id: experienciaId,
+            quantidade: _qtyForCoupon,
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -3242,6 +5203,11 @@ if (groupForm) {
     // Valida telefone BR: pelo menos 10 dígitos (fixo) ou 11 (celular).
     // Aceita qualquer formato, só conta dígitos. Retorna a versão
     // só-dígitos (E.164 BR: 55 + DDD + número).
+    //
+    // Sobrou como rede de segurança: os campos do checkout passaram a
+    // usar o seletor de país (phone-input.js), que sabe o país e por
+    // isso consegue dizer "faltou 1 dígito". Esta função só entra em
+    // ação se aquele arquivo não tiver carregado.
     function normalizePhoneBR(raw) {
       const digits = String(raw || '').replace(/\D+/g, '');
       if (digits.length < 10 || digits.length > 13) return null;
@@ -3252,6 +5218,55 @@ if (groupForm) {
       return digits;
     }
 
+    // Liga o seletor de país num input de telefone. Sem o phone-input.js
+    // o campo continua funcionando como antes (máscara BR), só sem a
+    // bandeira — checkout nunca deixa de abrir por causa disso.
+    function mountPhone(input) {
+      if (!input) return null;
+      if (window.ElarahPhone) return window.ElarahPhone.mount(input);
+      maskPhoneBrFallback(input);
+      return null;
+    }
+
+    // Máscara BR de emergência (o que existia antes do seletor).
+    function maskPhoneBrFallback(input) {
+      if (!input || input.dataset.brMask === '1') return;
+      input.dataset.brMask = '1';
+      input.addEventListener('input', function () {
+        const raw = input.value.replace(/\D+/g, '').slice(0, 11);
+        let formatted = raw;
+        if (raw.length >= 1) formatted = '(' + raw.slice(0, 2);
+        if (raw.length >= 3) formatted += ') ' + raw.slice(2, raw.length >= 11 ? 7 : 6);
+        if (raw.length >= 7) formatted += '-' + raw.slice(raw.length >= 11 ? 7 : 6);
+        input.value = formatted;
+      });
+    }
+
+    // Lê um campo de telefone. Com o seletor ligado, devolve o país
+    // escolhido e uma mensagem de erro específica ("faltam 2 dígitos");
+    // sem ele, cai na checagem BR antiga.
+    function readPhone(input) {
+      if (window.ElarahPhone) return window.ElarahPhone.get(input);
+      const raw = input ? String(input.value || '').trim() : '';
+      const norm = normalizePhoneBR(raw);
+      return {
+        country: 'BR', ddi: '55', national: norm || '',
+        digits: norm ? '55' + norm : '',
+        e164: norm ? '+55 ' + raw : '',
+        valid: !!norm,
+        error: norm ? null : 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).',
+      };
+    }
+
+    // Dígitos que vão pra coluna telefone_digits. Brasil continua indo
+    // SEM o 55 — é o formato de todo o histórico, e os cruzamentos do
+    // painel (reserva x participante) comparam esses dígitos entre si.
+    // Estrangeiro vai com o DDI, que é o que identifica o número.
+    function phoneDbDigits(info) {
+      if (!info || !info.valid) return null;
+      return info.country === 'BR' ? info.national : info.digits;
+    }
+
     async function handleConfirmReservation() {
       if (!currentReservationCtx) return;
       const ctx = currentReservationCtx;
@@ -3259,6 +5274,27 @@ if (groupForm) {
       const confirmBtn = root.querySelector('#erm-confirm');
       const errEl = root.querySelector('#erm-error');
       errEl.textContent = '';
+
+      // ===== ACEITE DOS PRAZOS DE REMARCAÇÃO / CANCELAMENTO =====
+      // Primeira checagem do submit, antes de criar conta ou falar com
+      // qualquer gateway: se a pessoa não marcou, nada acontece e ela não
+      // fica com uma conta órfã nem com um pagamento pela metade.
+      const policyEl = root.querySelector('#erm-policy');
+      const policyText = root.querySelector('#erm-policy-text');
+      if (policyEl && !policyEl.checked) {
+        if (policyText) policyText.style.color = '#c0392b';
+        errEl.textContent = 'Confirme que você leu os prazos de remarcação e cancelamento pra continuar.';
+        try { policyEl.focus({ preventScroll: true }); } catch (e) {}
+        try {
+          root.querySelector('#erm-policy-wrap').scrollIntoView({ block: 'center', behavior: 'smooth' });
+        } catch (e) {}
+        console.warn('[Elarah checkout] prazos não aceitos — submit bloqueado');
+        return;
+      }
+      if (policyText) policyText.style.color = '#555';
+      // Momento do aceite. Vai pra reserva junto com ctx.politicaRemarcacaoHoras,
+      // o prazo que estava escrito na tela neste instante.
+      ctx.politicaAceitaEm = new Date().toISOString();
 
       // ===== VALIDAÇÃO NOME =====
       const nomeInput = root.querySelector('#erm-nome');
@@ -3285,24 +5321,32 @@ if (groupForm) {
       // ===== VALIDAÇÃO TELEFONE =====
       const telefoneInput = root.querySelector('#erm-telefone');
       const telefoneMsg = root.querySelector('#erm-telefone-msg');
-      const telefoneRaw = telefoneInput ? telefoneInput.value.trim() : '';
-      const telefoneNormalized = normalizePhoneBR(telefoneRaw);
-      if (!telefoneNormalized) {
+      const telefoneInfo = readPhone(telefoneInput);
+      if (!telefoneInfo.valid) {
         if (telefoneMsg) {
           telefoneMsg.style.color = '#c0392b';
-          telefoneMsg.textContent = 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).';
+          // Mensagem do seletor de país: diz quantos dígitos faltam pro
+          // país escolhido, em vez do genérico "número inválido".
+          telefoneMsg.textContent = telefoneInfo.error
+            || 'Informe um WhatsApp válido com DDD (ex: 11 91234-5678).';
         }
         if (telefoneInput) {
           try { telefoneInput.focus({ preventScroll: true }); } catch (e) {}
         }
-        console.warn('[Elarah checkout] telefone inválido bloqueou o submit:', telefoneRaw);
+        console.warn('[Elarah checkout] telefone inválido bloqueou o submit:',
+          telefoneInfo.country, telefoneInfo.national, telefoneInfo.error);
         return;
       }
       if (telefoneMsg) {
         telefoneMsg.style.color = '#888';
         telefoneMsg.textContent = 'Usamos pra te avisar sobre a experiência e mudanças de horário.';
       }
-      console.log('[Elarah checkout] telefone válido:', telefoneNormalized);
+      // telefoneRaw é o texto que vai pra coluna `telefone` — vai COM o
+      // "+DDI" na frente, que é o que faz o painel respeitar o país em
+      // vez de assumir Brasil ao montar o link do WhatsApp.
+      const telefoneRaw = telefoneInfo.e164;
+      const telefoneNormalized = phoneDbDigits(telefoneInfo);
+      console.log('[Elarah checkout] telefone válido:', telefoneInfo.country, telefoneNormalized);
 
       // ===== [PR F] VALIDAÇÃO EMAIL (só em checkout convidado) =====
       let guestEmailNorm = '';
@@ -3327,27 +5371,36 @@ if (groupForm) {
         ctx.email = emailRaw;
       }
 
-      // ===== VALIDAÇÃO CPF (só pra PIX) =====
+      // ===== VALIDAÇÃO CPF =====
+      // Normal: exigido só no PIX. Modo Pagar.me: SEMPRE (cartão E pix),
+      // porque o Pagar.me exige CPF em todas as cobranças. Normaliza pra
+      // os 11 dígitos ANTES de validar/enviar (a máscara 000.000.000-00
+      // não pode chegar ao isValidCpfFront nem ao backend).
       let cpfDigits = '';
-      if (ctx.paymentMethod === 'pix') {
+      const cpfRequired = ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST;
+      if (cpfRequired) {
         const cpfInput = root.querySelector('#erm-cpf');
         const cpfMsg = root.querySelector('#erm-cpf-msg');
         const cpfRaw = cpfInput ? cpfInput.value.trim() : '';
-        cpfDigits = cpfRaw.replace(/\D+/g, '');
+        cpfDigits = cpfRaw.replace(/\D+/g, ''); // "393.033.608-18" → "39303360818"
         if (!isValidCpfFront(cpfDigits)) {
           if (cpfMsg) {
             cpfMsg.style.color = '#c0392b';
-            cpfMsg.textContent = 'CPF inválido. PIX via Mercado Pago exige CPF válido.';
+            cpfMsg.textContent = PAY_PAGARME_TEST
+              ? 'CPF inválido. Digite os 11 números.'
+              : 'CPF inválido. PIX via Mercado Pago exige CPF válido.';
           }
           if (cpfInput) {
             try { cpfInput.focus({ preventScroll: true }); } catch (e) {}
           }
-          console.warn('[Elarah Payment/MP] CPF inválido bloqueou o submit:', cpfDigits);
+          console.warn('[Elarah checkout] CPF inválido bloqueou o submit:', cpfDigits);
           return;
         }
         if (cpfMsg) {
           cpfMsg.style.color = '#888';
-          cpfMsg.textContent = 'Exigido pelo Mercado Pago pra gerar o PIX.';
+          cpfMsg.textContent = PAY_PAGARME_TEST
+            ? 'Exigido para emitir o pagamento no Pagar.me.'
+            : 'Exigido pelo Mercado Pago pra gerar o PIX.';
         }
         ctx.cpf = cpfDigits;
       }
@@ -3380,8 +5433,44 @@ if (groupForm) {
         // Pessoa 2..N (validação acontece no loop abaixo, junto com nome/telefone)
       }
 
+      // ===== FONTE DE VERDADE DA QUANTIDADE: A TELA =====
+      // Já aconteceu de ctx.quantidade chegar aqui valendo 1 enquanto a
+      // tela mostrava 2: stepper em "2", card da Pessoa 2 preenchido com
+      // nome e telefone, subtotal "2x R$ 200,00 = R$ 400,00" — e o painel
+      // de cartão abrindo com "1 pessoa · total R$ 200,00". O ctx tinha
+      // sido trocado por baixo sem a tela ser redesenhada, e a compra saía
+      // com uma vaga a menos que o combinado.
+      //
+      // Quem preencheu foi a cliente, olhando a tela — então a tela manda,
+      // não o ctx. Os cards de Pessoa 2..N são a evidência mais forte:
+      // são eles que têm nome e telefone digitados. Divergiu, o ctx é
+      // corrigido e o preço redesenhado ANTES de validar e cobrar.
+      var domPartCount = root.querySelectorAll('.erm-part-nome').length;
+      var domQty = Math.max(1, Math.min(10, domPartCount + 1));
+      var qtyElNow = root.querySelector('#erm-qty');
+      var stepperQty = qtyElNow ? parseInt(String(qtyElNow.textContent || '').trim(), 10) : NaN;
+      if ((ctx.quantidade || 1) !== domQty || (!isNaN(stepperQty) && stepperQty !== domQty)) {
+        // console.error de propósito: isto NUNCA deveria acontecer. Se
+        // aparecer de novo, estes números dizem qual das três fontes
+        // desandou.
+        console.error('[Elarah QTY] divergência corrigida antes de cobrar', {
+          ctxQuantidade: ctx.quantidade,
+          stepperNaTela: stepperQty,
+          cardsDePessoa: domPartCount,
+          usado: domQty,
+        });
+        ctx.quantidade = domQty;
+        if (qtyElNow) qtyElNow.textContent = String(domQty);
+        // Redesenha o total pra que o valor na tela seja o que vai ser
+        // cobrado — nunca cobrar diferente do que a cliente está vendo.
+        refreshPriceBreakdown();
+      }
+
       // ===== VALIDAÇÃO PARTICIPANTES ADICIONAIS =====
       var participantes = [];
+      // Acompanhantes = só as Pessoas 2..N (sem o comprador), no formato
+      // da coluna `acompanhantes`: [{ nome, telefone(dígitos) }].
+      var acompanhantes = [];
       if (ctx.quantidade > 1 && modalRoot) {
         var partNomes = modalRoot.querySelectorAll('.erm-part-nome');
         var partTels = modalRoot.querySelectorAll('.erm-part-telefone');
@@ -3400,10 +5489,16 @@ if (groupForm) {
             break;
           }
           partNomes[pi].style.borderColor = '#ddd';
-          var pTelNorm = normalizePhoneBR(pTel);
+          // Sem telefone completo não dá pra contatar a pessoa no dia.
+          // O seletor de país sabe quantos dígitos o número deveria ter,
+          // então o aviso diz o que falta em vez de só "inválido".
+          var pTelInfo = readPhone(partTels[pi]);
+          var pTelNorm = phoneDbDigits(pTelInfo);
           if (!pTelNorm) {
             partTels[pi].style.borderColor = '#c0392b';
-            errEl.textContent = 'Informe o WhatsApp da Pessoa ' + pIdx + '.';
+            errEl.textContent = pTel
+              ? 'WhatsApp da Pessoa ' + pIdx + ': ' + (pTelInfo.error || 'número inválido.')
+              : 'Informe o WhatsApp da Pessoa ' + pIdx + '.';
             try { partTels[pi].focus({ preventScroll: true }); } catch (e) {}
             partValid = false;
             break;
@@ -3432,7 +5527,7 @@ if (groupForm) {
           }
           participantes.push({
             nome: pNome,
-            telefone: pTel,
+            telefone: pTelInfo.e164,
             telefone_digits: pTelNorm,
             email: pEmail || null,
             // variant_selected fica como undefined quando a experiência
@@ -3440,9 +5535,13 @@ if (groupForm) {
             // sem essa feature.
             variant_selected: pVariant || undefined,
           });
+          // pTelNorm = só dígitos. Brasil vai sem o 55 (DDD + número),
+          // como sempre foi; número de fora vai com o DDI na frente.
+          acompanhantes.push({ nome: pNome, telefone: pTelNorm });
         }
         if (!partValid) return;
       }
+      ctx.acompanhantes = acompanhantes;
       // Inclui o comprador como Pessoa 1 (índice 0 do array, mas Pessoa 1
       // na UI). Quando a experiência tem variantes, anexa a escolha do
       // comprador. Esse array vira metadata.participantes no booking.
@@ -3482,7 +5581,9 @@ if (groupForm) {
             options: {
               data: {
                 nome: ctx.nome || '',
-                telefone: telefoneNormalized || '',
+                // Texto com "+DDI" (e não só dígitos): é isso que vira
+                // profiles.telefone quando a conta é criada aqui.
+                telefone: telefoneRaw || '',
                 from_guest_checkout: true,
               }
             }
@@ -3585,6 +5686,31 @@ if (groupForm) {
           console.warn('[Elarah checkout] não foi possível atualizar profile.telefone:', e);
         }
 
+        // ===== ?pay=pagarme: CARTÃO = Pagar.me · PIX = Mercado Pago =====
+        // Decisão de arquitetura: só o CARTÃO (à vista + parcelado) roteia pro
+        // checkout transparente do Pagar.me. O PIX NÃO entra neste bloco — cai
+        // no fluxo Mercado Pago logo abaixo (create-mp-pix-payment), que nunca
+        // foi removido. Assim o PIX volta a cobrar o VALOR-BASE via MP.
+        if (PAY_PAGARME_TEST && ctx.paymentMethod !== 'pix') {
+
+          // ----- Cartão transparente Pagar.me (gross-up por parcela) -----
+          try {
+            await showPagarmeCardPanel(ctx, {
+              authEmail: auth.email || ctx.email,
+              cpfDigits: cpfDigits,
+              telefoneRaw: telefoneRaw,
+              telefoneNormalized: telefoneNormalized,
+            });
+            return; // o painel de cartão assumiu o fluxo
+          } catch (e) {
+            console.error('[Elarah Payment/Pagarme] painel de cartão indisponível', e);
+            errEl.textContent = 'Não foi possível iniciar o pagamento no cartão. Tente o PIX ou recarregue a página.';
+            confirmBtn.disabled = false;
+            refreshPriceBreakdown();
+            return;
+          }
+        }
+
         // ===== Branch: PIX (Mercado Pago) OU Cartão (Stripe) =====
         if (ctx.paymentMethod === 'pix') {
           const pixBody = {
@@ -3600,8 +5726,17 @@ if (groupForm) {
             cupom: ctx.cupomCode || null,
             quantidade: ctx.quantidade || 1,
             participantes: ctx.participantes || [],
+            acompanhantes: ctx.acompanhantes || [],
             variant_label: ctx.variantLabel || null,
             variant_selected: ctx.variantSelected || null,
+            // Preço unitário da opção escolhida (centavos) — dica de segurança
+            // pro backend: se o banco não resolver o preço da variação, ele usa
+            // isto (só quando maior que o base) em vez do valor individual.
+            variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
+            // Aceite dos prazos, marcado no checkout, com o prazo de
+            // remarcação que estava na tela. Congelado no metadata da reserva.
+            politica_aceita_em: ctx.politicaAceitaEm || null,
+            politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
           };
           console.log('[Elarah CHECKOUT FINAL] PIX payload:', JSON.stringify({
             selectedQuantity: ctx.quantidade,
@@ -3690,12 +5825,41 @@ if (groupForm) {
           return;
         }
 
-        // ===== Cartão via Mercado Pago (Checkout Pro) =====
-        // Só entra aqui quando a chave de migração está ligada. Cria a
-        // preference no backend e redireciona pro Checkout Pro da MP,
-        // onde o cliente digita o cartão e escolhe o parcelamento (12x).
-        // A confirmação vem pelo mp-webhook (mesmo fluxo do PIX).
+        // ===== Cartão via Mercado Pago =====
+        // Preferimos o CHECKOUT TRANSPARENTE (Secure Fields + Device ID,
+        // formulário inline → /v1/payments). Só quando ele NÃO está
+        // disponível (sem public key / SDK falhou / ?mptransparent=0) é
+        // que caímos no Checkout Pro (redirect). A confirmação vem pelo
+        // mp-webhook (mesmo fluxo do PIX) nos dois casos.
         if (MP_CARD_ENABLED) {
+          // --- Tenta primeiro o Checkout Transparente ---
+          if (!MP_TRANSPARENT_FORCED_OFF) {
+            let mpPublicKey = null;
+            try { mpPublicKey = await getMpPublicKey(); } catch (e) { mpPublicKey = null; }
+            if (mpPublicKey) {
+              try {
+                await showCardPanel(ctx, {
+                  telefoneRaw: telefoneRaw,
+                  telefoneNormalized: telefoneNormalized,
+                  authEmail: auth.email || ctx.email,
+                });
+                return; // o painel de cartão (Secure Fields) assumiu o fluxo
+              } catch (eTransparent) {
+                console.warn(
+                  '[Elarah MP card] Checkout Transparente indisponível — fallback pro Checkout Pro',
+                  eTransparent,
+                );
+                // Reexibe o formulário (showCardPanel pode ter escondido) e
+                // segue pro Checkout Pro abaixo.
+                const formSec = root.querySelector('#erm-form-section');
+                const cardSec = root.querySelector('#erm-card-section');
+                if (formSec) formSec.style.display = 'block';
+                if (cardSec) cardSec.style.display = 'none';
+              }
+            }
+          }
+
+          // --- Fallback: Checkout Pro (preference + redirect) ---
           const mpCardBody = {
             experiencia_id: ctx.experienceId,
             horario: ctx.horario,
@@ -3710,6 +5874,13 @@ if (groupForm) {
             participantes: ctx.participantes || [],
             variant_label: ctx.variantLabel || null,
             variant_selected: ctx.variantSelected || null,
+            // Dica de segurança do preço da variação (centavos) — backend
+            // só usa se maior que o base. Ver create-checkout-session/guard.
+            variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
+            // Aceite dos prazos, marcado no checkout, com o prazo de
+            // remarcação que estava na tela. Congelado no metadata da reserva.
+            politica_aceita_em: ctx.politicaAceitaEm || null,
+            politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
           };
           console.log('[Elarah Payment/MP card] iniciando Checkout Pro', {
             base: ctx.precoCentavos,
@@ -3795,8 +5966,16 @@ if (groupForm) {
           payment_method: 'card',
           quantidade: ctx.quantidade || 1,
           participantes: ctx.participantes || [],
+          acompanhantes: ctx.acompanhantes || [],
           variant_label: ctx.variantLabel || null,
           variant_selected: ctx.variantSelected || null,
+          // Dica de segurança do preço da variação (centavos) — backend só
+          // usa se maior que o base. Ver create-checkout-session.
+          variant_price_expected_centavos: ctx.variantSelected ? (ctx.precoCentavos || null) : null,
+          // Aceite dos prazos, marcado no checkout, com o prazo de
+          // remarcação que estava na tela. Congelado no metadata da reserva.
+          politica_aceita_em: ctx.politicaAceitaEm || null,
+          politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
         };
         console.log('[Elarah CHECKOUT FINAL] Stripe payload:', JSON.stringify({
           selectedQuantity: ctx.quantidade,
@@ -3976,6 +6155,13 @@ if (groupForm) {
         return true;
       }
 
+      // Voucher / agendamento livre: pula a tela de descrição e vai direto
+      // pro checkout — evita duas telas com a mesma capa ("Reservar" →
+      // "Continuar para pagamento" viravam duas etapas idênticas).
+      if (exp.horarioFuncionamento && String(exp.horarioFuncionamento).trim()) {
+        return true;
+      }
+
       // --- Log completo do objeto experiência pra diagnóstico ---
       // Se "descricao" não aparecer aqui ou vier vazia, o problema
       // é nos DADOS (banco/seeds), não no código do modal.
@@ -4010,7 +6196,9 @@ if (groupForm) {
 
     function openDescriptionModal(exp, triggerBtn, resolve) {
       const horario = readActiveHorario(triggerBtn) || exp.horario || '';
-      const precoLabel = exp.preco || (triggerBtn && triggerBtn.getAttribute('data-experience-preco')) || '';
+      const precoLabel = ((window.ElarahData && ElarahData.precoVigente)
+        ? ElarahData.precoVigente(exp) : exp.preco)
+        || (triggerBtn && triggerBtn.getAttribute('data-experience-preco')) || '';
       const imagem = exp.imagem && String(exp.imagem).trim() ? exp.imagem : '';
       const bairro = exp.bairro || '';
       const data = exp.data || '';
@@ -4286,6 +6474,15 @@ if (groupForm) {
       divider.style.cssText = 'height:1px;background:#f0e8de;margin:0 0 22px;';
       body.appendChild(divider);
 
+      // ===== Bloco de ESCOLHA (data/horário + variação/kit) =====
+      // Vem ANTES de "Sobre a experiência". Antes esses seletores eram
+      // anexados lá no fim do corpo (depois da descrição, includes e
+      // endereço), então a data e a escolha de kit ficavam "lá embaixo",
+      // difíceis de achar e ler. A seção de schedule e a de variação são
+      // preenchidas mais abaixo, mas ancoram AQUI no topo.
+      const pickSection = document.createElement('div');
+      body.appendChild(pickSection);
+
       // Seção "Sobre a experiência"
       const descHeader = document.createElement('div');
       descHeader.textContent = 'Sobre a experiência';
@@ -4351,7 +6548,9 @@ if (groupForm) {
       // propagada pro checkout via window.__elarahDescVariant, que o modal
       // de reserva lê pra pré-selecionar a Pessoa 1.
       var _descVariantItems = (Array.isArray(exp.variantItems) && exp.variantItems.length)
-        ? exp.variantItems
+        ? ((window.ElarahPromo && ElarahPromo.itensComDesconto)
+            ? ElarahPromo.itensComDesconto(exp.variantItems)
+            : exp.variantItems)
         : (Array.isArray(exp.variantOptions) && exp.variantOptions.length
             ? exp.variantOptions.map(function (n) { return { nome: String(n), preco: '', imagem: '' }; })
             : []);
@@ -4361,8 +6560,8 @@ if (groupForm) {
       window.__elarahDescVariant = null;
 
       var schedSection = document.createElement('div');
-      schedSection.style.cssText = 'margin-top:28px;';
-      body.appendChild(schedSection);
+      schedSection.style.cssText = 'margin-top:4px;margin-bottom:28px;';
+      pickSection.appendChild(schedSection);
 
       (async function loadSchedule() {
         var allSlots = [];
@@ -4373,9 +6572,16 @@ if (groupForm) {
         } catch (e) { /* tabela ausente */ }
 
         var now = new Date();
+        // Janela de antecedência (cutoff): não oferece data que já está
+        // dentro do prazo mínimo de compra (default 24h). Antes, o chip
+        // aparecia, o cliente clicava pra comprar e só então o backend
+        // recusava com "falta menos de 24h" — opção que não deveria existir.
+        // Mesma regra de isPubliclyVisible/booking_guard, agora por slot.
+        var cutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+        var cutoffMs = now.getTime() + cutoffH * 60 * 60 * 1000;
         var futureSlots = allSlots
           .filter(function (s) { return s.isActive !== false; })
-          .filter(function (s) { return s.eventAt && new Date(s.eventAt) >= now; })
+          .filter(function (s) { return s.eventAt && new Date(s.eventAt).getTime() >= cutoffMs; })
           .filter(function (s) {
             if (s.vagasTotal == null) return true;
             var rest = s.vagasRestantes != null ? s.vagasRestantes : s.vagasTotal;
@@ -4390,20 +6596,37 @@ if (groupForm) {
           return;
         }
 
-        // Agrupa por data (YYYY-MM-DD)
+        // Agrupa por data (YYYY-MM-DD). Componentes de dia/dia-da-semana no
+        // FUSO DE SÃO PAULO (não no do visitante) — senão turmas noturnas
+        // (event_at cruza a meia-noite UTC) mostram o dia errado fora do -03.
+        var _spParts = function (date) {
+          try {
+            var p = new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit',
+            }).formatToParts(date).reduce(function (o, x) { o[x.type] = x.value; return o; }, {});
+            var wd = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short' })
+              .format(date).replace('.', '');
+            return { key: p.year + '-' + p.month + '-' + p.day, wd: wd, dm: p.day + '/' + p.month };
+          } catch (e) {
+            return {
+              key: date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'),
+              wd: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+              dm: String(date.getDate()).padStart(2, '0') + '/' + String(date.getMonth() + 1).padStart(2, '0'),
+            };
+          }
+        };
         var byDate = {};
         var dateOrder = [];
         futureSlots.forEach(function (s) {
           var d = new Date(s.eventAt);
-          var key = d.getFullYear() + '-' +
-                    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-                    String(d.getDate()).padStart(2, '0');
+          var parts = _spParts(d);
+          var key = parts.key;
           if (!byDate[key]) {
             byDate[key] = {
               key: key,
               dt: d,
-              wd: d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
-              dm: String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+              wd: parts.wd,
+              dm: parts.dm,
               slots: [],
             };
             dateOrder.push(key);
@@ -4529,7 +6752,7 @@ if (groupForm) {
       // window.__elarahDescVariant pro checkout.
       if (_descVariantItems.length) {
         var variantSection = document.createElement('div');
-        variantSection.style.cssText = 'margin-top:28px;';
+        variantSection.style.cssText = 'margin-top:4px;margin-bottom:28px;';
         var variantHeader = document.createElement('div');
         variantHeader.textContent = _descVariantLabel;
         variantHeader.style.cssText = 'font-size:.72rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#a4663b;margin-bottom:10px;';
@@ -4568,7 +6791,9 @@ if (groupForm) {
         });
         variantSection.appendChild(variantBtnsWrap);
         variantSection.appendChild(descVariantMsg);
-        body.appendChild(variantSection);
+        // Escolha do kit/variação vai ANTES da data (pick "o quê" → "quando")
+        // e, junto com o schedule, ANTES de "Sobre a experiência".
+        pickSection.insertBefore(variantSection, pickSection.firstChild);
         // Refs pro onContinue avisar/rolar até aqui se faltar escolha.
         root.__elarahVariantMsg = descVariantMsg;
         root.__elarahVariantSection = variantSection;
@@ -5087,31 +7312,104 @@ if (groupForm) {
       let precoCentavos = parsePrecoToCents(precoLabel);
       let variantLabel = null;
       let variantOptions = [];
+      let variantItemsArr = [];
       let horariosArr = [];
+      let expCutoffHours = null;
+      let expDescricao = '', expInclui = '', expEndereco = '', expHorarioFunc = '';
+      // Preço original antes do desconto Elarah. Alimenta o "de" riscado
+      // no resumo do checkout. Null nas By Elarah (cheio == praticado).
+      let expValorCheioCentavos = null;
+      // Categoria(s) da experiência — define o prazo de remarcação sem
+      // custo exibido no checkout (bartenderia 5 dias, gastronomia 72h).
+      let expCategoria = null;
 
       if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
           const exp = await ElarahData.getExperienceById(experienceId);
           if (exp) {
+            expDescricao = exp.descricao || '';
+            expInclui = exp.inclui || '';
+            expEndereco = [exp.endereco, exp.bairro].filter(Boolean).join(' — ');
+            expHorarioFunc = (exp.horarioFuncionamento || '').trim();
+            expCutoffHours = exp.cutoffHours;
+            expValorCheioCentavos = exp.valorCheioCentavos != null
+              ? Number(exp.valorCheioCentavos)
+              : null;
+            expCategoria = exp.categoria || null;
             if (!precoLabel || !precoCentavos) {
-              precoLabel = exp.preco || precoLabel;
-              precoCentavos = parsePrecoToCents(exp.preco) || precoCentavos;
+              // Preço VIGENTE (com a promoção quando ativa) — nunca o de
+              // cadastro, senão o resumo cobraria diferente do anunciado.
+              var _vigente = (window.ElarahData && ElarahData.precoVigente)
+                ? ElarahData.precoVigente(exp) : exp.preco;
+              precoLabel = _vigente || precoLabel;
+              precoCentavos = parsePrecoToCents(_vigente) || precoCentavos;
             }
             if (Array.isArray(exp.horarios) && exp.horarios.length) {
-              horariosArr = exp.horarios.slice();
+              // Dedup textual: recorrência repete o mesmo horario_label pra
+              // cada data (ex: 9 segundas × "19h00 – 21h00"). Sem dedup, o
+              // seletor de horário do modal virava 9 botões idênticos. Só
+              // horários REALMENTE distintos viram opção.
+              var _seenH = new Set();
+              horariosArr = exp.horarios.filter(function (h) {
+                var k = String(h || '').trim();
+                if (!k || _seenH.has(k)) return false;
+                _seenH.add(k);
+                return true;
+              });
             } else if (exp.horario) {
               horariosArr = [exp.horario];
             }
             if (!horario) {
               horario = horariosArr[0] || (exp.horario || null);
             }
-            if (exp.variantLabel && Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
-              variantLabel = exp.variantLabel;
+            // Copia as opções de variação SEMPRE que houver opções —
+            // NÃO condiciona ao variantLabel estar preenchido. O rótulo é
+            // só o texto do seletor; sua ausência não pode fazer a
+            // variação sumir do checkout (a página de detalhe e o modal
+            // de descrição já usam "Escolha a sua opção" como padrão).
+            // Sem esse fallback, uma variação salva sem rótulo aparecia no
+            // detalhe mas nunca virava escolha obrigatória no pagamento.
+            if (Array.isArray(exp.variantOptions) && exp.variantOptions.length) {
+              variantLabel = exp.variantLabel || 'Escolha a sua opção';
               variantOptions = exp.variantOptions.slice();
+            }
+            // Itens ricos (nome + preço) — pra o modal cobrar o preço certo
+            // de cada opção (Individual/Dupla/Trio com valores diferentes).
+            if (Array.isArray(exp.variantItems) && exp.variantItems.length) {
+              // Cópia JÁ com o desconto da promoção nos preços das opções.
+              variantItemsArr = (window.ElarahPromo && ElarahPromo.itensComDesconto)
+                ? ElarahPromo.itensComDesconto(exp.variantItems)
+                : exp.variantItems.slice();
             }
           }
         } catch (e) {}
       }
+
+      // ===== Horários da DATA escolhida =====
+      // Para experiência gerenciada por slots, a lista abaixo substitui
+      // exp.horarios no modal: só os horários que existem NAQUELE dia,
+      // cada um com o seu slot_id.
+      let horarioSlots = [];
+      try {
+        const horarioInfo = await loadHorarioSlotsForDate(experienceId, scheduleSel, expCutoffHours);
+        if (horarioInfo.slotManaged) {
+          horarioSlots = horarioInfo.options;
+          horariosArr = horarioSlots.map(function (o) { return o.horario; });
+          // Se o horário que veio de fora não é um dos da data (ou não
+          // veio nenhum), assume a primeira turma aberta do dia — e leva
+          // junto o slot dela, pra rótulo e slot_id nunca discordarem.
+          if (horarioSlots.length && (!horario || horariosArr.indexOf(horario) === -1)) {
+            var firstOpen = horarioSlots.filter(function (o) { return !o.soldOut; })[0] || horarioSlots[0];
+            horario = firstOpen.horario;
+            scheduleSel.slotId = firstOpen.slotId;
+            scheduleSel.data = firstOpen.data;
+            scheduleSel.dataLabel = firstOpen.dataLabel;
+          }
+          // Data não resolvida (options vazio): não oferecemos troca.
+          // O horário escolhido fora do modal é o único confiável.
+        }
+      } catch (e) {}
+
       if (!precoCentavos) {
         // Fallback: deixa o backend dizer. Sem cupom faz sentido nesse caso.
         precoCentavos = 0;
@@ -5144,9 +7442,20 @@ if (groupForm) {
         experienceId: experienceId,
         experienceNome: experienceNome,
         horario: horario,
-        // Lista completa de horários — se > 1, modal renderiza seletor
-        // pra usuário trocar antes de confirmar.
+        // Info completa dentro do checkout (voucher): descrição, inclui,
+        // onde acontece, horário de funcionamento e aviso — tudo numa tela
+        // só, sem a tela de descrição separada.
+        showFullInfo: !!expHorarioFunc,
+        descricao: expDescricao,
+        inclui: expInclui,
+        endereco: expEndereco,
+        horarioFuncionamento: expHorarioFunc,
+        // Lista de horários — se > 1, modal renderiza seletor pra usuário
+        // trocar antes de confirmar.
         horarios: horariosArr,
+        // Horários da data escolhida, com slot_id em cada um. É essa lista
+        // que o modal usa quando a experiência é gerenciada por slots.
+        horarioSlots: horarioSlots,
         // Data + slot vindo da nova UI de chips de data (experiencia.html).
         // Em página de card (home/categoria) virão null — backend faz
         // fallback pra busca por (exp_id, horario) como antes.
@@ -5155,6 +7464,8 @@ if (groupForm) {
         slotId: scheduleSel.slotId || null,
         precoLabel: precoLabel,
         precoCentavos: precoCentavos,
+        valorCheioCentavos: expValorCheioCentavos,
+        categoria: expCategoria,
         // [PR F] modo guest — modal mostra campo email e cria conta no submit
         isGuest: isGuestMode,
         email: auth.email,
@@ -5164,6 +7475,8 @@ if (groupForm) {
         // Variantes (escolha extra). Vazio = sem seletor no modal.
         variantLabel: variantLabel,
         variantOptions: variantOptions,
+        // Itens com preço por opção — o modal cobra o preço da escolhida.
+        variantItems: variantItemsArr,
       });
     }
 
@@ -5200,6 +7513,27 @@ if (groupForm) {
     // a intenção salva em sessionStorage e relançamos o startCheckout
     // automaticamente, encontrando o botão correspondente na página.
     function resumePendingCheckout() {
+      // ===== NUNCA REMONTAR POR CIMA DE UM CHECKOUT ABERTO =====
+      // Esta função é disparada por DOIS gatilhos que não têm nada a ver
+      // com a pessoa ter acabado de logar:
+      //   * onAuthStateChange('SIGNED_IN') — o Supabase emite isso também
+      //     em refresh de token e em restauração de sessão, ou seja, no
+      //     meio de um checkout que já está aberto;
+      //   * um timer 600ms depois do load, se já houver sessão.
+      // Sem esta guarda, ela chamava startCheckout() de novo e o
+      // openReservationModal remontava o modal por cima do formulário já
+      // preenchido. Foi assim que uma reserva de 2 pessoas virou 1: o ctx
+      // era substituído, a tela continuava mostrando 2, e a cobrança saía
+      // por 1.
+      //
+      // Se o modal já está aberto, a intenção de compra JÁ está sendo
+      // atendida — a pendência perdeu o sentido e é descartada.
+      if (isReservationModalOpen()) {
+        console.warn('[Elarah checkout] retomada ignorada: o checkout já está aberto na tela');
+        try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {}
+        return;
+      }
+
       let pending = null;
       try {
         const raw = sessionStorage.getItem(PENDING_KEY);
