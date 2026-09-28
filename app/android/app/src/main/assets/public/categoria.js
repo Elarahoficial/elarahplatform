@@ -83,22 +83,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const catMap = new Map();
   experiences.forEach(exp => {
     if (!exp || !exp.categoria) return;
-    // Uma experiência pode estar em mais de uma aba (ex.: "Barismo |
-    // Bartenderia") — cada categoria vira uma opção separada no filtro.
-    const cats = (window.ElarahData && ElarahData.categoriasOf)
-      ? ElarahData.categoriasOf(exp)
-      : [String(exp.categoria).trim()];
-    cats.forEach(c => {
-      if (!c) return;
-      const k = c.toLowerCase();
-      // "Kit em casa" não entra na navegação de categorias — acessível
-      // só pelo link "Elarah em Casa" no topo do header.
-      if (k === 'kit em casa') return;
-      if (!catSet.has(k)) {
-        catSet.add(k);
-        catMap.set(k, c);
-      }
-    });
+    const c = String(exp.categoria).trim();
+    if (!c) return;
+    const k = c.toLowerCase();
+    // "Kit em casa" não entra na navegação de categorias — acessível
+    // só pelo link "Elarah em Casa" no topo do header.
+    if (k === 'kit em casa') return;
+    if (!catSet.has(k)) {
+      catSet.add(k);
+      catMap.set(k, c);
+    }
   });
   const categoriasDinamicas = Array.from(catMap.values()).sort(
     (a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' })
@@ -185,30 +179,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   //  categoria). Idêntico ao card original — não muda
   //  nada no data-reserve, card__favorite etc.
   // =================================================
-  // Preço que a cliente paga hoje: o vigente (com a promoção sazonal
-  // quando ela está no ar) e nunca o preço de cadastro.
-  function precoVigenteDe(exp) {
-    return (window.ElarahData && ElarahData.precoVigente)
-      ? ElarahData.precoVigente(exp)
-      : ((exp && exp.preco) || '');
-  }
-
   function createCardEl(exp) {
     const colors = (exp.cor || '#f6d5a8,#f0a05e').split(',');
     const card = document.createElement('article');
     card.className = 'card';
 
-    // Prioriza os horários REAIS das turmas (slots), incluindo os da
-    // recorrência — assim experiências com o campo "Horários" vazio (que
-    // gerenciam horário só pela recorrência) também mostram os botões.
-    const _slotHorarios = (typeof ElarahData !== 'undefined' && ElarahData.distinctSlotHorarios)
-      ? ElarahData.distinctSlotHorarios(exp._slots || [], Date.now())
-      : [];
-    const horariosRaw = _slotHorarios.length
-      ? _slotHorarios
-      : (Array.isArray(exp.horarios) && exp.horarios.length
-          ? exp.horarios
-          : (exp.horario ? [exp.horario] : []));
+    const horariosRaw = Array.isArray(exp.horarios) && exp.horarios.length
+      ? exp.horarios
+      : (exp.horario ? [exp.horario] : []);
     // Dedup textual — recorrência popula horarios com 1 entrada por
     // slot/data (8 datas × 2 horários = 16 entradas). Sem dedup, card
     // mostra 16 chips idênticos.
@@ -247,7 +225,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       'perfumaria':  'assets/perfumaria.jpg',
       'ceramica':    'assets/ceramica-fria.jpg',
       'tufting':     'assets/tufting1.jpg',
-      'tufting & punch': 'assets/tufting1.jpg',
       'pintura':     'assets/pinturataca.jpg',
       'vela':        'assets/velaaromatica.jpg',
       'gastronomia': 'assets/cookies.jpg',
@@ -262,7 +239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     const placeholderHtml = `<div class="card__image-placeholder" style="background: linear-gradient(135deg, ${colors[0]}, ${colors[1]});"><span>${exp.categoria || ''}</span></div>`;
     const primaryImg = normalizeImg(exp.imagem);
-    const catFallback = ""; /* fotos genericas de categoria desativadas: mostra placeholder neutro ate a foto real carregar */
+    const catFallback = defaultImgForCategory(exp.categoria);
     const imgSrc = primaryImg || catFallback;
     const imageContent = imgSrc
       ? `<img src="${imgSrc}" alt="${exp.nome}" class="card__image-photo" loading="lazy" ` +
@@ -341,7 +318,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${scarcePill}
       </div>
       <div class="card__body">
-        <span class="card__category">${(window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : (exp.categoria || '')}</span>
+        <span class="card__category">${exp.categoria || ''}</span>
         <h3 class="card__title"><a href="experiencia.html?id=${encodeURIComponent(exp.id || '')}" class="card__title-link">${exp.nome || ''}</a></h3>
         <div class="card__details">
           <p class="card__detail">
@@ -364,8 +341,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           </p>
         </div>
         <div class="card__footer">
-          <p class="card__price">${(window.ElarahData && ElarahData.precoDeHTML ? ElarahData.precoDeHTML(exp) : '')}<strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(precoVigenteDe(exp) || '') : (precoVigenteDe(exp) || ''))}</strong></p>
-          ${/\d/.test(String(exp.preco || '')) ? '<p class="card__installments" style="margin:-6px 0 8px;font-size:.72rem;color:#8a7a68;line-height:1.2;">ou até <strong>12x</strong> no cartão</p>' : ''}
+          <p class="card__price"><strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco || '') : (exp.preco || ''))}</strong></p>
           <button type="button" class="card__reserve-btn"
             data-reserve
             data-experience-id="${exp.id || ''}"
@@ -428,20 +404,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const order = [];
     list.forEach(function (exp) {
       if (!exp) return;
-      // Uma experiência em duas abas (ex.: "Barismo | Bartenderia")
-      // aparece nas DUAS seções de categoria.
-      var cats = (window.ElarahData && ElarahData.categoriasOf)
-        ? ElarahData.categoriasOf(exp)
-        : (exp.categoria == null ? [] : [String(exp.categoria).trim()]);
-      cats = cats.filter(Boolean);
-      if (!cats.length) cats = ['Outros'];
-      cats.forEach(function (cat) {
-        if (!map.has(cat)) {
-          order.push(cat);
-          map.set(cat, []);
-        }
-        map.get(cat).push(exp);
-      });
+      let cat = exp.categoria;
+      if (cat == null || String(cat).trim() === '') {
+        cat = 'Outros';
+      } else {
+        cat = String(cat).trim();
+      }
+      if (!map.has(cat)) {
+        order.push(cat);
+        map.set(cat, []);
+      }
+      map.get(cat).push(exp);
     });
     // Ordena por popularidade (desc), com "Outros" sempre no fim.
     const groups = order.map(function (cat) {
@@ -474,17 +447,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       return true;
     });
 
-    // Ordem CRONOLÓGICA: a próxima experiência a acontecer aparece
-    // primeiro (proxima ocorrencia futura, futureDates[0]). Empate no
-    // mesmo horário cai na ordem manual do admin. Sem data futura
-    // conhecida vai pro fim.
+    // Ordem manual do admin primeiro (quem foi arrastado pra cima vem
+    // antes); empate/sem ordem cai no cronológico pela proxima ocorrencia
+    // (futureDates[0]). Sem data futura conhecida vai pro fim.
     base.sort(function (a, b) {
-      var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
-      var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
-      if (ta !== tb) return ta - tb;
       var oa = (typeof ElarahData !== 'undefined' && ElarahData.ordemKey) ? ElarahData.ordemKey(a) : Infinity;
       var ob = (typeof ElarahData !== 'undefined' && ElarahData.ordemKey) ? ElarahData.ordemKey(b) : Infinity;
-      return oa - ob;
+      if (oa !== ob) return oa - ob;
+      var ta = (a._futureDates && a._futureDates.length) ? a._futureDates[0] : Infinity;
+      var tb = (b._futureDates && b._futureDates.length) ? b._futureDates[0] : Infinity;
+      return ta - tb;
     });
 
     grid.innerHTML = '';
@@ -509,12 +481,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       };
       const targetNorm = norm(activeCategoria);
       const filtered = base.filter(function (exp) {
-        // Uma experiência em duas abas ("Barismo | Bartenderia") casa se
-        // QUALQUER uma das suas categorias bater com a aba aberta.
-        var cats = (window.ElarahData && ElarahData.categoriasOf)
-          ? ElarahData.categoriasOf(exp)
-          : [exp.categoria];
-        return cats.some(function (c) { return norm(c) === targetNorm; });
+        return norm(exp.categoria) === targetNorm;
       });
       grid.style.display = '';
       emptyEl.style.display = filtered.length === 0 ? 'block' : 'none';

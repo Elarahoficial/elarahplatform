@@ -52,11 +52,9 @@
       ? '<img src="' + esc(e.imagem) + '" alt="' + esc(e.nome) + '" loading="lazy">'
       : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#7a9a6e;font-family:\'DM Serif Display\',serif;font-size:2rem;">✿</div>';
 
-    var _precoVig = (window.ElarahData && typeof window.ElarahData.precoVigente === 'function')
-      ? window.ElarahData.precoVigente(e) : e.preco;
-    var preco = _precoVig
+    var preco = e.preco
       ? esc(window.ElarahData && typeof window.ElarahData.formatPrecoBR === 'function'
-          ? window.ElarahData.formatPrecoBR(_precoVig) : _precoVig)
+          ? window.ElarahData.formatPrecoBR(e.preco) : e.preco)
       : '';
     var bairro = e.bairro ? esc(e.bairro) : '';
     var data = e.data ? esc(e.data) : '';

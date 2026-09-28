@@ -31,14 +31,13 @@
     .msg--info{background:#fff3e3;color:#9a6a30;display:block;}
     a{color:#b9764f;font-weight:600;}
   </style>
-  <script>(function(){var t=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href="assets/app-skin.css?t="+t;document.head.appendChild(l);var s=document.createElement("script");s.src="assets/app-skin.js?t="+t;s.defer=true;document.head.appendChild(s);})();</script>
 </head>
 <body>
   <div class="card">
     <img src="assets/logo.png" alt="Elarah" class="logo">
     <h1>Conectar o frete dos Correios</h1>
     <p class="sub">
-      Liga a sua conta do <b>Melhor Envio</b> aos Kits Elarah. Depois disso, o
+      Liga a sua conta do <b>Melhor Envio</b> à Elarah em Casa. Depois disso, o
       site calcula e cobra o frete real dos Correios (PAC/SEDEX) automaticamente
       no checkout dos kits.
     </p>
@@ -57,7 +56,6 @@
     <div class="msg" id="msg"></div>
   </div>
 
-<script src="promo.js?v=6"></script>
   <script src="supabase-loader.js?v=11"></script>
   <script src="supabase-client.js?v=12"></script>
   <script>
@@ -75,7 +73,7 @@
     (function showReturnState() {
       var p = new URLSearchParams(location.search);
       if (p.get('frete_conectado') === '1') {
-        setMsg('✅ <b>Frete conectado!</b> Os Kits Elarah já mostram o preço ' +
+        setMsg('✅ <b>Frete conectado!</b> A Elarah em Casa já mostra o preço ' +
           'real dos Correios automaticamente. Pode fechar esta página.', 'ok');
       } else if (p.get('frete_conectado') === '0') {
         setMsg('⚠️ Não deu certo: ' + (p.get('frete_erro') || 'erro desconhecido') +

@@ -25,33 +25,16 @@
       .normalize('NFD').replace(/[̀-ͯ]/g, ''); // remove acentos
   }
 
-  // Kit é produto enviado: NUNCA tem agenda presencial (data + horário
-  // marcados, ou slot com event_at). Se tem, é experiência presencial —
-  // ex.: "Café Bom & em Casa" (aula de barismo, 15/08 14h-17h30). Sinal
-  // mais forte que qualquer heurística de texto: vale mesmo se a
-  // categoria tiver "em casa".
-  function temAgenda(exp) {
-    if (!exp) return false;
-    if (exp.event_at) return true;
-    var temData = exp.data && String(exp.data).trim() !== '';
-    var temHora = (exp.horario && String(exp.horario).trim() !== '')
-      || (exp.horarios && exp.horarios.length > 0);
-    return !!(temData && temHora);
-  }
-
-  // Casa "kit", "diy", "faça você mesmo" (no nome OU categoria). Já
-  // "em casa" conta SÓ na categoria — mesma regra do isHomeKit em
-  // experiences-data.js (fonte única de verdade). Senão um nome como
-  // "Café Bom & em Casa" (aula presencial de barismo) entraria aqui por
-  // engano só por ter "em casa" no nome. A categoria é quem decide.
+  // Casa "kit", "diy", "faça você mesmo", "em casa"
+  // "em casa" exige palavra inteira (\b) — senão "Bem Casado" (b-em-casa-do)
+  // cai aqui por engano e não há como tirar pelo admin.
   function isCasaKit(exp) {
     if (!exp) return false;
-    if (temAgenda(exp)) return false; // presencial nunca é kit
     var hay = norm((exp.nome || '') + ' ' + (exp.categoria || ''));
-    if (hay.indexOf('kit') !== -1
+    return hay.indexOf('kit') !== -1
         || hay.indexOf('diy') !== -1
-        || hay.indexOf('faca voce mesmo') !== -1) return true;
-    return /\bem casa\b/.test(norm(exp.categoria || '')); // palavra inteira (não "Bem Casado")
+        || hay.indexOf('faca voce mesmo') !== -1
+        || /\bem casa\b/.test(hay);
   }
 
   // Mapa de palavras-chave por tipo/coleção pros filtros do cliente.
@@ -79,7 +62,7 @@
           esc(custom && custom.title ? custom.title : 'Chegando em casa') + '</h3>' +
         '<p style="color:#6a584a;font-size:.95rem;max-width:440px;margin:0 auto;line-height:1.55;">' +
           (custom && custom.text ? esc(custom.text) :
-            'Os Kits Elarah estão sendo finalizados com todo o carinho. Enquanto isso, ') +
+            'Os kits Elarah em Casa estão sendo finalizados com todo o carinho. Enquanto isso, ') +
           (custom && custom.text ? '' :
             '<a href="categoria.html" style="color:#b9764f;font-weight:600;text-decoration:underline;">explore as experiências presenciais</a>.') +
         '</p>' +
@@ -100,13 +83,11 @@
       ? '<img src="' + esc(e.imagem) + '" alt="' + esc(e.nome) + '" loading="lazy">'
       : '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#b9764f;font-family:\'DM Serif Display\',serif;font-size:2rem;">🕯️</div>';
 
-    var _precoVig = (window.ElarahData && typeof window.ElarahData.precoVigente === 'function')
-      ? window.ElarahData.precoVigente(e) : e.preco;
-    var preco = _precoVig
+    var preco = e.preco
       ? esc(window.ElarahData && typeof window.ElarahData.formatPrecoBR === 'function'
-          ? window.ElarahData.formatPrecoBR(_precoVig) : _precoVig)
+          ? window.ElarahData.formatPrecoBR(e.preco) : e.preco)
       : '';
-    var titulo = String(e.nome || '').trim() || 'Kit Elarah';
+    var titulo = String(e.nome || '').trim() || 'Kit Elarah em Casa';
 
     var descTrunc = '';
     if (e.descricao) {

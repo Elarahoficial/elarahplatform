@@ -166,10 +166,6 @@ Exemplo, experiência de R$ 180: 1 pessoa paga **R$ 162**; 3 pessoas pagam
 - Como o desconto geral, sai inteiro da comissão da Elarah (o repasse ao
   fornecedor não muda).
 
-Vale no site **e no app** (iOS/Android): o bundle `app/www` foi
-ressincronizado com o site, e o `copy-web` agora traz os scripts novos que as
-páginas pedem (antes `promo.js` e outros ficavam de fora do app).
-
 Onde vive: `precoFinalCentavos()` em `_shared/promo.ts` (servidor, é quem
 cobra) e `ElarahPromo.carrinhoCentavos()` em `promo.js` (tela). Os
 percentuais são as constantes `DESCONTO_CARRINHO_*` / `CARRINHO_*` nos dois

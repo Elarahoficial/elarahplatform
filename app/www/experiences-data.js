@@ -47,30 +47,7 @@
     // Ordem manual de exibição (admin arrasta pra reordenar). null =
     // sem ordem definida → cai no fim, mantendo o sort cronológico
     // padrão. sql/elarah_experiences_ordem.sql.
-    'ordem',
-    // Campanha / data especial (slug: "dia-dos-pais", "dia-das-maes"…).
-    // Marca a experiência para aparecer na aba temática correspondente.
-    // null/'' = não entra em nenhuma campanha. sql/elarah_experiences_campanha.sql.
-    'campanha',
-    // Foto exclusiva da campanha. Quando preenchida, é usada SÓ na aba
-    // da campanha (a imagem oficial continua no resto do site).
-    'campanha_imagem',
-    // Posição manual dentro da página da campanha (1 = primeira).
-    // null = sem ordem definida → cai no fim, mantendo o sort padrão
-    // da página. sql/elarah_experiences_campanha_ordem.sql.
-    'campanha_ordem',
-    // Horário de funcionamento (agendamento livre / voucher). Quando
-    // preenchido, a página da experiência mostra esse horário e deixa o
-    // cliente escolher o dia e a hora que quiser. sql/elarah_experiences_horario_funcionamento.sql.
-    'horario_funcionamento',
-    // Arquivada pelo admin: some da lista do painel e do site, sem
-    // apagar a ficha nem quebrar os vínculos de contabilidade.
-    // sql/elarah_experiences_arquivada.sql.
-    'arquivada',
-    // Instruções enviadas por WhatsApp logo após a compra (cadastro do
-    // parceiro, sala, link). Vazio = não envia nada.
-    // sql/elarah_experiences_instrucoes_pos_compra.sql.
-    'instrucoes_pos_compra'
+    'ordem'
   ]);
 
   // ---------- FALLBACK SEEDS (usados quando o banco está
@@ -78,12 +55,12 @@
   const FALLBACK_SEEDS = [
     { id:"seed_022", nome:"Vela (Cerveja & Caipirinha)", categoria:"Vela", data:"12/04", duracao:"1h30", bairro:"Brooklin", endereco:"Rua Nova York, 345 – São Paulo", inclui:"Coffee break + petisco + cerveja", preco:"R$180", cor:"#f6e6a8,#e0c05e", imagem:"assets/experiences/vela-cerveja.jpg", descricao:"", horario:"10h30 – 12h00", horarios:["10h30 – 12h00"] },
     { id:"seed_023", nome:"Pintura em Cerâmica", categoria:"Pintura", data:"12/04", duracao:"3h", bairro:"Pinheiros", endereco:"Rua Capote Valente, 697 – São Paulo", inclui:"Materiais inclusos", preco:"R$360", cor:"#f9d1d1,#e07a7a", imagem:"assets/experiences/pintura-ceramica.jpg", descricao:"", horario:"15h00 – 18h00", horarios:["15h00 – 18h00"] },
-    { id:"seed_024", nome:"Aula de Tufting (Seg)", categoria:"Tufting & Punch", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/experiences/tufting.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios. Desde escolher cores e montar o design até finalizar os acabamentos.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nVocê vai aprender:\nComo usar a pistola de tufting com confiança\nComposição de cores e texturas\nDicas pra continuar criando em casa\n\nPerfeito pra quem quer desligar do digital e viver um momento criativo de verdade, saindo com uma peça única e cheia de personalidade.", horario:"19h00 – 21h00", horarios:["19h00 – 21h00"] },
-    { id:"seed_025", nome:"Aula de Tufting (Seg)", categoria:"Tufting & Punch", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting1.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior e mais elaborada\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado com pausas pra conversar e ver o trabalho ganhar forma.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional\n\nVocê sai com uma peça maior, mais trabalhada e pronta pra decorar a sua casa ou presentear alguém especial.", horario:"09h00 – 12h00", horarios:["09h00 – 12h00"] },
-    { id:"seed_026", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting & Punch", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting2.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nVocê vai aprender:\nComo usar a pistola de tufting com confiança\nComposição de cores e texturas\nDicas pra continuar criando em casa\n\nPerfeito pra quem quer desligar do digital e viver um momento criativo de verdade.", horario:"17h15 – 19h15", horarios:["17h15 – 19h15"] },
-    { id:"seed_027", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting & Punch", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting3.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nPerfeito pra quem quer viver uma experiência offline de verdade e sair com algo feito pelas próprias mãos.", horario:"19h30 – 21h30", horarios:["19h30 – 21h30"] },
-    { id:"seed_028", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting & Punch", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting4.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado com pausas pra conversar e ver o trabalho ganhar forma.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional\n\nVocê sai com uma peça maior, mais trabalhada e pronta pra decorar sua casa.", horario:"09h00 – 12h00", horarios:["09h00 – 12h00"] },
-    { id:"seed_029", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting & Punch", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting5.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional", horario:"14h00 – 17h00", horarios:["14h00 – 17h00"] },
+    { id:"seed_024", nome:"Aula de Tufting (Seg)", categoria:"Tufting", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/experiences/tufting.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios. Desde escolher cores e montar o design até finalizar os acabamentos.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nVocê vai aprender:\nComo usar a pistola de tufting com confiança\nComposição de cores e texturas\nDicas pra continuar criando em casa\n\nPerfeito pra quem quer desligar do digital e viver um momento criativo de verdade, saindo com uma peça única e cheia de personalidade.", horario:"19h00 – 21h00", horarios:["19h00 – 21h00"] },
+    { id:"seed_025", nome:"Aula de Tufting (Seg)", categoria:"Tufting", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting1.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior e mais elaborada\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado com pausas pra conversar e ver o trabalho ganhar forma.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional\n\nVocê sai com uma peça maior, mais trabalhada e pronta pra decorar a sua casa ou presentear alguém especial.", horario:"09h00 – 12h00", horarios:["09h00 – 12h00"] },
+    { id:"seed_026", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting2.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nVocê vai aprender:\nComo usar a pistola de tufting com confiança\nComposição de cores e texturas\nDicas pra continuar criando em casa\n\nPerfeito pra quem quer desligar do digital e viver um momento criativo de verdade.", horario:"17h15 – 19h15", horarios:["17h15 – 19h15"] },
+    { id:"seed_027", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting", data:"Semanal", duracao:"2h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$162", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting3.jpg", descricao:"Tufting: crie sua própria peça decorativa do zero\n\nUma experiência manual, criativa e super relaxante pra quem quer aprender uma técnica nova e sair com uma peça feita pelas próprias mãos.\n\nNesta aula, você descobre o tufting — técnica de criação de tapetes e peças decorativas usando uma pistola especial — e aprende, passo a passo, a transformar um desenho em um tapete ou quadro de fios.\n\nConteúdo da experiência:\nIntrodução ao tufting: materiais, pistola e segurança\nEscolha de desenho e paleta de cores\nTécnica de aplicação: tufting loop e cut pile\nFinalização: corte, acabamento e colagem\n\nPerfeito pra quem quer viver uma experiência offline de verdade e sair com algo feito pelas próprias mãos.", horario:"19h30 – 21h30", horarios:["19h30 – 21h30"] },
+    { id:"seed_028", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting4.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado com pausas pra conversar e ver o trabalho ganhar forma.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional\n\nVocê sai com uma peça maior, mais trabalhada e pronta pra decorar sua casa.", horario:"09h00 – 12h00", horarios:["09h00 – 12h00"] },
+    { id:"seed_029", nome:"Aula de Tufting (Ter/Qui/Sex)", categoria:"Tufting", data:"Semanal", duracao:"3h", bairro:"Itaim", endereco:"Av. Brigadeiro Faria Lima, 1572 - São Paulo", inclui:"Experiência completa", preco:"R$243", cor:"#c5d4e7,#6991b3", imagem:"assets/tufting5.jpg", descricao:"Tufting estendido: 3h pra criar uma peça maior\n\nVersão estendida da nossa aula de tufting. Com 3 horas, você tem tempo pra explorar a técnica com calma e produzir uma peça de tamanho maior ou com desenho mais complexo.\n\nIdeal pra quem já curtiu a ideia e quer se dedicar num projeto mais ambicioso, ou pra quem prefere um ritmo mais relaxado.\n\nConteúdo:\nIntrodução completa ao tufting\nDesenho personalizado e escolha de cores\nExecução com acompanhamento individual\nFinalização e acabamento profissional", horario:"14h00 – 17h00", horarios:["14h00 – 17h00"] },
     { id:"exp_1775835623993_b1di8r", nome:"Oficina de Bolsa de Crochê", categoria:"Macramê", data:"25/04", duracao:"3h30", bairro:"Brooklin", endereco:"Rua Nova York, 345", inclui:"Todo material incluso", preco:"R$144", cor:"#f6d5a8,#f0a05e", imagem:"assets/croche.jpg", descricao:"Aprenda a criar sua própria bolsa de crochê do zero em uma experiência prática, criativa e super relaxante!\n\nNesta aula, você vai descobrir os fundamentos do crochê, desde os pontos básicos até a construção completa da peça, com acompanhamento passo a passo, mesmo que nunca tenha feito nada antes. Ao longo do workshop, você escolhe cores, aprende técnicas de acabamento e vê sua bolsa ganhar forma nas suas mãos.\n\nMais do que uma aula, é um momento para desacelerar, se desconectar do digital e criar algo único, feito por você.\n\nVocê sai com:\n– Sua própria bolsa de crochê (em produção ou finalizada)\n– Conhecimento para continuar criando depois\n– Um momento leve, criativo e diferente do óbvio\n\nPerfeito para quem quer aprender algo novo, explorar a criatividade ou simplesmente viver uma experiência offline de verdade.", horario:"10h30 - 14h00", horarios:["10h30 - 14h00"] },
     { id:"exp_1775836324375_k01u01", nome:"Cerâmica em Torno", categoria:"Cerâmica", data:"15/04", duracao:"1h30", bairro:"Pinheiros", endereco:"Rua Capote Valente, 697", inclui:"Todo material incluso", preco:"R$248", cor:"#f6d5a8,#f0a05e", imagem:"assets/torno.jpg", descricao:"Descubra a sensação única de criar com as próprias mãos no seu primeiro contato com o torno de cerâmica!\n\nNesta experiência, você vai aprender os fundamentos do torno: desde a centralização da argila até a modelagem das primeiras peças, com orientação passo a passo, mesmo sem nenhuma experiência prévia. É aquele momento em que tudo desacelera e você entra no ritmo do giro, da matéria e da criação.\n\nAqui, o processo é tão especial quanto o resultado: sentir a argila tomando forma entre as mãos, testar, errar, tentar de novo… e se surpreender com o que é capaz de criar.\n\nVocê vai:\n– Aprender a usar o torno desde o zero\n– Criar suas primeiras peças em cerâmica\n– Entender o básico de modelagem e acabamento\n\nUma experiência perfeita para sair do automático, se desconectar do barulho lá fora e viver algo completamente novo: com as mãos na argila e a mente leve.", horario:"19h30 - 21h00", horarios:["19h30 - 21h00"] },
     { id:"exp_1775836484792_e0yojh", nome:"Cerâmica em Torno", categoria:"Cerâmica", data:"18/04", duracao:"1h30", bairro:"Pinheiros", endereco:"Rua Capote Valente, 697", inclui:"Todo material incluso", preco:"R$248", cor:"#f6d5a8,#f0a05e", imagem:"assets/torno2.jpg", descricao:"Descubra a sensação única de criar com as próprias mãos no seu primeiro contato com o torno de cerâmica!\n\nNesta experiência, você vai aprender os fundamentos do torno: desde a centralização da argila até a modelagem das primeiras peças, com orientação passo a passo, mesmo sem nenhuma experiência prévia. É aquele momento em que tudo desacelera e você entra no ritmo do giro, da matéria e da criação.\n\nAqui, o processo é tão especial quanto o resultado: sentir a argila tomando forma entre as mãos, testar, errar, tentar de novo… e se surpreender com o que é capaz de criar.\n\nVocê vai:\n– Aprender a usar o torno desde o zero\n– Criar suas primeiras peças em cerâmica\n– Entender o básico de modelagem e acabamento\n\nUma experiência perfeita para sair do automático, se desconectar do barulho lá fora e viver algo completamente novo: com as mãos na argila e a mente leve.", horario:"10h00 - 11h30", horarios:["10h00 - 11h30"] },
@@ -152,30 +129,14 @@
       vagasTotal: row.vagas_total != null ? Number(row.vagas_total) : null,
       vagasRestantes: row.vagas_restantes != null ? Number(row.vagas_restantes) : null,
       eventAt: row.event_at || null,
-      // null = sem exceção; quem manda é o padrão da categoria
-      // (ver effectiveCutoffHours). Um número aqui é exceção explícita
-      // cadastrada no admin pra ESTA experiência.
-      cutoffHours: row.cutoff_hours != null ? Number(row.cutoff_hours) : null,
+      cutoffHours: row.cutoff_hours != null ? Number(row.cutoff_hours) : 24,
       // Visibilidade (oculta/mostra no site sem excluir).
       // Só `false` explícito esconde. Default true pra retrocompat com
       // bancos antigos sem a coluna ou com null.
       isActive: row.is_active === false ? false : true,
-      // Arquivada: a ficha continua no banco (e ligada a despesas,
-      // vendas e reservas), mas sai da lista do admin e do site.
-      // Default false pra bancos que ainda não rodaram a migração.
-      arquivada: row.arquivada === true,
       // Ordem manual de exibição (admin arrasta pra reordenar). null =
       // sem ordem → sort cronológico padrão. sql/elarah_experiences_ordem.sql.
       ordem: (row.ordem == null || row.ordem === '') ? null : Number(row.ordem),
-      // Ordem manual DENTRO da faixa By Elarah / Elarah Originals — é
-      // uma coluna separada de `ordem` (que é a ordem global do site),
-      // pra que arrastar os cards na aba By Elarah do admin não mexa na
-      // posição da experiência nas categorias. null = sem ordem → vai
-      // pro fim da faixa. sql/elarah_experiences_byelarah_ordem.sql.
-      byelarahOrdem: (function () {
-        var n = Number(row.byelarah_ordem);
-        return Number.isFinite(n) && n > 0 ? n : null;
-      })(),
       // --- fornecedor (legado: 1 fornecedor + percentual_repasse) ---
       // Mantido pra retrocompat. O modelo novo é experience_suppliers
       // (1:N) carregado via getSuppliersForExperience.
@@ -202,21 +163,6 @@
       isElarahOriginal: row.is_elarah_original === true,
       hideFromCategorias: row.hide_from_categorias === true,
       ctaMode: row.cta_mode === 'waitlist' ? 'waitlist' : 'buy',
-      // Campanha / data especial (slug). '' ou null = nenhuma.
-      // sql/elarah_experiences_campanha.sql.
-      campanha: (row.campanha == null || row.campanha === '') ? null : String(row.campanha).trim().toLowerCase(),
-      // Foto exclusiva da campanha ('' = usa a imagem oficial).
-      campanhaImagem: row.campanha_imagem || '',
-      // Posição na página da campanha (1 = primeira). null = sem ordem.
-      campanhaOrdem: (function () {
-        var n = Number(row.campanha_ordem);
-        return Number.isFinite(n) && n > 0 ? n : null;
-      })(),
-      // Horário de funcionamento (agendamento livre). '' = agenda normal.
-      horarioFuncionamento: row.horario_funcionamento || '',
-      // O que a cliente precisa fazer depois de comprar (vai por WhatsApp
-      // automaticamente). sql/elarah_experiences_instrucoes_pos_compra.sql.
-      instrucoesPosCompra: row.instrucoes_pos_compra || '',
       // --- Variantes (escolha extra do cliente) ---
       // Exemplo: Pintura com Cristal & Aperol → label="Modelo do quadro",
       // options=["Lagosta","Beijo","Olho grego"]. Quando label vazio,
@@ -287,11 +233,8 @@
     const rawEventAt = exp.eventAt != null ? exp.eventAt : exp.event_at;
     const eventAt = rawEventAt && String(rawEventAt).trim() ? String(rawEventAt).trim() : null;
 
-    // Campo vazio no admin = null = padrão da categoria. Antes virava
-    // 24 na marra, o que tornava impossível distinguir "não configurei"
-    // de "quero 24h mesmo".
     const rawCutoff = exp.cutoffHours != null ? exp.cutoffHours : exp.cutoff_hours;
-    const cutoffHours = rawCutoff === '' || rawCutoff == null ? null : Number(rawCutoff);
+    const cutoffHours = rawCutoff === '' || rawCutoff == null ? 24 : Number(rawCutoff);
 
     // Visibilidade: aceita isActive (camelCase) ou is_active (snake_case).
     // Só false explícito oculta — qualquer outra coisa mantém true.
@@ -316,7 +259,7 @@
       horarios: horarios,
       vagas_total: Number.isFinite(vagasTotal) && vagasTotal >= 0 ? vagasTotal : null,
       event_at: eventAt,
-      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : null,
+      cutoff_hours: Number.isFinite(cutoffHours) ? cutoffHours : 24,
       is_active: isActive,
       // Ordem manual (admin). Aceita number ou string numérica; vazio/inválido = null.
       ordem: (function () {
@@ -367,41 +310,6 @@
       cta_mode: (function () {
         var raw = exp.ctaMode != null ? exp.ctaMode : exp.cta_mode;
         return raw === 'waitlist' ? 'waitlist' : 'buy';
-      })(),
-      // Campanha / data especial (slug). Vazio → null (sem campanha).
-      campanha: (function () {
-        var raw = exp.campanha != null ? exp.campanha : exp.campanha_;
-        if (raw == null) return null;
-        var s = String(raw).trim().toLowerCase();
-        return s ? s : null;
-      })(),
-      // Posição na página da campanha. Vazio/0 → null (ordem automática).
-      campanha_ordem: (function () {
-        var raw = exp.campanhaOrdem != null ? exp.campanhaOrdem : exp.campanha_ordem;
-        if (raw == null || raw === '') return null;
-        var n = Number(raw);
-        return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
-      })(),
-      // Foto exclusiva da campanha. Vazio → null (usa a imagem oficial).
-      campanha_imagem: (function () {
-        var raw = exp.campanhaImagem != null ? exp.campanhaImagem : exp.campanha_imagem;
-        if (raw == null) return null;
-        var s = String(raw).trim();
-        return s ? s : null;
-      })(),
-      // Horário de funcionamento (agendamento livre). Vazio → null.
-      horario_funcionamento: (function () {
-        var raw = exp.horarioFuncionamento != null ? exp.horarioFuncionamento : exp.horario_funcionamento;
-        if (raw == null) return null;
-        var s = String(raw).trim();
-        return s ? s : null;
-      })(),
-      // Instruções pós-compra (WhatsApp automático). Vazio → null.
-      instrucoes_pos_compra: (function () {
-        var raw = exp.instrucoesPosCompra != null ? exp.instrucoesPosCompra : exp.instrucoes_pos_compra;
-        if (raw == null) return null;
-        var s = String(raw).trim();
-        return s ? s : null;
       })(),
       // --- Variantes ---
       variant_label: (function () {
@@ -504,58 +412,6 @@
     return cat.indexOf('em casa') !== -1;
   }
 
-  // =====================================================
-  //  CATEGORIAS (uma experiência pode ficar em MAIS de uma aba)
-  // =====================================================
-  // O campo `categoria` continua sendo UM texto no banco — sem migração.
-  // Pra colocar a experiência em duas abas, basta separar as categorias
-  // por "|" no mesmo campo. Ex.: "Barismo | Bartenderia" faz a
-  // experiência aparecer tanto na aba Barismo quanto na Bartenderia.
-  //
-  // O "|" foi escolhido de propósito: nunca aparece num nome de categoria
-  // real, ao contrário de "&", "/" e "," que já aparecem em nomes tipo
-  // "Cerveja & Caipirinha" ou "Vinho, Queijo e Pão".
-
-  // Lista as categorias de uma experiência (1 ou mais). Faz trim, remove
-  // vazias e duplicadas (case-insensitive), preservando a ordem digitada.
-  function categoriasOf(exp) {
-    if (!exp || exp.categoria == null) return [];
-    var seen = {};
-    var out = [];
-    String(exp.categoria).split('|').forEach(function (part) {
-      var c = String(part).trim();
-      if (!c) return;
-      var k = c.toLowerCase();
-      if (seen[k]) return;
-      seen[k] = true;
-      out.push(c);
-    });
-    return out;
-  }
-
-  // Categoria principal (a primeira) — usada onde só cabe uma, ex.:
-  // agrupamentos que precisam de uma chave única de fallback.
-  function categoriaPrimary(exp) {
-    var list = categoriasOf(exp);
-    return list.length ? list[0] : '';
-  }
-
-  // Texto pra exibir no selo do card. Uma categoria → "Barismo".
-  // Duas → "Barismo · Bartenderia" (nunca mostra o "|" cru pro cliente).
-  function categoriaLabel(exp) {
-    return categoriasOf(exp).join(' · ');
-  }
-
-  // A experiência pertence à categoria/aba `cat`? Case-insensitive.
-  // Sem `cat` (Todas) → sempre true.
-  function matchesCategoria(exp, cat) {
-    var target = String(cat == null ? '' : cat).trim().toLowerCase();
-    if (!target) return true;
-    return categoriasOf(exp).some(function (c) {
-      return c.toLowerCase() === target;
-    });
-  }
-
   // Persiste a nova ordem das experiências. Recebe a lista de ids JÁ na
   // ordem desejada e grava `ordem` = posição (0,1,2…) só nos que mudaram.
   // Admin-only. Invalida o cache no fim pra refletir na hora.
@@ -590,49 +446,6 @@
           return { _error: { message: 'A coluna "ordem" ainda não existe no banco. Rode sql/elarah_experiences_ordem.sql no Supabase e tente de novo.', code: 'NO_COLUMN' } };
         }
         console.error('[Elarah] reorderExperiences erro ao gravar ordem:', error);
-        return { _error: error };
-      }
-      updated++;
-    }
-    invalidateCache();
-    return { ok: true, updated: updated };
-  }
-
-  // Grava a posição das experiências DENTRO da faixa By Elarah.
-  // `pairs` = [{ id, ordem }] com ordem 1-based (1 = primeiro card).
-  // Escreve direto em byelarah_ordem em vez de passar por expToRow —
-  // assim salvar a experiência pelo formulário normal do admin (que
-  // não tem esse campo) nunca apaga a ordem da faixa.
-  async function setByElarahOrdem(pairs) {
-    const s = sb();
-    if (!s) {
-      console.error('[Elarah] setByElarahOrdem: Supabase indisponível.');
-      return { _error: { message: 'Supabase indisponível.' } };
-    }
-    if (!Array.isArray(pairs) || !pairs.length) return { ok: true, updated: 0 };
-
-    // Mapa id → byelarah_ordem atual, pra atualizar só o que mudou.
-    const current = {};
-    try {
-      const all = cache || await getAllExperiences();
-      (all || []).forEach(function (e) {
-        if (e && e.id != null) current[e.id] = e.byelarahOrdem == null ? null : Number(e.byelarahOrdem);
-      });
-    } catch (e) { /* sem o mapa, grava tudo */ }
-
-    let updated = 0;
-    for (let i = 0; i < pairs.length; i++) {
-      const p = pairs[i];
-      if (!p || p.id == null || p.id === '') continue;
-      const n = Number(p.ordem);
-      const ordem = Number.isFinite(n) && n > 0 ? Math.round(n) : null;
-      if (current[p.id] === ordem) continue; // já está na posição certa
-      const { error } = await s.from(TABLE).update({ byelarah_ordem: ordem }).eq('id', p.id);
-      if (error) {
-        if (extractMissingColumn(error) === 'byelarah_ordem') {
-          return { _error: { message: 'A coluna "byelarah_ordem" ainda não existe no banco. Rode sql/elarah_experiences_byelarah_ordem.sql no Supabase e tente de novo.', code: 'NO_COLUMN' } };
-        }
-        console.error('[Elarah] setByElarahOrdem erro ao gravar ordem:', error);
         return { _error: error };
       }
       updated++;
@@ -694,20 +507,6 @@
 
     cachePromise = (async () => {
       let source = 'supabase';
-      // O desconto geral (promo.js) precisa estar carregado ANTES de
-      // qualquer preço ir pra tela: quem renderiza card espera por este
-      // load, então cobrir aqui resolve vitrine, detalhe e checkout de
-      // uma vez. Sem isso, o catálogo pintaria o preço cheio e só
-      // depois o desconto chegaria — piscando preço errado.
-      //
-      // Dispara JUNTO com a busca das experiências (não antes): são dois
-      // selects independentes, e enfileirá-los somaria uma ida ao banco
-      // no tempo até o primeiro card aparecer.
-      const promoPromise = (window.ElarahPromo && typeof window.ElarahPromo.carregar === 'function')
-        ? window.ElarahPromo.carregar().catch(function (e) {
-            console.warn('[Elarah] desconto geral não carregou — seguindo com preço normal', e);
-          })
-        : null;
       try {
         const { data, error } = await s
           .from(TABLE)
@@ -742,9 +541,6 @@
         console.warn('[Elarah] getAllExperiences exception — usando fallback:', e);
         cache = FALLBACK_SEEDS.slice();
       }
-      // Fecha a espera do desconto antes de entregar o catálogo: quem
-      // recebe esta lista desenha preço em seguida.
-      if (promoPromise) await promoPromise;
       // Diagnóstico explícito: conta quantas experiências têm
       // descrição não-vazia. Se "com descricao = 0" aparecer, a
       // modal nunca vai abrir — sinal claro de que os dados
@@ -1076,37 +872,16 @@
   // critério 1 vale.
   // Exposta no window.ElarahData pra que o admin possa marcar status
   // sem duplicar a lógica.
-  // Quantas horas antes do evento a venda encerra (e a experiência some
-  // do site). Duas fontes, nesta ordem:
-  //
-  //   1. cutoff_hours preenchido  → exceção desta experiência, vale como
-  //      está. É a válvula de escape pra um caso pontual (ex.: turma de
-  //      Gastronomia com insumo não perecível que pode vender até a
-  //      véspera) sem mexer na regra das outras.
-  //   2. vazio (null)             → padrão da categoria: Gastronomia
-  //      encerra 48h antes (insumos perecíveis / turmas fechadas cedo),
-  //      as demais 24h.
-  //
-  // Antes daqui saía Math.max(cutoff, 48) pra Gastronomia, então baixar o
-  // campo no admin não tinha efeito nenhum — só dava pra aumentar. Espelha
-  // effectiveCutoffHours de supabase/functions/_shared/booking_guard.ts:
-  // se as duas divergirem, o site mostra o que o pagamento recusa.
-  const GASTRONOMIA_CUTOFF_H = 48;
-  const CUTOFF_PADRAO_H = 24;
-
-  function effectiveCutoffHours(exp) {
-    const raw = exp == null ? null : exp.cutoffHours;
-    const n = Number(raw);
-    if (raw !== null && raw !== '' && Number.isFinite(n)) return n;
-    const isGastronomia = String((exp && exp.categoria) || '').trim().toLowerCase() === 'gastronomia';
-    return isGastronomia ? GASTRONOMIA_CUTOFF_H : CUTOFF_PADRAO_H;
-  }
-
   function isPubliclyVisible(exp, nowMs) {
     if (!exp || exp.isActive === false) return false;
-    if (exp.arquivada === true) return false;
     if (nowMs == null) nowMs = Date.now();
-    const cutoffH = effectiveCutoffHours(exp);
+    // Gastronomia encerra 48h antes: some do site com 2 dias de
+    // antecedência (insumos perecíveis / turmas fechadas cedo). As demais
+    // categorias mantêm o cutoff configurado (default 24h). O Math.max
+    // garante que um cutoff MAIOR definido no admin ainda prevaleça.
+    const baseCutoffH = Number.isFinite(Number(exp.cutoffHours)) ? Number(exp.cutoffHours) : 24;
+    const isGastronomia = String(exp.categoria || '').trim().toLowerCase() === 'gastronomia';
+    const cutoffH = isGastronomia ? Math.max(baseCutoffH, 48) : baseCutoffH;
     let eventTs = null;
     if (exp.eventAt) {
       const t = new Date(exp.eventAt).getTime();
@@ -1269,296 +1044,30 @@
     }
   }
 
-  // Atualiza SÓ a coluna duracao. updateExperience manda a linha inteira
-  // (campos ausentes viram vazio), então não serve pra correção em lote.
-  async function updateExperienceDuracao(id, duracao) {
-    const s = sb();
-    if (!s || !id) return false;
-    try {
-      const { data: updated, error } = await s.from(TABLE)
-        .update({ duracao: String(duracao || '').trim() })
-        .eq('id', id).select('id').maybeSingle();
-      if (error || !updated) {
-        console.error('[Elarah] updateExperienceDuracao falhou para id=' + id, error);
-        return false;
-      }
-      invalidateCache();
-      return true;
-    } catch (e) {
-      console.error('[Elarah] updateExperienceDuracao exceção:', e);
-      return false;
-    }
-  }
-
-  // Motivo da última falha de exclusão, em português, pra UI conseguir
-  // dizer o que houve em vez de simplesmente não fazer nada. É
-  // sobrescrito a cada chamada de deleteExperience.
-  let _lastDeleteError = null;
-
-  function getLastDeleteError() { return _lastDeleteError; }
-
-  // Traduz o erro cru do Postgres/PostgREST pro que a admin precisa
-  // fazer. O caso mais comum é a trava de integridade da recorrência:
-  // apagar a experiência cascateia pros slots (experience_slots), e a
-  // trigger enforce_recurrence_slot_delete_trg barra slots ligados a
-  // uma regra semanal — o DELETE inteiro volta atrás.
-  function _deleteErrorMessage(error) {
-    const txt = String((error && (error.message || error.details || error.hint)) || 'erro desconhecido');
-    if (/integridade recorr|allow_recurrence_slot_delete/i.test(txt)) {
-      return 'Essa experiência tem turmas geradas pela Recorrência semanal, e o banco bloqueia apagar essas turmas por esse caminho.\n\n' +
-        'Pra liberar: rode UMA vez, no SQL Editor do Supabase, o arquivo\n' +
-        'sql/elarah_experience_delete_cascade_fix.sql\n\n' +
-        'Depois disso o botão Excluir passa a funcionar normalmente.\n\n' +
-        '(Mensagem do banco: ' + txt + ')';
-    }
-    if ((error && error.code === '23503') || /violates foreign key|foreign key constraint/i.test(txt)) {
-      return 'Existe outro registro no banco ligado a essa experiência que impede a exclusão:\n\n' + txt;
-    }
-    if ((error && error.code === '42501') || /permission denied|row-level security/i.test(txt)) {
-      return 'Seu usuário não tem permissão de admin pra apagar experiências ' +
-        '(em profiles, role precisa estar como "admin").';
-    }
-    return txt;
-  }
-
   async function deleteExperience(id) {
-    _lastDeleteError = null;
     const s = sb();
-    if (!s) {
-      _lastDeleteError = 'Sem conexão com o banco (o Supabase não carregou). Recarregue a página e tente de novo.';
-      return false;
-    }
-    // O .select('id') devolve as linhas realmente apagadas. Sem ele, um
-    // DELETE que não apaga nada (RLS bloqueando, id que não existe mais)
-    // é indistinguível de sucesso — e a linha "volta" na tela sem
-    // nenhuma explicação.
-    const { data, error } = await s.from(TABLE).delete().eq('id', id).select('id');
+    if (!s) return false;
+    const { error } = await s.from(TABLE).delete().eq('id', id);
     if (error) {
       console.error('[Elarah] deleteExperience error', error);
-      _lastDeleteError = _deleteErrorMessage(error);
-      return false;
-    }
-    if (!Array.isArray(data) || data.length === 0) {
-      console.error('[Elarah] deleteExperience: 0 linhas apagadas para id=' + id);
-      _lastDeleteError = 'O banco não apagou nenhuma linha. Normalmente é (1) permissão de admin ' +
-        '(profiles.role = "admin") ou (2) a experiência já não existe mais — nesse caso é só recarregar a página.';
       return false;
     }
     invalidateCache();
     return true;
   }
 
-  // Conta o que existe "pendurado" numa experiência (fora da linha da
-  // tabela experiences): turmas manuais e regras de recorrência. O
-  // admin usa isso pra montar o diálogo de Duplicar mostrando quantos
-  // itens vêm junto em cada opção.
-  async function getExperienceCopyStats(id) {
-    const out = { slotsManuais: 0, regrasRecorrencia: 0, variacoes: 0 };
-    const s = sb();
-    if (!s || !id) return out;
-    try {
-      const exp = await getExperienceById(id);
-      if (exp) {
-        out.variacoes = Array.isArray(exp.variantItems) && exp.variantItems.length
-          ? exp.variantItems.length
-          : (Array.isArray(exp.variantOptions) ? exp.variantOptions.length : 0);
-      }
-    } catch (e) { /* segue com 0 */ }
-    try {
-      const { count } = await s
-        .from(SLOTS_TABLE)
-        .select('id', { count: 'exact', head: true })
-        .eq('experience_id', id)
-        .is('recurrence_rule_id', null);
-      out.slotsManuais = count || 0;
-    } catch (e) { /* tabela ausente → 0 */ }
-    try {
-      const { count } = await s
-        .from(RECURRENCE_TABLE)
-        .select('id', { count: 'exact', head: true })
-        .eq('experience_id', id);
-      out.regrasRecorrencia = count || 0;
-    } catch (e) { /* tabela ausente → 0 */ }
-    return out;
-  }
-
-  // Copia as turmas MANUAIS (recurrence_rule_id IS NULL) de uma
-  // experiência pra outra. Slots de recorrência não são copiados aqui:
-  // eles nascem da regra copiada (a trigger SQL materializa sozinha) —
-  // copiar os dois lados duplicaria as datas.
-  // As vagas restantes da cópia voltam pro total (a cópia é uma turma
-  // nova, sem as reservas da original).
-  async function copyManualSlots(fromId, toId) {
-    const s = sb();
-    if (!s || !fromId || !toId) return 0;
-    const { data, error } = await s
-      .from(SLOTS_TABLE)
-      .select('*')
-      .eq('experience_id', fromId)
-      .is('recurrence_rule_id', null);
-    if (error) {
-      console.warn('[Elarah] copyManualSlots: leitura falhou —', error.message);
-      return 0;
-    }
-    const rows = (data || []).map(function (r) {
-      const total = r.vagas_total != null ? Number(r.vagas_total) : null;
-      return {
-        experience_id: toId,
-        data: r.data || null,
-        horario: r.horario || '',
-        vagas_total: total,
-        vagas_restantes: total,
-        event_at: r.event_at || null,
-        is_active: r.is_active !== false,
-      };
-    });
-    if (!rows.length) return 0;
-    const { error: insErr } = await s.from(SLOTS_TABLE).insert(rows);
-    if (insErr) {
-      console.warn('[Elarah] copyManualSlots: insert falhou —', insErr.message);
-      return 0;
-    }
-    invalidateSlotsCache();
-    return rows.length;
-  }
-
-  // Copia as regras de recorrência (aulas regulares) de uma experiência
-  // pra outra. A trigger SQL materialize_recurrence_after_change gera os
-  // slots das próximas semanas automaticamente depois do INSERT.
-  // Tolera o schema antigo (coluna `weekday` singular) — ver
-  // sql/elarah_experience_recurrence_multi_weekdays.sql.
-  async function copyRecurrenceRules(fromId, toId) {
-    const s = sb();
-    if (!s || !fromId || !toId) return 0;
-    const { data, error } = await s
-      .from(RECURRENCE_TABLE)
-      .select('*')
-      .eq('experience_id', fromId);
-    if (error) {
-      console.warn('[Elarah] copyRecurrenceRules: leitura falhou —', error.message);
-      return 0;
-    }
-    const rules = data || [];
-    if (!rules.length) return 0;
-
-    let created = 0;
-    for (const r of rules) {
-      const payload = {
-        experience_id: toId,
-        hora_inicio: r.hora_inicio,
-        hora_fim: r.hora_fim || null,
-        horario_label: r.horario_label,
-        vagas_total: r.vagas_total,
-        horizon_weeks: r.horizon_weeks,
-        is_active: r.is_active !== false,
-      };
-      if (Array.isArray(r.weekdays)) payload.weekdays = r.weekdays;
-      if (r.weekday != null) payload.weekday = r.weekday;
-      // Meses em que a regra vale (sql/elarah_recurrence_active_months.sql).
-      if (Array.isArray(r.active_months) && r.active_months.length) payload.active_months = r.active_months;
-      // Insere uma a uma: se uma regra falhar, as outras ainda entram.
-      const { error: insErr } = await s.from(RECURRENCE_TABLE).insert(payload);
-      if (insErr) {
-        console.warn('[Elarah] copyRecurrenceRules: regra não copiada —', insErr.message);
-        continue;
-      }
-      created += 1;
-    }
-    if (created) invalidateSlotsCache();
-    return created;
-  }
-
-  // Duplica uma experiência INTEIRA. Por padrão copia tudo — dados da
-  // experiência, variações, turmas manuais e regras de recorrência —
-  // e a cópia é 100% editável (é uma experiência nova, com id próprio).
-  //
-  // options (todas opcionais):
-  //   nome        → nome da cópia (default: "<nome> (cópia)")
-  //   variacoes   → false pra criar sem as variações
-  //   horarios    → false pra criar sem as turmas/horários manuais
-  //   recorrencia → false pra criar sem as regras de aula regular
-  //   isActive    → false pra criar oculta do site
-  //
-  // Retorna a experiência criada com um relatório em `_copyReport`
-  // ({ slots, regras }) pra UI mostrar o que veio junto.
-  async function duplicateExperience(id, options) {
-    const opts = options || {};
+  async function duplicateExperience(id) {
     const src = await getExperienceById(id);
     if (!src) return null;
-
     const copy = { ...src };
     delete copy.id;
     delete copy.createdAt;
     delete copy.updatedAt;
-
-    const nome = typeof opts.nome === 'string' ? opts.nome.trim() : '';
-    if (nome) copy.nome = nome;
-    if (opts.variacoes === false) {
-      copy.variantItems = [];
-      copy.variantOptions = [];
-      copy.variantLabel = '';
-    }
-    if (opts.horarios === false) {
-      copy.horarios = [];
-      copy.horario = '';
-    }
-    if (opts.isActive === false) copy.isActive = false;
-
-    const created = await addExperience(copy);
-    if (!created) return null;
-
-    const report = { slots: 0, regras: 0 };
-    if (opts.horarios !== false) {
-      try {
-        report.slots = await copyManualSlots(id, created.id);
-      } catch (e) {
-        console.warn('[Elarah] duplicateExperience: cópia de turmas falhou —', e && e.message);
-      }
-    }
-    if (opts.recorrencia !== false) {
-      try {
-        report.regras = await copyRecurrenceRules(id, created.id);
-      } catch (e) {
-        console.warn('[Elarah] duplicateExperience: cópia de recorrência falhou —', e && e.message);
-      }
-    }
-
-    invalidateCache();
-    invalidateSlotsCache();
-    created._copyReport = report;
-    return created;
+    return addExperience(copy);
   }
 
   // Liga/desliga visibilidade sem destruir nada. Aceita id + bool.
   // Só mexe na coluna is_active (não toca nenhum outro campo).
-  // Arquiva/desarquiva. Diferente de excluir: não apaga a ficha, então
-  // despesas, vendas manuais e reservas continuam ligadas a ela e a
-  // contabilidade não muda em nada. Só some da lista do admin e do site.
-  async function setExperienceArquivada(id, arquivada) {
-    const s = sb();
-    if (!s) return { _error: { message: 'Sem conexão com o banco. Recarregue a página.' } };
-    if (!id) return { _error: { message: 'id vazio.' } };
-    const { data: updated, error } = await s
-      .from(TABLE)
-      .update({ arquivada: !!arquivada })
-      .eq('id', id)
-      .select()
-      .maybeSingle();
-    if (error) {
-      if (extractMissingColumn(error) === 'arquivada') {
-        markColumnMissing('arquivada');
-        return { _error: { message: 'A coluna "arquivada" ainda não existe no banco.\n\nRode sql/elarah_experiences_arquivada.sql no SQL Editor do Supabase e tente de novo.', code: 'NO_COLUMN' } };
-      }
-      console.error('[Elarah] setExperienceArquivada erro:', error);
-      return { _error: error };
-    }
-    if (!updated) {
-      return { _error: { message: 'O banco não alterou nenhuma linha — verifique se o seu usuário está como admin em profiles.', code: 'RLS_BLOCK' } };
-    }
-    invalidateCache();
-    return dbRowToExperience(updated);
-  }
-
   async function setExperienceActive(id, active) {
     const s = sb();
     if (!s) {
@@ -1639,9 +1148,6 @@
   // Se a tabela não existir (migration não rodou), retorna vazio sem erro.
 
   const SLOTS_TABLE = 'experience_slots';
-  // Regras de aula regular (recorrência semanal) — ver
-  // sql/elarah_experience_recurrence_rules.sql.
-  const RECURRENCE_TABLE = 'experience_recurrence_rules';
   let slotsCache = null;    // Map<experienceId, slotObj[]>
   let slotsCachePromise = null;
 
@@ -1754,99 +1260,14 @@
     }
   }
 
-  // Identidade de uma turma: (data, horário). É o que a cliente compra.
-  function slotKey(data, horario) {
-    return String(data == null ? '' : data) +
-      '|' + String(horario == null ? '' : horario).trim();
-  }
-
-  // Ids de slots que já têm reserva do site ou venda manual viva.
-  // Esses NUNCA podem ser apagados: bookings.slot_id e
-  // manual_sales.slot_id são ON DELETE SET NULL, então apagar o slot
-  // não apaga a venda — só arranca o vínculo dela com a turma. A vaga
-  // some do lugar certo e reaparece somada no lugar errado.
-  // Tabela que não existe (migration não rodou) não é "não sei" — é
-  // "não tem venda dessa espécie aqui". Só erro de verdade (RLS, rede)
-  // manda a gente pro modo cauteloso.
-  function erroTabelaAusente(err) {
-    const code = String((err && err.code) || '');
-    const msg = String((err && err.message) || '').toLowerCase();
-    return code === '42P01' || code === 'PGRST205' ||
-      msg.indexOf('does not exist') !== -1 ||
-      msg.indexOf('not find the table') !== -1;
-  }
-
-  async function slotsComVendaViva(ids) {
-    const out = new Set();
-    const s = sb();
-    if (!s || !ids || !ids.length) return out;
-    let falhou = false;
-    try {
-      const { data, error } = await s
-        .from('bookings')
-        .select('slot_id')
-        .in('slot_id', ids)
-        .in('status', ['pending', 'pago']);
-      if (error) { if (!erroTabelaAusente(error)) falhou = true; }
-      else (data || []).forEach(function (r) { if (r.slot_id) out.add(r.slot_id); });
-    } catch (e) { falhou = true; }
-    try {
-      const { data, error } = await s
-        .from('manual_sales')
-        .select('slot_id')
-        .in('slot_id', ids)
-        .in('payment_status', ['pago', 'pendente']);
-      if (error) { if (!erroTabelaAusente(error)) falhou = true; }
-      else (data || []).forEach(function (r) { if (r.slot_id) out.add(r.slot_id); });
-    } catch (e) { falhou = true; }
-    if (falhou) {
-      // Não deu pra conferir (RLS, rede, tabela ausente): trata TODOS
-      // como ocupados. Arquivar um horário vazio é reversível — basta
-      // digitar ele de novo. Apagar um horário com reserva não é.
-      console.warn('[Elarah] saveSlots: não foi possível conferir as reservas ' +
-        'dos horários — preservando todos por segurança.');
-      ids.forEach(function (id) { out.add(id); });
-    }
-    return out;
-  }
-
   // Salva (upsert) slots pra uma experiência. Recebe array de objetos:
   //   [{ id?, data, horario, vagasTotal, eventAt }]
-  //
-  // A IDENTIDADE DA TURMA É (data, horário) — não a linha do formulário.
-  // Enquanto data e horário forem os mesmos, a MESMA linha do banco é
-  // reaproveitada, mesmo que o admin tenha apagado a linha na tela e
-  // digitado o horário de novo.
-  //
-  // POR QUE ISSO IMPORTA (bug do "-34 / 8"):
-  //   Antes, apagar a linha do horário e redigitar o mesmo texto
-  //   DELETAVA o slot e criava outro com id novo. Como bookings.slot_id
-  //   e manual_sales.slot_id são ON DELETE SET NULL, toda reserva e
-  //   toda venda manual daquela turma perdia o vínculo. Na varredura
-  //   seguinte (reconcile_all_vagas roda de 10 em 10 minutos), as
-  //   vendas manuais sem vínculo eram readivinhadas pela regra "a
-  //   experiência só tem UMA turma ativa, então é essa" — e TODAS as
-  //   vendas manuais históricas da experiência caíam em cima da turma
-  //   nova. No admin aparecia "-34 / 8".
-  //
-  // REGRAS
-  //   (data, horário) igual ao que já existe  → reaproveita a linha.
-  //   mudou a DATA e a turma antiga tem venda → a antiga vira histórico
-  //                                             (is_active=false, vínculos
-  //                                             preservados) e a data nova
-  //                                             nasce como turma nova, com
-  //                                             as vagas cheias.
-  //   mudou a DATA e a turma antiga está vazia → só atualiza a linha.
-  //   sumiu do formulário e tem venda          → arquiva, não apaga.
-  //   sumiu do formulário e está vazia         → apaga.
+  // Slots que existiam mas não estão no array são deletados.
   //
   // CRÍTICO: ignora slots com recurrence_rule_id IS NOT NULL.
   // Esses slots são gerenciados pela feature de Recorrência semanal
   // (CRUD separado no painel "Recorrência"). Tocar neles aqui apagaria
   // os 8 slots que a regra acabou de materializar — bug reportado.
-  //
-  // Retorna { ok: true, arquivados: [{ data, horario }] } em caso de
-  // sucesso, ou false quando nem dá pra tentar (sem supabase/id).
   async function saveSlots(experienceId, slotsArray) {
     const s = sb();
     if (!s || !experienceId) return false;
@@ -1855,25 +1276,12 @@
     //    Slots de recorrência ficam intocados.
     const { data: existing } = await s
       .from(SLOTS_TABLE)
-      .select('id, horario, data, is_active')
+      .select('id, horario, data')
       .eq('experience_id', experienceId)
       .is('recurrence_rule_id', null);
-    const existingRows = existing || [];
-    const existingById = new Map();
-    const existingByKey = new Map();
-    existingRows.forEach(function (r) {
-      existingById.set(r.id, r);
-      const k = slotKey(r.data, r.horario);
-      // Duplicata impossível pelo unique index, mas se existir fica com
-      // a primeira — a outra cai no fluxo de sobra (arquiva/apaga).
-      if (!existingByKey.has(k)) existingByKey.set(k, r);
-    });
+    const existingIds = new Set((existing || []).map(function (r) { return r.id; }));
 
-    // 1b) Quais dessas turmas já têm gente dentro. Decide, mais abaixo,
-    //     quem pode ser apagado e quem só pode ser arquivado.
-    const ocupados = await slotsComVendaViva(existingRows.map(function (r) { return r.id; }));
-
-    // 1c) Tambem busca os slots de RECORRENCIA pra computar quais
+    // 1b) Tambem busca os slots de RECORRENCIA pra computar quais
     //     (data, horario) ja estao "ocupados" por regra. Sem isso, se
     //     o form re-envia esses slots como novos (sem id), o upsert
     //     bate no unique index (experience_id, coalesce(data,''), horario)
@@ -1886,7 +1294,7 @@
       .not('recurrence_rule_id', 'is', null);
     const recurrenceKeys = new Set();
     (recurrenceSlots || []).forEach(function (r) {
-      recurrenceKeys.add(slotKey(r.data, r.horario));
+      recurrenceKeys.add((r.data || '') + '|' + String(r.horario || '').trim());
     });
 
     // 2) Separa upserts dos deletes. Dedupe por (data, horario) pra evitar
@@ -1908,33 +1316,19 @@
         event_at: slot.eventAt || null,
         is_active: slot.isActive !== false,
       };
-      const key = slotKey(row.data, row.horario);
+      if (slot.id && existingIds.has(slot.id)) {
+        row.id = slot.id;
+        keepIds.add(slot.id);
+      }
+      const key = (row.data || '') + '|' + row.horario;
 
       // Skip se a (data, horario) eh gerenciada pela recorrencia E o slot
       // do form nao tem id de slot manual existente. Esses slots devem
       // ser editados pelo painel de Recorrencia, nao pelo cadastro
       // manual — sem isso, o upsert tenta inserir uma duplicata e quebra.
-      const prev = slot.id ? existingById.get(slot.id) : null;
-      const prevKeyIgual = prev && slotKey(prev.data, prev.horario) === key;
-      if (!prev && !existingByKey.has(key) && recurrenceKeys.has(key)) {
+      if (!row.id && recurrenceKeys.has(key)) {
         skippedRecurrence += 1;
         return;
-      }
-
-      // Qual linha do banco essa linha do formulário representa:
-      //   1. a própria, se data+horário não mudaram;
-      //   2. a linha que JÁ é dona desse (data, horário) — é o caso de
-      //      apagar a linha na tela e digitar o mesmo horário de novo;
-      //   3. a própria, se mudou de data mas não tem ninguém dentro;
-      //   4. nenhuma → turma nova, nasce com as vagas cheias.
-      let adotaId = null;
-      if (prevKeyIgual) adotaId = prev.id;
-      else if (existingByKey.has(key)) adotaId = existingByKey.get(key).id;
-      else if (prev && !ocupados.has(prev.id)) adotaId = prev.id;
-
-      if (adotaId) {
-        row.id = adotaId;
-        keepIds.add(adotaId);
       }
 
       if (seenByKey.has(key)) {
@@ -1953,36 +1347,16 @@
         'slot(s) gerados pela recorrencia (gerencie via painel Recorrencia, nao pelo cadastro manual).');
     }
 
-    // 3) Sobras: o que existia no banco e não está mais no formulário.
-    //    Com venda viva → ARQUIVA (is_active=false): some do site, mas a
-    //    turma continua existindo e as reservas seguem ligadas nela.
-    //    Sem ninguém dentro → apaga mesmo.
+    // 3) Deleta slots removidos do form — restrito a manuais.
     //    .is('recurrence_rule_id', null) é segurança dupla: mesmo que
-    //    existingRows vaze algo de recorrência (não pode, mas defesa
-    //    em profundidade), só mexe em manual.
+    //    existingIds vaze algo de recorrência (não pode, mas defesa
+    //    em profundidade), o DELETE só apaga manual.
     const toDelete = [];
-    const toArchive = [];
-    existingRows.forEach(function (r) {
-      if (keepIds.has(r.id)) return;
-      if (ocupados.has(r.id)) toArchive.push(r);
-      else toDelete.push(r);
-    });
+    existingIds.forEach(function (id) { if (!keepIds.has(id)) toDelete.push(id); });
     if (toDelete.length) {
       await s.from(SLOTS_TABLE).delete()
-        .in('id', toDelete.map(function (r) { return r.id; }))
+        .in('id', toDelete)
         .is('recurrence_rule_id', null);
-    }
-    if (toArchive.length) {
-      const { error: errArch } = await s.from(SLOTS_TABLE)
-        .update({ is_active: false })
-        .in('id', toArchive.map(function (r) { return r.id; }))
-        .is('recurrence_rule_id', null);
-      if (errArch) {
-        console.error('[Elarah] saveSlots: falha ao arquivar turma com reserva:', errArch);
-      } else {
-        console.info('[Elarah] saveSlots: ' + toArchive.length +
-          ' turma(s) com reserva arquivada(s) em vez de apagada(s).');
-      }
     }
 
     // 4) Upsert os que ficaram/foram adicionados.
@@ -2048,12 +1422,7 @@
     // Invalida cache de slots
     slotsCache = null;
     slotsCachePromise = null;
-    return {
-      ok: true,
-      arquivados: toArchive.map(function (r) {
-        return { data: r.data || null, horario: r.horario || '' };
-      })
-    };
+    return true;
   }
 
   function invalidateSlotsCache() {
@@ -2168,21 +1537,12 @@
     getExperienceById,
     addExperience,
     updateExperience,
-    updateExperienceDuracao,
     deleteExperience,
-    getLastDeleteError,
     duplicateExperience,
-    getExperienceCopyStats,
     setExperienceActive,
-    setExperienceArquivada,
     reorderExperiences,
-    setByElarahOrdem,
     ordemKey,
     isHomeKit,
-    categoriasOf,
-    categoriaPrimary,
-    categoriaLabel,
-    matchesCategoria,
     scarcityRest,
     scarcityLabel,
     scarcityForSlots,
@@ -2190,7 +1550,6 @@
     isAtividadeSemanal,
     invalidateCache,
     isPubliclyVisible,
-    effectiveCutoffHours,
     deriveEventTimestamp,
     experienceFutureDates,
     distinctSlotHorarios,
@@ -2208,18 +1567,6 @@
     // renderize "R$ 383", "R$ 1.380,00" etc. — independente de como o
     // admin digitou ("383", "R$383", "R$ 383", "1.380,00", etc.).
     formatPrecoBR: formatPrecoBR,
-    // Desconto Elarah — ver bloco DESCONTO ELARAH mais abaixo. Todos
-    // recebem a EXPERIÊNCIA (não o rótulo de preço) porque a fonte do
-    // "de" é o campo valor_cheio_centavos, não o preço praticado.
-    precoCheioBR: precoCheioBR,
-    precoDeHTML: precoDeHTML,
-    // Promoção sazonal (promo.js): preço realmente cobrado hoje.
-    // Vitrine e checkout usam estes dois no lugar de exp.preco.
-    precoVigente: precoVigente,
-    precoVigenteCentavos: precoVigenteCentavos,
-    // Prazo de remarcação sem custo (por categoria) — ver bloco
-    // PRAZO DE REMARCAÇÃO. Devolve { horas, rotulo }.
-    prazoRemarcacaoDe: prazoRemarcacaoDe,
   };
 
   // Normaliza qualquer formato de preço pra "R$ X" no display, SEMPRE
@@ -2259,167 +1606,4 @@
       maximumFractionDigits: 2,
     });
   }
-
-  // =============================================================
-  // DESCONTO ELARAH — o "de" que nunca apareceu na tela
-  // -------------------------------------------------------------
-  // Todo preço do catálogo já entra com desconto aplicado. O preço
-  // ORIGINAL, antes do desconto, é o que a admin digita no campo
-  // "Valor cheio (R$)" da experiência — `valor_cheio_centavos`. Ele
-  // sempre existiu no banco; só nunca chegou na tela da cliente, que
-  // via "R$ 549" achando ser o preço normal, sem saber que o cheio
-  // era R$ 610.
-  //
-  // FONTE DA VERDADE: valor_cheio_centavos, digitado pela admin. Não
-  // derivamos, não inventamos. Se o campo estiver vazio, não mostra
-  // nada — melhor não ter o "de" do que ter um "de" chutado.
-  //
-  // BY ELARAH: nas experiências próprias o valor cheio é IGUAL ao
-  // preço praticado (não há desconto a anunciar). Nesse caso as duas
-  // funções devolvem '' e a UI não renderiza o "de" — é exatamente o
-  // que diferencia uma experiência de parceira de uma nossa.
-  // =============================================================
-
-  // "R$ 549" → 54900. Mesmos formatos aceitos por formatPrecoBR.
-  function precoParaCentavos(raw) {
-    if (raw == null) return null;
-    var s = String(raw).trim();
-    if (!s) return null;
-    var match = s.match(/(\d{1,3}(?:[.\s]\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)\s*$/);
-    if (!match) return null;
-    var clean = match[1].replace(/\./g, '').replace(/\s+/g, '').replace(',', '.');
-    var n = parseFloat(clean);
-    if (!isFinite(n) || n <= 0) return null;
-    return Math.round(n * 100);
-  }
-
-  // Lê o valor cheio da experiência (aceita o objeto normalizado do
-  // ElarahData ou a row crua do Supabase).
-  function valorCheioDe(exp) {
-    if (!exp || typeof exp !== 'object') return null;
-    var raw = exp.valorCheioCentavos != null ? exp.valorCheioCentavos : exp.valor_cheio_centavos;
-    if (raw == null) return null;
-    var n = Number(raw);
-    return (isFinite(n) && n > 0) ? Math.round(n) : null;
-  }
-
-  // Preço praticado da experiência, em centavos.
-  function precoPraticadoDe(exp) {
-    if (!exp || typeof exp !== 'object') return null;
-    return precoParaCentavos(exp.preco);
-  }
-
-  // =============================================================
-  // PROMOÇÃO SAZONAL (promo.js) — desconto sobre o preço do site
-  // -------------------------------------------------------------
-  // Enquanto a campanha estiver na janela de datas, TODA experiência
-  // é vendida por "preço do site - X%". A configuração e a matemática
-  // vivem em promo.js (gêmeo do backend em _shared/promo.ts); aqui só
-  // ligamos isso ao preço da experiência.
-  //
-  // Sem promo.js na página, tudo volta ao preço praticado — o site
-  // degrada pro comportamento normal em vez de mostrar um desconto
-  // que o checkout não cobraria.
-  // =============================================================
-
-  // Preço que a cliente paga HOJE, em centavos. A base do desconto é o
-  // PREÇO DO SITE (o praticado), pra que o 20% anunciado seja 20% de
-  // verdade na tela. Fora da janela da promoção devolve o praticado,
-  // sem tocar em nada.
-  function precoVigenteCentavos(exp) {
-    var praticado = precoPraticadoDe(exp);
-    var promo = window.ElarahPromo;
-    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa()) return praticado;
-    if (!praticado) return praticado;
-    var comDesconto = promo.centavos(praticado);
-    return comDesconto || praticado;
-  }
-
-  // Rótulo do preço vigente, pronto pro formatPrecoBR de quem exibe.
-  // É o que TODA vitrine e o checkout devem usar no lugar de
-  // exp.preco — exp.preco continua sendo o preço de cadastro (o que o
-  // admin digitou), e não deve aparecer na tela durante a campanha.
-  function precoVigente(exp) {
-    if (!exp || typeof exp !== 'object') return '';
-    var promo = window.ElarahPromo;
-    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa()) return exp.preco || '';
-    var c = precoVigenteCentavos(exp);
-    if (!c) return exp.preco || '';
-    return promo.formatar(c);
-  }
-
-  // Rótulo do "de" pra exibir riscado. Ex.: "R$ 610".
-  // É sempre a MAIOR referência honesta: o valor cheio quando existe e
-  // é maior, senão o preço do site (que durante a promoção vira o "de").
-  // Devolve '' quando não há desconto real a mostrar — fora da
-  // campanha, uma experiência sem valor cheio continua sem "de".
-  function precoCheioBR(exp) {
-    var cheio = valorCheioDe(exp);
-    var praticado = precoPraticadoDe(exp);
-    var vigente = precoVigenteCentavos(exp);
-    var de = (cheio && (!praticado || cheio > praticado)) ? cheio : praticado;
-    if (!de || !vigente || de <= vigente) return '';
-    return formatPrecoBR(String(de / 100).replace('.', ','));
-  }
-
-  // =============================================================
-  // PRAZO DE REMARCAÇÃO SEM CUSTO — por categoria
-  // -------------------------------------------------------------
-  // Remarcar sem custo tem prazo DIFERENTE por categoria, porque o
-  // preparo do fornecedor é diferente: bartenderia compra insumo
-  // perecível com antecedência, gastronomia idem em menor escala.
-  //
-  //   Bartenderia .......... 5 dias
-  //   Gastronomia .......... 72 horas
-  //   Todas as demais ...... 48 horas
-  //
-  // CANCELAMENTO COM REEMBOLSO é outra coisa e continua 48h pra todas
-  // — ver /cancelamento.html. Não misture os dois prazos.
-  //
-  // ATENÇÃO — esta tabela existe DUAS vezes: aqui (navegador) e em
-  // supabase/functions/_shared/booking_policy.ts (Deno, pro e-mail).
-  // Deno não importa este arquivo, então não dá pra ter fonte única.
-  // Mudou aqui, muda lá. As duas trazem este mesmo aviso.
-  //
-  // O prazo é congelado no metadata da reserva no momento da compra:
-  // se a regra mudar depois, a reserva antiga continua exibindo o que
-  // a cliente aceitou.
-  // =============================================================
-  var PRAZO_REMARCACAO = {
-    bartenderia: { horas: 120, rotulo: '5 dias' },
-    gastronomia: { horas: 72, rotulo: '72 horas' },
-  };
-  var PRAZO_REMARCACAO_PADRAO = { horas: 48, rotulo: '48 horas' };
-
-  // Uma experiência pode estar em mais de uma categoria ("Barismo |
-  // Bartenderia"). Nesse caso vale o prazo MAIS LONGO: se uma das
-  // parceiras precisa de 5 dias, avisar 48h deixaria a cliente achar
-  // que dá tempo quando não dá.
-  function prazoRemarcacaoDe(exp) {
-    var cats = categoriasOf(exp);
-    var escolhido = PRAZO_REMARCACAO_PADRAO;
-    for (var i = 0; i < cats.length; i++) {
-      var p = PRAZO_REMARCACAO[cats[i].toLowerCase()];
-      if (p && p.horas > escolhido.horas) escolhido = p;
-    }
-    return escolhido;
-  }
-
-  // Markup do "de" riscado, pra ser colado ANTES do preço dentro do
-  // <p class="card__price">. Fonte única dos três catálogos (home,
-  // categoria e presentear) — sem isso o mesmo trecho viveria copiado
-  // em três arquivos e sairia do ar em um deles na primeira mudança.
-  //
-  // Devolve '' quando não há desconto (By Elarah, sem valor cheio,
-  // preço textual) e a UI simplesmente renderiza o preço sozinho.
-  //
-  // Seguro pra innerHTML: o texto vem de formatPrecoBR sobre um Number,
-  // nunca de string digitada pelo admin.
-  function precoDeHTML(exp, className) {
-    var de = precoCheioBR(exp);
-    if (!de) return '';
-    var cls = className || 'card__price-de';
-    return '<span class="' + cls + '">' + de + '</span> ';
-  }
-
 })(window);

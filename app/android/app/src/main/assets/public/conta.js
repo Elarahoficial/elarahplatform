@@ -1,18 +1,3 @@
-// Atalhos pro campo de telefone com seletor de país (phone-input.js).
-// Se aquele arquivo não carregar, o campo segue como input comum — a
-// página inteira não pode quebrar por causa do seletor.
-function _contaSetPhone(input, valor) {
-  if (!input) return;
-  if (window.ElarahPhone) window.ElarahPhone.set(input, valor || '');
-  else input.value = valor || '';
-}
-
-function _contaReadPhone(input) {
-  if (!input) return { valid: true, e164: '', error: null };
-  if (window.ElarahPhone) return window.ElarahPhone.get(input);
-  return { valid: true, e164: String(input.value || '').trim(), error: null };
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   async function startPage() {
     await ElarahAuth.ready;
@@ -106,33 +91,16 @@ if (badgeEl) {
 
   if (dadosNome) dadosNome.value = user.nome || '';
   if (dadosEmail) dadosEmail.value = user.email || '';
-  // Pelo componente, pra bandeira do país vir junto com o número salvo
-  // (um "+39 …" no banco abre a tela já com a Itália selecionada).
-  if (dadosTelefone) _contaSetPhone(dadosTelefone, user.telefone || '');
+  if (dadosTelefone) dadosTelefone.value = user.telefone || '';
   if (dadosCidade) dadosCidade.value = user.cidade || '';
 
   if (formDados) {
     formDados.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Barra o salvamento de número incompleto: com o país na mão dá
-      // pra dizer quantos dígitos faltam em vez de aceitar calado e
-      // descobrir depois, na hora de chamar a pessoa no WhatsApp.
-      const telInfo = _contaReadPhone(dadosTelefone);
-      const erroEl = document.getElementById('dados-erro');
-      if (dadosTelefone && !telInfo.valid) {
-        if (erroEl) {
-          erroEl.textContent = 'WhatsApp: ' + (telInfo.error || 'número inválido.');
-          erroEl.style.display = 'block';
-        }
-        try { dadosTelefone.focus({ preventScroll: true }); } catch (err) {}
-        return;
-      }
-      if (erroEl) { erroEl.textContent = ''; erroEl.style.display = 'none'; }
-
       const result = await ElarahAuth.updateUser({
         nome: dadosNome ? dadosNome.value.trim() : '',
-        telefone: telInfo.e164,
+        telefone: dadosTelefone ? dadosTelefone.value.trim() : '',
         cidade: dadosCidade ? dadosCidade.value.trim() : ''
       });
 
@@ -201,7 +169,6 @@ if (currentUser.partnerStatus === 'approved') {
       <div class="account__partner-detail"><strong>Bairro / Local de atuação</strong><span>${pd.bairro || '-'}</span></div>
       <div class="account__partner-detail"><strong>Cidade</strong><span>${pd.cidade || '-'}</span></div>
       <div class="account__partner-detail"><strong>Instagram ou site</strong><span>${formatSocialHandle(pd.social) || '-'}</span></div>
-      <div class="account__partner-detail"><strong>WhatsApp para contato</strong><span>${pd.whatsapp || currentUser.telefone || '-'}</span></div>
       <div class="account__partner-detail"><strong>Conte sobre sua experiência</strong><span>${pd.descricao || '-'}</span></div>
     `;
   }
@@ -219,15 +186,7 @@ if (currentUser.partnerStatus === 'rejected') {
   return;
 }
 
-if (formWrap) {
-  formWrap.style.display = 'block';
-  // Pré-preenche o WhatsApp com o telefone da conta (se houver e o campo
-  // estiver vazio) — o parceiro pode trocar por um número comercial.
-  const waInput = document.getElementById('parceiro-whatsapp');
-  if (waInput && !waInput.value && currentUser.telefone) {
-    _contaSetPhone(waInput, currentUser.telefone);
-  }
-}
+if (formWrap) formWrap.style.display = 'block';
 }
 
 renderPartnerSection();
@@ -244,7 +203,6 @@ renderPartnerSection();
         bairro: document.getElementById('parceiro-bairro')?.value.trim() || '',
         cidade: document.getElementById('parceiro-cidade')?.value.trim() || '',
         social: document.getElementById('parceiro-social')?.value.trim() || '',
-        whatsapp: _contaReadPhone(document.getElementById('parceiro-whatsapp')).e164,
         descricao: document.getElementById('parceiro-descricao')?.value.trim() || ''
       };
 
@@ -500,104 +458,6 @@ renderFavoritos();
     return map[status] || (status || '');
   }
 
-  // =====================================================
-  //  PRAZO DE REMARCAÇÃO NO CARD DA COMPRA
-  // -----------------------------------------------------
-  // Remarcar sem custo tem prazo por categoria (bartenderia 5 dias,
-  // gastronomia 72h, demais 48h) — ver /cancelamento.html. O prazo foi
-  // CONGELADO em metadata.politica_remarcacao_horas no momento da
-  // compra; reserva antiga, sem o campo, cai no padrão de 48h.
-  //
-  // Mostrar a contagem aqui é o ponto: a regra estava só no checkout e
-  // no e-mail de confirmação, dois lugares que a pessoa vê uma vez. Na
-  // hora em que ela lembra que precisa remarcar, ela abre "Minhas
-  // compras" — e é aqui que o prazo tem que estar.
-  // =====================================================
-
-  // Momento de início da experiência, em ms. Combina a data (já
-  // resolvida por parseDataDMYtoDate, que trata a virada de ano) com a
-  // hora inicial do rótulo ("19h00 – 22h30" → 19:00). Sem hora
-  // reconhecível, assume 00:00 do dia — sempre a favor da cliente, já
-  // que antecipa o fim do prazo em vez de atrasá-lo.
-  //
-  // Usa o fuso do navegador de propósito: a cliente está no Brasil e é
-  // o relógio dela que importa pra decidir se "ainda dá tempo".
-  function bookingStartAt(booking) {
-    const d = parseDataDMYtoDate(booking && booking.data);
-    if (!d) return null;
-    const head = String((booking && booking.horario) || '').split(/[–—-]/)[0].trim();
-    const hm = head.match(/^(\d{1,2})\s*[h:]\s*(\d{0,2})/i);
-    if (hm) {
-      const hh = Number(hm[1]);
-      const mm = hm[2] ? Number(hm[2]) : 0;
-      if (hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59) d.setHours(hh, mm, 0, 0);
-    }
-    const t = d.getTime();
-    return isNaN(t) ? null : t;
-  }
-
-  // "faltam 5 dias" / "faltam 7 horas" / "falta menos de 1 hora".
-  function tempoRestanteLabel(ms) {
-    const horas = ms / 3600000;
-    if (horas >= 48) return 'faltam ' + Math.floor(horas / 24) + ' dias';
-    if (horas >= 2) return 'faltam ' + Math.floor(horas) + ' horas';
-    if (horas >= 1) return 'falta 1 hora';
-    return 'falta menos de 1 hora';
-  }
-
-  function doisDigitos(n) { return (n < 10 ? '0' : '') + n; }
-
-  // Linha de prazo do card. Devolve '' quando não há o que dizer com
-  // segurança: compra passada, não paga, sem data reconhecível ou
-  // experiência que já aconteceu. Preferimos não mostrar nada a
-  // mostrar "prazo encerrado" numa reserva cuja data não entendemos.
-  function renderPrazoRemarcacao(booking, group) {
-    if (group === 'past') return '';
-    if ((booking.status || 'pending') !== 'pago') return '';
-    const inicio = bookingStartAt(booking);
-    if (inicio == null) return '';
-    const agora = Date.now();
-    if (inicio <= agora) return '';
-
-    const meta = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
-    const horasRaw = Number(meta.politica_remarcacao_horas);
-    const prazoHoras = (isFinite(horasRaw) && horasRaw > 0) ? horasRaw : 48;
-    const limite = inicio - prazoHoras * 3600000;
-    const restante = limite - agora;
-
-    // WhatsApp, não e-mail: a pessoa está no celular olhando a reserva.
-    // É o mesmo canal do rodapé e do header do site inteiro, e é onde ela
-    // responde. A mensagem já vai preenchida com experiência, data e a
-    // referência da reserva — assim a conversa começa com o que a Elarah
-    // precisa pra localizar a compra, sem o vaivém de "qual reserva?".
-    const refCurta = String(booking.id || '').slice(-8).toUpperCase();
-    const msgWpp = 'Olá! Gostaria de remarcar minha reserva.\n\n' +
-      '*' + (booking.experiencia_nome || 'Experiência') + '*\n' +
-      (booking.data ? booking.data + ' ' : '') + (booking.horario || '') + '\n' +
-      (refCurta ? 'Ref. ' + refCurta : '');
-    const contatoUrl = 'https://wa.me/5511914455930?text=' + encodeURIComponent(msgWpp);
-
-    if (restante > 0) {
-      const dl = new Date(limite);
-      const quando = doisDigitos(dl.getDate()) + '/' + doisDigitos(dl.getMonth() + 1) +
-        ' às ' + doisDigitos(dl.getHours()) + 'h' + doisDigitos(dl.getMinutes());
-      return '<p class="purchase-card__prazo">' +
-        '<span aria-hidden="true">🔄</span> ' +
-        'Remarcação sem custo até <strong>' + escapeHtmlLocal(quando) + '</strong> · ' +
-        escapeHtmlLocal(tempoRestanteLabel(restante)) +
-        ' <a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Pedir no WhatsApp</a>' +
-        '</p>';
-    }
-    // Passou do prazo de remarcação sem custo. Não trava nada — só
-    // deixa claro antes de a pessoa pedir, pra a conversa começar do
-    // lugar certo em vez de virar negociação.
-    return '<p class="purchase-card__prazo purchase-card__prazo--encerrado">' +
-      '<span aria-hidden="true">⏳</span> ' +
-      'Prazo de remarcação sem custo encerrado ' +
-      '<a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Falar no WhatsApp</a>' +
-      '</p>';
-  }
-
   function renderBookingCard(booking, group) {
     const nome = booking.experiencia_nome || 'Experiência';
     const data = booking.data || '';
@@ -650,7 +510,6 @@ renderFavoritos();
           '<h3 class="purchase-card__title">' + escapeHtmlLocal(nome) + '</h3>' +
           '<div class="purchase-card__meta">' + metaParts.join('') + '</div>' +
           localHtml +
-          renderPrazoRemarcacao(booking, group) +
         '</div>' +
       '</article>'
     );
@@ -1121,122 +980,6 @@ renderFavoritos();
       e.preventDefault();
       await ElarahAuth.logout();
       window.location.href = 'index.html';
-    });
-  }
-
-  // ===== EXCLUIR CONTA (App Store 5.1.1 + LGPD) =====
-  const deleteBtn = document.getElementById('account-delete');
-  if (deleteBtn) {
-    deleteBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      openDeleteAccountModal();
-    });
-  }
-
-  function openDeleteAccountModal() {
-    // Remove modal anterior se houver.
-    const existing = document.getElementById('del-acc-overlay');
-    if (existing) existing.remove();
-
-    const overlay = document.createElement('div');
-    overlay.id = 'del-acc-overlay';
-    overlay.style.cssText =
-      'position:fixed;inset:0;z-index:9999;background:rgba(20,14,10,.55);display:flex;' +
-      'align-items:center;justify-content:center;padding:20px;';
-    overlay.innerHTML =
-      '<div role="dialog" aria-modal="true" aria-labelledby="del-acc-title" ' +
-        'style="background:#fff;max-width:440px;width:100%;border-radius:16px;padding:24px;' +
-        'box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow:auto;">' +
-        '<h2 id="del-acc-title" style="margin:0 0 12px;font-size:1.25rem;color:#b23b3b;">Excluir minha conta</h2>' +
-        '<p style="margin:0 0 10px;color:#3a3a3a;font-size:.92rem;line-height:1.55;">' +
-          'Esta ação é <strong>definitiva e não pode ser desfeita</strong>. Ao excluir sua conta:' +
-        '</p>' +
-        '<ul style="margin:0 0 14px;padding-left:18px;color:#5a5a5a;font-size:.88rem;line-height:1.6;">' +
-          '<li>seu login e seus dados pessoais são apagados;</li>' +
-          '<li>seus favoritos e preferências são removidos;</li>' +
-          '<li>você perde o acesso ao histórico de reservas nesta conta;</li>' +
-          '<li>reservas já pagas são mantidas apenas como registro fiscal, de forma <strong>anonimizada</strong> (sem seus dados), conforme a LGPD.</li>' +
-        '</ul>' +
-        '<label for="del-acc-confirm" style="display:block;margin:0 0 6px;font-size:.85rem;color:#3a3a3a;">' +
-          'Para confirmar, digite <strong>EXCLUIR</strong>:</label>' +
-        '<input id="del-acc-confirm" type="text" autocomplete="off" autocapitalize="characters" ' +
-          'style="width:100%;padding:11px 12px;border:1px solid #d8cdbd;border-radius:10px;font-size:1rem;box-sizing:border-box;" ' +
-          'placeholder="EXCLUIR">' +
-        '<p id="del-acc-err" style="display:none;margin:8px 0 0;color:#b23b3b;font-size:.82rem;"></p>' +
-        '<div style="display:flex;gap:10px;margin-top:18px;">' +
-          '<button id="del-acc-cancel" type="button" style="flex:1;padding:12px;border:1px solid #d8cdbd;background:#fff;color:#3a3a3a;border-radius:10px;font-size:.95rem;cursor:pointer;">Cancelar</button>' +
-          '<button id="del-acc-go" type="button" disabled style="flex:1;padding:12px;border:none;background:#c9564f;color:#fff;border-radius:10px;font-size:.95rem;cursor:pointer;opacity:.55;">Excluir conta</button>' +
-        '</div>' +
-      '</div>';
-    document.body.appendChild(overlay);
-    document.body.style.overflow = 'hidden';
-
-    const input = overlay.querySelector('#del-acc-confirm');
-    const goBtn = overlay.querySelector('#del-acc-go');
-    const cancelBtn = overlay.querySelector('#del-acc-cancel');
-    const errEl = overlay.querySelector('#del-acc-err');
-
-    function close() {
-      overlay.remove();
-      document.body.style.overflow = '';
-    }
-    cancelBtn.addEventListener('click', close);
-    overlay.addEventListener('click', (ev) => { if (ev.target === overlay) close(); });
-
-    input.addEventListener('input', () => {
-      const ok = input.value.trim().toUpperCase() === 'EXCLUIR';
-      goBtn.disabled = !ok;
-      goBtn.style.opacity = ok ? '1' : '.55';
-    });
-    setTimeout(() => input.focus(), 50);
-
-    goBtn.addEventListener('click', async () => {
-      if (input.value.trim().toUpperCase() !== 'EXCLUIR') return;
-      goBtn.disabled = true;
-      goBtn.textContent = 'Excluindo...';
-      errEl.style.display = 'none';
-      try {
-        const sb = window.supabaseClient;
-        let token = null;
-        if (sb && sb.auth) {
-          const { data } = await sb.auth.getSession();
-          token = data && data.session ? data.session.access_token : null;
-        }
-        if (!token) {
-          errEl.textContent = 'Sua sessão expirou. Faça login de novo e tente outra vez.';
-          errEl.style.display = 'block';
-          goBtn.disabled = false; goBtn.textContent = 'Excluir conta';
-          return;
-        }
-        // apikey (anon, público) é exigido pelo gateway do Supabase;
-        // Authorization = token do PRÓPRIO usuário (a função identifica
-        // quem é por ele e só apaga a conta dele).
-        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53aWp4am1lbmJmeWVodnNjb2dzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTA1MjQsImV4cCI6MjA5MTQyNjUyNH0.HPLrWNczhDxXH3eBLZHhsmrc3Tviah0eUuO1BsULQ-c';
-        const res = await fetch(
-          'https://nwijxjmenbfyehvscogs.supabase.co/functions/v1/delete-account',
-          { method: 'POST', headers: {
-            'Content-Type': 'application/json',
-            'apikey': ANON_KEY,
-            'Authorization': 'Bearer ' + token,
-          } }
-        );
-        const out = await res.json().catch(() => null);
-        if (!res.ok || !out || !out.ok) {
-          errEl.textContent = (out && out.message) || 'Não foi possível excluir agora. Tente novamente em instantes.';
-          errEl.style.display = 'block';
-          goBtn.disabled = false; goBtn.textContent = 'Excluir conta';
-          return;
-        }
-        // Sucesso: encerra a sessão e volta pra home com aviso.
-        try { await ElarahAuth.logout(); } catch (_) {}
-        try { localStorage.clear(); } catch (_) {}
-        window.location.href = 'index.html?conta_excluida=1';
-      } catch (err) {
-        console.error('[Elarah conta] erro ao excluir conta:', err);
-        errEl.textContent = 'Erro de conexão. Tente novamente.';
-        errEl.style.display = 'block';
-        goBtn.disabled = false; goBtn.textContent = 'Excluir conta';
-      }
     });
   }
 

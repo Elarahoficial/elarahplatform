@@ -95,13 +95,6 @@
       // (com checkout). Quando null, fluxo de lead WhatsApp. Se a
       // coluna ainda não existe no banco, vira undefined → null.
       experienceId: row.experience_id || null,
-      // Colunas de sql/elarah_byelarah_aviso_data.sql. Quando a data
-      // deste item é publicada, quem está na lista de interesse recebe
-      // o aviso automático por WhatsApp — a menos que a admin desligue
-      // aqui. Banco sem a coluna → undefined → default true (o
-      // comportamento pedido), sem quebrar nada.
-      avisarInteressados: row.avisar_interessados !== false,
-      linkInscricao: row.link_inscricao || '',
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || ''
     };
@@ -129,39 +122,7 @@
     // não existe no banco, o Supabase ignora silenciosamente.
     const expId = item.experienceId !== undefined ? item.experienceId : item.experience_id;
     row.experience_id = expId || null;
-    // Aviso automático de data publicada. Só entra no payload quando o
-    // chamador realmente mandou o campo — assim um update parcial (ex.:
-    // só reordenar) não sobrescreve a escolha da admin.
-    const avisar = item.avisarInteressados !== undefined
-      ? item.avisarInteressados
-      : item.avisar_interessados;
-    if (avisar !== undefined) row.avisar_interessados = avisar !== false;
-    const linkIns = item.linkInscricao !== undefined
-      ? item.linkInscricao
-      : item.link_inscricao;
-    if (linkIns !== undefined) row.link_inscricao = String(linkIns || '').trim() || null;
     return row;
-  }
-
-  // Colunas novas (sql/elarah_byelarah_aviso_data.sql). Se o SQL ainda não
-  // foi rodado no banco, o PostgREST recusa o payload inteiro — e a admin
-  // ficaria sem conseguir editar NADA. Detectamos esse caso e reenviamos
-  // sem as colunas novas: o item salva, só o aviso automático fica de fora.
-  const COLUNAS_AVISO = ['avisar_interessados', 'link_inscricao'];
-
-  function erroDeColunaDeAviso(error) {
-    const txt = [
-      error && error.message,
-      error && error.details,
-      error && error.hint
-    ].filter(Boolean).join(' ');
-    return COLUNAS_AVISO.some(function (c) { return txt.indexOf(c) !== -1; });
-  }
-
-  function semColunasDeAviso(row) {
-    const copia = Object.assign({}, row);
-    COLUNAS_AVISO.forEach(function (c) { delete copia[c]; });
-    return copia;
   }
 
   async function getAllItems() {
@@ -233,20 +194,11 @@
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '') || ('item-' + Date.now());
     }
-    let { data, error } = await client
+    const { data, error } = await client
       .from(ITEMS_TABLE)
       .insert(row)
       .select()
       .maybeSingle();
-    if (error && erroDeColunaDeAviso(error)) {
-      console.warn('[ElarahByElarah] banco sem as colunas de aviso automático — ' +
-        'salvando sem elas. Rode sql/elarah_byelarah_aviso_data.sql.');
-      ({ data, error } = await client
-        .from(ITEMS_TABLE)
-        .insert(semColunasDeAviso(row))
-        .select()
-        .maybeSingle());
-    }
     if (error) {
       console.error('[ElarahByElarah] addItem error', error);
       alert('Erro ao criar item: ' + error.message);
@@ -265,22 +217,12 @@
     const client = sb();
     if (!client) return null;
     const row = itemToRow(item);
-    let { data, error } = await client
+    const { data, error } = await client
       .from(ITEMS_TABLE)
       .update(row)
       .eq('id', id)
       .select()
       .maybeSingle();
-    if (error && erroDeColunaDeAviso(error)) {
-      console.warn('[ElarahByElarah] banco sem as colunas de aviso automático — ' +
-        'salvando sem elas. Rode sql/elarah_byelarah_aviso_data.sql.');
-      ({ data, error } = await client
-        .from(ITEMS_TABLE)
-        .update(semColunasDeAviso(row))
-        .eq('id', id)
-        .select()
-        .maybeSingle());
-    }
     if (error) {
       console.error('[ElarahByElarah] updateItem error', error);
       alert('Erro ao atualizar item: ' + error.message);
@@ -293,46 +235,6 @@
     }
     invalidate();
     return rowToItem(data);
-  }
-
-  // Grava só a coluna `ordem` de vários items de uma vez.
-  // `pairs` = [{ id, ordem }] com ordem 1-based (1 = primeiro card
-  // da faixa By Elarah). Propositalmente NÃO passa por itemToRow —
-  // um update parcial evita reescrever nome/imagem/horários e some
-  // com o risco de sobrescrever algo que outra aba do admin acabou
-  // de salvar.
-  async function setItemsOrdem(pairs) {
-    const client = sb();
-    if (!client) return { _error: { message: 'Supabase indisponível.' } };
-    if (!Array.isArray(pairs) || !pairs.length) return { ok: true, updated: 0 };
-
-    // Só grava quem realmente mudou de posição.
-    const current = {};
-    try {
-      (itemsCache || await getAllItems()).forEach(function (i) {
-        if (i && i.id != null) current[i.id] = i.ordem == null ? null : Number(i.ordem);
-      });
-    } catch (e) { /* sem o mapa, grava tudo */ }
-
-    let updated = 0;
-    for (let i = 0; i < pairs.length; i++) {
-      const p = pairs[i];
-      if (!p || !p.id) continue;
-      const n = Number(p.ordem);
-      const ordem = Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
-      if (current[p.id] === ordem) continue;
-      const { error } = await client
-        .from(ITEMS_TABLE)
-        .update({ ordem: ordem })
-        .eq('id', p.id);
-      if (error) {
-        console.error('[ElarahByElarah] setItemsOrdem error', error);
-        return { _error: error };
-      }
-      updated++;
-    }
-    invalidate();
-    return { ok: true, updated: updated };
   }
 
   async function deleteItem(id) {
@@ -443,7 +345,6 @@
     getItemById,
     addItem,
     updateItem,
-    setItemsOrdem,
     deleteItem,
     submitInterest,
     getAllSubmissions,

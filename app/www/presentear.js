@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     'perfumaria':  'assets/perfumaria.jpg',
     'ceramica':    'assets/ceramica-fria.jpg',
     'tufting':     'assets/tufting1.jpg',
-    'tufting & punch': 'assets/tufting1.jpg',
     'pintura':     'assets/pinturataca.jpg',
     'vela':        'assets/velaaromatica.jpg',
     'gastronomia': 'assets/cookies.jpg',
@@ -53,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const grid = document.getElementById('gift-grid');
   const moreWrap = document.getElementById('gift-more');
   const moreBtn = document.getElementById('gift-more-btn');
-  const filtersWrap = document.querySelector('.gift-experiences__filters');
+  const filterBtns = document.querySelectorAll('.gift-filter-btn');
 
   // Limite de cards por filtro: 12 (3 fileiras de 4). Acima disso a
   // gente esconde o excedente atrás do botão "Ver todas" pra não
@@ -70,22 +69,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   let activeFilter = '';
 
   // ===== RENDER CARDS =====
-  // Preço que a cliente paga hoje: o vigente (com a promoção sazonal
-  // quando ela está no ar) e nunca o preço de cadastro.
-  function precoVigenteDe(exp) {
-    return (window.ElarahData && ElarahData.precoVigente)
-      ? ElarahData.precoVigente(exp)
-      : ((exp && exp.preco) || '');
-  }
-
   function renderGiftCards() {
     if (!grid) return;
 
     const filtered = giftExperiences.filter((exp) => {
-      return !activeFilter ||
-        ((window.ElarahData && ElarahData.matchesCategoria)
-          ? ElarahData.matchesCategoria(exp, activeFilter)
-          : exp.categoria === activeFilter);
+      return !activeFilter || exp.categoria === activeFilter;
     });
 
     // Quando não expandido, mostra no máximo GIFT_LIMIT cards. O resto
@@ -138,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="card__badge">${exp.data}</span>
         </div>
         <div class="card__body">
-          <span class="card__category">${(window.ElarahData && ElarahData.categoriaLabel) ? ElarahData.categoriaLabel(exp) : exp.categoria}</span>
+          <span class="card__category">${exp.categoria}</span>
           <h3 class="card__title">${exp.nome}</h3>
           <div class="card__details">
             <p class="card__detail">
@@ -165,7 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             </p>
           </div>
           <div class="card__footer">
-            <p class="card__price">${(window.ElarahData && ElarahData.precoDeHTML ? ElarahData.precoDeHTML(exp) : '')}<strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(precoVigenteDe(exp)) : precoVigenteDe(exp))}</strong></p>
+            <p class="card__price"><strong>${(window.ElarahData && ElarahData.formatPrecoBR ? ElarahData.formatPrecoBR(exp.preco) : exp.preco)}</strong></p>
             ${/\d/.test(String(exp.preco || '')) ? '<p class="card__installments" style="margin:-6px 0 8px;font-size:.72rem;color:#8a7a68;line-height:1.2;">ou até <strong>12x</strong> no cartão</p>' : ''}
             <button type="button" class="card__reserve-btn"
               data-reserve
@@ -191,28 +179,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       grid.appendChild(card);
-    });
-
-    // ===== BOTÃO "RESERVAR" → reserva de verdade da experiência =====
-    // Presentear uma experiência é uma RESERVA (data + horário + quantidade
-    // de pessoas), não um gift card de valor. Esse fluxo já existe, testado
-    // em produção, na página da experiência (experiencia.html + script.js):
-    // escolha de data, horário (inclusive slots semanais/recorrentes) e
-    // quantidade no checkout. A reserva aparece na aba Compras com o NOME
-    // da experiência — que era o que faltava. Mandamos ?presente=1 só pra
-    // sinalizar o contexto de presente na página de destino.
-    //
-    // (Antes o clique não fazia nada: o listener global de [data-reserve]
-    // vive em script.js, que não é carregado nesta página.)
-    grid.querySelectorAll('[data-reserve]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const expId = btn.getAttribute('data-experience-id');
-        if (!expId) return;
-        window.location.href =
-          'experiencia.html?id=' + encodeURIComponent(expId) + '&presente=1';
-      });
     });
 
     grid.querySelectorAll('.card__favorite').forEach((btn) => {
@@ -264,62 +230,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // ===== FILTER BUTTONS (dinâmicos) =====
-  // Antes eram 5 botões fixos no HTML — categorias novas (Bartenderia,
-  // Cerâmica, Floral, Macramê…) nunca apareciam. Agora a barra é montada
-  // a partir das categorias que realmente existem nas experiências
-  // visíveis, então TODAS aparecem pra pessoa escolher a experiência
-  // dentro delas. Respeita o campo multi-categoria "A | B".
-  function collectCategorias() {
-    const seen = new Map(); // chave lower → rótulo original
-    giftExperiences.forEach((exp) => {
-      const cats = (window.ElarahData && ElarahData.categoriasOf)
-        ? ElarahData.categoriasOf(exp)
-        : String(exp.categoria || '')
-            .split('|')
-            .map((s) => s.trim())
-            .filter(Boolean);
-      cats.forEach((c) => {
-        const k = c.toLowerCase();
-        if (!seen.has(k)) seen.set(k, c);
-      });
+  // ===== FILTER BUTTONS =====
+  filterBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach((b) => b.classList.remove('gift-filter-btn--active'));
+      btn.classList.add('gift-filter-btn--active');
+      activeFilter = btn.dataset.filter;
+      // Cada categoria recomeça recolhida (máx. 12) — trocar de filtro
+      // reseta a expansão.
+      expanded = false;
+      renderGiftCards();
     });
-    return Array.from(seen.values()).sort((a, b) =>
-      a.localeCompare(b, 'pt-BR')
-    );
-  }
-
-  function renderFilterButtons() {
-    if (!filtersWrap) return;
-    const cats = collectCategorias();
-    const esc = (s) => String(s).replace(/"/g, '&quot;');
-    filtersWrap.innerHTML =
-      '<button class="gift-filter-btn gift-filter-btn--active" data-filter="">Todas</button>' +
-      cats
-        .map(
-          (c) =>
-            '<button class="gift-filter-btn" data-filter="' +
-            esc(c) +
-            '">' +
-            c +
-            '</button>'
-        )
-        .join('');
-
-    filtersWrap.querySelectorAll('.gift-filter-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        filtersWrap
-          .querySelectorAll('.gift-filter-btn')
-          .forEach((b) => b.classList.remove('gift-filter-btn--active'));
-        btn.classList.add('gift-filter-btn--active');
-        activeFilter = btn.dataset.filter;
-        // Cada categoria recomeça recolhida (máx. 12) — trocar de filtro
-        // reseta a expansão.
-        expanded = false;
-        renderGiftCards();
-      });
-    });
-  }
+  });
 
   // ===== SEARCH =====
   function executarBuscaPresentear() {
@@ -434,7 +356,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ===== INITIAL RENDER =====
-  renderFilterButtons();
   renderGiftCards();
 
   // =================================================================
@@ -719,8 +640,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ===== Open / Close =====
   // Reset COMPLETO do estado ao abrir (não confia em estado prévio).
-  // Este modal é SÓ pro gift card de valor livre. Presentear uma
-  // experiência específica é uma reserva — vai pra experiencia.html.
   function openGiftModal() {
     const m = buildGiftModal();
 
@@ -755,8 +674,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     const cpfWrap = m.querySelector('#gcm-cpf-wrap');
     if (cpfWrap) cpfWrap.style.display = 'none';
-    const customEl = m.querySelector('#gcm-custom');
-    if (customEl) customEl.value = '';   // sem isso o valor sobrava entre aberturas
     const totalEl = m.querySelector('#gcm-total');
     if (totalEl) totalEl.textContent = 'R$ 0,00';
     const submitBtn = m.querySelector('#gcm-submit');
