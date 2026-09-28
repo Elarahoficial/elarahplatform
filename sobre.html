@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="A Elarah é uma curadoria de experiências presenciais em São Paulo — vivências criativas fora do óbvio pra fazer sozinha, a dois ou com as amigas. Conheça a nossa história.">
+  <meta name="description" content="A Elarah começou com experiências presenciais em São Paulo, levou esses encontros para grupos e empresas e, dessa trajetória, nasceu a Elarah Mental Health. Conheça a nossa história.">
   <title>Sobre a Elarah — experiências presenciais em SP</title>
   <link rel="canonical" href="https://elarah.com.br/sobre.html">
   <link rel="icon" href="assets/logo.png" type="image/png">
@@ -13,6 +13,126 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <script>(function(){var t=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href="assets/app-skin.css?t="+t;document.head.appendChild(l);var s=document.createElement("script");s.src="assets/app-skin.js?t="+t;s.defer=true;document.head.appendChild(s);})();</script>
+  <style>
+    .sb{--sb-ink:#16302a;--sb-green:#1f4d3f;--sb-green-2:#2e6a57;--sb-sage:#8fb3a0;--sb-cream:#fbf7f1;--sb-paper:#fffdf9;--sb-terra:#F27623;--sb-terra-2:#d9602a;--sb-terra-soft:#fdeee3;--sb-muted:#5f6a64;--sb-line:#e8e1d6;color:var(--sb-ink);background:var(--sb-cream)}
+    .sb *{box-sizing:border-box}
+    .sb h1,.sb h2,.sb h3{font-family:'DM Serif Display',Georgia,serif;font-weight:400;letter-spacing:-.015em;line-height:1.08;margin:0}
+    .sb h1 em,.sb h2 em{font-style:italic;color:var(--sb-terra)}
+    .sb p{margin:0}
+    .sb-wrap{max-width:1320px;margin:0 auto;padding:0 clamp(20px,4vw,56px)}
+    .sb-tag{display:inline-flex;align-items:center;gap:10px;font-size:.74rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--sb-green-2)}
+    .sb-tag::before{content:'';width:24px;height:2px;border-radius:2px;background:var(--sb-terra)}
+    .sb-tag--light{color:#f7c9a8}
+    .sb-sec{padding:120px 0}
+    .sb-txt p{font-size:1.06rem;line-height:1.8;color:var(--sb-muted)}
+    .sb-txt p+p{margin-top:18px}
+    .sb-img{width:100%;height:100%;object-fit:cover;display:block;border-radius:28px}
+    .sb-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:16px 28px;border-radius:999px;font-weight:700;font-size:.98rem;text-decoration:none;transition:transform .15s,background .15s}
+    .sb-btn:hover{transform:translateY(-1px)}
+    .sb-btn--terra{background:var(--sb-terra);color:#fff;box-shadow:0 12px 30px rgba(242,118,35,.3)}
+    .sb-btn--terra:hover{background:var(--sb-terra-2)}
+    .sb-btn--line{border:1.5px solid rgba(255,255,255,.45);color:#fff}
+    .sb-btn--line:hover{background:rgba(255,255,255,.08)}
+
+    /* 1. Hero */
+    .sb-hero{padding:72px 0 110px}
+    .sb-hero__grid{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center}
+    .sb-hero h1{font-size:clamp(2.6rem,5vw,4.4rem);margin:22px 0 30px}
+    .sb-hero__lead{font-size:1.22rem!important;line-height:1.6!important;color:var(--sb-ink)!important}
+    .sb-hero__fecho{margin-top:26px!important;font-family:'DM Serif Display',serif;font-size:1.45rem!important;line-height:1.3!important;color:var(--sb-green)!important;padding-left:18px;border-left:2px solid var(--sb-terra)}
+    .sb-hero__foto{height:680px;position:relative}
+    .sb-hero__foto figcaption{position:absolute;left:24px;bottom:24px;background:rgba(255,253,249,.94);border-radius:999px;padding:10px 18px;font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sb-green)}
+
+    /* 2. História */
+    .sb-hist{background:var(--sb-paper)}
+    .sb-hist__grid{display:grid;grid-template-columns:1.05fr .95fr;gap:88px;align-items:start}
+    .sb-hist h2{font-size:clamp(2.2rem,4vw,3.4rem);margin:18px 0 30px}
+    .sb-num{display:flex;align-items:center;gap:22px;margin:34px 0;padding:26px 0;border-top:1px solid var(--sb-line);border-bottom:1px solid var(--sb-line)}
+    .sb-num b{font-family:'DM Serif Display',serif;font-weight:400;font-size:4.2rem;line-height:1;color:var(--sb-terra)}
+    .sb-num span{font-size:1rem;line-height:1.5;color:var(--sb-ink);max-width:340px}
+    .sb-cats{display:flex;flex-wrap:wrap;gap:8px 0;margin-top:14px;font-size:.78rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--sb-green)}
+    .sb-cats span+span::before{content:'·';color:var(--sb-terra);margin:0 12px}
+    .sb-percebe{margin-top:40px!important;font-family:'DM Serif Display',serif;font-size:clamp(1.5rem,2.4vw,1.95rem)!important;line-height:1.3!important;color:var(--sb-ink)!important}
+    .sb-percebe em{color:var(--sb-terra)}
+    .sb-hist__fotos{display:grid;grid-template-columns:1fr 1fr;gap:16px;position:sticky;top:110px}
+    .sb-hist__fotos img{aspect-ratio:4/5}
+    .sb-hist__fotos img:first-child{grid-column:1/3;aspect-ratio:3/2}
+
+    /* 3. Maria Eduarda */
+    .sb-maria{background:var(--sb-green);color:#fff;padding:0}
+    .sb-maria__grid{display:grid;grid-template-columns:.9fr 1.1fr;align-items:stretch;min-height:760px}
+    .sb-maria__foto{position:relative;overflow:hidden}
+    .sb-maria__foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%}
+    .sb-maria__txt{padding:110px clamp(24px,6vw,96px);display:flex;flex-direction:column;justify-content:center}
+    .sb-maria h2{font-size:clamp(2.6rem,4.6vw,4rem);color:#fff;margin:22px 0 10px}
+    .sb-maria__cargo{font-size:.82rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--sb-sage)}
+    .sb-maria .sb-txt{margin-top:34px;max-width:620px}
+    .sb-maria .sb-txt p{color:rgba(255,255,255,.78)}
+    .sb-maria__quote{margin:44px 0 0;padding:0;max-width:640px}
+    .sb-maria__quote p{font-family:'DM Serif Display',serif;font-style:italic;font-size:clamp(1.5rem,2.3vw,1.95rem);line-height:1.3;color:#f7c9a8}
+    .sb-maria__quote p::before{content:'“';display:block;font-style:normal;font-size:4rem;line-height:.6;height:30px;color:var(--sb-terra)}
+    .sb-maria__quote cite{display:block;margin-top:16px;font-style:normal;font-size:.76rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.6)}
+
+    /* 4. Nasce a Mental Health */
+    .sb-mh{background:var(--sb-terra-soft)}
+    .sb-mh__grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:88px;align-items:center}
+    .sb-mh__foto{height:640px}
+    .sb-mh h2{font-size:clamp(2.2rem,4vw,3.4rem);margin:18px 0 30px}
+    .sb-mh .sb-txt p{color:#5a4a42}
+    .sb-mh__fecho{margin-top:34px;padding-top:28px;border-top:1px solid rgba(217,96,42,.25)}
+    .sb-mh__fecho p{font-family:'DM Serif Display',serif;font-size:clamp(1.5rem,2.4vw,2rem);line-height:1.25;color:var(--sb-ink)}
+    .sb-mh__fecho p em{color:var(--sb-terra-2)}
+    .sb-mh__link{display:inline-block;margin-top:26px;font-weight:700;color:var(--sb-green);text-decoration:none;border-bottom:1px solid rgba(31,77,63,.3);padding-bottom:2px}
+    .sb-mh__link:hover{color:var(--sb-terra-2);border-color:var(--sb-terra)}
+
+    /* 5. Evolução */
+    .sb-evo{padding:110px 0}
+    .sb-evo__head{text-align:center;margin-bottom:64px}
+    .sb-evo__head h2{font-size:clamp(1.9rem,3.4vw,2.8rem);margin-top:18px}
+    .sb-evo__head h2 i{font-style:normal;color:var(--sb-terra);margin:0 .25em}
+    .sb-evo ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);position:relative}
+    .sb-evo ol::before{content:'';position:absolute;left:16.6%;right:16.6%;top:9px;height:1px;background:linear-gradient(90deg,var(--sb-sage),var(--sb-terra))}
+    .sb-evo li{text-align:center;padding:0 28px;position:relative}
+    .sb-evo li::before{content:'';display:block;width:19px;height:19px;margin:0 auto 28px;border-radius:50%;background:var(--sb-cream);border:2px solid var(--sb-green-2);position:relative;z-index:1}
+    .sb-evo li:last-child::before{background:var(--sb-terra);border-color:var(--sb-terra)}
+    .sb-evo small{display:block;font-size:.76rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--sb-terra)}
+    .sb-evo h3{font-size:1.7rem;margin:10px 0 12px}
+    .sb-evo li p{font-size:.98rem;line-height:1.7;color:var(--sb-muted);max-width:330px;margin:0 auto}
+
+    /* 6. Frase */
+    .sb-frase{background:var(--sb-paper);padding:150px 0;text-align:center}
+    .sb-frase p{font-family:'DM Serif Display',serif;font-size:clamp(1.6rem,3.2vw,2.6rem);line-height:1.3;color:var(--sb-ink);max-width:900px;margin:0 auto}
+    .sb-frase p+p{margin-top:22px}
+    .sb-frase .sb-frase__1{color:var(--sb-muted)}
+    .sb-frase em{color:var(--sb-terra)}
+
+    /* 7. CTA */
+    .sb-cta{background:var(--sb-ink);color:#fff;padding:110px 0;text-align:center}
+    .sb-cta h2{font-size:clamp(2.2rem,4vw,3.3rem);color:#fff;margin:18px 0 18px}
+    .sb-cta p{color:rgba(255,255,255,.72);font-size:1.08rem;max-width:620px;margin:0 auto}
+    .sb-cta__btns{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin-top:38px}
+
+    @media (max-width:980px){
+      .sb-sec{padding:84px 0}
+      .sb-hero{padding:40px 0 80px}
+      .sb-hero__grid,.sb-hist__grid,.sb-mh__grid,.sb-maria__grid{grid-template-columns:1fr;gap:48px}
+      .sb-hero__foto{height:460px;order:-1}
+      .sb-hist__fotos{position:static}
+      .sb-maria__foto{height:560px}
+      .sb-maria__txt{padding:64px 24px 80px}
+      .sb-mh__foto{height:420px;order:-1}
+      .sb-evo ol{grid-template-columns:1fr;gap:44px}
+      .sb-evo ol::before{display:none}
+      .sb-frase{padding:100px 0}
+    }
+    @media (max-width:560px){
+      .sb-hero__foto{height:380px}
+      .sb-maria__foto{height:460px}
+      .sb-num b{font-size:3.2rem}
+      .sb-btn{width:100%}
+    }
+  </style>
+
 </head>
 <body>
 
@@ -79,126 +199,126 @@
     </div>
   </header>
 
-  <!-- HERO -->
-  <section class="about-page-hero">
-    <div class="about-page-hero__inner">
-      <span class="about-page-hero__tag">Sobre a Elarah</span>
-      <h1 class="about-page-hero__title">
-        Menos rotina. <br>
-        Mais presença.
-      </h1>
-      <p class="about-page-hero__text">
-        A Elarah nasceu para conectar pessoas a experiências criativas, presenciais e fora do óbvio.
-        Um convite para sair do automático e viver algo real.
-      </p>
-    </div>
-  </section>
+  <main class="sb">
 
-  <!-- MANIFESTO -->
-  <section class="about-page-section">
-    <div class="about-page-container about-page-container--narrow">
-      <h2 class="about-page-section__title">Acreditamos em uma vida mais vivida.</h2>
-      <p class="about-page-section__text">
-        Em um mundo cada vez mais acelerado, digital e cheio de distrações, a Elarah surge como uma curadoria de experiências
-        que devolvem às pessoas aquilo que muitas vezes falta na rotina: presença, troca, criatividade e conexão real.
-      </p>
-      <p class="about-page-section__text">
-        Mais do que reservar workshops ou descobrir programas diferentes, a Elarah existe para criar momentos que marcam.
-        Cerâmica, pintura, gastronomia, velas, floral e tantas outras vivências que transformam tempo em memória.
-      </p>
-    </div>
-  </section>
-
-  <!-- O QUE É -->
-  <section class="about-page-section about-page-section--soft">
-    <div class="about-page-container about-page-grid">
-      <div>
-        <span class="about-page-kicker">O que é a Elarah</span>
-        <h2 class="about-page-section__title">Uma curadoria de experiências offline em São Paulo.</h2>
+  <!-- 1. HERO -->
+  <section class="sb-hero">
+    <div class="sb-wrap sb-hero__grid">
+      <div class="sb-txt">
+        <span class="sb-tag">Sobre a Elarah</span>
+        <h1>Não começamos com saúde mental. <em>Começamos com experiências.</em></h1>
+        <p class="sb-hero__lead">A Elarah nasceu para aproximar pessoas do que acontece fora das telas: experiências presenciais, criativas e feitas para serem vividas de verdade.</p>
+        <p>Ao longo da nossa trajetória, levamos experiências para pessoas, grupos e empresas — e foi justamente dentro desses encontros que percebemos algo maior: quando as pessoas têm espaço para criar, conversar, experimentar e estar presentes, alguma coisa muda.</p>
+        <p class="sb-hero__fecho">Foi dessa experiência que nasceu a Elarah Mental Health.</p>
       </div>
+      <figure class="sb-hero__foto" style="margin:0">
+        <img class="sb-img" src="assets/mh-origem-ceramica.jpg" alt="Grupo sorrindo ao redor da mesa em uma experiência de cerâmica da Elarah">
+        <figcaption>Experiência Elarah · Cerâmica</figcaption>
+      </figure>
+    </div>
+  </section>
 
-      <div>
-        <p class="about-page-section__text">
-          Reunimos experiências criativas, autorais e especiais em um só lugar, facilitando a descoberta de programas que fogem do comum.
-          A ideia é simples: ajudar pessoas a encontrarem algo novo para viver — sozinhas, com amigos, em casal, em grupo ou até para presentear.
-        </p>
-        <p class="about-page-section__text">
-          Cada experiência da Elarah é pensada para gerar conexão: com a cidade, com outras pessoas, com o fazer manual e com o prazer de viver algo fora das telas.
-        </p>
+  <!-- 2. A HISTÓRIA DA ELARAH -->
+  <section class="sb-sec sb-hist">
+    <div class="sb-wrap sb-hist__grid">
+      <div class="sb-txt">
+        <span class="sb-tag">A história da Elarah</span>
+        <h2>Tudo começou com <em>experiências.</em></h2>
+        <p>A Elarah nasceu como uma curadoria de experiências presenciais em São Paulo — e cresceu conectando pessoas a momentos que dificilmente cabem em uma tela.</p>
+        <div class="sb-cats"><span>Cerâmica</span><span>Pintura</span><span>Gastronomia</span><span>Velas</span><span>Perfumaria</span><span>Arte</span><span>Criatividade</span></div>
+        <div class="sb-num"><b>20+</b><span>experiências na curadoria da Elarah, além de formatos personalizados para grupos e empresas.</span></div>
+        <p>Ao longo dessa trajetória, realizamos diversos eventos corporativos e levamos essa proposta para dentro das empresas. E foi aí que percebemos algo que mudou o rumo da nossa história:</p>
+        <p class="sb-percebe">as pessoas não precisavam apenas de eventos. <em>Precisavam de espaços para pausar, criar, conversar e estar presentes.</em></p>
+        <p style="margin-top:22px">Essa percepção deu origem a um novo braço da Elarah.</p>
+      </div>
+      <div class="sb-hist__fotos">
+        <img class="sb-img" src="assets/eventocorporativo.jpg" alt="Equipe reunida em um evento corporativo da Elarah" loading="lazy">
+        <img class="sb-img" src="assets/mh-origem-colagem.jpg" style="object-position:50% 45%" alt="Participantes rindo durante uma experiência de colagem da Elarah" loading="lazy">
+        <img class="sb-img" src="assets/mh-origem-mesa.jpg" alt="Mesa posta pela Elarah para uma experiência corporativa de pintura" loading="lazy">
       </div>
     </div>
   </section>
 
-  <!-- DIFERENCIAIS -->
-  <section class="about-page-section">
-    <div class="about-page-container">
-      <div class="about-page-heading">
-        <span class="about-page-kicker">Por que a Elarah</span>
-        <h2 class="about-page-section__title">O que torna a Elarah diferente</h2>
-      </div>
-
-      <div class="about-page-cards">
-        <article class="about-page-card">
-          <h3 class="about-page-card__title">Curadoria de verdade</h3>
-          <p class="about-page-card__text">
-            Não é só uma lista de atividades. Selecionamos experiências com proposta, estética e potencial real de encantar.
-          </p>
-        </article>
-
-        <article class="about-page-card">
-          <h3 class="about-page-card__title">Experiências que conectam</h3>
-          <p class="about-page-card__text">
-            A Elarah valoriza encontros, trocas, criatividade e tempo de qualidade — coisas que fazem falta na rotina de hoje.
-          </p>
-        </article>
-
-        <article class="about-page-card">
-          <h3 class="about-page-card__title">O offline como escolha</h3>
-          <p class="about-page-card__text">
-            Acreditamos que viver mais offline não é voltar no tempo — é criar espaço para sentir, experimentar e estar presente.
-          </p>
-        </article>
+  <!-- 3. MARIA EDUARDA VITIELLO -->
+  <section class="sb-maria">
+    <div class="sb-maria__grid">
+      <div class="sb-maria__foto"><img src="assets/sobre-maria-eduarda.jpg" alt="Maria Eduarda Vitiello, fundadora da Elarah" loading="lazy"></div>
+      <div class="sb-maria__txt">
+        <span class="sb-tag sb-tag--light">Quem está por trás da Elarah</span>
+        <h2>Maria Eduarda Vitiello</h2>
+        <div class="sb-maria__cargo">Fundadora da Elarah</div>
+        <div class="sb-txt">
+          <p>Maria Eduarda Vitiello é empreendedora e fundadora da Elarah, uma marca criada a partir da vontade de aproximar pessoas de experiências presenciais, criativas e significativas.</p>
+          <p>Antes da Elarah, Maria Eduarda já havia vivido outras experiências empreendedoras, construindo na prática uma visão sobre negócios, pessoas e criação de novas oportunidades. Atualmente, é estudante da FGV, onde amplia sua formação e sua visão sobre empreendedorismo, negócios e gestão.</p>
+          <p>À frente da Elarah, transformou uma curadoria de experiências em uma plataforma que conecta pessoas, parceiros e empresas a momentos fora do automático — e que hoje também dá origem à Elarah Mental Health.</p>
+        </div>
+        <blockquote class="sb-maria__quote">
+          <p>Eu sempre acreditei que algumas das melhores conexões acontecem quando a gente simplesmente sai do automático e vive alguma coisa de verdade.</p>
+          <cite>Maria Eduarda Vitiello</cite>
+        </blockquote>
       </div>
     </div>
   </section>
 
-  <!-- VISÃO -->
-  <section class="about-page-section about-page-section--highlight">
-    <div class="about-page-container about-page-container--narrow">
-      <span class="about-page-kicker about-page-kicker--light">Nossa visão</span>
-      <h2 class="about-page-section__title about-page-section__title--light">
-        Queremos ser a marca que lembra as pessoas de viverem mais no mundo real.
-      </h2>
-      <p class="about-page-section__text about-page-section__text--light">
-        A Elarah quer transformar a forma como as pessoas descobrem o que fazer na cidade — trocando o excesso de opções vazias
-        por experiências com alma, estética e significado.
-      </p>
-      <p class="about-page-section__text about-page-section__text--light">
-        Porque no fim, o que fica não é o tempo gasto no celular.
-        É o que a gente vive de verdade.
-      </p>
-    </div>
-  </section>
-
-  <!-- CTA FINAL -->
-  <section class="about-page-cta">
-    <div class="about-page-container about-page-cta__inner">
-      <div>
-        <span class="about-page-kicker">Viva a Elarah</span>
-        <h2 class="about-page-section__title">Descubra experiências para sair do óbvio.</h2>
-        <p class="about-page-section__text">
-          Explore workshops, vivências e programas criativos pensados para quem quer mais presença, conexão e mundo real.
-        </p>
-      </div>
-
-      <div class="about-page-cta__actions">
-        <a href="/categoria.html" class="about-page-btn">Explorar experiências</a>
-        <a href="/oferecer.html" class="about-page-btn about-page-btn--outline">Ser Parceiro</a>
+  <!-- 4. O NASCIMENTO DA MENTAL HEALTH -->
+  <section class="sb-sec sb-mh">
+    <div class="sb-wrap sb-mh__grid">
+      <div class="sb-mh__foto"><img class="sb-img" src="assets/mh-hero-pintura.jpg" style="object-position:58% 50%" alt="Colaboradoras pintando telas em uma experiência da Elarah Mental Health" loading="lazy"></div>
+      <div class="sb-txt">
+        <span class="sb-tag">Elarah Mental Health</span>
+        <h2>Da experiência nasceu <em>um novo braço.</em></h2>
+        <p>A Elarah Mental Health nasceu daquilo que já víamos acontecer na prática.</p>
+        <p>Depois de tantos encontros e experiências realizadas com empresas, entendemos o potencial desses momentos como espaços de cuidado, conexão e prevenção.</p>
+        <p>Por isso, criamos uma frente dedicada ao universo corporativo, unindo arteterapia, experiências criativas e programas estruturados de saúde mental para empresas.</p>
+        <p>A proposta é simples: criar momentos que as pessoas realmente queiram viver — e que façam sentido para a cultura, os desafios e os objetivos de cada organização.</p>
+        <div class="sb-mh__fecho">
+          <p>Não é colocar mais um workshop na agenda. <em>É criar uma pausa que realmente aconteça.</em></p>
+        </div>
+        <a class="sb-mh__link" href="saude-mental-empresas.html">Conheça a Elarah Mental Health →</a>
       </div>
     </div>
   </section>
 
-<!-- ========== FOOTER ========== -->
+  <!-- 5. A EVOLUÇÃO -->
+  <section class="sb-evo">
+    <div class="sb-wrap">
+      <div class="sb-evo__head">
+        <span class="sb-tag">A evolução</span>
+        <h2>De experiências<i>→</i>para empresas<i>→</i>para saúde mental</h2>
+      </div>
+      <ol>
+        <li><small>01</small><h3>Experiências</h3><p>Uma curadoria com mais de 20 experiências presenciais para viver fora das telas.</p></li>
+        <li><small>02</small><h3>Corporativo</h3><p>Eventos e experiências desenvolvidos para empresas, equipes e diferentes momentos da jornada corporativa.</p></li>
+        <li><small>03</small><h3>Elarah Mental Health</h3><p>Um braço especializado em arteterapia e experiências criativas voltadas à saúde mental no trabalho.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 6. FRASE DE IMPACTO -->
+  <section class="sb-frase">
+    <div class="sb-wrap">
+      <p class="sb-frase__1">A gente não começou falando sobre saúde mental.</p>
+      <p>Começou criando experiências.</p>
+      <p>E foi vivendo essas experiências com tantas pessoas que entendemos <em>o poder que elas têm.</em></p>
+      <p>Hoje, levamos esse poder também para dentro das empresas.</p>
+    </div>
+  </section>
+
+  <!-- 7. CTA FINAL -->
+  <section class="sb-cta">
+    <div class="sb-wrap">
+      <span class="sb-tag sb-tag--light">Viva a Elarah</span>
+      <h2>Quer conhecer a Elarah por dentro?</h2>
+      <p>Conheça nossas experiências, nossa curadoria e as soluções que criamos para empresas.</p>
+      <div class="sb-cta__btns">
+        <a class="sb-btn sb-btn--terra" href="https://elarah.com.br/">Conhecer a Elarah</a>
+        <a class="sb-btn sb-btn--line" href="saude-mental-empresas.html#contato">Pedir orçamento</a>
+      </div>
+    </div>
+  </section>
+
+  </main>
+
 <footer class="footer">
   <div class="footer__inner">
 
