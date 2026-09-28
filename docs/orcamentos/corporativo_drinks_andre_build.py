@@ -1,6 +1,6 @@
-# Proposta Elarah · Corporativo André · Drinks + comidinhas na Spicy Gabriel · 8 a 11 pessoas · ~2h30 · Pinheiros
+# Proposta Elarah · Corporativo André · Drinks + comidinhas · 8 a 11 pessoas · ~2h30 · no espaco do cliente
 # Padrao editorial corporativo Elarah (base NBCU/BFA — verde/terracota). Sofisticado, contemporaneo, neutro.
-# Spicy Gabriel com slide proprio (mesma foto/estetica do deck NBCU). 5 experiencias de drinks em cards visuais.
+# Evento no espaco do cliente (Elarah leva e monta tudo). 5 experiencias de drinks em cards visuais.
 # Valores FINAIS ao cliente: Caipirinha 489 · Gin 569 · Drinks com Café 569 · Mocktail 619 · Cerveja 619.
 # NUNCA mostrar custo de fornecedor/comissao/margem. Fotos reais existentes (sem inventar imagens/valores).
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
@@ -99,20 +99,20 @@ def dcard(name, tag, desc, price, src, alt, pos="center 50%"):
 # ============================ 1 · CAPA ============================
 cover = f'''
   <section class="slide">
-{head_block("Experiência corporativa", "Drinks", "& confraternização", "Spicy Gabriel · Pinheiros")}
+{head_block("Experiência corporativa", "Drinks", "& confraternização", "No espaço de vocês")}
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Experiência corporativa privada</span>
         <h1>O time junto, <em>de copo na mão</em></h1>
-        <p class="lead">Uma tarde de drinks e comidinhas na <b>Spicy Gabriel</b>, em Pinheiros — o grupo aprende, prova e brinda junto. Menos reunião, mais integração: descoberta, conversa e confraternização.</p>
+        <p class="lead">Uma tarde de drinks e comidinhas com o time — o grupo aprende, prova e brinda junto. Menos reunião, mais integração: descoberta, conversa e confraternização.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>8 a 11</b> pessoas</span>
           <span class="chip">≈ <b>2h30</b></span>
-          <span class="chip">Pinheiros</span>
+          <span class="chip">No seu espaço</span>
         </div>
       </div>
-      <div class="cover-photo">{img("bar-do-cofre.jpg", "Bar sofisticado e acolhedor, iluminação quente", "center 50%")}</div>
+      <div class="cover-photo">{img("andre-brinde.jpg", "Grupo de amigos brindando junto em clima de confraternização", "center 40%")}</div>
     </div>
     {foot("Drinks & confraternização")}
   </section>'''
@@ -135,20 +135,29 @@ conceito = f'''
     {foot("O conceito")}
   </section>'''
 
-# ============================ 3 · SPICY GABRIEL ============================
-spicy = f'''
+# ============================ 3 · NO SEU ESPAÇO ============================
+espaco = f'''
   <section class="slide">
-{head_simple("O anfitrião")}
-    <span class="eyebrow orange">◆ Spicy Gabriel · Pinheiros</span>
-    <h2>Um cenário gastronômico <em>para o time</em></h2>
-    <p class="lead">A experiência acontece na Spicy Gabriel, em Pinheiros — um espaço gastronômico feito para reunir o grupo em torno da cozinha, do balcão e da mesa, com estrutura completa e clima acolhedor.</p>
-    <div class="gstrip">
-      <figure>{img("spicy-mesa-pratos.webp", "Mesa posta com pratos e taças, chef ao fundo", "center 55%")}<figcaption>A mesa posta</figcaption></figure>
-      <figure>{img("drinkspetisco.jpg", "Drinks e petiscos servidos", "center 50%")}<figcaption>Drinks &amp; petiscos</figcaption></figure>
-      <figure>{img("entradachef.jpg", "Entrada preparada pelo chef", "center 50%")}<figcaption>Da cozinha</figcaption></figure>
+{head_simple("No espaço de vocês")}
+    <span class="eyebrow orange">◆ A Elarah vai até você</span>
+    <h2>No seu espaço, <em>montamos tudo</em></h2>
+    <p class="lead">A experiência acontece onde for melhor para o time — na empresa, num salão ou onde vocês preferirem. A gente leva tudo, monta o cenário e cuida de cada detalhe. Vocês só reúnem o grupo.</p>
+    <div class="bfeat">
+      <div class="bphoto">{img("drinkspetisco.jpg", "Balcão montado com drinks e petiscos", "center 50%")}</div>
+      <div class="bbody">
+        <span class="btag">A gente leva &amp; monta</span>
+        <h3>É só receber o time</h3>
+        <ul class="feat">
+          <li><span class="st">✓</span><b>Profissional conduzindo</b> a experiência</li>
+          <li><span class="st">✓</span><b>Bar e estrutura</b> montados no local</li>
+          <li><span class="st">✓</span><b>Drinks e insumos</b> de cada experiência</li>
+          <li><span class="st">✓</span><b>Comidinhas</b> para acompanhar</li>
+          <li><span class="st">✓</span><b>Montagem e desmontagem</b> por conta da Elarah</li>
+        </ul>
+      </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Spicy Gabriel · Pinheiros</b> — espaço gastronômico privativo, com profissional conduzindo, estrutura e comidinhas inclusas em cada experiência.</div>
-    {foot("O anfitrião · Spicy Gabriel")}
+    <div class="bnote" style="margin-top:16px">◆ Precisa apenas de um <b>local que comporte o grupo</b>, com um ponto de água e energia por perto — do resto, cuidamos nós.</div>
+    {foot("No espaço de vocês")}
   </section>'''
 
 # ============================ 4 · EXPERIÊNCIAS DE DRINKS ============================
@@ -178,7 +187,7 @@ formato = f'''
     <div class="fmt">
       <div class="fc"><div class="fi">✦</div><div class="ft">8 a 11</div><div class="fs">turma privada</div></div>
       <div class="fc"><div class="fi">◷</div><div class="ft">≈ 2h30</div><div class="fs">duração da experiência</div></div>
-      <div class="fc"><div class="fi">◆</div><div class="ft">Pinheiros</div><div class="fs">na Spicy Gabriel</div></div>
+      <div class="fc"><div class="fi">◆</div><div class="ft">No seu espaço</div><div class="fs">a Elarah leva tudo</div></div>
       <div class="fc"><div class="fi">✧</div><div class="ft">Drinks + comidinhas</div><div class="fs">tudo incluso</div></div>
     </div>
     <div class="bnote" style="margin-top:18px">◆ A Elarah cuida da <b>curadoria, da produção e da condução</b> — o time só chega, cria e confraterniza.</div>
@@ -206,7 +215,7 @@ investimento = f'''
         <tr><td class="nm"><b>Cerveja Artesanal</b></td><td class="cm">Salgadinhos</td><td class="val">R$ 619</td></tr>
       </tbody>
     </table>
-    <p class="fineprint">Valores por pessoa, para turma privada de 8 a 11 participantes, na Spicy Gabriel (Pinheiros), com duração aproximada de 2h30. Cada experiência inclui profissional conduzindo, estrutura e as comidinhas indicadas. A Elarah emite nota fiscal e alinha as condições de pagamento com o financeiro.</p>
+    <p class="fineprint">Valores por pessoa, para turma privada de 8 a 11 participantes, no espaço de vocês, com duração aproximada de 2h30. Cada experiência inclui profissional conduzindo, estrutura montada no local e as comidinhas indicadas. A Elarah emite nota fiscal e alinha as condições de pagamento com o financeiro.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -220,18 +229,18 @@ proximos = f'''
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="num">01</div><h3>Escolham a experiência</h3><p>Definimos juntos o formato de drinks que mais combina com o time.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>Confirmamos a data</h3><p>Reservamos a Spicy Gabriel só para o grupo, na data escolhida.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>A gente conduz</h3><p>Profissional, estrutura e comidinhas — o time só chega e aproveita.</p></div>
+      <div class="infocard"><div class="num">02</div><h3>Confirmamos a data</h3><p>Reservamos a agenda e combinamos o espaço de vocês para o encontro.</p></div>
+      <div class="infocard"><div class="num">03</div><h3>A gente monta tudo</h3><p>Levamos profissional, estrutura e comidinhas até o local — o time só chega e aproveita.</p></div>
     </div>
     <div class="quote" style="margin-top:22px">
-      André, me confirma a <strong>experiência</strong> e a data que a gente reserva a Spicy Gabriel e organiza cada detalhe pro time. ✦<br>
+      André, me confirma a <strong>experiência</strong> e a data que a gente organiza tudo e monta no espaço de vocês. ✦<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
     {foot("Próximos passos")}
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + conceito + spicy + experiencias + formato + investimento + proximos + '\n\n</div>\n\n')
+        + cover + conceito + espaco + experiencias + formato + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/corporativo-drinks-andre.html"
 open(out, "w", encoding="utf-8").write(html)
