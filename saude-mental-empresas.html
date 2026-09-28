@@ -104,10 +104,17 @@ section{padding:96px 0}
 
 /* PROBLEM */
 .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.pcard{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:28px}
-.pcard .x{font-size:1.6rem}
-.pcard h3{font-size:1.4rem;margin:14px 0 8px}
-.pcard p{color:var(--muted);font-size:.96rem}
+/* Cards visuais: foto grande em cima, texto curto embaixo. Enquanto a foto
+   não existe, fica só o fundo creme (a <img> se remove sozinha). */
+#problema{padding:80px 0}
+#problema .sec-head{margin-bottom:36px}
+#problema .turn{margin-top:28px}
+.vcard{background:var(--paper);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column}
+.vcard__foto{aspect-ratio:3/2;background:linear-gradient(160deg,#fbf8f2,#f1ebe1);position:relative;overflow:hidden}
+.vcard__foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center}
+.vcard__txt{padding:22px 26px 26px}
+.vcard h3{font-size:1.35rem;margin:0 0 8px}
+.vcard p{color:var(--muted);font-size:.95rem}
 .turn{margin-top:36px;background:var(--terra-soft);border-radius:22px;padding:28px 32px;display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .turn p{font-family:'DM Serif Display',serif;font-size:clamp(1.3rem,2.4vw,1.8rem);line-height:1.25;max-width:760px}
 .turn p em{color:var(--terra-dark)}
@@ -401,21 +408,33 @@ body.lm-open{overflow:hidden}
 </section>
 
 <!-- ===== PROBLEMA ===== -->
-<section>
+<section id="problema">
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">O problema</span>
-      <h2>Cartaz no elevador não muda o clima de ninguém.</h2>
-      <p>O RH sabe que precisa agir. Mas as ações de sempre não engajam — e sem engajamento não há prevenção, nem evidência.</p>
+      <h2>Ações pontuais não mudam uma cultura.</h2>
+      <p>O RH sabe que precisa agir. Mas ações pontuais, sem continuidade e sem engajamento, dificilmente viram prevenção de verdade.</p>
     </div>
+    <!-- FOTOS: salve as fotos com estes nomes e elas aparecem sozinhas:
+         assets/mh-problema-1.jpg, assets/mh-problema-2.jpg, assets/mh-problema-3.jpg
+         (horizontais 3:2 ficam melhores; o enquadramento é centralizado). -->
     <div class="cards3">
-      <div class="pcard reveal"><div class="x">🙈</div><h3>Palestra que ninguém assiste</h3><p>Auditório meio vazio, câmera desligada no online. O conteúdo é bom, mas ninguém sai diferente.</p></div>
-      <div class="pcard reveal"><div class="x">📅</div><h3>Ações soltas, sem plano</h3><p>Um evento no Setembro Amarelo e silêncio no resto do ano. A NR-1 pede continuidade — e o time percebe quando não há.</p></div>
-      <div class="pcard reveal"><div class="x">🗂️</div><h3>Nada documentado</h3><p>Quando a fiscalização ou a auditoria pergunta “o que foi feito?”, não há lista de presença, relatório nem indicador.</p></div>
+      <article class="vcard reveal">
+        <div class="vcard__foto"><img src="assets/mh-problema-1.jpg" alt="Colaboradores participando de uma experiência da Elarah" loading="lazy" onerror="this.remove()"></div>
+        <div class="vcard__txt"><h3>Experiências que as pessoas querem viver</h3><p>Não é só comunicar saúde mental. É criar momentos em que o time realmente participa.</p></div>
+      </article>
+      <article class="vcard reveal">
+        <div class="vcard__foto"><img src="assets/mh-problema-2.jpg" alt="Experiência da Elarah na rotina da empresa" loading="lazy" onerror="this.remove()"></div>
+        <div class="vcard__txt"><h3>Ações que não ficam só no calendário</h3><p>Programas pontuais ou recorrentes, pensados para fazer parte da rotina da empresa.</p></div>
+      </article>
+      <article class="vcard reveal">
+        <div class="vcard__foto"><img src="assets/mh-problema-3.jpg" alt="Pessoas conectadas durante uma experiência da Elarah" loading="lazy" onerror="this.remove()"></div>
+        <div class="vcard__txt"><h3>Cuidado que gera conexão</h3><p>Experiências que aproximam pessoas, estimulam presença e criam espaço para troca.</p></div>
+      </article>
     </div>
     <div class="turn reveal">
-      <p>A Elarah transforma saúde mental em <em>experiências que o time espera o mês inteiro</em> — com planejamento e documentação que o RH precisa.</p>
-      <a class="btn btn--terra" href="#contato" data-lead="problema">Falar com a Elarah</a>
+      <p>A Elarah transforma saúde mental em <em>experiências que o time realmente quer viver</em> — com planejamento, continuidade e a documentação que o RH precisa.</p>
+      <a class="btn btn--terra" href="#arteterapia">Conhecer a solução</a>
     </div>
   </div>
 </section>
