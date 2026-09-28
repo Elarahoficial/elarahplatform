@@ -2758,6 +2758,9 @@ if (groupForm) {
               // há desconto (By Elarah, valor cheio em branco) ou quando a
               // pessoa escolheu uma variação com preço próprio.
               '<div id="erm-elarah-off-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span id="erm-elarah-off-label">Desconto Elarah</span><span id="erm-elarah-off"></span></div>'
+        +     // Desconto do carrinho — 10% com 1 pessoa, 15% por pessoa com 2+.
+              // Some quando a campanha "Desconto geral" está no ar (não acumula).
+              '<div id="erm-cart-off-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span id="erm-cart-off-label">Desconto do carrinho</span><span id="erm-cart-off"></span></div>'
         +     '<div id="erm-discount-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#1a8a4a;margin-top:6px;"><span>Gift card</span><span id="erm-discount"></span></div>'
         +     '<div id="erm-fee-row" style="display:none;justify-content:space-between;font-size:.88rem;color:#666;margin-top:6px;"><span>Taxa do cartão</span><span id="erm-fee"></span></div>'
         +     '<div style="display:flex;justify-content:space-between;font-size:1.05rem;color:#1a1a1a;font-weight:700;margin-top:8px;border-top:1px solid #ece4d6;padding-top:8px;"><span>Total</span><span id="erm-total"></span></div>'
@@ -4203,7 +4206,13 @@ if (groupForm) {
       const ctx = currentReservationCtx;
       const root = modalRoot;
       const qty = Math.max(1, ctx.quantidade || 1);
-      const unitPrice = ctx.precoCentavos || 0;
+      // Preço da experiência ANTES do desconto do carrinho (o do site ou o
+      // da variação). unitPrice é o que o servidor cobra por pessoa:
+      // 10% OFF com 1 pessoa, 15% OFF por pessoa com 2+ (promo.js).
+      const unitSemCarrinho = ctx.precoCentavos || 0;
+      const unitPrice = (window.ElarahPromo && ElarahPromo.carrinhoCentavos)
+        ? ElarahPromo.carrinhoCentavos(unitSemCarrinho, qty)
+        : unitSemCarrinho;
       const subtotalCents = unitPrice * qty;
       console.log('[Elarah PRICE] refreshPriceBreakdown: qty=' + qty + ' unitPrice=' + unitPrice + ' subtotal=' + subtotalCents);
       const cupomCents = Number(ctx.cupomCentavos || 0);
@@ -4231,10 +4240,12 @@ if (groupForm) {
       // Nas experiências By Elarah o cheio é igual ao praticado, então
       // cheioUnit > unitPrice é falso e nada aparece. Sem flag, sem
       // configuração: o próprio dado decide.
-      const usaPrecoBase = !ctx.baseCentavos || unitPrice === ctx.baseCentavos;
+      const usaPrecoBase = !ctx.baseCentavos || unitSemCarrinho === ctx.baseCentavos;
       const cheioUnit = Number(ctx.valorCheioCentavos) || 0;
-      const temOffElarah = usaPrecoBase && cheioUnit > unitPrice;
+      const temOffElarah = usaPrecoBase && cheioUnit > unitSemCarrinho;
       const cheioSubtotal = cheioUnit * qty;
+      const semCarrinhoSubtotal = unitSemCarrinho * qty;
+      const carrinhoOffCents = semCarrinhoSubtotal - subtotalCents;
 
       // Quando há desconto Elarah, o SUBTOTAL exibido é o preço CHEIO e a
       // linha de desconto logo abaixo faz o abatimento — assim o resumo
@@ -4244,8 +4255,8 @@ if (groupForm) {
       //
       // Só a EXIBIÇÃO muda: subtotalCents (usado no cupom, na taxa e no
       // total) continua sendo o preço praticado × quantidade.
-      const subtotalExibido = temOffElarah ? cheioSubtotal : subtotalCents;
-      const unitExibido = temOffElarah ? cheioUnit : unitPrice;
+      const subtotalExibido = temOffElarah ? cheioSubtotal : semCarrinhoSubtotal;
+      const unitExibido = temOffElarah ? cheioUnit : unitSemCarrinho;
       root.querySelector('#erm-subtotal').textContent = qty > 1
         ? qty + 'x ' + brl(unitExibido) + ' = ' + brl(subtotalExibido)
         : brl(unitExibido);
@@ -4254,12 +4265,26 @@ if (groupForm) {
       if (offRow) {
         if (temOffElarah) {
           offRow.style.display = 'flex';
-          const offCents = cheioSubtotal - subtotalCents;
+          const offCents = cheioSubtotal - semCarrinhoSubtotal;
           const offPct = Math.round((offCents / cheioSubtotal) * 100);
           root.querySelector('#erm-elarah-off-label').textContent = 'Desconto Elarah (' + offPct + '%)';
           root.querySelector('#erm-elarah-off').textContent = '− ' + brl(offCents);
         } else {
           offRow.style.display = 'none';
+        }
+      }
+
+      const cartOffRow = root.querySelector('#erm-cart-off-row');
+      if (cartOffRow) {
+        if (carrinhoOffCents > 0) {
+          cartOffRow.style.display = 'flex';
+          const cartPct = (window.ElarahPromo && ElarahPromo.carrinhoPct) ? ElarahPromo.carrinhoPct(qty) : 0;
+          root.querySelector('#erm-cart-off-label').textContent = qty > 1
+            ? 'Desconto do carrinho (' + cartPct + '% por pessoa)'
+            : 'Desconto do carrinho (' + cartPct + '%)';
+          root.querySelector('#erm-cart-off').textContent = '− ' + brl(carrinhoOffCents);
+        } else {
+          cartOffRow.style.display = 'none';
         }
       }
 
@@ -5049,7 +5074,12 @@ if (groupForm) {
       // que o backend de fato aplica (que calcula sobre unit × qty).
       // Agora o preview do cupom bate exatamente com o valor cobrado.
       const _qtyForCoupon = Math.max(1, currentReservationCtx.quantidade || 1);
-      const amountCentavos = (currentReservationCtx.precoCentavos || 0) * _qtyForCoupon;
+      // Unitário JÁ com o desconto do carrinho — é sobre ele que o servidor
+      // calcula o cupom (booking_guard: baseCents × quantidade).
+      const _unitParaCupom = (window.ElarahPromo && ElarahPromo.carrinhoCentavos)
+        ? ElarahPromo.carrinhoCentavos(currentReservationCtx.precoCentavos || 0, _qtyForCoupon)
+        : (currentReservationCtx.precoCentavos || 0);
+      const amountCentavos = _unitParaCupom * _qtyForCoupon;
       const experienciaId = currentReservationCtx.experienceId || null;
 
       // ----- Camada 1: preview_coupon via supabaseClient -----

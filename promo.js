@@ -216,6 +216,42 @@
     return 'Só até ' + fimCurto();
   }
 
+  // ===== DESCONTO DO CARRINHO (progressivo por quantidade) =====
+  // Toda experiência no carrinho sai com desconto:
+  //   1 pessoa          → 10% OFF
+  //   2 pessoas ou mais → 15% OFF em CADA pessoa
+  // Só o preço da experiência desconta: a taxa do cartão é calculada
+  // depois, em cima do valor descontado, e continua sendo cobrada.
+  //
+  // NÃO acumula com o desconto geral: com campanha no ar, vale a
+  // campanha (o preço na tela já é o dela).
+  //
+  // A MESMA REGRA EXISTE NO SERVIDOR (_shared/promo.ts,
+  // precoFinalCentavos) — é ele quem cobra. As duas contas precisam
+  // bater centavo por centavo.
+  var CARRINHO_1_PCT = 10;
+  var CARRINHO_2_MAIS_PCT = 15;
+
+  // Percentual do carrinho pra essa quantidade (0 = não se aplica).
+  function carrinhoPct(qtd) {
+    if (ativa()) return 0;
+    var q = Math.floor(Number(qtd));
+    if (!isFinite(q) || q < 1) return 0;
+    return q >= 2 ? CARRINHO_2_MAIS_PCT : CARRINHO_1_PCT;
+  }
+
+  // Preço UNITÁRIO com o desconto do carrinho. `unitCents` é o preço que
+  // o checkout já mostra (site ou variação). Com campanha geral no ar,
+  // devolve o mesmo valor.
+  function carrinhoCentavos(unitCents, qtd) {
+    var n = Math.round(Number(unitCents));
+    if (!isFinite(n) || n <= 0) return n;
+    var pct = carrinhoPct(qtd);
+    if (!pct) return n;
+    var com = Math.round(n * (100 - pct) / 100);
+    return com > 0 ? com : n;
+  }
+
   // ===== CONTAGEM REGRESSIVA =====
   // Prazo em horas é o que mais move: a pessoa vê o tempo andando e
   // decide agora. Mas só aparece quando falta POUCO — "acaba em 9d 4h"
@@ -387,6 +423,8 @@
     formatar: formatar,
     paraCentavos: paraCentavos,
     fimCurto: fimCurto,
+    carrinhoPct: carrinhoPct,
+    carrinhoCentavos: carrinhoCentavos,
   };
 
   // O aviso só pode ser desenhado depois de saber se existe desconto —

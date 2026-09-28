@@ -63,6 +63,7 @@ import { quoteForService, type ShippingOption } from "../_shared/shipping.ts";
 import { getValidAccessToken } from "../_shared/melhor_envio.ts";
 import {
   carregarDescontoGeral,
+  precoFinalCentavos,
   precoLabelBR,
   precoPromocionalCentavos,
 } from "../_shared/promo.ts";
@@ -730,21 +731,38 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     }
   }
 
-  // ===== Desconto geral (_shared/promo.ts) =====
-  // Mesma regra do booking_guard §5c (PIX/Pagar.me): o desconto que a
-  // admin configurou incide sobre o preço já resolvido — o do site, ou
-  // o da variação escolhida. Sem campanha no ar, não tem efeito.
+  // ===== Desconto geral / desconto do carrinho (_shared/promo.ts) =====
+  // Mesma regra do booking_guard §5c (PIX/Pagar.me): campanha geral no
+  // ar → vale a campanha; senão, desconto do carrinho pela quantidade
+  // (10% com 1 pessoa, 15% por pessoa com 2+). A taxa do cartão entra
+  // depois, em cima deste valor.
+  //
+  // Kit físico (fluxo com `shipping`, Elarah em Casa) não é experiência:
+  // não leva o desconto do carrinho — só a campanha geral, como antes.
   if (cents) {
     const descontoGeral = await carregarDescontoGeral(supabase);
     const precoAntesDaPromo = cents;
-    cents = precoPromocionalCentavos(cents, descontoGeral);
+    let origem: string | null = null;
+    let pct = 0;
+    if (shippingInput) {
+      cents = precoPromocionalCentavos(cents, descontoGeral);
+      origem = "geral";
+      pct = descontoGeral.percentual;
+    } else {
+      const precoFinal = precoFinalCentavos(cents, descontoGeral, quantidade);
+      cents = precoFinal.cents;
+      origem = precoFinal.origem;
+      pct = precoFinal.pct;
+    }
     if (cents !== precoAntesDaPromo) {
       console.info(
-        "[create-checkout-session] desconto geral aplicado",
+        "[create-checkout-session] desconto aplicado",
+        "origem=" + origem,
         "exp=" + exp.id,
+        "qty=" + quantidade,
         "de=" + precoAntesDaPromo,
         "por=" + cents,
-        "pct=" + descontoGeral.percentual,
+        "pct=" + pct,
       );
       // preco_label é o que aparece no e-mail de confirmação. Reescreve
       // pro valor realmente cobrado; o preço de cadastro no banco não

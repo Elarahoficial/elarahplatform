@@ -23,8 +23,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   carregarDescontoGeral,
+  precoFinalCentavos,
   precoLabelBR,
-  precoPromocionalCentavos,
 } from "./promo.ts";
 
 export interface GuardInput {
@@ -748,23 +748,29 @@ export async function reserveExperienceSlot(
     }
   }
 
-  // ===== 5c. Desconto geral (_shared/promo.ts) =====
-  // Última etapa do preço: o desconto configurado pela admin na aba
-  // "Desconto geral" incide sobre o preço já resolvido aqui. Sem
-  // campanha no ar, precoPromocionalCentavos devolve o mesmo valor.
+  // ===== 5c. Desconto geral / desconto do carrinho (_shared/promo.ts) =====
+  // Última etapa do preço, sobre o preço já resolvido aqui:
+  //   - campanha "Desconto geral" no ar → vale a campanha;
+  //   - senão → desconto do carrinho: 10% (1 pessoa) ou 15% por pessoa
+  //     (2 ou mais).
+  // A taxa do cartão é calculada depois, em cima deste valor — ela se
+  // mantém.
   //
   // Fica DEPOIS da variação de propósito: se o cliente escolheu "Dupla",
   // é o preço da Dupla que leva o desconto.
   const descontoGeral = await carregarDescontoGeral(supabase);
   const precoAntesDaPromo = baseCents;
-  baseCents = precoPromocionalCentavos(baseCents, descontoGeral);
+  const precoFinal = precoFinalCentavos(baseCents, descontoGeral, quantidade);
+  baseCents = precoFinal.cents;
   if (baseCents !== precoAntesDaPromo) {
     console.info(
-      "[Elarah Guard] desconto geral aplicado",
+      "[Elarah Guard] desconto aplicado",
+      "origem=" + precoFinal.origem,
       "exp=" + exp.id,
+      "qty=" + quantidade,
       "de=" + precoAntesDaPromo,
       "por=" + baseCents,
-      "pct=" + descontoGeral.percentual,
+      "pct=" + precoFinal.pct,
     );
     // preco_label alimenta o e-mail de confirmação ("qty × R$ X") e o
     // extrato da reserva. Sem reescrever aqui, a cliente pagaria R$ 144
