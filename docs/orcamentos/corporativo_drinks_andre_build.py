@@ -103,8 +103,8 @@ cover = f'''
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Experiência corporativa privada</span>
-        <h1>O time junto, <em>de copo na mão</em></h1>
-        <p class="lead">Uma tarde de drinks e comidinhas com o time — o grupo aprende, prova e brinda junto. Menos reunião, mais integração: descoberta, conversa e confraternização.</p>
+        <h1>Drinks, Sabores <em>&amp; Conexões</em></h1>
+        <p class="lead">Drinks e comidinhas para reunir o time — o grupo aprende, prova e brinda junto. Menos reunião, mais integração: descoberta, conversa e confraternização.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>8 a 11</b> pessoas</span>
@@ -112,7 +112,7 @@ cover = f'''
           <span class="chip">No seu espaço</span>
         </div>
       </div>
-      <div class="cover-photo">{img("andre-brinde.jpg", "Grupo de amigos brindando junto em clima de confraternização", "center 40%")}</div>
+      <div class="cover-photo">{img("andre-workshop.jpg", "Grupo em uma experiência de drinks, preparando coquetéis juntos", "center 35%")}</div>
     </div>
     {foot("Drinks & confraternização")}
   </section>'''
@@ -123,7 +123,7 @@ conceito = f'''
 {head_simple("O conceito")}
     <span class="eyebrow orange">◆ Mais que uma aula de drinks</span>
     <h2>Um encontro para <em>criar e brindar junto</em></h2>
-    <p class="lead">Em torno do balcão, o time descobre técnicas, prova, conversa e relaxa. Cada experiência é uma desculpa boa para integrar o grupo — com um profissional conduzindo e comidinhas para acompanhar do começo ao fim.</p>
+    <p class="lead">Em torno da mesa, o time descobre técnicas, prova, conversa e relaxa. Cada experiência é uma desculpa boa para integrar o grupo — com um profissional conduzindo e comidinhas para acompanhar do começo ao fim.</p>
     <div class="bfeat">
       <div class="bphoto">{img("pizza-brinde.jpg", "Grupo brindando junto à mesa", "center 50%")}</div>
       <div class="bbody">
@@ -135,7 +135,26 @@ conceito = f'''
     {foot("O conceito")}
   </section>'''
 
-# ============================ 3 · NO SEU ESPAÇO ============================
+# ============================ ATMOSFERA (encontro & atmosfera) ============================
+atmosfera = f'''
+  <section class="slide">
+{head_simple("O encontro & a atmosfera")}
+    <span class="eyebrow orange">◆ O encontro &amp; a atmosfera</span>
+    <h2>Um encontro que acontece <em>em torno da mesa</em></h2>
+    <p class="lead">Drinks sendo preparados, comidinhas à mesa e tempo para conversar. Uma experiência leve e interativa, pensada para reunir o grupo, experimentar novos sabores e aproveitar o momento juntos.</p>
+    <div class="vibe">
+      <figure>{img("andre-preparo.jpg", "Preparo de drinks com utensílios de bar", "center 45%")}<figcaption>Drinks em preparo</figcaption></figure>
+      <figure>{img("andre-mesa-drinks.jpg", "Mesa da experiência com coqueteleiras e ingredientes", "center 40%")}<figcaption>Experiência à mesa</figcaption></figure>
+      <figure>{img("andre-brinde-drinks.jpg", "Taças e drinks servidos em um brinde", "center 45%")}<figcaption>Sabores &amp; brindes</figcaption></figure>
+      <figure>{img("menu-coffee.jpg", "Petiscos e finger food bem apresentados", "center 50%")}<figcaption>Petiscos para compartilhar</figcaption></figure>
+      <figure>{img("aula-grupo.jpg", "Grupo corporativo reunido, conversando com taças", "center 50%")}<figcaption>Momento de conexão</figcaption></figure>
+      <figure>{img("drinkspetisco.jpg", "Detalhe da finalização de um coquetel", "center 50%")}<figcaption>Condução da experiência</figcaption></figure>
+    </div>
+    <div class="bnote" style="margin-top:16px">◆ <b>Experiência completa:</b> condução do workshop · ingredientes e bebidas · petiscos · degustação · produção Elarah.</div>
+    {foot("O encontro & a atmosfera")}
+  </section>'''
+
+# ============================ NO SEU ESPAÇO ============================
 espaco = f'''
   <section class="slide">
 {head_simple("No espaço de vocês")}
@@ -149,7 +168,7 @@ espaco = f'''
         <h3>É só receber o time</h3>
         <ul class="feat">
           <li><span class="st">✓</span><b>Profissional conduzindo</b> a experiência</li>
-          <li><span class="st">✓</span><b>Bar e estrutura</b> montados no local</li>
+          <li><span class="st">✓</span><b>Estrutura e utensílios</b> montados no local</li>
           <li><span class="st">✓</span><b>Drinks e insumos</b> de cada experiência</li>
           <li><span class="st">✓</span><b>Comidinhas</b> para acompanhar</li>
           <li><span class="st">✓</span><b>Montagem e desmontagem</b> por conta da Elarah</li>
@@ -168,11 +187,11 @@ experiencias = f'''
     <h2>Escolham a experiência <em>do time</em></h2>
     <p class="lead">Cinco formatos, todos com comidinhas inclusas, profissional conduzindo e muita troca. Diferentes maneiras de transformar o encontro em confraternização.</p>
     <div class="dgrid">
-      {dcard("Caipirinha", "com mini salgados", "O clássico brasileiro: técnica, cortes, equilíbrio de sabores e variações — com prática e degustação.", "489", "drinks.jpg", "Drink cítrico com limão", "center 50%")}
-      {dcard("Gin", "com mini salgados", "Do gin tônica perfeito ao highball: história, rótulos, técnicas e combinações, degustando diferentes gins.", "569", "drinksclassicos.jpg", "Coquetel autoral no balcão", "center 50%")}
-      {dcard("Drinks com Café", "com pães de queijo &amp; acompanhamentos", "Coquetelaria encontra o café: fundamentos, preparo e apresentação de bebidas, com degustação.", "569", "drinksmoleculares.jpg", "Preparo de coquetel autoral", "center 50%")}
-      {dcard("Mocktail", "com tábua de frios &amp; queijos curados", "Coquetelaria sem álcool: equilíbrio, xaropes e releituras de clássicos como Mojito e Espresso Martini.", "619", "harmonizacaoqueijos.jpg", "Tábua de frios e queijos curados", "center 50%")}
-      {dcard("Cerveja Artesanal", "com salgadinhos", "Uma jornada cervejeira: estilos, ingredientes e degustação técnica guiada de quatro cervejas.", "619", "salgadinho.jpg", "Salgadinhos para acompanhar", "center 50%")}
+      {dcard("Workshop Caipirinha Brasileira", "com mini salgados", "O clássico brasileiro: técnica, cortes, equilíbrio de sabores e variações — com prática e degustação.", "489", "drinks.jpg", "Drink cítrico com limão", "center 50%")}
+      {dcard("Descobrindo o Universo do Gin", "com mini salgados", "Do gin tônica perfeito ao highball: história, rótulos, técnicas e combinações, degustando diferentes gins.", "569", "drinksclassicos.jpg", "Coquetel autoral", "center 50%")}
+      {dcard("Coffee &amp; Cocktails", "com pães de queijo &amp; acompanhamentos", "Coquetelaria encontra o café: fundamentos, preparo e apresentação de bebidas, com degustação.", "569", "drinksmoleculares.jpg", "Preparo de coquetel autoral", "center 50%")}
+      {dcard("Mocktail Experience", "com tábua de frios &amp; queijos curados", "Coquetelaria sem álcool: equilíbrio, xaropes e releituras de clássicos como Mojito e Espresso Martini.", "619", "harmonizacaoqueijos.jpg", "Tábua de frios e queijos curados", "center 50%")}
+      {dcard("Jornada pela Cerveja Artesanal", "com salgadinhos", "Estilos, ingredientes e análise sensorial: degustação técnica guiada de quatro cervejas.", "619", "salgadinho.jpg", "Salgadinhos para acompanhar", "center 50%")}
     </div>
     {foot("As experiências")}
   </section>'''
@@ -208,11 +227,11 @@ investimento = f'''
         <th class="r">Valor por pessoa</th>
       </tr></thead>
       <tbody>
-        <tr><td class="nm"><b>Caipirinha</b></td><td class="cm">Mini salgados</td><td class="val">R$ 489</td></tr>
-        <tr><td class="nm"><b>Gin</b></td><td class="cm">Mini salgados</td><td class="val">R$ 569</td></tr>
-        <tr><td class="nm"><b>Drinks com Café</b></td><td class="cm">Pães de queijo e acompanhamentos</td><td class="val">R$ 569</td></tr>
-        <tr><td class="nm"><b>Mocktail</b> · sem álcool</td><td class="cm">Tábua de frios e queijos curados</td><td class="val">R$ 619</td></tr>
-        <tr><td class="nm"><b>Cerveja Artesanal</b></td><td class="cm">Salgadinhos</td><td class="val">R$ 619</td></tr>
+        <tr><td class="nm"><b>Workshop Caipirinha Brasileira</b></td><td class="cm">Mini salgados</td><td class="val">R$ 489</td></tr>
+        <tr><td class="nm"><b>Descobrindo o Universo do Gin</b></td><td class="cm">Mini salgados</td><td class="val">R$ 569</td></tr>
+        <tr><td class="nm"><b>Coffee &amp; Cocktails</b></td><td class="cm">Pães de queijo e acompanhamentos</td><td class="val">R$ 569</td></tr>
+        <tr><td class="nm"><b>Mocktail Experience</b> · sem álcool</td><td class="cm">Tábua de frios e queijos curados</td><td class="val">R$ 619</td></tr>
+        <tr><td class="nm"><b>Jornada pela Cerveja Artesanal</b></td><td class="cm">Salgadinhos</td><td class="val">R$ 619</td></tr>
       </tbody>
     </table>
     <p class="fineprint">Valores por pessoa, para turma privada de 8 a 11 participantes, no espaço de vocês, com duração aproximada de 2h30. Cada experiência inclui profissional conduzindo, estrutura montada no local e as comidinhas indicadas. A Elarah emite nota fiscal e alinha as condições de pagamento com o financeiro.</p>
@@ -240,7 +259,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + conceito + espaco + experiencias + formato + investimento + proximos + '\n\n</div>\n\n')
+        + cover + conceito + atmosfera + espaco + experiencias + formato + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/corporativo-drinks-andre.html"
 open(out, "w", encoding="utf-8").write(html)
