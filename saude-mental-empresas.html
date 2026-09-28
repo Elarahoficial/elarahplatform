@@ -560,7 +560,7 @@ body.lm-open{overflow:hidden}
   .person__cred svg{display:none}
   .jornada::before{display:none}
   .jornada__n,.per__ic{margin-left:auto;margin-right:auto}
-  .recebe ul,.cta ul,.plan ul{text-align:left;max-width:320px;margin-left:auto;margin-right:auto}
+  .cta ul,.plan ul{text-align:left;max-width:320px;margin-left:auto;margin-right:auto}
   .hero__faixa{text-align:center}
   .hero__faixa li{justify-content:center}
   /* carrosséis: deslizar para o lado em vez de empilhar */
@@ -584,6 +584,24 @@ body.lm-open{overflow:hidden}
   .mon{padding:10px 10px 12px;border-radius:14px}
   .mon b{font-size:.86rem;margin:4px 0 0}
   .mon .a,.mon .emo{display:none}
+  /* relatório, lista "o que fica", cronograma e "mais de 20" centralizados */
+  .relatorio{text-align:center;padding:24px 20px 18px}
+  .relatorio__top{flex-direction:column;gap:8px}
+  .relatorio__barras>div{text-align:left}
+  .recebe ul{max-width:none;text-align:center}
+  .recebe li{padding-left:0}
+  .recebe li::before{position:static;display:block;margin:0 auto 10px}
+  .picker__cta,.mais20{flex-direction:column;justify-content:center;text-align:center}
+  .mais20{padding:22px 8px 0}
+  /* simulador centralizado */
+  .sim__q{text-align:center}
+  .sim__q legend{justify-content:center;width:100%}
+  .sim__q button{margin:0 4px 8px}
+  .sim__q--freq .sim__opts button{align-items:center}
+  .sim__fixo{justify-content:center}
+  .sim__previa{text-align:center}
+  .sim__previa ul{text-align:left;max-width:300px;margin-left:auto;margin-right:auto}
+  .mon{text-align:center}
   /* Quem somos: bio curta com "Ler mais" */
   .person__body>p:not(.person__lead){display:none}
   .person__body.is-aberto>p:not(.person__lead){display:block;text-align:left}
