@@ -9,7 +9,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Elarah Mental Health — saúde mental que o seu time quer participar">
 <meta property="og:description" content="Cronograma de saúde mental para empresas, com experiências manuais e tudo documentado para a NR-1.">
-<meta property="og:image" content="https://elarah.com.br/assets/mh-hero-gastronomia.jpg">
+<meta property="og:image" content="https://elarah.com.br/assets/mh-hero-pintura.jpg">
 <meta property="og:url" content="https://elarah.com.br/saude-mental-empresas.html">
 <meta name="theme-color" content="#1f4d3f">
 <link rel="icon" href="assets/logo.png" type="image/png">
@@ -72,17 +72,20 @@ section{padding:96px 0}
 .hero__trust{display:grid;grid-template-columns:repeat(2,max-content);gap:8px 32px;font-size:.84rem;color:var(--muted)}
 .hero__trust span{display:inline-flex;align-items:center;gap:6px}
 .hero__trust span::before{content:'✓';color:var(--green-2);font-weight:700}
-.hero__visual{position:relative;height:600px}
-.hero__visual img{position:absolute;object-fit:cover;border-radius:24px;box-shadow:0 30px 60px rgba(22,48,42,.18)}
-.hv1{width:76%;height:86%;right:0;top:0}
-.hv2{width:44%;height:40%;left:0;bottom:0;border:6px solid var(--cream)}
-.hero__badge{position:absolute;left:0;top:10%;background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 18px 40px rgba(22,48,42,.16);display:flex;gap:12px;align-items:center;max-width:340px;z-index:2}
+/* Mosaico de 3 fotos: uma alta à esquerda, duas empilhadas à direita.
+   object-position enquadra cada foto no rosto/ponto de interesse. */
+.hero__visual{position:relative;height:600px;display:grid;grid-template-columns:1.12fr 1fr;grid-template-rows:repeat(2,minmax(0,1fr));gap:14px}
+.hero__visual img{width:100%;height:100%;min-width:0;min-height:0;display:block;object-fit:cover;border-radius:22px;box-shadow:0 24px 50px rgba(22,48,42,.16)}
+.hv1{grid-row:1/3;object-position:58% 50%}
+.hv2{object-position:50% 28%}
+.hv3{object-position:50% 50%}
+.hero__badge{position:absolute;left:-28px;top:8%;background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 18px 40px rgba(22,48,42,.16);display:flex;gap:12px;align-items:center;max-width:340px;z-index:2}
 .hero__badge{padding:16px 20px 16px 22px}
 .hero__badge b{display:block;font-size:.92rem;white-space:nowrap}
 .hero__badge b::before{content:'';display:block;width:22px;height:2px;border-radius:2px;background:var(--terra);margin-bottom:8px}
 .hero__badge small{color:var(--muted);font-size:.78rem;line-height:1.3;display:block}
 .hero__badge .ic{width:42px;height:42px;border-radius:12px;background:var(--sage-soft);display:grid;place-items:center;font-size:1.3rem;flex-shrink:0}
-.hero__pill{position:absolute;right:4%;bottom:4%;background:var(--green);color:#fff;border-radius:999px;padding:10px 18px;font-size:.84rem;font-weight:600;box-shadow:0 14px 30px rgba(31,77,63,.3);z-index:2}
+.hero__pill{position:absolute;right:16px;bottom:16px;background:var(--green);color:#fff;border-radius:999px;padding:10px 18px;font-size:.84rem;font-weight:600;box-shadow:0 14px 30px rgba(31,77,63,.3);z-index:2}
 
 /* URGENCY */
 .urg{background:var(--green);color:#fff;padding:42px 0 46px}
@@ -281,7 +284,7 @@ footer a{color:var(--muted)}
 body.lm-open{overflow:hidden}
 .lm .form.form--modal{padding:0}
 
-@media (max-width:1120px){.nav__links{display:none}}
+@media (max-width:1120px){.nav__links{display:none} .hero__visual{height:540px}}
 @media (max-width:980px){
   .arte,.elarah,.team{grid-template-columns:1fr}
   .elarah__pics{height:300px}
@@ -319,8 +322,12 @@ body.lm-open{overflow:hidden}
 @media (max-width:560px){
   .wrap{padding:0 16px}
   .hero{padding:40px 0 60px}
-  .hero__visual{height:340px}
-  .hero__badge{max-width:210px;padding:10px 12px}
+  .hero__visual{height:380px;gap:10px}
+  .hero__badge{left:10px;top:10px;max-width:calc(53% - 20px);padding:12px 14px}
+  .hero__badge b{white-space:normal}
+  .hero__pill{right:auto;left:50%;transform:translateX(-50%);bottom:-16px;white-space:nowrap;font-size:.76rem;padding:8px 14px}
+  .hero__visual{margin-bottom:16px}
+  .hero__badge{padding:10px 12px}
   .urg__grid,.steps{grid-template-columns:1fr}
   .dates{grid-template-columns:1fr}
   .form{grid-template-columns:1fr;padding:20px}
@@ -369,8 +376,9 @@ body.lm-open{overflow:hidden}
       </div>
     </div>
     <div class="hero__visual reveal">
-      <img class="hv1" src="assets/mh-hero-gastronomia.jpg" alt="Equipe cozinhando junta em uma experiência de gastronomia">
-      <img class="hv2" src="assets/mh-hero-mesa.jpg" alt="Time reunido à mesa depois da experiência">
+      <img class="hv1" src="assets/mh-hero-pintura.jpg" alt="Colaboradoras pintando telas em uma experiência de Arteterapia">
+      <img class="hv2" src="assets/mh-hero-time.jpg" alt="Equipe de avental tirando uma selfie juntas depois da experiência">
+      <img class="hv3" src="assets/mh-hero-aquarela.jpg" alt="Time reunido ao redor da mesa pintando aquarelas">
       <div class="hero__badge"><div><b>Experiência com propósito</b><small>Arte, presença e conexão para equipes.</small></div></div>
       <div class="hero__pill">✦ Arteterapia para empresas</div>
     </div>
