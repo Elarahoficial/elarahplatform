@@ -4213,10 +4213,12 @@ if (groupForm) {
       const _promo = window.ElarahPromo;
       const vitrineUnit = ctx.precoCentavos || 0;
       const temCarrinho = !!(_promo && _promo.carrinhoPct && _promo.carrinhoPct(qty) > 0);
-      const unitSemCarrinho = (temCarrinho && _promo.baseDe) ? _promo.baseDe(vitrineUnit) : vitrineUnit;
-      const unitPrice = (temCarrinho && _promo.carrinhoCentavos)
+      // carrinhoCentavos também desfaz os 10% se o prazo virou com a página
+      // aberta — o total da tela segue igual ao que o servidor cobra.
+      const unitPrice = (_promo && _promo.carrinhoCentavos)
         ? _promo.carrinhoCentavos(vitrineUnit, qty)
         : vitrineUnit;
+      const unitSemCarrinho = (temCarrinho && _promo.baseDe) ? _promo.baseDe(vitrineUnit) : unitPrice;
       const subtotalCents = unitPrice * qty;
       console.log('[Elarah PRICE] refreshPriceBreakdown: qty=' + qty + ' unitPrice=' + unitPrice + ' subtotal=' + subtotalCents);
       const cupomCents = Number(ctx.cupomCentavos || 0);

@@ -17,6 +17,7 @@ import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   type DescontoGeral,
   descontoAtivo,
+  carrinhoAtivo,
   descontoCarrinhoPct,
   precoCarrinhoCentavos,
   precoFinalCentavos,
@@ -100,23 +101,39 @@ Deno.test("precoLabelBR: centavos só quando existem de verdade", () => {
 });
 
 // ===== Desconto do carrinho (10% com 1 pessoa, 15% por pessoa com 2+) =====
+// Datas fixas: os casos valem antes e depois do fim da campanha.
+const DURANTE = new Date("2026-09-29T12:00:00-03:00");
+const ULTIMO_MINUTO = new Date("2026-09-30T23:59:00-03:00");
+const DEPOIS = new Date("2026-10-01T00:00:00-03:00");
+
+Deno.test("carrinho: vale até 30/09/2026 23h59 de Brasília", () => {
+  assertEquals(carrinhoAtivo(DURANTE), true);
+  assertEquals(carrinhoAtivo(ULTIMO_MINUTO), true);
+  assertEquals(carrinhoAtivo(DEPOIS), false);
+});
 
 Deno.test("carrinho: 1 pessoa leva 10%, 2 ou mais levam 15% cada", () => {
-  assertEquals(descontoCarrinhoPct(1), 10);
-  assertEquals(descontoCarrinhoPct(2), 15);
-  assertEquals(descontoCarrinhoPct(7), 15);
-  assertEquals(descontoCarrinhoPct(0), 0);
-  assertEquals(precoCarrinhoCentavos(18000, 1), 16200);
-  assertEquals(precoCarrinhoCentavos(18000, 2), 15300);
-  assertEquals(precoCarrinhoCentavos(26100, 3), 22185);
+  assertEquals(descontoCarrinhoPct(1, DURANTE), 10);
+  assertEquals(descontoCarrinhoPct(2, DURANTE), 15);
+  assertEquals(descontoCarrinhoPct(7, DURANTE), 15);
+  assertEquals(descontoCarrinhoPct(0, DURANTE), 0);
+  assertEquals(precoCarrinhoCentavos(18000, 1, DURANTE), 16200);
+  assertEquals(precoCarrinhoCentavos(18000, 2, DURANTE), 15300);
+  assertEquals(precoCarrinhoCentavos(26100, 3, DURANTE), 22185);
+});
+
+Deno.test("carrinho: depois do prazo, preço normal", () => {
+  assertEquals(descontoCarrinhoPct(1, DEPOIS), 0);
+  assertEquals(precoCarrinhoCentavos(18000, 2, DEPOIS), 18000);
+  assertEquals(precoFinalCentavos(18000, SEM_DESCONTO, 2, DEPOIS), { cents: 18000, origem: null, pct: 0 });
 });
 
 Deno.test("carrinho: sem campanha geral, vale o desconto por quantidade", () => {
-  assertEquals(precoFinalCentavos(18000, SEM_DESCONTO, 1), { cents: 16200, origem: "carrinho", pct: 10 });
-  assertEquals(precoFinalCentavos(18000, SEM_DESCONTO, 2), { cents: 15300, origem: "carrinho", pct: 15 });
+  assertEquals(precoFinalCentavos(18000, SEM_DESCONTO, 1, DURANTE), { cents: 16200, origem: "carrinho", pct: 10 });
+  assertEquals(precoFinalCentavos(18000, SEM_DESCONTO, 2, DURANTE), { cents: 15300, origem: "carrinho", pct: 15 });
 });
 
 Deno.test("carrinho: não acumula com a campanha geral — vale a campanha", () => {
-  assertEquals(precoFinalCentavos(18000, VINTE, 1), { cents: 14400, origem: "geral", pct: 20 });
-  assertEquals(precoFinalCentavos(18000, VINTE, 3), { cents: 14400, origem: "geral", pct: 20 });
+  assertEquals(precoFinalCentavos(18000, VINTE, 1, DURANTE), { cents: 14400, origem: "geral", pct: 20 });
+  assertEquals(precoFinalCentavos(18000, VINTE, 3, DURANTE), { cents: 14400, origem: "geral", pct: 20 });
 });

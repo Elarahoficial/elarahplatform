@@ -158,8 +158,21 @@ export function precoLabelBR(cents: number): string {
 // =============================================================
 export const DESCONTO_CARRINHO_1_PCT = 10;
 export const DESCONTO_CARRINHO_2_MAIS_PCT = 15;
+// Validade: até 30/09/2026 23h59 (horário de Brasília). Depois disso o
+// preço volta ao normal sozinho, no site e na cobrança.
+export const DESCONTO_CARRINHO_FIM = "2026-09-30T23:59:59-03:00";
 
-export function descontoCarrinhoPct(quantidade: number): number {
+export function carrinhoAtivo(agora: Date = new Date()): boolean {
+  const fim = new Date(DESCONTO_CARRINHO_FIM).getTime();
+  const now = agora.getTime();
+  return isFinite(fim) && isFinite(now) && now <= fim;
+}
+
+export function descontoCarrinhoPct(
+  quantidade: number,
+  agora: Date = new Date(),
+): number {
+  if (!carrinhoAtivo(agora)) return 0;
   const q = Math.floor(Number(quantidade));
   if (!Number.isFinite(q) || q < 1) return 0;
   return q >= 2 ? DESCONTO_CARRINHO_2_MAIS_PCT : DESCONTO_CARRINHO_1_PCT;
@@ -171,10 +184,11 @@ export function descontoCarrinhoPct(quantidade: number): number {
 export function precoCarrinhoCentavos(
   precoCents: number,
   quantidade: number,
+  agora: Date = new Date(),
 ): number {
   const praticado = Math.round(Number(precoCents));
   if (!isFinite(praticado) || praticado <= 0) return praticado;
-  const pct = descontoCarrinhoPct(quantidade);
+  const pct = descontoCarrinhoPct(quantidade, agora);
   if (!pct) return praticado;
   const comDesconto = Math.round(praticado * (100 - pct) / 100);
   return comDesconto > 0 ? comDesconto : praticado;
@@ -186,12 +200,13 @@ export function precoFinalCentavos(
   precoCents: number,
   cfg: DescontoGeral | null | undefined,
   quantidade: number,
+  agora: Date = new Date(),
 ): { cents: number; origem: "geral" | "carrinho" | null; pct: number } {
   if (descontoAtivo(cfg)) {
     const cents = precoPromocionalCentavos(precoCents, cfg);
     return { cents, origem: cents !== Math.round(Number(precoCents)) ? "geral" : null, pct: cfg!.percentual };
   }
-  const cents = precoCarrinhoCentavos(precoCents, quantidade);
+  const cents = precoCarrinhoCentavos(precoCents, quantidade, agora);
   const mudou = cents !== Math.round(Number(precoCents));
-  return { cents, origem: mudou ? "carrinho" : null, pct: mudou ? descontoCarrinhoPct(quantidade) : 0 };
+  return { cents, origem: mudou ? "carrinho" : null, pct: mudou ? descontoCarrinhoPct(quantidade, agora) : 0 };
 }
