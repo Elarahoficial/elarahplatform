@@ -135,3 +135,63 @@ export function precoLabelBR(cents: number): string {
     maximumFractionDigits: 2,
   });
 }
+
+// =============================================================
+// DESCONTO DO CARRINHO (progressivo por quantidade)
+// -------------------------------------------------------------
+// Toda experiência colocada no carrinho sai com desconto:
+//
+//     1 pessoa          → 10% OFF
+//     2 pessoas ou mais → 15% OFF em CADA pessoa
+//
+// Só o preço da EXPERIÊNCIA desconta. A taxa do cartão (gross-up da
+// parcela no Pagar.me / repasse no Mercado Pago) é calculada DEPOIS,
+// em cima do valor já descontado — ela continua sendo cobrada. Frete
+// e kits físicos (fluxo com `shipping`) não entram.
+//
+// NÃO ACUMULA com o desconto geral: com uma campanha no ar, vale a
+// campanha (é o preço que a vitrine inteira está anunciando). Assim a
+// conta da tela e a do servidor partem sempre do mesmo preço.
+//
+// A MESMA REGRA EXISTE NO NAVEGADOR: promo.js (ElarahPromo.carrinho*).
+// As duas precisam concordar — o servidor é quem cobra.
+// =============================================================
+export const DESCONTO_CARRINHO_1_PCT = 10;
+export const DESCONTO_CARRINHO_2_MAIS_PCT = 15;
+
+export function descontoCarrinhoPct(quantidade: number): number {
+  const q = Math.floor(Number(quantidade));
+  if (!Number.isFinite(q) || q < 1) return 0;
+  return q >= 2 ? DESCONTO_CARRINHO_2_MAIS_PCT : DESCONTO_CARRINHO_1_PCT;
+}
+
+// Preço unitário (centavos) com o desconto do carrinho. Chamar com o
+// preço JÁ resolvido (site ou variação) e SÓ quando o desconto geral
+// não estiver no ar — ver precoFinalCentavos.
+export function precoCarrinhoCentavos(
+  precoCents: number,
+  quantidade: number,
+): number {
+  const praticado = Math.round(Number(precoCents));
+  if (!isFinite(praticado) || praticado <= 0) return praticado;
+  const pct = descontoCarrinhoPct(quantidade);
+  if (!pct) return praticado;
+  const comDesconto = Math.round(praticado * (100 - pct) / 100);
+  return comDesconto > 0 ? comDesconto : praticado;
+}
+
+// O preço unitário que é COBRADO: campanha geral quando está no ar,
+// senão o desconto do carrinho pela quantidade.
+export function precoFinalCentavos(
+  precoCents: number,
+  cfg: DescontoGeral | null | undefined,
+  quantidade: number,
+): { cents: number; origem: "geral" | "carrinho" | null; pct: number } {
+  if (descontoAtivo(cfg)) {
+    const cents = precoPromocionalCentavos(precoCents, cfg);
+    return { cents, origem: cents !== Math.round(Number(precoCents)) ? "geral" : null, pct: cfg!.percentual };
+  }
+  const cents = precoCarrinhoCentavos(precoCents, quantidade);
+  const mudou = cents !== Math.round(Number(precoCents));
+  return { cents, origem: mudou ? "carrinho" : null, pct: mudou ? descontoCarrinhoPct(quantidade) : 0 };
+}
