@@ -204,7 +204,7 @@ vela = f'''
     <p class="lead">Cada um monta a própria vela — escolhendo aromas e detalhes — num ritual leve e cheio de charme, no Ateliê Meu Outro Lado.</p>
     <div class="egr">
       {ecard("Vela Personalizada", "Todo material incluso", "Cada um escolhe aromas e detalhes e cria a própria vela, do começo ao fim.", "a própria vela", "269", "2.152", "vela-aromatica-real.jpg", "Preparo de vela aromática com flores secas", "center 50%")}
-      {ecard("Vela Personalizada + vinho", "Todo material incluso · com vinho", "A mesma experiência, com uma seleção de vinhos para brindar enquanto cria.", "a própria vela", "309", "2.472", "curadoria-vinhos.jpg", "Taças e vinhos para brindar", "center 45%")}
+      {ecard("Vela Personalizada + vinho", "Todo material incluso · com vinho", "A mesma experiência, com uma seleção de vinhos para brindar enquanto cria.", "a própria vela", "309", "2.472", "tacalimao2.jpg", "Brinde com taças de vinho durante a experiência", "center 22%")}
     </div>
     <div class="hwhead">
       <span class="stag">🎃 Edição especial de Halloween</span>
@@ -212,11 +212,11 @@ vela = f'''
     </div>
     <div class="hw2">
       <div class="hwc">
-        <div class="hwph">{img("velaaromaticaaaa4.jpg", "Vela aromática decorada com especiarias, em clima de outono", "center 50%")}</div>
-        <div class="hwb"><span class="hwt">Opção 1</span><h4>Workshop Vela Halloween</h4><p>Cada um cria a própria vela aromática com aromas e detalhes decorativos em clima de outono.</p></div>
+        <div class="hwph">{img("vela-halloween-laranja.webp", "Vela laranja temática, decorada com elementos de Halloween", "center 50%")}</div>
+        <div class="hwb"><span class="hwt">Opção 1</span><h4>Workshop Vela Halloween</h4><p>Cada um cria a própria vela aromática com aromas e detalhes decorativos temáticos de Halloween.</p></div>
       </div>
       <div class="hwc">
-        <div class="hwph">{img("pinturaemvela.jpg", "Pintura artesanal à mão, no ateliê", "center 50%")}</div>
+        <div class="hwph">{img("abobora-pintada.webp", "Abóbora de cerâmica pintada à mão, com flores", "center 50%")}</div>
         <div class="hwb"><span class="hwt">Opção 2</span><h4>Pinte sua Abóbora &amp; Faça sua Vela Aromática</h4><p>Pinte uma abóbora em resina e crie a própria vela aromática — duas lembranças pra levar.</p></div>
       </div>
     </div>
@@ -234,9 +234,9 @@ atelie = f'''
       <figure>{img("meu-outro-lado.jpg", "Ateliê Meu Outro Lado, acolhedor e criativo", "center 50%")}<figcaption>O ateliê</figcaption></figure>
       <figure>{img("teoriavela.jpg", "Mãos preparando uma vela com botânicos", "center 50%")}<figcaption>Mãos na obra</figcaption></figure>
       <figure>{img("sabonete.jpg", "Materiais, aromas e botânicos", "center 50%")}<figcaption>Materiais &amp; aromas</figcaption></figure>
-      <figure>{img("sais-grupo.jpg", "Pessoas criando com os materiais no ateliê", "center 45%")}<figcaption>Mãos à obra em grupo</figcaption></figure>
+      <figure>{img("vela-grupo-oficina.jpg", "Grupo participando da oficina de velas no ateliê", "center 45%")}<figcaption>Mãos à obra em grupo</figcaption></figure>
       <figure>{img("velas.jpg", "Velas finalizadas", "center 50%")}<figcaption>O resultado</figcaption></figure>
-      <figure>{img("tacalimao2.jpg", "Pessoas brindando com taças de vinho", "center 22%")}<figcaption>Pra brindar</figcaption></figure>
+      <figure>{img("curadoria-vinhos.jpg", "Taças de vinho para brindar", "center 50%")}<figcaption>Pra brindar</figcaption></figure>
     </div>
     <div class="bnote" style="margin-top:16px">◆ <b>Sem locação adicional:</b> o espaço já faz parte da experiência — acolhedor, leve e ideal para um encontro de team building.</div>
     {foot("O espaço · Meu Outro Lado")}
