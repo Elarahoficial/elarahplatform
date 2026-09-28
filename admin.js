@@ -4464,20 +4464,39 @@
       b._bairroResolvido = String((exp && exp.bairro) || _metaBairro.bairro || '').trim();
     });
 
-    // Popula filtro de fornecedores
+    // Popula filtro de fornecedores. Entram os fornecedores das compras
+    // E os cadastrados nas experiências — antes só entrava quem já tinha
+    // compra, então parceira nova (ex.: Giuliana Gini) não aparecia. E
+    // a lista era montada uma vez só: fornecedor cuja 1ª venda chegava
+    // depois ficava de fora até recarregar a página. Agora completa a
+    // cada render, sem perder a opção escolhida.
     const filterFornEl = document.getElementById('bookings-filter-fornecedor');
-    if (filterFornEl && filterFornEl.options.length <= 1) {
+    if (filterFornEl) {
       const seenForn = new Set();
       bookings.forEach(b => {
-        var fn = b._fornecedorResolvido || '';
-        if (fn && !seenForn.has(fn)) {
-          seenForn.add(fn);
-          var opt = document.createElement('option');
+        const fn = b && b._fornecedorResolvido;
+        if (fn) seenForn.add(fn);
+      });
+      (allExperiences || []).forEach(e => {
+        const fn = e && e.fornecedorNome && String(e.fornecedorNome).trim();
+        if (fn) seenForn.add(fn);
+      });
+      const jaNoSelect = new Set();
+      for (let i = 1; i < filterFornEl.options.length; i++) jaNoSelect.add(filterFornEl.options[i].value);
+      const faltando = [...seenForn].some(fn => !jaNoSelect.has(fn));
+      if (faltando) {
+        const atual = filterFornEl.value;
+        const nomes = [...new Set([...jaNoSelect, ...seenForn])]
+          .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        while (filterFornEl.options.length > 1) filterFornEl.remove(1);
+        nomes.forEach(fn => {
+          const opt = document.createElement('option');
           opt.value = fn;
           opt.textContent = fn;
           filterFornEl.appendChild(opt);
-        }
-      });
+        });
+        filterFornEl.value = atual;
+      }
     }
 
     // Filtro de experiência: agora é input com busca. Compara por
