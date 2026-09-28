@@ -80,15 +80,19 @@ section{padding:96px 0}
 .hero__pill{position:absolute;right:4%;bottom:4%;background:var(--green);color:#fff;border-radius:999px;padding:10px 18px;font-size:.84rem;font-weight:600;box-shadow:0 14px 30px rgba(31,77,63,.3);z-index:2}
 
 /* URGENCY */
-.urg{background:var(--green);color:#fff;padding:72px 0}
-.urg__grid{display:grid;grid-template-columns:1.1fr 1fr 1fr 1fr;gap:28px;align-items:start}
+.urg{background:var(--green);color:#fff;padding:42px 0 46px}
+.urg__grid{display:grid;grid-template-columns:1.55fr 1fr 1fr 1fr;gap:36px;align-items:start}
 .urg h2{font-size:clamp(1.7rem,3vw,2.3rem);color:#fff}
 .urg h2 em{color:#f3b38f}
-.urg p.lead{color:rgba(255,255,255,.78);margin-top:12px;font-size:.98rem}
+.urg p.lead{color:rgba(255,255,255,.78);margin-top:10px;font-size:.96rem;line-height:1.55}
+.urg p.lead--fecho{color:#fff;font-weight:600;font-size:1.02rem;margin-top:12px;padding-left:12px;border-left:2px solid var(--terra)}
 .stat{border-top:1px solid rgba(255,255,255,.2);padding-top:18px}
 .stat b{font-family:'DM Serif Display',serif;font-weight:400;font-size:clamp(2.3rem,4vw,3.2rem);display:block;line-height:1;color:#f3b38f}
 .stat span{display:block;margin-top:10px;font-size:.92rem;color:rgba(255,255,255,.85)}
 .stat small{display:block;margin-top:6px;font-size:.72rem;color:rgba(255,255,255,.5)}
+/* Bloco conceitual: mesma posição/linha dos números, mas lido como mensagem. */
+.stat--conceito b{font-family:'DM Sans',sans-serif;font-weight:700;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;line-height:1.35;min-height:clamp(2.3rem,4vw,3.2rem);display:flex;align-items:flex-end}
+.stat--conceito span{font-size:1rem;color:#fff}
 
 /* PROBLEM */
 .cards3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
@@ -373,11 +377,12 @@ body.lm-open{overflow:hidden}
     <div class="reveal">
       <span class="eyebrow" style="color:#cfe3d8">Por que agora</span>
       <h2 style="margin-top:12px">A NR-1 colocou a saúde mental <em>no plano de riscos</em>.</h2>
-      <p class="lead">Com a atualização da NR-1 (Portaria MTE nº 1.419/2024), estresse, sobrecarga e esgotamento entram no Gerenciamento de Riscos Ocupacionais — e a fiscalização vale desde maio de 2026. Não basta identificar: é preciso agir e registrar.</p>
+      <p class="lead">Com a atualização da NR-1 (Portaria MTE nº 1.419/2024), estresse, sobrecarga e esgotamento entram no Gerenciamento de Riscos Ocupacionais — e a fiscalização vale desde maio de 2026.</p>
+      <p class="lead lead--fecho">Não basta identificar. É preciso agir e registrar.</p>
     </div>
     <div class="stat reveal"><b>+470 mil</b><span>afastamentos por transtornos mentais no Brasil em 2024 — o maior número da década.</span><small>Fonte: Ministério da Previdência Social</small></div>
     <div class="stat reveal"><b>12 bi</b><span>de dias de trabalho perdidos por ano no mundo por depressão e ansiedade.</span><small>Fonte: OMS / OIT</small></div>
-    <div class="stat reveal"><b>1º</b><span>passo da prevenção é o time sentir que a empresa cuida — de verdade, não só no e-mail da campanha.</span><small>Cuidado que se vive, não que se lê.</small></div>
+    <div class="stat stat--conceito reveal"><b>O cuidado começa na prática</b><span>O time precisa sentir que a empresa cuida — de verdade, não só no e-mail da campanha.</span></div>
   </div>
 </section>
 
