@@ -95,7 +95,7 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Um aniversário para criar</span>
         <h1>A festa da <em>Antonella</em> 🎀</h1>
-        <p class="lead">Uma tarde entre amigas para criar, se divertir e levar pra casa uma lembrança feita à mão. Cada convidada personaliza a própria <b>escova &amp; presilha</b> — do jeitinho dela.</p>
+        <p class="lead">Um encontro entre amigas para criar, se divertir e levar pra casa uma lembrança feita à mão. Cada convidada personaliza a própria <b>escova &amp; presilha</b> — do jeitinho dela.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>13</b> anos</span>
@@ -115,7 +115,7 @@ experiencia = f'''
   <section class="slide">
 {head_simple("A experiência")}
     <span class="eyebrow orange">◆ Oficina de escova &amp; presilha</span>
-    <h2>Cada uma cria a <em>sua favorita</em></h2>
+    <h2>Cada uma cria a <em>própria escova &amp; presilha</em></h2>
     <p class="lead">Uma oficina delicada e divertida: cada convidada personaliza a própria escova e a própria presilha, escolhendo cores e detalhes — e leva tudo pra casa como lembrança da festa.</p>
     <div class="bfeat">
       <div class="bphoto">{img("pinturatacameninas.jpg", "Meninas personalizando seus acessórios com as próprias mãos", "center 40%")}</div>
@@ -136,19 +136,17 @@ experiencia = f'''
 # ============================ 3 · A VIBE ============================
 vibe = f'''
   <section class="slide">
-{head_simple("A vibe")}
-    <span class="eyebrow orange">◆ O clima da festa</span>
-    <h2>Delicado, colorido <em>e divertido</em></h2>
-    <p class="lead">Cores, brilho, docinhos e muita risada — uma tarde só das meninas, com aquela vibe de festa entre amigas.</p>
+{head_simple("O que cada uma leva")}
+    <span class="eyebrow orange">◆ O que cada uma leva</span>
+    <h2>Escova &amp; presilha <em>personalizadas</em></h2>
+    <p class="lead">Cores, brilho e detalhes que fazem diferença — cada convidada personaliza a própria escova e a própria presilha e leva pra casa numa caixinha linda.</p>
     <div class="gstrip">
-      <figure>{img("lembrancinha-escova.jpg", "Escova personalizada com o nome", "center 50%")}<figcaption>A escova personalizada</figcaption></figure>
-      <figure>{img("piranhapersonalizada.jpg", "Presilhas coloridas personalizadas", "center 50%")}<figcaption>As presilhas de cada uma</figcaption></figure>
+      <figure>{img("lembrancinha-escova.jpg", "Escova personalizada com o nome e presilha de flor", "center 50%")}<figcaption>A escova personalizada</figcaption></figure>
+      <figure>{img("piranhapersonalizada.jpg", "Presilhas personalizadas com nomes e brilhos", "center 50%")}<figcaption>As presilhas de cada uma</figcaption></figure>
       <figure>{img("nivergibrinde.jpg", "Kit de escova e presilha em caixinha rosa", "center 50%")}<figcaption>Numa caixinha linda</figcaption></figure>
-      <figure>{img("aniv-decor.jpg", "Mesa da festa decorada em tons de rosa", "center 50%")}<figcaption>A mesa da festa</figcaption></figure>
-      <figure>{img("cupcake.jpg", "Cupcakes cor-de-rosa com flores de açúcar", "center 50%")}<figcaption>Docinhos</figcaption></figure>
-      <figure>{img("buque.jpg", "Buquê de flores em tons delicados", "center 50%")}<figcaption>Flores &amp; charme</figcaption></figure>
     </div>
-    {foot("A vibe")}
+    <div class="bnote" style="margin-top:16px">◆ Cada peça é personalizada com o <b>nome</b> e os detalhes preferidos de cada convidada — brilhos, cores e aquele toque delicado. 🎀</div>
+    {foot("O que cada uma leva")}
   </section>'''
 
 # ============================ 4 · ONDE ACONTECE ============================
@@ -172,7 +170,7 @@ comidinhas = f'''
 {head_simple("Comidinhas & bebidas")}
     <span class="eyebrow orange">◆ Pra deixar mais gostoso</span>
     <h2>Docinhos, comidinhas <em>e bebidas</em></h2>
-    <p class="lead">Dá pra somar uma mesa de comidinhas e bebidas pra deixar a tarde ainda mais especial — tudo opcional, do jeitinho que vocês quiserem.</p>
+    <p class="lead">Dá pra somar uma mesa de comidinhas e bebidas pra deixar a celebração ainda mais especial — tudo opcional, do jeitinho que vocês quiserem.</p>
     <div class="gstrip">
       <figure>{img("cupcake.jpg", "Cupcakes decorados", "center 50%")}<figcaption>Cupcakes &amp; bolo</figcaption></figure>
       <figure>{img("macarons.jpg", "Macarons coloridos", "center 50%")}<figcaption>Doces &amp; macarons</figcaption></figure>
