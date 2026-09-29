@@ -1,6 +1,6 @@
 # Proposta Elarah · Team building Mari · 13 mulheres · 09/10 · Zona Oeste
-# BASE = deck Ginger/Agora (aprovado): experiencia Agora Intu, atmosfera, comidinhas/planos,
-# garrafa personalizada, registro fotografico, como funciona. NOVA opcao: Tufting (Lado B).
+# BASE = deck Ginger/Agora. 3 opcoes (Tufting Lado B, Ceramica/Velas Agora Intu).
+# v4: fecho comercial — remove R$279; valores finais; slide de investimento comparativo + pacotes.
 import io, re
 
 ROOT = "/home/user/elarahplatform"
@@ -9,7 +9,7 @@ head = ref.split('<div class="deck">')[0]
 tail = '<div class="toolbar">' + ref.split('<div class="toolbar">', 1)[1]
 head = re.sub(r'<title>.*?</title>', '<title>Team Building · Mari · Elarah</title>', head, count=1, flags=re.DOTALL)
 head = re.sub(r'<meta name="description"[^>]*>',
-              '<meta name="description" content="Proposta Elarah de team building para 13 mulheres — Cerâmica ou Velas no Agora Intu e Tufting no Lado B.">',
+              '<meta name="description" content="Proposta Elarah de team building para 13 mulheres — Tufting (Lado B) e Cerâmica ou Velas (Agora Intu).">',
               head, count=1)
 
 
@@ -60,7 +60,7 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Team building · Turma privada</span>
         <h1>O time junto, <em>de mão na massa</em></h1>
-        <p class="lead">Uma manhã (ou tarde) criativa só pro time: sem dinâmica forçada, sem slides — todas na mesma mesa, criando com as próprias mãos. É o tipo de encontro que aproxima de verdade e deixa uma lembrança que fica.</p>
+        <p class="lead">Uma manhã (ou tarde) criativa <strong>só pro time</strong>: sem dinâmica forçada, sem slides — todas na mesma mesa, <strong>criando com as próprias mãos</strong>. É o tipo de encontro que aproxima de verdade e deixa uma <strong>lembrança que fica</strong>.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>13</b> mulheres</span>
@@ -84,11 +84,11 @@ opcoes = f'''
     <h2>Escolham a <em>cara do encontro</em></h2>
     <p class="lead">Todas privativas, conduzidas por profissional, com todos os materiais inclusos — e cada uma leva a própria criação pra casa.</p>
     <div class="opts" style="grid-template-columns:repeat(3,1fr)">
-{opt3("tufting6.jpg", "center 30%", "Lado B Studio · Faria Lima", "Tufting", "Aprendem a técnica de tufting e criam a própria peça autoral — fios, cores e composição.", "Lado B · só experiência", "var(--orange-dark)", '<div class="op" style="font-size:14px;font-style:italic;color:var(--orange-dark)">Somente experiência<br>valor a confirmar</div>')}
-{opt3("agora-ceramica.jpg", "center 40%", "Agora Intu · Pinheiros", "Cerâmica", "Modelagem à mão, com o grupo à mesa e profissional conduzindo — cada uma leva a própria peça.", "Agora Intu · experiência completa", "var(--navy)", '<div class="op">R$ 279<small>a partir de · por pessoa</small></div>')}
-{opt3("vela-grupo-oficina.jpg", "center 35%", "Agora Intu · Pinheiros", "Velas", "Experiência sensorial: cada uma cria a própria vela aromática, explorando fragrâncias.", "Agora Intu · experiência completa", "var(--navy)", '<div class="op">R$ 279<small>a partir de · por pessoa</small></div>')}
+{opt3("tufting6.jpg", "center 30%", "Lado B Studio · Faria Lima", "Tufting", "Aprendem a técnica de tufting e criam a própria peça autoral — fios, cores e composição.", "Lado B · Tufting Experience", "var(--orange-dark)", '<div class="op">R$ 850<small>a partir de · por pessoa</small></div>')}
+{opt3("agora-ceramica.jpg", "center 40%", "Agora Intu · Pinheiros", "Cerâmica", "Modelagem à mão, com o grupo à mesa e profissional conduzindo — cada uma leva a própria peça.", "Agora Intu · experiência completa", "var(--navy)", '<div class="op">R$ 362,64<small>por pessoa</small></div>')}
+{opt3("vela-grupo-oficina.jpg", "center 35%", "Agora Intu · Pinheiros", "Velas", "Experiência sensorial: cada uma cria a própria vela aromática, explorando fragrâncias.", "Agora Intu · experiência completa", "var(--navy)", '<div class="op" style="font-size:16px;font-style:italic;color:var(--orange-dark)">valor a confirmar</div>')}
     </div>
-    <p class="fineprint">✦ Turma privada de 13 · Zona Oeste · 09/10 (manhã ou tarde). <b>Tufting</b> no Lado B Studio (só a experiência). <b>Cerâmica e Velas</b> no Agora Intu, a partir de uma experiência completa (espaço exclusivo, ambientação e coffee) — com opções de comidinhas.</p>
+    <p class="fineprint">✦ Turma privada de 13 · Zona Oeste · 09/10 (manhã ou tarde). <b>Tufting</b> no Lado B Studio. <b>Cerâmica e Velas</b> no Agora Intu, com experiência completa (espaço exclusivo, ambientação e café, chá e água) — e opções de comidinhas para complementar.</p>
     {foot("As experiências")}
   </section>'''
 
@@ -110,7 +110,7 @@ tufting = f'''
       <li><span class="ck">3</span>Criam a própria peça <b>com acompanhamento</b></li>
       <li><span class="ck">4</span>Cada uma <b>leva sua criação</b></li>
     </ul>
-    <p class="fineprint">✦ Lado B Studio · Faria Lima / Jardim Paulistano. Formato somente experiência (sem comidinhas). Valor a confirmar.</p>
+    <p class="fineprint">✦ Experiência privativa no Lado B Studio (Faria Lima / Jardim Paulistano), com todos os materiais e acompanhamento durante o processo.</p>
     {foot("Tufting · Lado B Studio")}
   </section>'''
 
@@ -154,84 +154,101 @@ atmosfera = f'''
     <p class="lead">Mesa posta com velas e flores, mãos na massa e o grupo criando junto — luz baixa, playlist boa e aquela sensação de estar num lugar especial. É essa a atmosfera do Agora Intu.</p>
     <div class="egrid">
       <figure>{img("agora-pintura.jpg", "Grupo criando junto no Agora Intu", "center 40%")}<figcaption>Mão na massa, juntas</figcaption></figure>
-      <figure>{img("agora-ceramica.jpg", "Modelagem à mão no Agora Intu", "center 40%")}<figcaption>Criação à mão</figcaption></figure>
       <figure>{img("agora-selfie.jpg", "Time rindo durante a experiência", "center 35%")}<figcaption>Risada garantida</figcaption></figure>
-      <figure>{img("agora-mesa.jpg", "Mesa posta e ambientação", "center 50%")}<figcaption>Mesa posta &amp; ambientação</figcaption></figure>
-      <figure>{img("menu-coffee.jpg", "Comidinhas e coffee do Agora Intu", "center 42%")}<figcaption>Comidinhas &amp; coffee</figcaption></figure>
+      <figure>{img("agora-ceramica.jpg", "Modelagem à mão no Agora Intu", "center 40%")}<figcaption>Criação à mão</figcaption></figure>
       <figure>{img("agora-grupo.jpg", "Time reunido à mesa no Agora Intu", "center 45%")}<figcaption>O time à mesa</figcaption></figure>
+      <figure>{img("menu-coffee.jpg", "Comidinhas e coffee do Agora Intu", "center 42%")}<figcaption>Comidinhas &amp; coffee</figcaption></figure>
+      <figure>{img("agora-mesa.jpg", "Mesa posta e ambientação", "center 50%")}<figcaption>Mesa posta &amp; ambientação</figcaption></figure>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Tudo incluso:</b> espaço exclusivo · profissional conduzindo · todos os materiais · finalização das peças · mesas e ambientação · playlist e velas · café, chá e água — e cada uma leva a própria peça.</div>
     {foot("A atmosfera do Agora Intu")}
   </section>'''
 
-planos = f'''
+comidinhas = f'''
   <section class="slide">
-{head_simple("Os planos")}
-    <span class="eyebrow orange">◆ A experiência + o menu</span>
-    <h2>Escolham o <em>plano</em></h2>
+{head_simple("Comidinhas")}
+    <span class="eyebrow orange">◆ Agora Intu · o menu que completa</span>
+    <h2>Complete com <em>comidinhas</em></h2>
     <div class="foodrow">
       <div class="foodsq">{img("menu-coffee.jpg", "Finger food e doces do menu", "center 42%")}</div>
-      <p class="lead">A experiência no Agora Intu — <strong>espaço exclusivo só do time</strong>, o momento de criar e o coffee — por <strong>R$ 279 por pessoa</strong>. É só escolher o menu que completa o encontro:</p>
+      <p class="lead">A experiência no Agora Intu já vem completa — espaço exclusivo, ambientação e café, chá e água. Dá pra deixar ainda mais gostosa somando um menu ao encontro:</p>
     </div>
     <div class="tiers">
       <div class="tier">
         <span class="tname">Tábua de boas-vindas</span>
-        <span class="tprice">R$ 378</span>
-        <span class="tbase">base R$ 279 + R$ 99</span>
+        <span class="tprice">+ R$ 87,50</span>
+        <span class="tbase">por pessoa</span>
         <p>Queijos, embutidos, pães artesanais, conservas e frutas.</p>
       </div>
       <div class="tier hl">
         <span class="tag">Mais escolhido</span>
         <span class="tname">Finger food</span>
-        <span class="tprice">R$ 418</span>
-        <span class="tbase">base R$ 279 + R$ 139</span>
+        <span class="tprice">+ R$ 137,50</span>
+        <span class="tbase">por pessoa</span>
         <p>5 bites quentes e frios, servidos ao longo do encontro.</p>
       </div>
       <div class="tier">
         <span class="tname">Menu completo</span>
-        <span class="tprice">R$ 468</span>
-        <span class="tbase">base R$ 279 + R$ 189</span>
+        <span class="tprice">+ R$ 187,50</span>
+        <span class="tbase">por pessoa</span>
         <p>Finger food + doce da casa + café.</p>
       </div>
     </div>
-    <p class="fineprint">Valores por pessoa, turma privada de 13, no Agora Intu (Pinheiros). Base R$ 279 (espaço exclusivo só do time, o momento da experiência de cerâmica ou velas e o coffee) + menu à escolha: Tábua R$ 99, Finger food R$ 139 ou Menu completo R$ 189 por pessoa. Data: 09/10 (manhã ou tarde). Reserva com sinal de 50%. A Elarah emite nota fiscal.</p>
-    {foot("Os planos")}
+    <p class="fineprint">Valores por pessoa, somados à experiência do Agora Intu. Menu à escolha: Tábua de boas-vindas R$ 87,50, Finger food R$ 137,50 ou Menu completo R$ 187,50 por pessoa. O menu é opcional e complementa a experiência.</p>
+    {foot("Comidinhas")}
   </section>'''
 
-bonus = f'''
+investimento = f'''
   <section class="slide">
-{head_simple("Bônus")}
-    <span class="eyebrow orange">◆ Pra levar de lembrança</span>
-    <h2>Bônus pra deixar <em>completo</em></h2>
-    <p class="lead">Além da peça que cada uma cria, dá pra somar dois mimos que ficam com o time depois do encontro:</p>
-    <div class="opts">
-      <div class="opt">
-        <div class="ophduo"><div class="sq">{img("garrafa-rosa-personalizada.jpg", "Garrafa personalizada", "center 50%")}</div><div class="sq">{img("garrafa-tassia.jpg", "Garrafa gravada com o nome de cada participante", "center 50%")}</div></div>
-        <div class="ob">
-          <span class="ot">Lembrancinha</span>
-          <h4>Garrafa personalizada</h4>
-          <p>Gravada com o <b>nome de cada participante</b> ou a <b>marca da empresa</b> — um mimo que fica na mesa de trabalho e lembra o encontro todo dia.</p>
-          <p>E tem mais: a gente também trabalha com <b>outras opções de brinde</b> (necessaire, kit aroma, caneca e mais). É só dizer a vibe do time que a gente monta a lembrança sob medida. 🤍</p>
-          <div class="op">R$ 139<small>por pessoa</small></div>
-        </div>
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ Quanto fica pro grupo</span>
+    <h2>Escolha o <em>caminho do time</em></h2>
+    <p class="lead">Cada experiência, com o valor por pessoa e o total para o grupo de 13:</p>
+    <div class="tiers">
+      <div class="tier">
+        <span class="tname">Tufting · Lado B</span>
+        <span class="tprice">R$ 11.050</span>
+        <span class="tbase">a partir de R$ 850 / pessoa · grupo de 13</span>
+        <p>Experiência privativa de tufting + materiais + acompanhamento + peça individual.</p>
       </div>
-      <div class="opt">
-        <div class="oph">{img("eventocorporativo.jpg", "Registro fotográfico profissional de evento corporativo", "center 40%")}</div>
-        <div class="ob">
-          <span class="ot">Registro</span>
-          <h4>Foto profissional</h4>
-          <ul>
-            <li>Um fotógrafo cobre o encontro inteiro</li>
-            <li>Cada conversa e cada criação registradas</li>
-            <li>Álbum digital pronto pro RH e a comunicação interna</li>
-            <li>Conteúdo pronto pra usar no LinkedIn</li>
-          </ul>
-          <div class="op">R$ 450<small>valor total</small></div>
-        </div>
+      <div class="tier">
+        <span class="tname">Cerâmica · Agora Intu</span>
+        <span class="tprice">R$ 4.714,29</span>
+        <span class="tbase">R$ 362,64 / pessoa · grupo de 13</span>
+        <p>Espaço exclusivo + experiência + materiais + ambientação + café, chá e água.</p>
+      </div>
+      <div class="tier">
+        <span class="tname">Velas · Agora Intu</span>
+        <span class="tprice" style="font-size:22px">Valor a confirmar</span>
+        <span class="tbase">valor final em breve</span>
+        <p>Assim que tivermos o custo específico da experiência de velas.</p>
       </div>
     </div>
-    <p class="fineprint">Bônus opcionais, somados ao plano escolhido. Lembrancinha (garrafa personalizada): R$ 139 por pessoa. Registro fotográfico profissional: R$ 450 (valor total). O modelo da garrafa e a personalização são combinados antes do encontro.</p>
-    {foot("Bônus")}
+    <p class="subh">Para deixar o encontro completo · por pessoa</p>
+    <ul class="checks">
+      <li><span class="ck">+</span>Tábua de boas-vindas — <b>R$ 87,50</b></li>
+      <li><span class="ck">+</span>Finger food — <b>R$ 137,50</b></li>
+      <li><span class="ck">+</span>Menu completo — <b>R$ 187,50</b></li>
+      <li><span class="ck">+</span>Garrafa personalizada — <b>R$ 139</b></li>
+      <li><span class="ck">+</span>Registro fotográfico — <b>R$ 450</b> / evento</li>
+    </ul>
+    {foot("Investimento")}
+  </section>'''
+
+pacotes = f'''
+  <section class="slide">
+{head_simple("Pacotes sugeridos")}
+    <span class="eyebrow orange">◆ A versão ideal do encontro</span>
+    <h2>A nossa <em>sugestão</em></h2>
+    <div class="priceband">
+      <div><span class="pl">Nossa sugestão ✦</span><div class="pv">R$ 550,14 <span style="font-size:16px;font-family:-apple-system,sans-serif">/ pessoa</span></div><div style="font-size:12px;color:rgba(255,255,255,.82);margin-top:4px">Cerâmica no Agora Intu + Menu completo</div></div>
+      <div class="side"><b>R$ 7.151,82</b> para 13 pessoas<br>Experiência + espaço exclusivo + ambientação + menu completo.</div>
+    </div>
+    <div class="priceband" style="background:var(--orange-dark);margin-top:14px">
+      <div><span class="pl" style="color:#fff">Experiência completa Elarah</span><div class="pv">R$ 723,76 <span style="font-size:16px;font-family:-apple-system,sans-serif">/ pessoa</span></div><div style="font-size:12px;color:rgba(255,255,255,.9);margin-top:4px">Cerâmica + menu completo + garrafa personalizada + registro fotográfico</div></div>
+      <div class="side"><b>R$ 9.408,82</b> para 13 pessoas<br>A versão mais completa do encontro — tudo pronto pra durar.</div>
+    </div>
+    <p class="fineprint">Valores por pessoa, turma privada de 13, no Agora Intu (Pinheiros). Nossa sugestão: Cerâmica + Menu completo = R$ 550,14 por pessoa (R$ 7.151,82 para 13). Experiência completa Elarah = Cerâmica + menu completo + garrafa personalizada (R$ 139/pessoa) + registro fotográfico (R$ 450) = R$ 723,76 por pessoa (R$ 9.408,82 para 13). Reserva com sinal de 50%. A Elarah emite nota fiscal.</p>
+    {foot("Pacotes sugeridos")}
   </section>'''
 
 contato = f'''
@@ -253,8 +270,10 @@ contato = f'''
     {foot("Como funciona & contato")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + opcoes + tufting + experiencia + atmosfera + planos + bonus + contato + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + opcoes + tufting + experiencia + atmosfera + comidinhas + investimento + pacotes + contato + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/proposta-mari-team-building.html"
 io.open(out, "w", encoding="utf-8").write(html)
-print("wrote", out, "| sections:", html.count('<section class="slide'))
+# guard: R$ 279 nao pode mais aparecer
+assert "279" not in deck, "PROIBIDO: R$ 279 ainda presente"
+print("wrote", out, "| sections:", html.count('<section class="slide'), "| sem 279: ok")
