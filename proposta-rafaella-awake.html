@@ -618,6 +618,28 @@
   .arow .aprice b{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);display:block;line-height:1}
   .arow .aprice small{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 </style>
+
+<style>
+  /* atmosfera 3x2 (mais fotos, grandes) */
+  .mos2{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:16px}
+  .mos2 figure{margin:0;border-radius:16px;overflow:hidden;position:relative;height:206px;border:1px solid var(--line);box-shadow:0 16px 38px -26px rgba(0,0,0,.36)}
+  .mos2 img{width:100%;height:100%;object-fit:cover;display:block}
+  .mos2 figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 16px 13px;color:#fff;font-size:12.5px;font-weight:600;letter-spacing:.04em;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .menu-row .mprice .mpp{display:block;font-size:9.5px;color:var(--muted);margin-top:3px;font-weight:600;letter-spacing:.02em}
+  /* aromas trio */
+  .aroma{display:grid;grid-template-columns:.92fr 1.08fr;gap:30px;margin-top:18px;align-items:stretch}
+  .aroma .aphoto{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.4);min-height:330px;position:relative}
+  .aroma .aphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .aroma .alist{display:flex;flex-direction:column;gap:13px;justify-content:center}
+  .arow{display:grid;grid-template-columns:56px 1fr auto;gap:15px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 17px 11px 11px;box-shadow:0 12px 28px -24px rgba(0,0,0,.3)}
+  .arow .athumb{width:56px;height:56px;border-radius:10px;overflow:hidden;background:#eee}
+  .arow .athumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .arow .aname{font-family:'DM Serif Display',serif;font-size:16.5px;color:var(--navy);line-height:1.08}
+  .arow .arat{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
+  .arow .aprice{text-align:right;white-space:nowrap}
+  .arow .aprice b{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);display:block;line-height:1}
+  .arow .aprice small{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+</style>
 </head>
 <body>
 
@@ -664,7 +686,7 @@
       <figure><img src="assets/pinturataca.jpg" alt="Mãos pintando uma taça" style="object-position:center 45%"><figcaption>Mãos que criam</figcaption></figure>
       <figure><img src="assets/lipbalm1.jpg" alt="Ingredientes e cores beauty" style="object-position:center 50%"><figcaption>Detalhes beauty</figcaption></figure>
       <figure><img src="assets/aroma-experiencia-mesa.jpg" alt="Mesa de aromas autorais" style="object-position:center 55%"><figcaption>Aromas autorais</figcaption></figure>
-      <figure><img src="assets/charm-bolsa.jpg" alt="Peça finalizada" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
+      <figure><img src="assets/charm-flatlay.jpg" alt="Charm finalizado" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A atmosfera do encontro</span></div>
   </section>
@@ -691,7 +713,7 @@
     </div>
     <span class="eyebrow orange">◆ Escolham a cara da manhã</span>
     <h2>O <em>cardápio</em> de experiências</h2>
-    <p class="lead">Seis experiências para comparar rapidamente. O valor principal é o do <strong>grupo fechado</strong> (até 15); o por pessoa é só referência. Todas com cerca de 40 min.</p>
+    <p class="lead">Uma curadoria para escolher a cara da manhã — cada experiência vira a atividade <strong>e</strong> a lembrança do encontro, na própria Awake e com cerca de 40 min. 🤍</p>
     <div class="menu">
       <div class="menu-row">
         <div class="mthumb"><img src="assets/lipbalm.jpg" alt="Lip Balm Autoral"></div>
@@ -706,7 +728,7 @@
         <div class="mprice"><b>R$ 199</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.985</span></div>
       </div>
       <div class="menu-row">
-        <div class="mthumb"><img src="assets/charm-bolsa.jpg" alt="Charm Bag Express"></div>
+        <div class="mthumb"><img src="assets/charm-bolsa-suede.jpg" alt="Charm Bag Express"></div>
         <div><div class="mname">Charm Bag Express</div><div class="mrat">personalização · moda · lembrança</div></div>
         <div class="mdur">40 min</div>
         <div class="mprice"><b>R$ 159</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.385</span></div>
@@ -718,13 +740,13 @@
         <div class="mprice"><b>R$ 189</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.835</span></div>
       </div>
       <div class="menu-row">
-        <div class="mthumb"><img src="assets/HOMESPRAY.jpg" alt="Aromatizador de Ambiente"></div>
+        <div class="mthumb"><img src="assets/aromatizador-spray.jpg" alt="Aromatizador de Ambiente"></div>
         <div><div class="mname">Aromatizador de Ambiente</div><div class="mrat">aroma · casa · bem-estar</div></div>
         <div class="mdur">40 min</div>
         <div class="mprice"><b>R$ 169</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.535</span></div>
       </div>
       <div class="menu-row">
-        <div class="mthumb"><img src="assets/aromatizador-corp.jpg" alt="Difusor de Ambiente"></div>
+        <div class="mthumb"><img src="assets/difusor-reed.jpg" alt="Difusor de Ambiente"></div>
         <div><div class="mname">Difusor de Ambiente</div><div class="mrat">aroma · casa · elegância</div></div>
         <div class="mdur">40 min</div>
         <div class="mprice"><b>R$ 189</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.835</span></div>
@@ -797,8 +819,8 @@
     <h2>Charm Bag <em>Express</em></h2>
     <p class="lead">Cada convidada compõe um charm exclusivo para a bolsa — pedras, letras e detalhes.</p>
     <div class="filmstrip two">
-      <figure><img src="assets/charmbar.jpg" alt="Os charms" style="object-position:center 50%"><figcaption>Os charms</figcaption></figure>
-      <figure><img src="assets/charm-bolsa.jpg" alt="O que fica" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
+      <figure><img src="assets/charm-flatlay.jpg" alt="Os charms" style="object-position:center 50%"><figcaption>Os charms</figcaption></figure>
+      <figure><img src="assets/charm-bolsa-suede.jpg" alt="O que fica" style="object-position:center 45%"><figcaption>O que fica</figcaption></figure>
     </div>
     <div class="expfoot">
       <div class="why">
@@ -831,12 +853,12 @@
           <div class="aprice"><b>R$ 2.835</b><small>grupo · ~ R$ 189/pessoa</small></div>
         </div>
         <div class="arow">
-          <div class="athumb"><img src="assets/HOMESPRAY.jpg" alt="Aromatizador de Ambiente"></div>
+          <div class="athumb"><img src="assets/aromatizador-spray.jpg" alt="Aromatizador de Ambiente"></div>
           <div><div class="aname">Aromatizador de Ambiente</div><div class="arat">aroma · casa · bem-estar</div></div>
           <div class="aprice"><b>R$ 2.535</b><small>grupo · ~ R$ 169/pessoa</small></div>
         </div>
         <div class="arow">
-          <div class="athumb"><img src="assets/aromatizador-corp.jpg" alt="Difusor de Ambiente"></div>
+          <div class="athumb"><img src="assets/difusor-reed.jpg" alt="Difusor de Ambiente"></div>
           <div><div class="aname">Difusor de Ambiente</div><div class="arat">aroma · casa · elegância</div></div>
           <div class="aprice"><b>R$ 2.835</b><small>grupo · ~ R$ 189/pessoa</small></div>
         </div>
