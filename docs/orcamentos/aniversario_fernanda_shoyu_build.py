@@ -4,7 +4,7 @@
 # DINAMICA CORRETA: dois momentos criativos (1 modelagem da propria peca; 2 pintura de UMA peca de ceramica).
 #   As pecas FICAM no atelie p/ finalizacao e queima; RETIRADA POSTERIOR no Shoyu quando prontas.
 #   NUNCA dizer que saem levando a peca no mesmo dia; sem comida/foto/welcome drink/mimo/brinde/opcionais.
-# ZERO Agora Intu. Nao ha foto real do Shoyu no banco -> representativas (sinalizar). Paleta terracota/vinho.
+# ZERO Agora Intu. Fotos reais do Shoyu na capa (shoyu-grupo) e no slide do espaco (shoyu-atelie). Paleta terracota/vinho.
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
 ROOT = "/home/user/elarahplatform"
 
@@ -129,7 +129,7 @@ cover = f'''
           <span class="chip">Sexta · tarde ou noite</span>
         </div>
       </div>
-      <div class="cover-photo">{img("ceramica-meninas.jpg", "Amigas rindo e criando cerâmica juntas no ateliê", "center 30%")}</div>
+      <div class="cover-photo">{img("shoyu-grupo.jpg", "Grupo sorrindo com suas peças de cerâmica no Shoyu Crafts", "center 35%")}</div>
     </div>
     {foot("Aniversário · Fernanda")}
   </section>'''
@@ -202,7 +202,7 @@ espaco = f'''
     <span class="eyebrow orange">◆ Shoyu Crafts · Pinheiros</span>
     <h2>Um espaço para colocar a <em>mão na argila</em></h2>
     <div class="spacewrap">
-      <div class="spaceph">{img("ceramicamodelagem.jpg", "Ateliê de cerâmica · mãos modelando uma peça de argila", "center 50%")}</div>
+      <div class="spaceph">{img("shoyu-atelie.jpg", "Ateliê Shoyu Crafts em Pinheiros · mesa de trabalho e peças de cerâmica", "center 55%")}</div>
       <div class="spacetxt">
         <p>O <b>Shoyu Crafts</b> é um ateliê de cerâmica de alta temperatura em Pinheiros, criado tanto para quem está colocando a mão na argila pela primeira vez quanto para quem quer continuar aprendendo e desenvolvendo seu próprio trabalho.</p>
         <p>Por lá, a cerâmica é um convite para mudar um pouco o ritmo da rotina: prestar atenção no processo, experimentar, aprender e desenvolver a técnica <b>sem a expectativa de acertar tudo de primeira</b>.</p>
