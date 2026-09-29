@@ -99,7 +99,7 @@ levajunto = f'''
     <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos — <strong>sem hierarquia, sem quem sabe mais e quem sabe menos.</strong> 🧡</p>
     <div class="rule"></div>
     <div class="opts" style="grid-template-columns:repeat(3,1fr)">
-{bcard("mol-experiencia.webp", "center 30%", "Conversa que não rola no escritório", "As horas lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b>")}
+{bcard("nbc-aromas-criacao.jpg", "center 30%", "Conversa que não rola no escritório", "As horas lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b>")}
 {bcard("tufting1.jpg", "center 30%", "Todo mundo no mesmo pé", "Ninguém precisa ter experiência. <b>Liderança e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.")}
 {bcard("ceramica2.jpg", "center 50%", "Fica depois do dia", "O que foi criado continua depois do encontro — <b>seja como peça individual ou como memória coletiva</b> do time.")}
     </div>
@@ -114,8 +114,8 @@ opcoes = f'''
     <h2>Escolham a <em>cara do encontro</em></h2>
     <p class="lead">Todas privativas, conduzidas por profissional, com todos os materiais inclusos — e cada uma leva a própria criação pra casa.</p>
     <div class="opts" style="grid-template-columns:repeat(3,1fr)">
-{opt3("mol-experiencia.webp", "center 30%", "Ateliê Meu Outro Lado · Brooklin", "Vela Aromática", "Experiência manual e sensorial: cada uma cria a própria vela, escolhendo fragrâncias, do início ao fim.", '<div class="op">R$ 319<small>por pessoa</small></div>')}
-{opt3("agora-ceramica.jpg", "center 40%", "Agora Intu · Pinheiros", "Cerâmica", "Modelagem à mão, com o grupo à mesa e profissional conduzindo — cada uma leva a própria peça.", '<div class="op">R$ 369<small>por pessoa</small></div>')}
+{opt3("vela-grupo-oficina.jpg", "center 35%", "Ateliê Meu Outro Lado · Brooklin", "Vela Aromática", "Experiência manual e sensorial: cada uma cria a própria vela, escolhendo fragrâncias, do início ao fim.", '<div class="op">R$ 319<small>por pessoa</small></div>')}
+{opt3("agora-hero.jpg", "center 45%", "Agora Intu · Pinheiros", "Cerâmica", "Modelagem à mão, com o grupo à mesa e profissional conduzindo — cada uma leva a própria peça.", '<div class="op">R$ 369<small>por pessoa</small></div>')}
 {opt3("tufting6.jpg", "center 30%", "Lado B Studio · Faria Lima", "Tufting", "Aprendem a técnica de tufting e criam a própria peça autoral — fios, cores e composição.", '<div class="op">R$ 799<small>por pessoa</small></div>')}
     </div>
     <p class="fineprint">✦ Turma privada de 13 · 09/10 (manhã ou tarde). Vela Aromática — Ateliê Meu Outro Lado · Brooklin · Cerâmica — Agora Intu · Pinheiros · Tufting — Lado B Studio · Faria Lima / Jardim Paulistano. No Agora Intu, a experiência é completa e pode receber comidinhas.</p>
@@ -183,7 +183,7 @@ atmosfera = f'''
       <figure>{img("agora-selfie.jpg", "Time rindo durante a experiência", "center 35%")}<figcaption>Risada garantida</figcaption></figure>
       <figure>{img("agora-ceramica.jpg", "Modelagem à mão no Agora Intu", "center 40%")}<figcaption>Criação à mão</figcaption></figure>
       <figure>{img("agora-grupo.jpg", "Time reunido à mesa no Agora Intu", "center 45%")}<figcaption>O time à mesa</figcaption></figure>
-      <figure>{img("menu-coffee.jpg", "Comidinhas e coffee do Agora Intu", "center 42%")}<figcaption>Comidinhas &amp; coffee</figcaption></figure>
+      <figure>{img("agora-pintando.jpg", "Pintando as peças no Agora Intu", "center 30%")}<figcaption>Cada detalhe à mão</figcaption></figure>
       <figure>{img("agora-mesa.jpg", "Mesa posta e ambientação", "center 50%")}<figcaption>Mesa posta &amp; ambientação</figcaption></figure>
     </div>
     {foot("A atmosfera do Agora Intu")}
@@ -195,7 +195,7 @@ tufting = f'''
     <span class="eyebrow orange">◆ Tufting · Lado B Studio · Faria Lima</span>
     <h2>Fios, cor e <em>criação</em></h2>
     <p class="lead">No Lado B, cada uma aprende a técnica de tufting e cria a própria peça autoral — com a pistola, fios e muita cor. Um ambiente vibrante, mão na massa do começo ao fim.</p>
-    {egrid3([("lado-b-vermelho.webp", "center 30%", "Escolhem desenho & cores"), ("tufting1.jpg", "center 30%", "Criam com a pistola"), ("tufting6.jpg", "center 25%", "Cada uma leva a sua")])}
+    {egrid3([("lado-b-vermelho.webp", "center 30%", "Escolhem desenho & cores"), ("lado-b-tuftgun.webp", "center 50%", "Criam com a pistola"), ("tufting17.jpg", "center 40%", "Cada uma leva a sua")])}
     <p class="subh">Como acontece</p>
     <ul class="checks">
       <li><span class="ck">1</span>Conhecem a <b>técnica</b> e a pistola de tufting</li>
