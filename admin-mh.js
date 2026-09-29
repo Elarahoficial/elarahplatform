@@ -88,8 +88,12 @@
     if (!site) return null;
     try { return new URL(/^https?:/i.test(site) ? site : 'https://' + site).hostname.replace(/^www\./, ''); } catch (_) { return null; }
   }
+  // E-mail de envio da Mental Health (fica salvo neste navegador). O Gmail
+  // abre direto nessa conta — ela só precisa estar logada no navegador.
+  function emailEnvio() { return lsGet('elarah_mh_email_envio', '') || ''; }
   function gmailLink(to, assunto, corpo) {
-    return 'https://mail.google.com/mail/?view=cm&fs=1' + (to ? '&to=' + encodeURIComponent(to) : '') +
+    var conta = emailEnvio();
+    return 'https://mail.google.com/mail/' + (conta ? '?authuser=' + encodeURIComponent(conta) + '&' : '?') + 'view=cm&fs=1' + (to ? '&to=' + encodeURIComponent(to) : '') +
       '&su=' + encodeURIComponent(assunto || '') + '&body=' + encodeURIComponent(corpo || '');
   }
 
@@ -1154,6 +1158,49 @@
     return out;
   }
 
+  // Fila equilibrada: no máximo 10 empresas NÃO contatadas por segmento.
+  // Só apaga quem veio da busca automática da Mental Health, nunca foi
+  // abordado e não tem nenhuma anotação. Fica quem tem site + telefone
+  // e, depois, as mais novas.
+  async function limparFila() {
+    var comInter = {};
+    S.interacoes.forEach(function (i) { comInter[i.prospect_id] = 1; });
+    var porSeg = {};
+    S.prospects.forEach(function (p) {
+      if (p.status_comercial !== 'nao_contatado' || comInter[p.id]) return;
+      if (p.frente && p.frente !== 'mh') return;
+      if (p.origem && p.origem !== 'google_places_mh') return;
+      var k = p.segmento || 'Sem segmento';
+      (porSeg[k] = porSeg[k] || []).push(p);
+    });
+    var apagar = [], resumo = [];
+    Object.keys(porSeg).forEach(function (k) {
+      var l = porSeg[k].sort(function (a, b) {
+        var ca = (a.site ? 1 : 0) + (a.telefone ? 1 : 0), cb = (b.site ? 1 : 0) + (b.telefone ? 1 : 0);
+        if (ca !== cb) return cb - ca;
+        return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+      });
+      if (l.length > 10) { apagar = apagar.concat(l.slice(10)); resumo.push(k + ': ' + l.length + ' → 10'); }
+    });
+    if (!apagar.length) return toast('A fila já está equilibrada: nenhum segmento passa de 10.');
+    if (!confirm('Vou deixar no máximo 10 empresas não contatadas por segmento e apagar ' + apagar.length + ':\n\n' + resumo.join('\n') + '\n\nQuem já foi abordado não é apagado. Continuar?')) return;
+    var c = sb(), ids = apagar.map(function (p) { return p.id; });
+    try {
+      if (c && !LOCAL_MODE.b2b_prospects) {
+        for (var i = 0; i < ids.length; i += 100) {
+          var r = await c.from('b2b_prospects').delete().in('id', ids.slice(i, i + 100));
+          if (r.error) throw new Error(r.error.message);
+        }
+      } else {
+        lsSet(lsKey('b2b_prospects'), lsGet(lsKey('b2b_prospects'), []).filter(function (p) { return ids.indexOf(p.id) < 0; }));
+      }
+      var fora = {}; ids.forEach(function (id) { fora[id] = 1; });
+      S.prospects = S.prospects.filter(function (p) { return !fora[p.id]; });
+      toast('Pronto: ' + ids.length + ' empresas saíram da fila.');
+      render();
+    } catch (e) { toast('Não deu pra limpar: ' + e.message); }
+  }
+
   function rProsp() {
     var ps = prospStats();
     var pct = Math.min(100, Math.round(ps.contatadas / META_SEMANA * 100));
@@ -1168,7 +1215,7 @@
     var segs = {}; S.prospects.forEach(function (p) { if (p.segmento) segs[p.segmento] = 1; });
     var pag = S.ui.pPag || 50;
     var g = ganchoAtual();
-    return head('Prospecção', 'Meta: ' + META_SEMANA + ' empresas abordadas por semana. O agente traz ~100 empresas novas toda segunda (Google Maps); cada linha já vem com e-mail, LinkedIn, WhatsApp e roteiro de ligação prontos.',
+    return head('Prospecção', 'Meta: ' + META_SEMANA + ' empresas abordadas por semana. O agente traz ~100 empresas novas toda segunda (Google Maps), 10 de cada setor; cada linha já vem com e-mail, LinkedIn, WhatsApp e roteiro de ligação prontos.',
         '<button class="mh-btn mh-btn--terra" id="mh-finder">🔎 Buscar 100 empresas agora</button><button class="mh-btn mh-btn--ghost" data-prosp-novo>+ Empresa</button><button class="mh-btn mh-btn--ghost" data-prosp-import>Importar lista</button>') +
       '<div id="mh-finder-status" style="font-size:.84rem;margin:-8px 0 12px;color:var(--mh-muted)"></div>' +
       '<div class="mh-grid mh-grid--4" style="margin-bottom:16px">' +
@@ -1181,7 +1228,9 @@
         '<select class="mh-select" data-p-status><option value="todos">Todos os status</option>' + optList(STATUS_P, fs) + '</select>' +
         '<select class="mh-select" data-p-seg><option value="">Todos os segmentos</option>' + Object.keys(segs).sort().map(function (s) { return '<option' + (s === seg ? ' selected' : '') + '>' + esc(s) + '</option>'; }).join('') + '</select>' +
         '<input class="mh-input" data-p-busca placeholder="Buscar empresa…" value="' + esc(S.ui.pBusca || '') + '" style="flex:1;min-width:160px">' +
+        '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-email-envio title="Conta do Gmail que abre no botão Abrir no Gmail">📧 ' + (emailEnvio() ? 'Envio: ' + esc(emailEnvio()) : 'E-mail de envio da Mental Health') + '</button>' +
         '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-assinatura>✍️ Minha assinatura</button>' +
+        '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-limpar-fila title="Deixa no máximo 10 empresas não contatadas por segmento">🧹 Deixar 10 por segmento</button>' +
         '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-csv>⬇ CSV</button>' +
       '</div>' +
       '<div class="mh-card"><h3>' + lista.length + ' empresa(s)</h3>' +
@@ -1496,6 +1545,17 @@
       if ('prospImport' in ds) return abrirImport();
       if (t.id === 'mh-finder') return rodarFinder();
       if ('csv' in ds) return exportarCSV();
+      if ('emailEnvio' in ds) {
+        var ev = prompt('E-mail de envio da Mental Health (a conta do Gmail que vai abrir no "Abrir no Gmail").\n\nEssa conta precisa estar logada neste navegador. Deixe vazio para usar a conta padrão.', emailEnvio());
+        if (ev != null) {
+          ev = ev.trim();
+          if (ev && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ev)) { toast('E-mail inválido.'); return; }
+          lsSet('elarah_mh_email_envio', ev); render();
+          toast(ev ? 'Os e-mails vão abrir em ' + ev : 'Voltou para a conta padrão do navegador');
+        }
+        return;
+      }
+      if ('limparFila' in ds) return limparFila();
       if ('assinatura' in ds) {
         var v = prompt('Sua assinatura nos e-mails (use \\n para quebrar linha):', assinatura().replace(/\n/g, '\\n'));
         if (v != null) { lsSet('elarah_mh_assinatura', v.replace(/\\n/g, '\n')); render(); }

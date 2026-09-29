@@ -43,30 +43,44 @@ const BUSCAS: Array<{ q: string; tipo: string; segmento: string }> = [
   { q: "empresa de tecnologia", tipo: "tech", segmento: "Tecnologia" },
   { q: "empresa de software", tipo: "tech", segmento: "Software" },
   { q: "startup", tipo: "startup", segmento: "Startup" },
+  { q: "fintech", tipo: "tech", segmento: "Fintech" },
+  { q: "empresa de telecomunicações", tipo: "tech", segmento: "Telecom" },
+  { q: "empresa de telemetria e rastreamento", tipo: "tech", segmento: "Telemetria" },
+  { q: "e-commerce escritório", tipo: "tech", segmento: "E-commerce" },
   { q: "agência de publicidade", tipo: "agencia", segmento: "Publicidade" },
   { q: "agência de marketing digital", tipo: "agencia", segmento: "Marketing digital" },
+  { q: "produtora audiovisual", tipo: "agencia", segmento: "Audiovisual / mídia" },
   { q: "escritório de advocacia", tipo: "escritorio_juridico", segmento: "Jurídico" },
   { q: "escritório de contabilidade", tipo: "escritorio", segmento: "Contabilidade" },
   { q: "consultoria empresarial", tipo: "escritorio", segmento: "Consultoria" },
+  { q: "empresa de recursos humanos", tipo: "escritorio", segmento: "RH / recrutamento" },
   { q: "construtora", tipo: "construtora", segmento: "Construção" },
   { q: "incorporadora imobiliária", tipo: "imobiliaria", segmento: "Incorporação" },
   { q: "escritório de arquitetura", tipo: "arquitetura_design", segmento: "Arquitetura" },
+  { q: "empresa de engenharia", tipo: "construtora", segmento: "Engenharia" },
   { q: "coworking", tipo: "coworking", segmento: "Coworking" },
-  { q: "hospital", tipo: "clinica", segmento: "Saúde (hospital)" },
-  { q: "clínica médica", tipo: "clinica", segmento: "Saúde" },
-  { q: "laboratório de análises clínicas", tipo: "clinica", segmento: "Saúde (laboratório)" },
-  { q: "corretora de seguros", tipo: "escritorio", segmento: "Seguros" },
   { q: "banco escritório corporativo", tipo: "escritorio", segmento: "Financeiro" },
-  { q: "fintech", tipo: "tech", segmento: "Fintech" },
+  { q: "corretora de seguros", tipo: "escritorio", segmento: "Seguros" },
+  { q: "hospital", tipo: "clinica", segmento: "Saúde" },
+  { q: "indústria farmacêutica", tipo: "industria_leve", segmento: "Farmacêutica" },
+  { q: "indústria de alimentos e bebidas", tipo: "industria_leve", segmento: "Alimentos e bebidas" },
   { q: "indústria", tipo: "industria_leve", segmento: "Indústria" },
   { q: "empresa de logística", tipo: "outro", segmento: "Logística" },
   { q: "call center", tipo: "outro", segmento: "Atendimento / call center" },
   { q: "escola particular", tipo: "outro", segmento: "Educação" },
   { q: "faculdade", tipo: "outro", segmento: "Educação superior" },
   { q: "rede de varejo escritório", tipo: "outro", segmento: "Varejo" },
-  { q: "empresa de recursos humanos", tipo: "escritorio", segmento: "RH / recrutamento" },
-  { q: "empresa de engenharia", tipo: "construtora", segmento: "Engenharia" },
+  { q: "marca de moda escritório", tipo: "outro", segmento: "Moda" },
+  { q: "hotel", tipo: "outro", segmento: "Hotelaria" },
+  { q: "empresa de energia", tipo: "outro", segmento: "Energia" },
+  { q: "empresa do agronegócio", tipo: "outro", segmento: "Agronegócio" },
+  { q: "concessionária de veículos", tipo: "outro", segmento: "Automotivo" },
 ];
+
+// No máximo 10 empresas novas de cada setor por rodada: 100 empresas
+// = 10 setores diferentes. A cada semana a rodada começa em setores
+// novos, então a fila fica sempre variada.
+const POR_SETOR = 10;
 
 interface Place {
   id: string;
@@ -163,7 +177,9 @@ serve(async (req) => {
   const cidade = String(payload.cidade || "São Paulo").slice(0, 60);
 
   const sb = getServiceClient();
-  const offset = weekOfYear() % BUSCAS.length;
+  const porSetor = Math.max(1, Math.min(30, Number((payload as { porSetor?: number }).porSetor) || POR_SETOR));
+  const setoresPorRodada = Math.ceil(target / porSetor);
+  const offset = (weekOfYear() * setoresPorRodada) % BUSCAS.length;
   const ordem = [...BUSCAS.slice(offset), ...BUSCAS.slice(0, offset)];
 
   const vistos = new Set<string>();
@@ -175,7 +191,8 @@ serve(async (req) => {
     if (novos.length >= target) break;
     if (Date.now() - started > 110_000) break; // folga pro timeout do cron
     let pageToken: string | undefined;
-    for (let page = 0; page < 3 && novos.length < target; page++) {
+    let doSetor = 0;
+    for (let page = 0; page < 3 && novos.length < target && doSetor < porSetor; page++) {
       let data;
       try {
         data = await searchPage(`${b.q} em ${cidade}`, pageToken);
@@ -193,7 +210,7 @@ serve(async (req) => {
         const { data: exist } = await sb.from("b2b_prospects").select("google_place_id").in("google_place_id", ids);
         const ja = new Set((exist || []).map((r: { google_place_id: string }) => r.google_place_id));
         for (const p of places) {
-          if (ja.has(p.id) || novos.length >= target) continue;
+          if (ja.has(p.id) || novos.length >= target || doSetor >= porSetor) continue;
           // Sem site nem telefone não dá pra abordar — pula.
           if (!p.websiteUri && !p.nationalPhoneNumber) continue;
           novos.push({
@@ -211,6 +228,7 @@ serve(async (req) => {
             potencial: "medio",
             observacoes: p.googleMapsUri ? `Google Maps: ${p.googleMapsUri}` : null,
           });
+          doSetor++;
         }
       }
       pageToken = data.nextPageToken;
