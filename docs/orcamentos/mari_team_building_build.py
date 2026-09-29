@@ -88,7 +88,7 @@ opcoes = f'''
     <h2>Escolham a <em>cara do encontro</em></h2>
     <p class="lead">Todas privativas, conduzidas por profissional, com todos os materiais inclusos — e cada uma leva a própria criação pra casa.</p>
     <div class="opts" style="grid-template-columns:repeat(3,1fr)">
-{opt3("vela-grupo-oficina.jpg", "center 35%", "Ateliê Meu Outro Lado · Brooklin", "Vela Aromática", "Experiência manual e sensorial: cada uma cria a própria vela, escolhendo fragrâncias, do início ao fim.", '<div class="op">R$ 319<small>por pessoa</small></div>')}
+{opt3("mol-experiencia.webp", "center 30%", "Ateliê Meu Outro Lado · Brooklin", "Vela Aromática", "Experiência manual e sensorial: cada uma cria a própria vela, escolhendo fragrâncias, do início ao fim.", '<div class="op">R$ 319<small>por pessoa</small></div>')}
 {opt3("agora-ceramica.jpg", "center 40%", "Agora Intu · Pinheiros", "Cerâmica", "Modelagem à mão, com o grupo à mesa e profissional conduzindo — cada uma leva a própria peça.", '<div class="op">R$ 369<small>por pessoa</small></div>')}
 {opt3("tufting6.jpg", "center 30%", "Lado B Studio · Faria Lima", "Tufting", "Aprendem a técnica de tufting e criam a própria peça autoral — fios, cores e composição.", '<div class="op">R$ 799<small>por pessoa</small></div>')}
     </div>
@@ -102,7 +102,7 @@ vela = f'''
     <span class="eyebrow orange">◆ Vela Aromática · Ateliê Meu Outro Lado · Brooklin</span>
     <h2>Aromas e <em>criação</em></h2>
     <p class="lead">No Ateliê Meu Outro Lado (Brooklin), cada uma cria a própria vela aromática — escolhendo fragrâncias e participando de todo o processo, acompanhada pela profissional. Manual, sensorial e cheia de aroma.</p>
-    {egrid3([("nbc-aromas-criacao.jpg", "center 30%", "Criam juntas"), ("vela-grupo-oficina.jpg", "center 35%", "Mão na massa"), ("vela-aromatica-real.jpg", "center 45%", "Aromas & texturas")])}
+    {egrid3([("mol-experiencia.webp", "center 30%", "A experiência"), ("mol-vela-pintada.jpg", "center 55%", "A vela que fica"), ("mol-estacao.jpg", "center 40%", "Aromas & materiais")])}
     <p class="subh">Como acontece</p>
     <ul class="checks">
       <li><span class="ck">1</span>Escolhem as <b>fragrâncias</b></li>
