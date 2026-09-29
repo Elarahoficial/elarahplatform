@@ -1,10 +1,10 @@
 # Proposta Elarah · Aniversario Antonella · 13 anos · 15 convidadas · outubro (sab/dom) · Mooca
 # SOMENTE no local da cliente (sem espaco parceiro) -> conceito "Elarah ate voce": levamos experiencia, materiais e producao.
 # Duas experiencias: 1) Customize Escova & Presilha (2h, artistica) 2) Piranha & Escova Bedazzled (1h30, glam/cristais).
-# Final comercial em 2 PACOTES (Completo / Premium), com valores por experiencia (nao arredondar):
-#   Completo: Exp1 R$307,33pp/4.610,00 · Exp2 R$272,23pp/4.083,50 (15 conv).
-#   Premium (+garrafa +foto): Exp1 R$487,23pp/7.308,50 · Exp2 R$452,13pp/6.782,00 (15 conv).
-# Slides: capa(grupo) · experiencias · Elarah ate voce · A vibe · Escolha como celebrar(pacotes) · proximos.
+# Valores finais da experiencia (por pessoa / total 15): Exp1 R$229/3.435 · Exp2 R$209/3.135.
+# Opcionais (slide Complete a comemoracao): comidinhas R$89,90/pp · bolo+vela R$200 · foto R$450 · garrafa rosa R$149,90/pp.
+# Slides: capa(grupo) · experiencias · Elarah ate voce · A vibe · Complete a comemoracao(opcionais) · Investimento(penultimo) · proximos.
+# Fotos reais da experiencia de escova (refs cliente 118-122). garrafa-rosa-personalizada = recolor do frasco navy (nao ha rosa no banco).
 # Padrao editorial Elarah aniversario. Paleta blush. Priorizar fotos com pessoas/jovens.
 # PROIBIDO: ceramica, pintura em tela, tacas, workshops sem relacao, mencao a espaco parceiro/Bake Studio.
 S = "/tmp/claude-0/-home-user-elarahplatform/9abf7e9a-5852-5ed9-badc-3da0f14e2577/scratchpad"
@@ -170,7 +170,7 @@ experiencia = f'''
     <p class="lead">Duas oficinas conduzidas, no mesmo formato — uma mais artística e colorida, outra mais glam e cheia de brilho. Em ambas, cada convidada leva as próprias peças pra casa.</p>
     <div class="cpg">
       <div class="cpc">
-        <div class="cpph">{img("escova-pintada-flores.webp", "Escovas de madeira pintadas à mão com flores", "center 45%")}</div>
+        <div class="cpph">{img("escova-presilha-floral.png", "Escova de madeira pintada à mão com presilha floral combinando", "center 50%")}</div>
         <div class="cpb">
           <div class="cptag">Artística &amp; colorida</div>
           <div class="cpn">Customize sua Escova &amp; Presilha</div>
@@ -252,9 +252,9 @@ a_vibe = f'''
     <h2>A vibe <em>da comemoração</em></h2>
     <p class="lead">Um encontro leve e especial para celebrar os 13 anos da Antonella com criatividade, risadas e momentos gostosos entre amigas — mais do que uma oficina, uma festa bonita e cheia de personalidade.</p>
     <div class="gstrip">
-      <figure>{img("vibe-risada.jpg", "Amigas rindo e se divertindo juntas", "center 30%")}<figcaption>Amigas se divertindo juntas</figcaption></figure>
-      <figure>{img("macaron-risada.jpg", "Meninas rindo e trocando olhares", "center 40%")}<figcaption>Risadas e momentos gostosos</figcaption></figure>
-      <figure>{img("aniversariogi2.jpg", "Mesa montada, delicada e florida", "center 50%")}<figcaption>Mesa montada &amp; clima de festa</figcaption></figure>
+      <figure>{img("escovas-grupo-maos.jpg", "Amigas mostrando as escovas que personalizaram", "center 40%")}<figcaption>Amigas e suas criações</figcaption></figure>
+      <figure>{img("escova-maonamassa.jpg", "Mãos customizando as escovas com tinta e brilho", "center 50%")}<figcaption>Mão na massa entre amigas</figcaption></figure>
+      <figure>{img("oficina-escova-mesa.jpg", "Mesa montada com escovas, tintas e materiais", "center 55%")}<figcaption>Tudo pronto pra criar</figcaption></figure>
     </div>
     <div class="bnote" style="margin-top:16px">◆ Clima leve e feminino, mão na massa entre amigas e uma <b>lembrança especial</b> pra cada uma levar pra casa. ✨</div>
     {foot("A vibe")}
@@ -268,60 +268,48 @@ complete = f'''
     <h2>Uma comemoração <em>completa</em></h2>
     <p class="lead">Mais que uma oficina: monte a festa do jeitinho de vocês. Cada item é opcional e entra conforme a escolha da família.</p>
     <div class="ostrip">
-      <figure>{img("salgadosemgluten.jpg", "Salgadinhos para a mesa da festa", "center 50%")}<figcaption>Comidinhas</figcaption></figure>
-      <figure>{img("bologanache.jpg", "Bolo de aniversário", "center 50%")}<figcaption>Bolo &amp; vela</figcaption></figure>
-      <figure>{img("lembrancinha-garrafa.jpg", "Garrafa personalizada com o nome da convidada", "center 45%")}<figcaption>Garrafas personalizadas</figcaption></figure>
+      <figure>{img("velabolopote.jpg", "Bolo de aniversário com vela acesa", "center 45%")}<figcaption>Bolo + vela</figcaption></figure>
+      <figure>{img("garrafa-rosa-personalizada.jpg", "Garrafa rosa personalizada com o nome de cada convidada", "center 45%")}<figcaption>Garrafa rosa personalizada</figcaption></figure>
+      <figure>{img("salgadosemgluten.jpg", "Salgadinhos e docinhos para a festa", "center 50%")}<figcaption>Comidinhas</figcaption></figure>
     </div>
     <div class="oplist">
       <div class="oprow"><div><div class="oln">Comidinhas · salgados + doces</div><div class="old">Mesa de salgadinhos e docinhos para a festa</div></div><div class="opv">R$ 89,90<small>por pessoa</small></div></div>
-      <div class="oprow"><div><div class="oln">Bolo + vela</div><div class="old">Bolo de aniversário com vela para o momento do parabéns</div></div><div class="opv">R$ 200<small>valor total</small></div></div>
+      <div class="oprow"><div><div class="oln">Bolo + vela</div><div class="old">Bolo de aniversário com vela decorativa para o parabéns</div></div><div class="opv">R$ 200<small>valor total</small></div></div>
       <div class="oprow"><div><div class="oln">Registro fotográfico profissional</div><div class="old">Fotógrafo cobrindo a comemoração · álbum digital para compartilhar</div></div><div class="opv">R$ 450<small>valor total</small></div></div>
-      <div class="oprow"><div><div class="oln">Garrafa personalizada</div><div class="old">Com o nome de cada convidada, posicionada na mesa</div></div><div class="opv">R$ 149,90<small>por pessoa</small></div></div>
-      <div class="oprow"><div><div class="oln">Mimo extra · nécessaire ou espelhinho personalizado</div><div class="old">Uma lembrança a mais para cada convidada levar</div></div><div class="opv"><em>a cotar</em></div></div>
+      <div class="oprow"><div><div class="oln">Garrafa rosa personalizada</div><div class="old">Com o nome de cada convidada, posicionada na mesa</div></div><div class="opv">R$ 149,90<small>por pessoa</small></div></div>
     </div>
     {foot("Complete a comemoração")}
   </section>'''
 
 # ============================ · ESCOLHA COMO CELEBRAR (PACOTES) ============================
-pacotes = f'''
+investimento = f'''
   <section class="slide">
-{head_simple("Escolha como celebrar")}
-    <span class="eyebrow orange">◆ Dois pacotes, uma decisão fácil</span>
-    <h2>Escolha como <em>celebrar</em></h2>
-    <p class="lead">Dois pacotes prontos, cada um com a experiência escolhida e toda a produção da Elarah. É só escolher o pacote e a experiência — a gente cuida do resto, no espaço de vocês.</p>
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ Investimento</span>
+    <h2>O valor da <em>experiência</em></h2>
+    <p class="lead">Cada experiência tem um valor por convidada, com a condução e todos os materiais inclusos. O total é calculado para 15 convidadas. As comidinhas, o bolo e os demais itens entram à parte, conforme os opcionais escolhidos.</p>
     <div class="pkg2">
       <div class="pkgc">
-        <span class="pkgtag">Pacote</span>
-        <div class="pkgn">Completo</div>
-        <div class="pkgsub">Tudo pronto para a festa acontecer.</div>
-        <ul class="pkgincl">
-          <li>Experiência escolhida · condução + todos os materiais</li>
-          <li>Comidinhas · salgados + doces</li>
-          <li>Bolo de aniversário + vela decorativa</li>
-        </ul>
+        <span class="pkgtag">Experiência 1 · 2h</span>
+        <div class="pkgn">Customize sua Escova &amp; Presilha</div>
+        <div class="pkgsub">Pintura e personalização de escova de madeira + presilha. Condução e materiais inclusos.</div>
         <div class="pkgval">
-          <div class="pkgv"><span class="pel">Exp. 1 · Escova &amp; Presilha</span><span class="per"><span class="pp">R$ 307,33<small>pp</small></span><span class="tt">R$ 4.610,00 · 15 convidadas</span></span></div>
-          <div class="pkgv"><span class="pel">Exp. 2 · Piranha Bedazzled</span><span class="per"><span class="pp">R$ 272,23<small>pp</small></span><span class="tt">R$ 4.083,50 · 15 convidadas</span></span></div>
+          <div class="pkgv"><span class="pel">Por pessoa</span><span class="per"><span class="pp">R$ 229<small>por pessoa</small></span></span></div>
+          <div class="pkgv"><span class="pel">Total · 15 convidadas</span><span class="per"><span class="pp">R$ 3.435</span></span></div>
         </div>
       </div>
-      <div class="pkgc pkgc--hl">
-        <span class="pkgrib">✦ Experiência completa</span>
-        <span class="pkgtag">Pacote</span>
-        <div class="pkgn">Premium</div>
-        <div class="pkgsub">A comemoração completa, do começo ao fim.</div>
-        <ul class="pkgincl">
-          <li>Tudo do pacote Completo</li>
-          <li class="plus">Garrafa personalizada com o nome de cada convidada, na mesa</li>
-          <li class="plus">Registro fotográfico profissional da comemoração</li>
-        </ul>
+      <div class="pkgc">
+        <span class="pkgtag">Experiência 2 · 1h30</span>
+        <div class="pkgn">Piranha &amp; Escova Bedazzled</div>
+        <div class="pkgsub">Customização com cristais, brilho e a inicial de cada uma. Condução e materiais inclusos.</div>
         <div class="pkgval">
-          <div class="pkgv"><span class="pel">Exp. 1 · Escova &amp; Presilha</span><span class="per"><span class="pp">R$ 487,23<small>pp</small></span><span class="tt">R$ 7.308,50 · 15 convidadas</span></span></div>
-          <div class="pkgv"><span class="pel">Exp. 2 · Piranha Bedazzled</span><span class="per"><span class="pp">R$ 452,13<small>pp</small></span><span class="tt">R$ 6.782,00 · 15 convidadas</span></span></div>
+          <div class="pkgv"><span class="pel">Por pessoa</span><span class="per"><span class="pp">R$ 209<small>por pessoa</small></span></span></div>
+          <div class="pkgv"><span class="pel">Total · 15 convidadas</span><span class="per"><span class="pp">R$ 3.135</span></span></div>
         </div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Todos os pacotes acontecem <b>no espaço de vocês</b>, com toda a produção Elarah inclusa. Valores calculados para 15 convidadas. 🎀</div>
-    {foot("Escolha como celebrar")}
+    <div class="bnote" style="margin-top:16px">◆ Valores da experiência, para 15 convidadas, <b>no espaço de vocês</b> e com toda a produção Elarah inclusa. Opcionais (comidinhas, bolo, garrafa e registro) somam conforme a escolha da família. 🎀</div>
+    {foot("Investimento")}
   </section>'''
 
 # ============================ 7 · PRÓXIMOS PASSOS ============================
@@ -332,8 +320,8 @@ proximos = f'''
     <h2>É só <em>reunir as amigas</em></h2>
     <p class="lead">A gente cuida de tudo pra Antonella e as amigas só chegarem e aproveitarem:</p>
     <div class="steps3">
-      <div class="stp"><span class="num">01</span><h3>Escolhem</h3><p>A experiência, o pacote (Completo ou Premium) e a data — o local é o espaço de vocês.</p></div>
-      <div class="stp"><span class="num">02</span><h3>Confirmamos</h3><p>Fechamos o pacote, o total para as convidadas e a disponibilidade da agenda.</p></div>
+      <div class="stp"><span class="num">01</span><h3>Escolhem</h3><p>A experiência, os opcionais que quiserem e a data — o local é o espaço de vocês.</p></div>
+      <div class="stp"><span class="num">02</span><h3>Confirmamos</h3><p>Fechamos o valor por convidada, o total e a disponibilidade da agenda.</p></div>
       <div class="stp"><span class="num">03</span><h3>Levamos até vocês</h3><p>Materiais, montagem e condução da experiência — do começo ao fim, no seu espaço.</p></div>
     </div>
     <div class="quote" style="margin-top:22px">
@@ -345,7 +333,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n'
-        + cover + experiencia + ate_voce + a_vibe + pacotes + proximos + '\n\n</div>\n\n')
+        + cover + experiencia + ate_voce + a_vibe + complete + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/aniversario-antonella.html"
 open(out, "w", encoding="utf-8").write(html)
