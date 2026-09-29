@@ -136,7 +136,7 @@ cover = f'''
           <span class="chip">No seu espaço · Mooca</span>
         </div>
       </div>
-      <div class="cover-photo">{img("pintura-grupo.jpg", "Grupo de amigas reunidas, criando e se divertindo juntas", "center 30%")}</div>
+      <div class="cover-photo">{img("antonella-capa-grupo.jpg", "Grupo de amigas reunidas, criando e se divertindo juntas", "center 40%")}</div>
     </div>
     {foot("Aniversário · Antonella")}
   </section>'''
@@ -151,7 +151,7 @@ vibe = f'''
     <div class="gstrip">
       <figure>{img("escovas-grupo-maos.jpg", "Amigas mostrando os acessórios que personalizaram", "center 40%")}<figcaption>Amigas &amp; suas criações</figcaption></figure>
       <figure>{img("escova-maonamassa.jpg", "Meninas customizando os acessórios com tinta e brilho", "center 50%")}<figcaption>Mão na massa, juntas</figcaption></figure>
-      <figure>{img("macaron-risada.jpg", "Amigas rindo e se divertindo juntas", "center 40%")}<figcaption>Risadas garantidas</figcaption></figure>
+      <figure>{img("antonella-vibe-risada.jpg", "Amigas rindo com as peças que criaram", "center 30%")}<figcaption>Risadas garantidas</figcaption></figure>
     </div>
     {foot("A vibe")}
   </section>'''
@@ -231,7 +231,7 @@ completa = f'''
     <p class="lead">Além da experiência, dá pra somar os toques que transformam o dia numa festa completa e bem produzida:</p>
     <div class="comp4">
       <div class="cmc"><div class="cmph">{img("comidinhas-variedade.jpg", "Variedade de salgados e doces para a festa", "center 50%")}</div><div class="cmb"><div class="cmn">Comidinhas · salgados + doces</div><div class="cmv">R$ 89,90<small>por pessoa</small></div></div></div>
-      <div class="cmc"><div class="cmph">{img("velabolopote.jpg", "Bolo de aniversário com vela", "center 45%")}</div><div class="cmb"><div class="cmn">Bolo + vela</div><div class="cmv">R$ 299,90<small>valor total</small></div></div></div>
+      <div class="cmc"><div class="cmph">{img("bolo-vela-bedazzled.jpg", "Bolo de aniversário decorado com velas", "center 35%")}</div><div class="cmb"><div class="cmn">Bolo + vela</div><div class="cmv">R$ 299,90<small>valor total</small></div></div></div>
       <div class="cmc"><div class="cmph">{img("garrafa-rosa-personalizada.jpg", "Garrafa personalizada com o nome de cada convidada", "center 45%")}</div><div class="cmb"><div class="cmn">Garrafa personalizada</div><div class="cmv">R$ 149,90<small>por pessoa</small></div></div></div>
       <div class="cmc"><div class="cmph">{img("vibe-risada.jpg", "Registro fotográfico de adolescentes rindo na festa", "center 30%")}</div><div class="cmb"><div class="cmn">Registro fotográfico profissional</div><div class="cmv">R$ 450<small>valor total</small></div></div></div>
     </div>
