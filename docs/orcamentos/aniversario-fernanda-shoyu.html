@@ -198,40 +198,33 @@
   .checks li .ck{position:absolute;left:0;top:0;width:17px;height:17px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
   .num{font-family:'DM Serif Display',serif;color:var(--orange);font-size:24px;line-height:1}
   .egrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
-  .egrid figure{margin:0;border-radius:14px;overflow:hidden;position:relative;height:205px;border:1px solid rgba(60,31,40,.10);box-shadow:0 12px 30px -20px rgba(0,0,0,.4)}
+  .egrid figure{margin:0;border-radius:14px;overflow:hidden;position:relative;height:230px;border:1px solid rgba(60,31,40,.10);box-shadow:0 12px 30px -20px rgba(0,0,0,.4)}
   .egrid img{width:100%;height:100%;object-fit:cover;display:block}
   .egrid figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 12px 10px;color:#fff;font-size:11.5px;font-weight:600;background:linear-gradient(to top,rgba(32,16,22,.86),transparent)}
-  .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0}
-  .foodrow{display:flex;gap:22px;align-items:center;margin-top:12px;flex-wrap:wrap}
-  .foodsq{flex:0 0 190px;aspect-ratio:1/1;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 14px 34px -22px rgba(0,0,0,.34)}
-  .foodsq img{width:100%;height:100%;object-fit:cover;display:block}
-  .foodrow .lead{flex:1;min-width:270px;margin:0}
-  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
-  .tier{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 16px 16px;display:flex;flex-direction:column;box-shadow:0 12px 30px -22px rgba(0,0,0,.28);position:relative}
-  .tier.hl{border:2px solid var(--navy)}
-  .tier .tname{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
-  .tier .tprice{font-family:'DM Serif Display',serif;font-size:30px;color:var(--navy);margin:6px 0 1px;line-height:1}
-  .tier .tbase{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:10px}
-  .tier p{font-size:11.5px;color:var(--ink);line-height:1.4;margin:0}
-  .tier .tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;font-size:8px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:999px;white-space:nowrap}
-  .addons{font-size:12px;color:var(--navy-soft);line-height:1.5;margin-top:8px}
-  .addons b{color:var(--navy)}
+  /* dois momentos */
+  .moments{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+  .mcard{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 36px -26px rgba(0,0,0,.3)}
+  .mcard .mph{height:200px;overflow:hidden;background:#eee}
+  .mcard .mph img{width:100%;height:100%;object-fit:cover;display:block}
+  .mcard .mb{padding:17px 22px 20px}
+  .mcard .mstep{font-size:9px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .mcard .mn{font-family:'DM Serif Display',serif;font-weight:400;font-size:21px;color:var(--navy);line-height:1.05;margin:3px 0 0}
+  .mcard p{font-size:12px;color:var(--muted);line-height:1.5;margin:8px 0 0}
   .datecall{display:flex;gap:13px;align-items:flex-start;margin-top:16px;background:rgba(184,115,81,.12);border:1px solid rgba(184,115,81,.32);border-radius:14px;padding:14px 20px}
   .datecall .di{font-size:17px;line-height:1.2}
   .datecall p{font-size:12.5px;color:var(--navy);line-height:1.5;margin:0}
   .datecall p b{color:var(--orange-dark)}
-  /* investimento padrao Elarah · valor da experiencia */
-  .phero{display:grid;grid-template-columns:.95fr 1.05fr;gap:38px;margin-top:20px;align-items:center}
-  .phero{align-items:stretch}
-  .pheroph{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.42);height:430px}
-  .pval{display:flex;flex-direction:column;justify-content:center}
+  /* investimento · valor da experiencia */
+  .phero{display:grid;grid-template-columns:.95fr 1.05fr;gap:38px;margin-top:22px;align-items:stretch}
+  .pheroph{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.42);height:400px}
   .pheroph img{width:100%;height:100%;object-fit:cover;display:block}
+  .pval{display:flex;flex-direction:column;justify-content:center}
   .pval .pct{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
-  .pval .pbig{font-family:'DM Serif Display',serif;font-size:70px;color:var(--navy);line-height:.92;margin:8px 0 2px}
+  .pval .pbig{font-family:'DM Serif Display',serif;font-size:78px;color:var(--navy);line-height:.92;margin:8px 0 2px}
   .pval .pper{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
-  .pval .pgrp{font-family:'DM Serif Display',serif;font-size:24px;color:var(--orange-dark);margin:16px 0 0;line-height:1.1}
+  .pval .pgrp{font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange-dark);margin:18px 0 0;line-height:1.1}
   .pval .pgrp small{display:block;font-family:-apple-system,sans-serif;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:4px}
-  .pval .pnote{font-size:12px;color:var(--muted);margin-top:14px;line-height:1.55;max-width:44ch}
+  .pval .pnote{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.55;max-width:46ch}
   .pval .pnote b{color:var(--navy)}
 </style>
 <style>
@@ -481,27 +474,27 @@
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right">
-        <span class="kicker">Aniversário · cerâmica</span>
-        <span class="compass">Fernanda <span></span><small>Agora · Pinheiros · 26/09</small></span>
+        <span class="kicker">Aniversário · entre amigas</span>
+        <span class="compass">Fernanda <span></span><small>Shoyu Crafts · Pinheiros</small></span>
       </div>
     </div>
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Um aniversário no ateliê</span>
+        <span class="eyebrow">✦ Um aniversário para criar juntas</span>
         <h1>Um aniversário para <em>criar juntas</em></h1>
-        <p class="lead">Uma tarde de <strong>cerâmica</strong> só de vocês, no <strong>Agora</strong>, em Pinheiros. Sem pressa: todo mundo na mesma mesa, criando com as próprias mãos, conversando e brindando o aniversário — e cada uma leva pra casa a peça que fez.</p>
+        <p class="lead">Uma experiência de <strong>cerâmica e pintura</strong> só de vocês, no <strong>Shoyu Crafts</strong>, em Pinheiros. Todo mundo na mesma mesa, colocando a mão na massa, conversando e brindando — e cada uma leva pra casa a peça que criou.</p>
         <div class="rule"></div>
         <div class="chips">
-          <span class="chip"><b>5</b> amigas</span>
-          <span class="chip">Cerâmica</span>
-          <span class="chip">A partir de <b>R$ 494</b></span>
+          <span class="chip"><b>6</b> amigas</span>
+          <span class="chip">Cerâmica + Pintura</span>
+          <span class="chip"><b>R$ 349</b> por pessoa</span>
         </div>
         <div class="chips" style="margin-top:10px">
-          <span class="chip"><b>26/09</b></span>
-          <span class="chip">A partir das <b>17:30</b></span>
+          <span class="chip">Shoyu Crafts · Pinheiros</span>
+          <span class="chip">Sexta · tarde ou noite</span>
         </div>
       </div>
-      <div class="cover-photo"><img src="assets/agora-mesa.jpg" alt="Mesa de cerâmica montada no Agora, com velas e flores" style="object-position:center 50%"></div>
+      <div class="cover-photo"><img src="assets/ceramica-meninas.jpg" alt="Amigas rindo e criando cerâmica juntas no ateliê" style="object-position:center 30%"></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Aniversário · Fernanda</span></div>
   </section>
@@ -510,74 +503,111 @@
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">A experiência</span></div>
     </div>
-    <span class="eyebrow orange">◆ Cerâmica · modelagem à mão</span>
-    <h2>Cada uma cria a <em>própria peça</em></h2>
-    <p class="lead">Guiadas por uma ceramista, vocês modelam as próprias peças — sem precisar ter experiência nenhuma. A argila desacelera, aproxima a conversa, e cada uma leva pra casa algo feito à mão, esmaltado e queimado, pronto pra durar.</p>
+    <span class="eyebrow orange">◆ Cerâmica + Pintura</span>
+    <h2>Criar algo <em>só de vocês</em></h2>
+    <p class="lead">Uma experiência criativa, leve e intimista para as amigas celebrarem juntas. Sem pressa e sem precisar de experiência nenhuma — só o prazer de colocar a mão na massa, criar com as próprias mãos e levar pra casa uma lembrança feita por vocês.</p>
     <div class="bfeat">
       <div class="bphoto"><img src="assets/ceramicamodelagem.jpg" alt="Mãos modelando uma peça de cerâmica" style="object-position:center 50%"></div>
       <div class="bbody">
-        <span class="btag">Cerca de 3h · a partir das 17:30</span>
-        <h3>Da argila à peça pronta</h3>
+        <span class="btag">Dois momentos, uma tarde entre amigas</span>
+        <h3>Da argila ao pincel</h3>
         <ul class="feat">
-          <li><span class="st">1</span><b>Chegada &amp; boas-vindas</b> — o espaço preparado só pra vocês, mesa posta e playlist.</li>
-          <li><span class="st">2</span><b>Mão na argila</b> — cada uma cria a própria peça, com a ceramista ao lado.</li>
-          <li><span class="st">3</span><b>Finalização</b> — a gente esmalta, queima e devolve as peças prontas depois.</li>
-          <li><span class="st">4</span><b>Celebração</b> — tempo pra conversar, brindar e aproveitar o aniversário.</li>
+          <li><span class="st">1</span><b>Cerâmica</b> — cada uma modela a própria peça com as mãos.</li>
+          <li><span class="st">2</span><b>Pintura</b> — depois, é hora de dar cor e personalidade à peça.</li>
+          <li><span class="st">✦</span><b>Cada uma leva a sua</b> — a peça volta pronta pra casa, feita por você.</li>
         </ul>
       </div>
     </div>
-    <p class="subh">Tudo incluso, sem surpresa</p>
-    <ul class="checks">
-      <li><span class="ck">✓</span><b>Espaço exclusivo</b> pras 5 amigas</li>
-      <li><span class="ck">✓</span><b>Ceramista</b> conduzindo</li>
-      <li><span class="ck">✓</span><b>Todos os materiais</b> inclusos</li>
-      <li><span class="ck">✓</span><b>Queima</b> (peça devolvida pronta)</li>
-      <li><span class="ck">✓</span><b>Mesas e ambientação</b> montadas</li>
-      <li><span class="ck">✓</span><b>Playlist, velas</b> e o clima</li>
-      <li><span class="ck">✓</span><b>Café, chá e água</b> à vontade</li>
-      <li><span class="ck">✓</span>Cada uma <b>leva a própria peça</b></li>
-    </ul>
+    <div class="bnote" style="margin-top:16px">◆ <b>Tudo incluso:</b> espaço reservado só pras 6 · ceramista conduzindo · todos os materiais · esmaltação e queima · e a peça de cada uma pronta pra levar.</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">A atmosfera</span></div>
+      <div class="head-right"><span class="kicker">Como acontece</span></div>
     </div>
-    <span class="eyebrow orange">◆ Cerâmica de verdade</span>
-    <h2>O clima que espera <em>vocês</em></h2>
-    <p class="lead">Mesa posta com velas e flores, mãos na argila e o grupo criando junto — luz baixa, playlist boa e a sensação de estar num lugar especial. É essa a atmosfera do Agora.</p>
+    <span class="eyebrow orange">◆ Passo a passo</span>
+    <h2>Em dois <em>momentos</em></h2>
+    <p class="lead">Guiadas do começo ao fim, sem cara de aula — só vocês criando juntas, no ritmo de vocês.</p>
+    <div class="moments">
+      <div class="mcard">
+        <div class="mph"><img src="assets/torno.jpg" alt="Mãos modelando argila" style="object-position:center 50%"></div>
+        <div class="mb">
+          <span class="mstep">Momento 1</span>
+          <div class="mn">Modelagem em cerâmica</div>
+          <p>Cada uma modela a própria peça com as mãos, guiada pela ceramista. A argila desacelera e a conversa flui.</p>
+        </div>
+      </div>
+      <div class="mcard">
+        <div class="mph"><img src="assets/ceramica1.jpg" alt="Mãos pintando uma peça de cerâmica" style="object-position:center 50%"></div>
+        <div class="mb">
+          <span class="mstep">Momento 2</span>
+          <div class="mn">Pintura da peça</div>
+          <p>Depois, é hora de dar cor: cada uma pinta a própria peça do seu jeito, com calma e liberdade.</p>
+        </div>
+      </div>
+    </div>
+    <div class="bnote" style="margin-top:16px">◆ No fim, a gente <b>esmalta, queima e devolve</b> a peça de cada uma pronta pra levar pra casa. 🤍</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Como acontece</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">A vibe</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Entre amigas</span>
+    <h2>Criatividade, conversa <em>e celebração</em></h2>
+    <p class="lead">Luz baixa, playlist boa e a mesa só de vocês. A cerâmica desacelera, a conversa flui e o aniversário vira um momento que fica — entre amigas, com a mão na massa.</p>
     <div class="egrid">
-      <figure><img src="assets/agora-pintura.jpg" alt="Amigas criando cerâmica juntas no Agora" style="object-position:center 40%"><figcaption>Mão na massa, juntas</figcaption></figure>
-      <figure><img src="assets/agora-ceramica.jpg" alt="Modelagem de cerâmica à mão no Agora" style="object-position:center 40%"><figcaption>Modelagem à mão</figcaption></figure>
-      <figure><img src="assets/agora-selfie.jpg" alt="Amigas rindo durante a experiência" style="object-position:center 40%"><figcaption>Risada garantida</figcaption></figure>
-      <figure><img src="assets/torno.jpg" alt="Mãos modelando argila" style="object-position:center 50%"><figcaption>Argila nas mãos</figcaption></figure>
-      <figure><img src="assets/ceramica2.jpg" alt="Peças de cerâmica autorais" style="object-position:center 50%"><figcaption>As peças que ficam</figcaption></figure>
-      <figure><img src="assets/agora-grupo.jpg" alt="Amigas reunidas à mesa no Agora" style="object-position:center 50%"><figcaption>O grupo à mesa</figcaption></figure>
+      <figure><img src="assets/casalmodelagemceramica.jpg" alt="Mãos criando cerâmica lado a lado" style="object-position:center 50%"><figcaption>Mão na massa, juntas</figcaption></figure>
+      <figure><img src="assets/ceramicacool.jpg" alt="Peças de cerâmica pintadas à mão" style="object-position:center 50%"><figcaption>Cada peça do seu jeito</figcaption></figure>
+      <figure><img src="assets/pinturapratoceramica.jpg" alt="Peça de cerâmica pintada à mão" style="object-position:center 50%"><figcaption>Pra levar pra casa</figcaption></figure>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Tudo incluso:</b> espaço exclusivo · ceramista conduzindo · todos os materiais · queima da cerâmica · mesas e ambientação · playlist e velas · café, chá e água — e cada uma leva a própria peça.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>A atmosfera do Agora</span></div>
+    <div class="bnote" style="margin-top:16px">◆ Um encontro leve, feminino e especial — mais que uma oficina, uma comemoração entre amigas. ✨</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A vibe</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">O espaço</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Shoyu Crafts · Pinheiros</span>
+    <h2>Tudo acontece <em>no ateliê</em></h2>
+    <p class="lead">A experiência é realizada no <strong>Shoyu Crafts</strong>, um ateliê acolhedor e intimista em Pinheiros. Um espaço só de vocês, com tudo montado — vocês só chegam e aproveitam.</p>
+    <div class="bfeat">
+      <div class="bphoto"><img src="assets/ceramica2.jpg" alt="Peças de cerâmica autorais, feitas à mão" style="object-position:center 50%"></div>
+      <div class="bbody">
+        <span class="btag">Shoyu Crafts · Pinheiros</span>
+        <h3>Um cantinho só de vocês</h3>
+        <ul class="feat">
+          <li><span class="st">✓</span><b>Espaço reservado</b> pras 6 amigas</li>
+          <li><span class="st">✓</span><b>Ceramista</b> conduzindo a experiência</li>
+          <li><span class="st">✓</span><b>Todos os materiais</b> e a queima inclusos</li>
+          <li><span class="st">✓</span><b>Ambiente acolhedor</b>, feminino e intimista</li>
+        </ul>
+      </div>
+    </div>
+    <div class="bnote" style="margin-top:16px">◆ Localização em <b>Pinheiros</b>, fácil pra todo mundo — a Elarah leva a produção e cuida de cada detalhe.</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O espaço · Shoyu Crafts</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ Investimento · só a experiência</span>
-    <h2>A experiência de <em>cerâmica</em></h2>
+    <span class="eyebrow orange">◆ Investimento</span>
+    <h2>A experiência de <em>cerâmica e pintura</em></h2>
     <div class="phero">
-      <div class="pheroph"><img src="assets/agora-mesa.jpg" alt="Mesa de cerâmica montada no Agora" style="object-position:center 50%"></div>
+      <div class="pheroph"><img src="assets/ceramicamodelagem.jpg" alt="Mãos modelando uma peça de cerâmica" style="object-position:center 50%"></div>
       <div class="pval">
-        <span class="pct">Cerâmica no Agora · Pinheiros</span>
-        <div class="pbig">R$ 494</div>
+        <span class="pct">Shoyu Crafts · Pinheiros</span>
+        <div class="pbig">R$ 349</div>
         <span class="pper">por pessoa</span>
-        <div class="pgrp">R$ 2.470<small>o grupo de 5 amigas · só a experiência</small></div>
-        <p class="pnote">Inclui espaço exclusivo, ceramista conduzindo, todos os materiais, queima, ambientação e café, chá e água. <b>Sem alimentação</b> — os menus abaixo são opcionais, à parte.</p>
+        <div class="pgrp">R$ 2.094<small>o grupo de 6 amigas</small></div>
+        <p class="pnote">Inclui a experiência completa de <b>cerâmica e pintura</b>: espaço reservado, ceramista conduzindo, todos os materiais, esmaltação e queima — e a peça de cada uma pronta pra levar pra casa.</p>
       </div>
     </div>
-    <p class="subh">Opcionais de alimentação · à parte, por pessoa</p>
-    <p class="addons"><b>Tábua de boas-vindas</b> R$ 91 &nbsp;·&nbsp; <b>Finger food</b> R$ 143 &nbsp;·&nbsp; <b>Menu completo</b> R$ 195 &nbsp;·&nbsp; <b>Welcome drink</b> R$ 52 &nbsp;·&nbsp; <b>Serviço de bebidas</b> R$ 32,50</p>
-    <p class="fineprint">Valor da experiência de cerâmica, turma privada de 5, no Agora (Pinheiros): <b>R$ 494 por pessoa · R$ 2.470 para o grupo</b> — inclui espaço exclusivo, ceramista, materiais, queima, ambientação e café, chá e água, <b>sem alimentação</b>. Opcionais de alimentação, à parte, por pessoa: tábua R$ 91 · finger food R$ 143 · menu completo R$ 195 · welcome drink R$ 52 · serviço de bebidas R$ 32,50. Aniversário em 26/09, a partir das 17:30. Data e horário sujeitos à disponibilidade de agenda, com confirmação imediata devido à proximidade da data.</p>
+    <p class="fineprint">Valor da experiência de cerâmica e pintura, turma privada de 6 amigas, no Shoyu Crafts (Pinheiros): <b>R$ 349 por pessoa · R$ 2.094 para o grupo</b> — inclui espaço reservado, ceramista, todos os materiais, esmaltação e queima, e a peça de cada uma. Disponibilidade às sextas-feiras, à tarde ou à noite; o horário exato é confirmado no momento da reserva, conforme a disponibilidade do ateliê.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
@@ -586,20 +616,20 @@
       <div class="head-right"><span class="kicker">Próximos passos</span></div>
     </div>
     <span class="eyebrow orange">◆ Simples e sob medida</span>
-    <h2>É só <em>escolher</em></h2>
-    <p class="lead">A Elarah cuida de toda a produção pra tarde ser leve do começo ao fim:</p>
+    <h2>É só <em>escolher a data</em></h2>
+    <p class="lead">A Elarah cuida de toda a produção pra comemoração ser leve do começo ao fim:</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolham o plano</h3><p>A experiência + o menu que fecha a comemoração das 5.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>A gente leva tudo</h3><p>Ceramista, materiais e estrutura — chega tudo montado no Agora.</p></div>
+      <div class="infocard"><div class="num">01</div><h3>Escolham a data</h3><p>Sexta-feira, à tarde ou à noite — a que melhor combina com as 6.</p></div>
+      <div class="infocard"><div class="num">02</div><h3>A gente organiza tudo</h3><p>Ceramista, materiais e estrutura — reservamos o Shoyu Crafts pra vocês.</p></div>
       <div class="infocard"><div class="num">03</div><h3>Cada uma leva a peça</h3><p>A gente esmalta, queima e devolve a peça de cada uma pronta.</p></div>
     </div>
     <div class="datecall">
-      <span class="di">⚡</span>
-      <p>Como o aniversário é já em <b>26/09, a partir das 17:30</b>, a disponibilidade da agenda está sujeita à <b>confirmação imediata</b> — quanto antes fecharmos, melhor pra garantir a data e o horário.</p>
+      <span class="di">🗓️</span>
+      <p>Disponibilidade às <b>sextas-feiras, à tarde ou à noite</b>. O horário exato é confirmado no momento da reserva, conforme a disponibilidade do ateliê.</p>
     </div>
     <div class="quote" style="margin-top:18px">
-      Fernanda, me confirma o <strong>plano</strong> que faz mais sentido que eu seguro a agenda do Agora e organizo cada detalhe pra vocês. 🤍<br>
+      Fernanda, me confirma a <strong>data</strong> que faz mais sentido que eu seguro a agenda do Shoyu Crafts e organizo cada detalhe pra vocês. 🤍<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Próximos passos</span></div>
