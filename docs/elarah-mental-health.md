@@ -35,8 +35,16 @@ cronogramas (pontual, semestral ou anual) de experiências manuais.
    `GOOGLE_PLACES_API_KEY` e `CRON_SECRET`.
 3. **Agendamento semanal**: rodar `sql/elarah_mental_health_finder_cron.sql`
    trocando `TROQUE_PELA_SUA_CRON_SECRET`.
-4. **Equipe com acesso restrito**: marcar "Elarah Mental Health" no editor de
-   acesso da aba Usuários. Quem tem acesso total já entra.
+4. **Equipe e parceiras**: rodar `sql/elarah_mh_equipe.sql` uma vez. Depois, no
+   admin da Elarah → **Usuários → Equipe & acessos → + Novo acesso**:
+   - **Só Elarah Mental Health** (parceira): entra em `admin-mh.html` e vê só as
+     abas marcadas. Não é admin, então o painel e os dados da Elarah ficam
+     fechados pelo banco.
+   - **Equipe Elarah**: abas do admin da Elarah (marque "Elarah Mental Health"
+     pra ver as duas plataformas).
+   A senha aparece uma vez na tela (com mensagem pronta pra mandar) e não fica
+   salva; "Nova senha" gera outra quando precisar. Tudo passa pela Edge Function
+   `admin-equipe`, que só aceita quem tem acesso total.
 
 ## Novidades (v2)
 

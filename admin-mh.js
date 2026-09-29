@@ -239,8 +239,31 @@
     { key: 'captacao', ico: '📣', label: 'Captação' }
   ];
 
+  // Abas liberadas pra quem está logado (profiles.admin_panels → 'mh:<aba>').
+  // null = todas (a dona, ou quem tem só 'mental-health' sem abas marcadas).
+  var ABAS = null;
+  function podeAba(k) { return !ABAS || ABAS.indexOf(k) >= 0; }
+  function primeiraAba() {
+    for (var i = 0; i < PANELS.length; i++) if (PANELS[i].key && podeAba(PANELS[i].key)) return PANELS[i].key;
+    return 'visao';
+  }
+  function abasDe(panels) {
+    var lista = panels;
+    if (lista == null) return null;
+    if (typeof lista === 'string') lista = lista.replace(/^\{|\}$/g, '').split(',');
+    var mh = (lista || []).map(function (x) { return String(x).trim().replace(/^"|"$/g, ''); })
+      .filter(function (x) { return x.indexOf('mh:') === 0; }).map(function (x) { return x.slice(3); });
+    return mh.length ? mh : null;
+  }
+
   function renderNav() {
-    $('mh-nav').innerHTML = PANELS.map(function (p) {
+    var visiveis = PANELS.filter(function (p, i) {
+      if (!p.grupo) return podeAba(p.key);
+      // Título do grupo só aparece se sobrou alguma aba embaixo dele.
+      for (var j = i + 1; j < PANELS.length && !PANELS[j].grupo; j++) if (podeAba(PANELS[j].key)) return true;
+      return false;
+    });
+    $('mh-nav').innerHTML = visiveis.map(function (p) {
       if (p.grupo) return '<div class="mh__nav-group">' + p.grupo + '</div>';
       var b = p.badge ? p.badge() : 0;
       return '<button class="mh__nav-item' + (S.panel === p.key ? ' mh__nav-item--active' : '') + '" data-panel="' + p.key + '">' +
@@ -250,6 +273,8 @@
   }
 
   function ir(panel) {
+    if (panel === 'datas') panel = 'eventos';
+    if (!podeAba(panel)) panel = primeiraAba();
     S.panel = panel;
     try { history.replaceState(null, '', '#' + panel); } catch (_) {}
     render();
@@ -272,6 +297,8 @@
   }
 
   function render() {
+    if (S.panel === 'datas') S.panel = 'eventos';
+    if (!podeAba(S.panel)) S.panel = primeiraAba();
     renderNav();
     var fn = {
       visao: rVisao, hoje: rHoje, eventos: rEventos, acomp: rAcomp, cronograma: rCronograma,
@@ -1564,13 +1591,35 @@
     var r = await c.from('profiles').select('role, admin_panels').eq('id', user.id).maybeSingle();
     if (r.error && /admin_panels/i.test(r.error.message || '')) r = await c.from('profiles').select('role').eq('id', user.id).maybeSingle();
     var prof = r.data;
-    if (!prof || prof.role !== 'admin') return lock('Sua conta não tem acesso ao painel administrativo.');
-    if (!podeMH(prof.admin_panels)) return lock('Seu acesso não inclui a plataforma Elarah Mental Health. Peça para liberar em Usuários → acesso ao painel.');
+    if (!prof) return lock('Sua conta não tem acesso ao painel administrativo.');
+    // Equipe só da Mental Health: role 'user' com 'mental-health' liberado
+    // (sql/elarah_mh_equipe.sql). Não é admin, então a Elarah fica fechada.
+    var soMH = prof.role !== 'admin' && prof.admin_panels != null && podeMH(prof.admin_panels);
+    if (prof.role !== 'admin' && !soMH) return lock('Sua conta não tem acesso ao painel administrativo.');
+    if (!podeMH(prof.admin_panels)) return lock('Seu acesso não inclui a plataforma Elarah Mental Health. Peça para liberar em Usuários → Equipe & acessos.');
+    ABAS = abasDe(prof.admin_panels);
+    var donaTotal = prof.role === 'admin' && prof.admin_panels == null;
+    if (soMH) {
+      // Sem seletor de plataforma: ela só tem a Mental Health.
+      var sw = document.querySelector('.plat-sw'); if (sw) sw.remove();
+      document.documentElement.classList.add('mh-so-mh');
+    }
+    if (donaTotal) {
+      var foot = document.querySelector('.mh__foot');
+      if (foot && !foot.querySelector('[data-equipe-link]')) {
+        var a = document.createElement('a');
+        a.href = 'admin.html#equipe'; a.setAttribute('data-equipe-link', '');
+        a.textContent = '👥 Equipe & acessos';
+        foot.insertBefore(a, foot.firstChild);
+      }
+    }
 
     $('mh-app').hidden = false;
     $('mh-main').innerHTML = '<div class="mh-empty">Carregando…</div>';
     var h = (location.hash || '').replace('#', '');
+    if (h === 'datas') h = 'eventos';
     if (PANELS.some(function (p) { return p.key === h; })) S.panel = h;
+    if (!podeAba(S.panel)) S.panel = primeiraAba();
     bind();
     $('mh-logout').addEventListener('click', async function () {
       try { if (window.ElarahAuth && ElarahAuth.logout) await ElarahAuth.logout(); else await c.auth.signOut(); } catch (_) {}

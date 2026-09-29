@@ -321,6 +321,11 @@
               allowed = true;
               escopoPaineis = prof.admin_panels != null ? prof.admin_panels : null;
               diagState.reason = 'admin (confirmado no banco)';
+            } else if (prof.admin_panels && String(prof.admin_panels).indexOf('mental-health') !== -1) {
+              // Equipe só da Elarah Mental Health: o painel dela é o outro.
+              diagState.reason = 'equipe só da Mental Health — indo pro admin-mh.html';
+              location.replace('admin-mh.html');
+              return;
             } else {
               diagState.reason = 'profile existe mas role=' + JSON.stringify(prof.role) + ' (precisa ser "admin")';
             }
