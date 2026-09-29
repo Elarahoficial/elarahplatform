@@ -341,7 +341,7 @@
 
   // A promessa central, repetida em todas as mensagens: ninguém da
   // empresa precisa se preocupar com nada.
-  var PROMESSA = 'A gente cuida de tudo: nosso time de arteterapeutas monta o cronograma com a quantidade de encontros que vocês quiserem — um evento pontual, um semestre ou o ano inteiro —, leva todo o material, organiza o local e entrega o relatório de cada ação para a NR-1. Se num mês não der pra reunir o time, o encontro pode virar gift cards Elarah pra cada pessoa usar quando quiser. O RH só aprova as datas.';
+  var PROMESSA = 'A gente cuida de tudo: nosso time de arteterapeutas monta o cronograma com a quantidade de encontros que vocês quiserem — um evento pontual, um semestre ou o ano inteiro —, leva todo o material, organiza o local e entrega lista de presença e fotos de cada ação. Se num mês não der pra reunir o time, o encontro pode virar gift cards Elarah pra cada pessoa usar quando quiser. O RH só aprova as datas.';
 
   // ---------- Mensagens de prospecção ----------
   // Variáveis: {empresa} {contato} {dor} {atividade} {data_seg} {ajuste}
@@ -368,14 +368,14 @@
         corpo:
 'Oi, {contato}! Tudo bem?\n\n' +
 'O {gancho} é dia {data_gancho} — e costuma ser a data em que o RH decide em cima da hora o que fazer.\n\n' +
-'Para a {empresa} eu sugiro {atividade}: 2 horas em que o time desliga das telas e cria algo com as mãos. Levamos tudo até vocês, tiramos fotos e entregamos o relatório da ação.\n\n' +
+'Para a {empresa} eu sugiro {atividade}: 2 horas em que o time desliga das telas e cria algo com as mãos. Levamos tudo até vocês, tiramos fotos e fazemos a lista de presença.\n\n' +
 'E se fizer sentido depois, transformamos isso num cronograma (semestral ou anual) com a quantidade de encontros que vocês preferirem — sem vocês precisarem se preocupar com nada.\n\n' +
 'Te mando 3 opções com valores até amanhã?\n\n' +
 '{assinatura}' },
       { id: 'email-followup', angulo: 'Follow-up (3 dias depois)', assunto: 'Re: cronograma de saúde mental da {empresa}',
         corpo:
 'Oi, {contato}! Passando rapidinho aqui.\n\n' +
-'Sei que a agenda do RH é corrida, então resumi em uma linha: você escolhe quantos encontros quer no ano, a gente monta o cronograma, executa tudo e entrega o relatório para a NR-1.\n\n' +
+'Sei que a agenda do RH é corrida, então resumi em uma linha: você escolhe quantos encontros quer no ano, a gente monta o cronograma, executa tudo e entrega lista de presença e fotos de cada encontro.\n\n' +
 'Faz sentido eu te mandar o modelo pronto para a {empresa}? É só responder "sim".\n\n' +
 '{assinatura}' },
       { id: 'email-gift', angulo: 'Gift cards para datas de presentear', assunto: 'Presente que o time da {empresa} não esquece',
@@ -398,13 +398,13 @@
 'A gente monta o cronograma de saúde mental da empresa — 1 evento pontual, um semestre ou o ano todo, com quantos encontros vocês quiserem — e executa tudo. Para a {empresa}, começaria com {atividade}.\n\n' +
 'Posso te mandar um modelo pronto? Sem compromisso.' },
       { id: 'li-data', angulo: 'Gancho de data',
-        corpo: '{contato}, o {gancho} ({data_gancho}) está chegando. Já tem algo planejado na {empresa}? Tenho uma ideia de 2 horas que o time adora — e a gente cuida de tudo, do material ao relatório pra NR-1. Te mando?' }
+        corpo: '{contato}, o {gancho} ({data_gancho}) está chegando. Já tem algo planejado na {empresa}? Tenho uma ideia de 2 horas que o time adora — e a gente cuida de tudo, do material às fotos. Te mando?' }
     ],
     whatsapp: [
       { id: 'wa-primeiro', angulo: 'Primeiro contato',
         corpo:
 'Olá! Aqui é a Larissa, da Elarah Mental Health 💚\n\n' +
-'A gente monta e executa o cronograma de saúde mental das empresas — pontual, semestral ou anual — com workshops de Arteterapia (pintura, argila, colagem, kintsugi) conduzidos por arteterapeutas, e o relatório pronto para a NR-1. O RH não precisa se preocupar com nada.\n\n' +
+'A gente monta e executa o cronograma de saúde mental das empresas — pontual, semestral ou anual — com workshops de Arteterapia (pintura, argila, colagem, kintsugi) conduzidos por arteterapeutas, com lista de presença e fotos de cada ação. O RH não precisa se preocupar com nada.\n\n' +
 'Com quem da {empresa} eu falo sobre ações para o time? (RH, Gente & Cultura ou SESMT)' },
       { id: 'wa-evento', angulo: 'Evento corporativo (qualquer empresa)',
         corpo:
@@ -422,7 +422,7 @@
 '1) ABERTURA — "Oi, aqui é a Larissa, da Elarah Mental Health. Você cuida da parte de pessoas ou benefícios da {empresa}?"\n' +
 '   (Se não: "Quem seria a melhor pessoa? Pode me passar o e-mail dela?")\n\n' +
 '2) GANCHO — "Estou ligando porque {dor}. E com a NR-1 as empresas precisam mostrar ações sobre riscos psicossociais."\n\n' +
-'3) VALOR — "A gente monta o cronograma — com quantos encontros vocês quiserem, pontual, semestral ou anual —, executa tudo e entrega o relatório de cada ação. O RH só aprova as datas."\n\n' +
+'3) VALOR — "A gente monta o cronograma — com quantos encontros vocês quiserem, pontual, semestral ou anual —, executa tudo e entrega lista de presença e fotos de cada ação. O RH só aprova as datas."\n\n' +
 '4) PERGUNTA — "Vocês já têm algo planejado para o {gancho}?"\n\n' +
 '5) FECHAMENTO — "Posso te mandar hoje um cronograma de exemplo montado para a {empresa} e a gente conversa 15 minutos na semana que vem? Qual o melhor e-mail?"\n\n' +
 'OBJEÇÕES:\n' +
@@ -566,8 +566,8 @@
 '✅ Um calendário anual (não uma ação solta)\n' +
 '✅ Lideranças preparadas pra identificar sinais\n' +
 '✅ Ações que o time QUER participar\n' +
-'✅ Registro de tudo: presença, fotos, relatório\n\n' +
-'A gente monta esse calendário com experiências manuais — cerâmica, terrários, rodas com psicóloga — e entrega a documentação pronta.\n\n' +
+'✅ Lista de presença e fotos de cada encontro\n\n' +
+'A gente monta esse calendário com experiências manuais — cerâmica, terrários, rodas com psicóloga — e cuida de tudo, do material às fotos.\n\n' +
 'Comenta "CALENDÁRIO" que eu te mando o modelo de 2027.' },
     { canal: 'Instagram', titulo: 'Carrossel: 5 datas que todo RH devia ter no calendário',
       texto:
