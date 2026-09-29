@@ -474,7 +474,7 @@
     return 'Oi, {contato}! Tudo bem? 💚\n\n' +
       'Dia ' + fmtDia(x.data) + ' é ' + x.nome + '. ' + x.gancho + '\n\n' +
       'Nossa sugestão pra {empresa}: ' + x.presente + (a ? ' — ' + a.beneficio : '') + '\n\n' +
-      'Organizamos tudo (material, facilitadora, fotos e relatório pro RH) e também temos gift cards de experiência Elarah a partir de R$ 100 por pessoa.\n\n' +
+      'Organizamos tudo (material, facilitadora, fotos e lista de presença) e também temos gift cards de experiência Elarah a partir de R$ 100 por pessoa.\n\n' +
       'Te mando uma proposta com valores até amanhã?';
   }
 
@@ -559,9 +559,9 @@
     S.eventos.forEach(function (e) {
       var d = parseDay(e.data_evento); if (!d || e.status === 'cancelado') return;
       var n = diasAte(d);
-      if (n === 0) t.push({ id: 'evt0-' + e.id, prio: 1, titulo: '🎉 Evento hoje: ' + e.titulo, go: 'eventos', tipo: 'alerta', desc: e.empresa + (e.horario ? ' às ' + e.horario : '') + '. Lista de presença, fotos (com autorização) e 1 frase do RH pro relatório.' });
+      if (n === 0) t.push({ id: 'evt0-' + e.id, prio: 1, titulo: '🎉 Evento hoje: ' + e.titulo, go: 'eventos', tipo: 'alerta', desc: e.empresa + (e.horario ? ' às ' + e.horario : '') + '. Lista de presença e fotos (com autorização).' });
       else if (n > 0 && n <= 7 && e.status === 'confirmado') t.push({ id: 'evt7-' + e.id, prio: 1, titulo: '📦 Preparar: ' + e.titulo + ' (' + fmtDia(d) + ')', go: 'eventos', min: 30, tipo: 'alerta', desc: 'Confirmar arteterapeuta, material para ' + (e.participantes || '?') + ' pessoas e local com ' + e.empresa + '.' });
-      else if (n < 0 && n >= -3 && e.status === 'confirmado') t.push({ id: 'evtpos-' + e.id, prio: 1, titulo: '📝 Pós-evento: ' + e.titulo, go: 'eventos', min: 30, tipo: 'alerta', desc: 'Marcar como realizado, mandar relatório + fotos ao RH e propor o próximo encontro do cronograma.' });
+      else if (n < 0 && n >= -3 && e.status === 'confirmado') t.push({ id: 'evtpos-' + e.id, prio: 1, titulo: '📝 Pós-evento: ' + e.titulo, go: 'eventos', min: 30, tipo: 'alerta', desc: 'Marcar como realizado, mandar lista de presença + fotos ao RH e propor o próximo encontro do cronograma.' });
       if ((e.status === 'orcamento' || e.status === 'proposta_enviada') && e.updated_at && (Date.now() - new Date(e.updated_at)) > 5 * DAY) {
         t.push({ id: 'orc-' + e.id, prio: 1, titulo: '⏳ Proposta parada: ' + e.empresa, go: 'eventos', min: 10, tipo: 'alerta', desc: '"' + e.titulo + '" sem resposta há ' + Math.floor((Date.now() - new Date(e.updated_at)) / DAY) + ' dias. Mande o follow-up com a data como gancho.' });
       }
@@ -676,7 +676,7 @@
       (porMes[k] = porMes[k] || []).push(e);
     });
     var filtros = { futuros: 'Próximos', orcamento: 'Orçamentos', proposta_enviada: 'Propostas', confirmado: 'Confirmados', realizado: 'Realizados', cancelado: 'Cancelados', todos: 'Todos' };
-    return head('Agenda & datas do RH', 'Eventos in company, no ateliê ou kits em casa — do orçamento ao relatório final.', acts) + radarRH() + resumo +
+    return head('Agenda & datas do RH', 'Eventos in company, no ateliê ou kits em casa — do orçamento às fotos do evento.', acts) + radarRH() + resumo +
       '<div class="mh-toolbar">' + toggleVista('eventos', vista) + Object.keys(filtros).map(function (k) {
         return '<button class="mh-btn mh-btn--sm ' + (f === k ? '' : 'mh-btn--ghost') + '" data-evt-filtro="' + k + '">' + filtros[k] + '</button>';
       }).join('') + '</div>' +
@@ -813,7 +813,7 @@
         return '<option value="' + n + '"' + (Number(reg.humor_time) === n ? ' selected' : '') + '>' + HUMOR[n] + ' ' + n + '</option>'; }).join('') + '</select></label>' +
       '<label>Adesão às ações (%)<input class="mh-input" type="number" min="0" max="100" name="participacao" value="' + esc(reg.participacao != null ? reg.participacao : '') + '"></label>' +
       '<label class="full">O que foi feito<textarea class="mh-textarea" name="feito" placeholder="Ex.: Kintsugi com 28 pessoas; RH elogiou; 2 pediram indicação de psicóloga">' + esc(reg.feito || '') + '</textarea></label>' +
-      '<label class="full">Próximo passo<textarea class="mh-textarea" name="proximo_passo" placeholder="Ex.: Enviar relatório até sexta; propor workshop para líderes em outubro">' + esc(reg.proximo_passo || '') + '</textarea></label>' +
+      '<label class="full">Próximo passo<textarea class="mh-textarea" name="proximo_passo" placeholder="Ex.: Enviar fotos e lista de presença até sexta; propor workshop para líderes em outubro">' + esc(reg.proximo_passo || '') + '</textarea></label>' +
       '<label class="full check"><input type="checkbox" name="alerta"' + (reg.alerta ? ' checked' : '') + '> 🚩 Sinal de atenção (clima ruim, sobrecarga, conflito, afastamentos)</label>',
       {
         onSubmit: async function (d) {
@@ -997,7 +997,7 @@
       if (a) linhas.push('   ' + a.beneficio);
     });
     if (dr.colaboradores) linhas.push('', 'Investimento estimado para ' + dr.colaboradores + ' pessoas: ' + brlN(est.lo) + ' a ' + brlN(est.hi) + ' (valores de referência; proposta final sob medida).');
-    linhas.push('', 'Inclui: planejamento, arteterapeutas, materiais, fotos, lista de presença e relatório de cada ação para o plano de riscos psicossociais (NR-1). Qualquer encontro pode ser trocado por gift cards Elarah.');
+    linhas.push('', 'Inclui: planejamento, arteterapeutas, materiais, fotos e lista de presença de cada encontro. Qualquer encontro pode ser trocado por gift cards Elarah.');
     return linhas.join('\n');
   }
   function imprimirCron(dr) {
@@ -1016,7 +1016,7 @@
       '.w{width:110px;color:#1f4d3f;font-weight:700;text-transform:uppercase;font-size:.8rem}.b{color:#6b716d;font-size:.84rem}.box{background:#e6efe9;border-radius:12px;padding:16px 18px;margin-top:24px;font-size:.9rem}</style></head><body>' +
       '<div class="k">Elarah Mental Health</div><h1>Cronograma de saúde mental</h1><p>' + esc(dr.empresa) + ' · ' + esc(PLANOS[dr.plano] || '') + ' · ' + dr.ano + (dr.colaboradores ? ' · ' + dr.colaboradores + ' colaboradores' : '') + '</p>' +
       '<table>' + rows + '</table>' +
-      '<div class="box"><b>O que está incluso:</b> planejamento, arteterapeutas, materiais, fotos, lista de presença e relatório de cada ação para anexar ao plano de ação de riscos psicossociais (NR-1). Qualquer encontro pode ser trocado por gift cards Elarah.' +
+      '<div class="box"><b>O que está incluso:</b> planejamento, arteterapeutas, materiais, fotos e lista de presença de cada encontro. Qualquer encontro pode ser trocado por gift cards Elarah.' +
       (dr.colaboradores ? '<br><br><b>Investimento de referência:</b> ' + brlN(est.lo) + ' a ' + brlN(est.hi) + ' — proposta final sob medida.' : '') + '</div>' +
       '<p style="margin-top:28px;font-size:.84rem;color:#6b716d">contato.elarah@gmail.com · +55 11 91445-5930 · elarah.com.br</p>' +
       '<script>setTimeout(function(){window.print()},600)<\/script></body></html>');
