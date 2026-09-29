@@ -38,14 +38,15 @@ def head_simple(kicker):
     </div>'''
 
 
-def opt3(foto, pos, local, nome, desc, preco):
+def opt3(foto, pos, local, nome, desc, formato, fcolor, preco_html):
     return f'''      <div class="opt">
         <div class="oph">{img(foto, nome, pos)}</div>
         <div class="ob">
           <span class="ot">{local}</span>
           <h4>{nome}</h4>
           <p>{desc}</p>
-          <div class="op" style="font-size:16px">{preco}</div>
+          <span style="align-self:flex-start;margin-top:9px;font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:#fff;background:{fcolor};padding:4px 11px;border-radius:999px">{formato}</span>
+          {preco_html}
         </div>
       </div>'''
 
@@ -70,7 +71,7 @@ cover = f'''
           <span class="chip"><b>3</b> experiências à escolha</span>
         </div>
       </div>
-      <div class="cover-photo">{img("agora-mesa.jpg", "Cenário montado no Agora Intu", "center 50%")}</div>
+      <div class="cover-photo">{img("lado-b-grupo-pecas.webp", "Grupo de mulheres sorrindo com suas peças de tufting", "center 25%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Mari")}
@@ -83,12 +84,34 @@ opcoes = f'''
     <h2>Escolham a <em>cara do encontro</em></h2>
     <p class="lead">Todas privativas, conduzidas por profissional, com todos os materiais inclusos — e cada uma leva a própria criação pra casa.</p>
     <div class="opts" style="grid-template-columns:repeat(3,1fr)">
-{opt3("lado-b-grupo-pecas.webp", "center 30%", "Lado B Studio · Faria Lima", "Tufting", "Cada uma cria seu próprio tapete ou quadro em tufting — colorido, autoral e cheio de personalidade.", "valor a confirmar")}
-{opt3("agora-ceramica.jpg", "center 40%", "Agora Intu · Pinheiros", "Cerâmica", "Modelagem à mão, à mesa posta — cada uma leva a própria peça, esmaltada e queimada.", "a partir de R$ 279")}
-{opt3("vela-grupo-oficina.jpg", "center 35%", "Agora Intu · Pinheiros", "Workshop de Velas", "Cada uma cria a própria vela aromática, escolhendo aromas — um mimo sensorial pra levar.", "a partir de R$ 279")}
+{opt3("tufting6.jpg", "center 30%", "Lado B Studio · Faria Lima", "Tufting", "Aprendem a técnica de tufting e criam a própria peça autoral — fios, cores e composição.", "Lado B · só experiência", "var(--orange-dark)", '<div class="op" style="font-size:14px;font-style:italic;color:var(--orange-dark)">Somente experiência<br>valor a confirmar</div>')}
+{opt3("agora-ceramica.jpg", "center 40%", "Agora Intu · Pinheiros", "Cerâmica", "Modelagem à mão, com o grupo à mesa e profissional conduzindo — cada uma leva a própria peça.", "Agora Intu · experiência completa", "var(--navy)", '<div class="op">R$ 279<small>a partir de · por pessoa</small></div>')}
+{opt3("vela-grupo-oficina.jpg", "center 35%", "Agora Intu · Pinheiros", "Velas", "Experiência sensorial: cada uma cria a própria vela aromática, explorando fragrâncias.", "Agora Intu · experiência completa", "var(--navy)", '<div class="op">R$ 279<small>a partir de · por pessoa</small></div>')}
     </div>
-    <p class="fineprint">✦ Turma privada de 13 · Zona Oeste · 09/10 (manhã ou tarde). Cerâmica e Velas no Agora Intu (Pinheiros); Tufting no Lado B Studio (Faria Lima). Valor do Tufting a confirmar.</p>
+    <p class="fineprint">✦ Turma privada de 13 · Zona Oeste · 09/10 (manhã ou tarde). <b>Tufting</b> no Lado B Studio (só a experiência). <b>Cerâmica e Velas</b> no Agora Intu, a partir de uma experiência completa (espaço exclusivo, ambientação e coffee) — com opções de comidinhas.</p>
     {foot("As experiências")}
+  </section>'''
+
+tufting = f'''
+  <section class="slide">
+{head_simple("Tufting · Lado B Studio")}
+    <span class="eyebrow orange">◆ Tufting · Lado B Studio · Faria Lima</span>
+    <h2>Fios, cor e <em>criação</em></h2>
+    <p class="lead">No Lado B, cada uma aprende a técnica de tufting e cria a própria peça autoral — com a pistola, fios e muita cor. Um ambiente vibrante, mão na massa do começo ao fim.</p>
+    <div class="egrid">
+      <figure>{img("lado-b-vermelho.webp", "Escolhendo desenho, fios e cores no Lado B", "center 30%")}<figcaption>Escolhem desenho &amp; cores</figcaption></figure>
+      <figure>{img("tufting1.jpg", "Mulheres criando com a pistola de tufting", "center 30%")}<figcaption>Criam com a pistola</figcaption></figure>
+      <figure>{img("tufting6.jpg", "Grupo mostrando as peças de tufting prontas", "center 25%")}<figcaption>Cada uma leva a sua</figcaption></figure>
+    </div>
+    <p class="subh">Como acontece</p>
+    <ul class="checks">
+      <li><span class="ck">1</span>Conhecem a <b>técnica</b> e a pistola de tufting</li>
+      <li><span class="ck">2</span>Escolhem <b>desenho, fios e cores</b></li>
+      <li><span class="ck">3</span>Criam a própria peça <b>com acompanhamento</b></li>
+      <li><span class="ck">4</span>Cada uma <b>leva sua criação</b></li>
+    </ul>
+    <p class="fineprint">✦ Lado B Studio · Faria Lima / Jardim Paulistano. Formato somente experiência (sem comidinhas). Valor a confirmar.</p>
+    {foot("Tufting · Lado B Studio")}
   </section>'''
 
 experiencia = f'''
@@ -230,7 +253,7 @@ contato = f'''
     {foot("Como funciona & contato")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + opcoes + experiencia + atmosfera + planos + bonus + contato + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + opcoes + tufting + experiencia + atmosfera + planos + bonus + contato + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/proposta-mari-team-building.html"
 io.open(out, "w", encoding="utf-8").write(html)
