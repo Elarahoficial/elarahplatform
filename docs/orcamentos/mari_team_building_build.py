@@ -59,7 +59,7 @@ PROOF = "Já realizado para times como <b>Compass</b>, <b>Natura</b> e <b>Hidrat
 
 cover = f'''
   <section class="slide">
-{head_block("Proposta de experiência · Team building", "Team building", "Mari", "13 mulheres · Zona Oeste")}
+{head_block("Proposta de experiência · Team building", "Team building", "Mari", "13 mulheres · São Paulo")}
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Team building · Turma privada</span>
@@ -71,7 +71,7 @@ cover = f'''
           <span class="chip"><b>09/10</b> · manhã ou tarde</span>
         </div>
         <div class="chips" style="margin-top:10px">
-          <span class="chip">Zona Oeste · SP</span>
+          <span class="chip">São Paulo</span>
           <span class="chip"><b>3</b> experiências à escolha</span>
         </div>
       </div>
@@ -92,7 +92,7 @@ opcoes = f'''
 {opt3("agora-ceramica.jpg", "center 40%", "Agora Intu · Pinheiros", "Cerâmica", "Modelagem à mão, com o grupo à mesa e profissional conduzindo — cada uma leva a própria peça.", '<div class="op">R$ 369<small>por pessoa</small></div>')}
 {opt3("tufting6.jpg", "center 30%", "Lado B Studio · Faria Lima", "Tufting", "Aprendem a técnica de tufting e criam a própria peça autoral — fios, cores e composição.", '<div class="op">R$ 799<small>por pessoa</small></div>')}
     </div>
-    <p class="fineprint">✦ Turma privada de 13 · Zona Oeste · 09/10 (manhã ou tarde). Vela Aromática no Ateliê Meu Outro Lado (Brooklin) · Cerâmica no Agora Intu (Pinheiros) · Tufting no Lado B Studio (Faria Lima). No Agora Intu, a experiência é completa e pode receber comidinhas.</p>
+    <p class="fineprint">✦ Turma privada de 13 · 09/10 (manhã ou tarde). Vela Aromática — Ateliê Meu Outro Lado · Brooklin · Cerâmica — Agora Intu · Pinheiros · Tufting — Lado B Studio · Faria Lima / Jardim Paulistano. No Agora Intu, a experiência é completa e pode receber comidinhas.</p>
     {foot("As experiências")}
   </section>'''
 
