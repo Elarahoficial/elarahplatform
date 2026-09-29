@@ -574,6 +574,28 @@
   .ctable td .todo{font-family:'DM Sans',sans-serif;font-size:12.5px;font-style:italic;color:var(--orange-dark);font-weight:600}
   .statement h2{font-size:44px;line-height:1.08}
 </style>
+
+<style>
+  /* atmosfera 2x2 (fotos maiores) */
+  .mos2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+  .mos2 figure{margin:0;border-radius:16px;overflow:hidden;position:relative;height:236px;border:1px solid var(--line);box-shadow:0 16px 38px -26px rgba(0,0,0,.36)}
+  .mos2 img{width:100%;height:100%;object-fit:cover;display:block}
+  .mos2 figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 16px 13px;color:#fff;font-size:12.5px;font-weight:600;letter-spacing:.04em;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .menu-row .mprice .mpp{display:block;font-size:9.5px;color:var(--muted);margin-top:3px;font-weight:600;letter-spacing:.02em}
+  /* aromas trio */
+  .aroma{display:grid;grid-template-columns:.92fr 1.08fr;gap:30px;margin-top:18px;align-items:stretch}
+  .aroma .aphoto{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.4);min-height:330px;position:relative}
+  .aroma .aphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .aroma .alist{display:flex;flex-direction:column;gap:13px;justify-content:center}
+  .arow{display:grid;grid-template-columns:56px 1fr auto;gap:15px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 17px 11px 11px;box-shadow:0 12px 28px -24px rgba(0,0,0,.3)}
+  .arow .athumb{width:56px;height:56px;border-radius:10px;overflow:hidden;background:#eee}
+  .arow .athumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .arow .aname{font-family:'DM Serif Display',serif;font-size:16.5px;color:var(--navy);line-height:1.08}
+  .arow .arat{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
+  .arow .aprice{text-align:right;white-space:nowrap}
+  .arow .aprice b{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);display:block;line-height:1}
+  .arow .aprice small{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+</style>
 </head>
 <body>
 
@@ -614,9 +636,10 @@
     <span class="eyebrow orange">◆ O clima do encontro</span>
     <h2>Uma manhã <em>para os sentidos</em></h2>
     <p class="lead">Mãos que criam, materiais delicados e boas conversas. Cuidado, criatividade e conexão — uma manhã feminina, leve e sofisticada. 🤍</p>
-    <div class="vibe">
-      <figure><img src="assets/pinturatacaaaa.jpg" alt="Detalhe de uma taça pintada à mão" style="object-position:center 40%"><figcaption>Mãos que criam</figcaption></figure>
-      <figure><img src="assets/lipbalm1.jpg" alt="Ingredientes e cores de uma experiência beauty" style="object-position:center 50%"><figcaption>Detalhes beauty</figcaption></figure>
+    <div class="mos2">
+      <figure><img src="assets/nbc-aromas-criacao.jpg" alt="Mulheres criando juntas" style="object-position:center 35%"><figcaption>Criar junto</figcaption></figure>
+      <figure><img src="assets/pinturataca.jpg" alt="Mãos pintando uma taça" style="object-position:center 45%"><figcaption>Mãos que criam</figcaption></figure>
+      <figure><img src="assets/lipbalm1.jpg" alt="Ingredientes e cores beauty" style="object-position:center 50%"><figcaption>Detalhes beauty</figcaption></figure>
       <figure><img src="assets/piranha-cristais-materiais.jpg" alt="Materiais e pedras delicadas" style="object-position:center 40%"><figcaption>Materiais delicados</figcaption></figure>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A atmosfera do encontro</span></div>
@@ -627,8 +650,8 @@
       <div class="head-right"><span class="kicker">A Elarah cuida de tudo</span></div>
     </div>
     <span class="eyebrow orange">◆ Sem preocupação com a operação</span>
-    <h2>Vocês recebem as pacientes e convidadas.<br>A Elarah cuida <em>do resto</em>.</h2>
-    <p class="lead">A experiência acontece na própria Awake — a produção inteira é nossa.</p>
+    <h2>Vocês recebem.<br>A Elarah cuida <em>do resto</em>.</h2>
+    <p class="lead">A experiência acontece na própria Awake — a produção inteira é nossa. Fornecedor, materiais, equipe, montagem, condução e organização por nossa conta.</p>
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="ico">🤍</div><h3>No próprio espaço</h3><p>Levamos tudo até a Awake — sem deslocamento nem logística para vocês.</p></div>
@@ -640,23 +663,75 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Cardápio de experiências</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Escolham a cara da manhã</span>
+    <h2>O <em>cardápio</em> de experiências</h2>
+    <p class="lead">Seis experiências para comparar rapidamente. O valor principal é o do <strong>grupo fechado</strong> (até 15); o por pessoa é só referência. Todas com cerca de 40 min.</p>
+    <div class="menu">
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/lipbalm.jpg" alt="Lip Balm Autoral"></div>
+        <div><div class="mname">Lip Balm Autoral</div><div class="mrat">autocuidado · beauty · personalização</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><b>R$ 3.435</b><small>grupo · até 15</small><span class="mpp">~ R$ 229 / pessoa</span></div>
+      </div>
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/pinturatacaaaa.jpg" alt="Pintura em Taça"></div>
+        <div><div class="mname">Pintura em Taça</div><div class="mrat">criatividade · leveza · interação</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><b>R$ 2.985</b><small>grupo · até 15</small><span class="mpp">~ R$ 199 / pessoa</span></div>
+      </div>
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/charm-bolsa.jpg" alt="Charm Bag Express"></div>
+        <div><div class="mname">Charm Bag Express</div><div class="mrat">personalização · moda · lembrança</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><b>R$ 2.385</b><small>grupo · até 15</small><span class="mpp">~ R$ 159 / pessoa</span></div>
+      </div>
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/velaaromaticaaaa2.jpg" alt="Vela Aromática"></div>
+        <div><div class="mname">Vela Aromática</div><div class="mrat">aroma · ritual · aconchego</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><b>R$ 2.835</b><small>grupo · até 15</small><span class="mpp">~ R$ 189 / pessoa</span></div>
+      </div>
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/HOMESPRAY.jpg" alt="Aromatizador de Ambiente"></div>
+        <div><div class="mname">Aromatizador de Ambiente</div><div class="mrat">aroma · casa · bem-estar</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><b>R$ 2.535</b><small>grupo · até 15</small><span class="mpp">~ R$ 169 / pessoa</span></div>
+      </div>
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/aromatizador-corp.jpg" alt="Difusor de Ambiente"></div>
+        <div><div class="mname">Difusor de Ambiente</div><div class="mrat">aroma · casa · elegância</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><b>R$ 2.835</b><small>grupo · até 15</small><span class="mpp">~ R$ 189 / pessoa</span></div>
+      </div>
+    </div>
+    <p class="fineprint">✦ Investimento do grupo para até 15 participantes · valor por pessoa aproximado. Inclui experiência na Awake, materiais, condução, equipe e montagem.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Cardápio de experiências</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">A experiência</span></div>
     </div>
     <span class="eyebrow orange">◆ Autocuidado · universo beauty · autoral</span>
     <h2>Lip Balm <em>Autoral</em></h2>
     <p class="lead">Cada convidada cria o próprio lip balm natural — aromas, cores e textura.</p>
-    <div class="phero">
-      <div class="pheroph"><img src="assets/lipbalm.jpg" alt="Lip Balm Autoral" style="object-position:center 50%"></div>
-      <div style="display:flex;flex-direction:column;justify-content:center">
-        <div style="margin-bottom:12px"><span class="sugtag" style="margin-bottom:0">✦ Nossa sugestão · maior aderência ao encontro</span></div>
-        <div class="ginv">
-          <span class="gl">Investimento do grupo</span>
-          <div class="gbig">R$ 4.200</div>
-          <div class="gsub">Experiência completa para até 15 participantes</div>
-          <div class="gpp">equivale a aproximadamente <b>R$ 280</b> por pessoa</div>
-          <div class="ginc"><b>Por que combina:</b> autocuidado que conversa direto com o universo beauty da Awake — e cada uma leva o seu.</div>
-          <div class="ginc" style="margin-top:8px">Inclui experiência na <b>Awake</b>, materiais, condução, equipe e montagem.</div>
-        </div>
+    <div class="filmstrip two">
+      <figure><img src="assets/lipbalm.jpg" alt="A criação" style="object-position:center 50%"><figcaption>A criação</figcaption></figure>
+      <figure><img src="assets/lipbalm1.jpg" alt="Aromas &amp; cores" style="object-position:center 50%"><figcaption>Aromas &amp; cores</figcaption></figure>
+    </div>
+    <div class="expfoot">
+      <div class="why">
+        <div style="margin-bottom:11px"><span class="sugtag" style="margin-bottom:0">✦ Nossa sugestão · maior aderência ao encontro</span></div>
+        <b>Por que combina:</b> autocuidado que conversa direto com o universo beauty da Awake — e cada uma leva o seu.
+        <div class="inc">Inclui experiência na Awake, materiais, condução, equipe e montagem.</div>
+      </div>
+      <div class="ginv r">
+        <span class="gl">Investimento do grupo</span>
+        <div class="gbig">R$ 3.435</div>
+        <div class="gsub">Experiência completa para até 15 participantes</div>
+        <div class="gpp">equivale a aproximadamente <b>R$ 229</b> por pessoa</div>
       </div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Lip Balm Autoral</span></div>
@@ -669,17 +744,21 @@
     <span class="eyebrow orange">◆ Criatividade · leveza · interação</span>
     <h2>Pintura de <em>Taça</em></h2>
     <p class="lead">Cada uma personaliza a própria taça de vidro, no seu tempo e no seu traço.</p>
-    <div class="phero">
-      <div class="pheroph"><img src="assets/pinturataca.jpg" alt="Pintura de Taça" style="object-position:center 45%"></div>
-      <div style="display:flex;flex-direction:column;justify-content:center">
-        <div class="ginv">
-          <span class="gl">Investimento do grupo</span>
-          <div class="gbig">R$ 2.700</div>
-          <div class="gsub">Experiência completa para até 15 participantes</div>
-          <div class="gpp">equivale a aproximadamente <b>R$ 180</b> por pessoa</div>
-          <div class="ginc"><b>Por que combina:</b> leve e descontraída, solta o grupo e rende conversa e boas risadas.</div>
-          <div class="ginc" style="margin-top:8px">Inclui experiência na <b>Awake</b>, materiais, condução, equipe e montagem.</div>
-        </div>
+    <div class="filmstrip">
+      <figure><img src="assets/pinturataca.jpg" alt="A experiência" style="object-position:center 45%"><figcaption>A experiência</figcaption></figure>
+      <figure><img src="assets/pinturatacaaaa.jpg" alt="Os detalhes" style="object-position:center 40%"><figcaption>Os detalhes</figcaption></figure>
+      <figure><img src="assets/pintura-taca.jpg" alt="O que fica" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
+    </div>
+    <div class="expfoot">
+      <div class="why">
+        <b>Por que combina:</b> leve e descontraída, solta o grupo e rende conversa e boas risadas.
+        <div class="inc">Inclui experiência na Awake, materiais, condução, equipe e montagem.</div>
+      </div>
+      <div class="ginv r">
+        <span class="gl">Investimento do grupo</span>
+        <div class="gbig">R$ 2.985</div>
+        <div class="gsub">Experiência completa para até 15 participantes</div>
+        <div class="gpp">equivale a aproximadamente <b>R$ 199</b> por pessoa</div>
       </div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Pintura de Taça</span></div>
@@ -690,23 +769,81 @@
       <div class="head-right"><span class="kicker">A experiência</span></div>
     </div>
     <span class="eyebrow orange">◆ Personalização · moda · lembrança afetiva</span>
-    <h2>Charm de <em>Bolsa</em></h2>
-    <p class="lead">Cada convidada compõe um charm exclusivo — pedras, letras e detalhes.</p>
-    <div class="phero">
-      <div class="pheroph"><img src="assets/charm-bolsa.jpg" alt="Charm de Bolsa" style="object-position:center 50%"></div>
-      <div style="display:flex;flex-direction:column;justify-content:center">
-        <div class="ginv">
-          <span class="gl">Investimento do grupo</span>
-          <div class="gbig">R$ 2.685</div>
-          <div class="gsub">Experiência completa para até 15 participantes</div>
-          <div class="gpp">equivale a aproximadamente <b>R$ 179</b> por pessoa</div>
-          <div class="ginc"><b>Por que combina:</b> personalização afetiva: uma lembrança que continua com ela no dia a dia.</div>
-          <div class="ginc" style="margin-top:8px">Inclui experiência na <b>Awake</b>, materiais, condução, equipe e montagem.</div>
+    <h2>Charm Bag <em>Express</em></h2>
+    <p class="lead">Cada convidada compõe um charm exclusivo para a bolsa — pedras, letras e detalhes.</p>
+    <div class="filmstrip">
+      <figure><img src="assets/piranha-cristais-materiais.jpg" alt="A curadoria" style="object-position:center 40%"><figcaption>A curadoria</figcaption></figure>
+      <figure><img src="assets/charmbar.jpg" alt="Os charms" style="object-position:center 50%"><figcaption>Os charms</figcaption></figure>
+      <figure><img src="assets/charm-bolsa.jpg" alt="O que fica" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
+    </div>
+    <div class="expfoot">
+      <div class="why">
+        <b>Por que combina:</b> personalização afetiva: uma lembrança que continua com ela no dia a dia.
+        <div class="inc">Inclui experiência na Awake, materiais, condução, equipe e montagem.</div>
+      </div>
+      <div class="ginv r">
+        <span class="gl">Investimento do grupo</span>
+        <div class="gbig">R$ 2.385</div>
+        <div class="gsub">Experiência completa para até 15 participantes</div>
+        <div class="gpp">equivale a aproximadamente <b>R$ 159</b> por pessoa</div>
+      </div>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Charm Bag Express</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Aromas & bem-estar</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Criar o próprio aroma</span>
+    <h2>Aromas &amp; <em>bem-estar</em></h2>
+    <p class="lead">Uma linha sensorial: cada convidada cria o próprio aroma e escolhe como levá-lo pra casa — vela, home spray ou difusor. 🌿</p>
+    <div class="aroma">
+      <div class="aphoto"><img src="assets/nbc-aromas-criacao.jpg" alt="Mulheres criando os próprios aromas" style="object-position:center 30%"></div>
+      <div class="alist">
+        <div class="arow">
+          <div class="athumb"><img src="assets/velaaromaticaaaa2.jpg" alt="Vela Aromática"></div>
+          <div><div class="aname">Vela Aromática</div><div class="arat">aroma · ritual · aconchego</div></div>
+          <div class="aprice"><b>R$ 2.835</b><small>grupo · ~ R$ 189/pessoa</small></div>
+        </div>
+        <div class="arow">
+          <div class="athumb"><img src="assets/HOMESPRAY.jpg" alt="Aromatizador de Ambiente"></div>
+          <div><div class="aname">Aromatizador de Ambiente</div><div class="arat">aroma · casa · bem-estar</div></div>
+          <div class="aprice"><b>R$ 2.535</b><small>grupo · ~ R$ 169/pessoa</small></div>
+        </div>
+        <div class="arow">
+          <div class="athumb"><img src="assets/aromatizador-corp.jpg" alt="Difusor de Ambiente"></div>
+          <div><div class="aname">Difusor de Ambiente</div><div class="arat">aroma · casa · elegância</div></div>
+          <div class="aprice"><b>R$ 2.835</b><small>grupo · ~ R$ 189/pessoa</small></div>
         </div>
       </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Também temos <b>Vela Aromática</b> e <b>Aromatizador de Ambiente</b> na mesma pegada — valores sob consulta. 🤍</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Charm de Bolsa</span></div>
+    <p class="fineprint">✦ Investimento do grupo para até 15 participantes · valor por pessoa aproximado. Inclui experiência na Awake, materiais, condução, equipe e montagem.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Aromas & bem-estar</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Comparativo de investimento</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Fácil de comparar</span>
+    <h2>Investimento <em>por experiência</em></h2>
+    <p class="lead">O valor principal é o do grupo fechado, para até 15 participantes. A média por pessoa é só uma referência.</p>
+    <table class="ctable">
+      <thead>
+        <tr><th>Experiência</th><th class="r">Investimento do grupo</th><th class="r">Média por pessoa</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="exp">Lip Balm Autoral<small>Nossa sugestão</small></td><td class="grp">R$ 3.435</td><td class="pp">R$ 229</td></tr>
+        <tr><td class="exp">Pintura em Taça</td><td class="grp">R$ 2.985</td><td class="pp">R$ 199</td></tr>
+        <tr><td class="exp">Vela Aromática</td><td class="grp">R$ 2.835</td><td class="pp">R$ 189</td></tr>
+        <tr><td class="exp">Difusor de Ambiente</td><td class="grp">R$ 2.835</td><td class="pp">R$ 189</td></tr>
+        <tr><td class="exp">Aromatizador de Ambiente</td><td class="grp">R$ 2.535</td><td class="pp">R$ 169</td></tr>
+        <tr><td class="exp">Charm Bag Express</td><td class="grp">R$ 2.385</td><td class="pp">R$ 159</td></tr>
+      </tbody>
+    </table>
+    <p class="fineprint">✦ Investimento do grupo para até 15 participantes · média por pessoa aproximada. Inclui experiência na Awake, materiais, condução, equipe e montagem.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Comparativo de investimento</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
