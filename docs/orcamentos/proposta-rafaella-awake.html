@@ -596,6 +596,28 @@
   .arow .aprice b{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);display:block;line-height:1}
   .arow .aprice small{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 </style>
+
+<style>
+  /* atmosfera 3x2 (mais fotos, grandes) */
+  .mos2{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:16px}
+  .mos2 figure{margin:0;border-radius:16px;overflow:hidden;position:relative;height:206px;border:1px solid var(--line);box-shadow:0 16px 38px -26px rgba(0,0,0,.36)}
+  .mos2 img{width:100%;height:100%;object-fit:cover;display:block}
+  .mos2 figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 16px 13px;color:#fff;font-size:12.5px;font-weight:600;letter-spacing:.04em;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .menu-row .mprice .mpp{display:block;font-size:9.5px;color:var(--muted);margin-top:3px;font-weight:600;letter-spacing:.02em}
+  /* aromas trio */
+  .aroma{display:grid;grid-template-columns:.92fr 1.08fr;gap:30px;margin-top:18px;align-items:stretch}
+  .aroma .aphoto{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.4);min-height:330px;position:relative}
+  .aroma .aphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .aroma .alist{display:flex;flex-direction:column;gap:13px;justify-content:center}
+  .arow{display:grid;grid-template-columns:56px 1fr auto;gap:15px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 17px 11px 11px;box-shadow:0 12px 28px -24px rgba(0,0,0,.3)}
+  .arow .athumb{width:56px;height:56px;border-radius:10px;overflow:hidden;background:#eee}
+  .arow .athumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .arow .aname{font-family:'DM Serif Display',serif;font-size:16.5px;color:var(--navy);line-height:1.08}
+  .arow .arat{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.02em}
+  .arow .aprice{text-align:right;white-space:nowrap}
+  .arow .aprice b{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);display:block;line-height:1}
+  .arow .aprice small{font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+</style>
 </head>
 <body>
 
@@ -638,9 +660,11 @@
     <p class="lead">Mãos que criam, materiais delicados e boas conversas. Cuidado, criatividade e conexão — uma manhã feminina, leve e sofisticada. 🤍</p>
     <div class="mos2">
       <figure><img src="assets/nbc-aromas-criacao.jpg" alt="Mulheres criando juntas" style="object-position:center 35%"><figcaption>Criar junto</figcaption></figure>
+      <figure><img src="assets/lipbalm-making.jpg" alt="Mãos preparando o lip balm" style="object-position:center 40%"><figcaption>Mão na massa</figcaption></figure>
       <figure><img src="assets/pinturataca.jpg" alt="Mãos pintando uma taça" style="object-position:center 45%"><figcaption>Mãos que criam</figcaption></figure>
       <figure><img src="assets/lipbalm1.jpg" alt="Ingredientes e cores beauty" style="object-position:center 50%"><figcaption>Detalhes beauty</figcaption></figure>
-      <figure><img src="assets/piranha-cristais-materiais.jpg" alt="Materiais e pedras delicadas" style="object-position:center 40%"><figcaption>Materiais delicados</figcaption></figure>
+      <figure><img src="assets/aroma-experiencia-mesa.jpg" alt="Mesa de aromas autorais" style="object-position:center 55%"><figcaption>Aromas autorais</figcaption></figure>
+      <figure><img src="assets/charm-bolsa.jpg" alt="Peça finalizada" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A atmosfera do encontro</span></div>
   </section>
@@ -673,37 +697,37 @@
         <div class="mthumb"><img src="assets/lipbalm.jpg" alt="Lip Balm Autoral"></div>
         <div><div class="mname">Lip Balm Autoral</div><div class="mrat">autocuidado · beauty · personalização</div></div>
         <div class="mdur">40 min</div>
-        <div class="mprice"><b>R$ 3.435</b><small>grupo · até 15</small><span class="mpp">~ R$ 229 / pessoa</span></div>
+        <div class="mprice"><b>R$ 229</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 3.435</span></div>
       </div>
       <div class="menu-row">
         <div class="mthumb"><img src="assets/pinturatacaaaa.jpg" alt="Pintura em Taça"></div>
         <div><div class="mname">Pintura em Taça</div><div class="mrat">criatividade · leveza · interação</div></div>
         <div class="mdur">40 min</div>
-        <div class="mprice"><b>R$ 2.985</b><small>grupo · até 15</small><span class="mpp">~ R$ 199 / pessoa</span></div>
+        <div class="mprice"><b>R$ 199</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.985</span></div>
       </div>
       <div class="menu-row">
         <div class="mthumb"><img src="assets/charm-bolsa.jpg" alt="Charm Bag Express"></div>
         <div><div class="mname">Charm Bag Express</div><div class="mrat">personalização · moda · lembrança</div></div>
         <div class="mdur">40 min</div>
-        <div class="mprice"><b>R$ 2.385</b><small>grupo · até 15</small><span class="mpp">~ R$ 159 / pessoa</span></div>
+        <div class="mprice"><b>R$ 159</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.385</span></div>
       </div>
       <div class="menu-row">
         <div class="mthumb"><img src="assets/velaaromaticaaaa2.jpg" alt="Vela Aromática"></div>
         <div><div class="mname">Vela Aromática</div><div class="mrat">aroma · ritual · aconchego</div></div>
         <div class="mdur">40 min</div>
-        <div class="mprice"><b>R$ 2.835</b><small>grupo · até 15</small><span class="mpp">~ R$ 189 / pessoa</span></div>
+        <div class="mprice"><b>R$ 189</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.835</span></div>
       </div>
       <div class="menu-row">
         <div class="mthumb"><img src="assets/HOMESPRAY.jpg" alt="Aromatizador de Ambiente"></div>
         <div><div class="mname">Aromatizador de Ambiente</div><div class="mrat">aroma · casa · bem-estar</div></div>
         <div class="mdur">40 min</div>
-        <div class="mprice"><b>R$ 2.535</b><small>grupo · até 15</small><span class="mpp">~ R$ 169 / pessoa</span></div>
+        <div class="mprice"><b>R$ 169</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.535</span></div>
       </div>
       <div class="menu-row">
         <div class="mthumb"><img src="assets/aromatizador-corp.jpg" alt="Difusor de Ambiente"></div>
         <div><div class="mname">Difusor de Ambiente</div><div class="mrat">aroma · casa · elegância</div></div>
         <div class="mdur">40 min</div>
-        <div class="mprice"><b>R$ 2.835</b><small>grupo · até 15</small><span class="mpp">~ R$ 189 / pessoa</span></div>
+        <div class="mprice"><b>R$ 189</b><small>por pessoa</small><span class="mpp">grupo até 15 · R$ 2.835</span></div>
       </div>
     </div>
     <p class="fineprint">✦ Investimento do grupo para até 15 participantes · valor por pessoa aproximado. Inclui experiência na Awake, materiais, condução, equipe e montagem.</p>
@@ -717,9 +741,10 @@
     <span class="eyebrow orange">◆ Autocuidado · universo beauty · autoral</span>
     <h2>Lip Balm <em>Autoral</em></h2>
     <p class="lead">Cada convidada cria o próprio lip balm natural — aromas, cores e textura.</p>
-    <div class="filmstrip two">
-      <figure><img src="assets/lipbalm.jpg" alt="A criação" style="object-position:center 50%"><figcaption>A criação</figcaption></figure>
-      <figure><img src="assets/lipbalm1.jpg" alt="Aromas &amp; cores" style="object-position:center 50%"><figcaption>Aromas &amp; cores</figcaption></figure>
+    <div class="filmstrip">
+      <figure><img src="assets/lipbalm-making.jpg" alt="A experiência" style="object-position:center 40%"><figcaption>A experiência</figcaption></figure>
+      <figure><img src="assets/lipbalm-kit.jpg" alt="Os materiais" style="object-position:center 50%"><figcaption>Os materiais</figcaption></figure>
+      <figure><img src="assets/lipbalm.jpg" alt="O que fica" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
     </div>
     <div class="expfoot">
       <div class="why">
@@ -771,8 +796,7 @@
     <span class="eyebrow orange">◆ Personalização · moda · lembrança afetiva</span>
     <h2>Charm Bag <em>Express</em></h2>
     <p class="lead">Cada convidada compõe um charm exclusivo para a bolsa — pedras, letras e detalhes.</p>
-    <div class="filmstrip">
-      <figure><img src="assets/piranha-cristais-materiais.jpg" alt="A curadoria" style="object-position:center 40%"><figcaption>A curadoria</figcaption></figure>
+    <div class="filmstrip two">
       <figure><img src="assets/charmbar.jpg" alt="Os charms" style="object-position:center 50%"><figcaption>Os charms</figcaption></figure>
       <figure><img src="assets/charm-bolsa.jpg" alt="O que fica" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
     </div>
