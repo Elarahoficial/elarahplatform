@@ -30,6 +30,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { authorizeAdmin, getServiceClient } from "../_shared/social_db.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const PLACES_KEY = Deno.env.get("GOOGLE_PLACES_API_KEY") ?? "";
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
@@ -125,6 +126,22 @@ function weekOfYear(d = new Date()) {
   return Math.floor((d.getTime() - start) / (7 * 86400000));
 }
 
+// Equipe só da Mental Health (sql/elarah_mh_equipe.sql → is_mh_team)
+// também pode buscar empresas pelo botão do painel.
+async function authorizeEquipeMH(jwt: string): Promise<string | null> {
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  const anon = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  if (!jwt || !url || !anon) return null;
+  const client = createClient(url, anon, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+  });
+  const { data: u, error } = await client.auth.getUser(jwt);
+  if (error || !u?.user) return null;
+  const { data: ok, error: rpcErr } = await client.rpc("is_mh_team");
+  return !rpcErr && ok ? u.user.id : null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
@@ -133,7 +150,7 @@ serve(async (req) => {
   const tk = rawAuth.replace(/^Bearer\s+/i, "").trim();
   const isCron = (!!CRON_SECRET && tk === CRON_SECRET) || (!!SERVICE_ROLE && tk === SERVICE_ROLE);
   if (!isCron) {
-    const adminId = await authorizeAdmin(rawAuth);
+    const adminId = (await authorizeAdmin(rawAuth)) || (await authorizeEquipeMH(tk));
     if (!adminId) return json({ ok: false, error: "nao_autorizado" }, 401);
   }
   if (!PLACES_KEY) {

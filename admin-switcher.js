@@ -44,6 +44,8 @@
   function montar() {
     var logo = document.querySelector('.admin__logo, .mh__logo');
     if (!logo || logo.querySelector('.plat-sw')) return;
+    // Equipe só da Mental Health não troca de plataforma.
+    if (document.documentElement.classList.contains('mh-so-mh')) return;
 
     var st = document.createElement('style');
     st.textContent = CSS;
