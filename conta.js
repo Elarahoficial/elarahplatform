@@ -57,11 +57,24 @@ if (badgeEl) {
   } else if (user.partnerStatus === 'rejected') {
     badgeEl.textContent = 'Revisar cadastro';
     badgeEl.className = 'account__badge account__badge--user';
+  } else if (ElarahAuth.isMHTeam && ElarahAuth.isMHTeam()) {
+    badgeEl.textContent = 'Equipe Mental Health';
+    badgeEl.className = 'account__badge account__badge--partner';
   } else {
     badgeEl.textContent = 'Usuário';
     badgeEl.className = 'account__badge account__badge--user';
   }
 }
+
+  // Equipe da Mental Health: atalho grande pro painel dela.
+  if (ElarahAuth.isMHTeam && ElarahAuth.isMHTeam() && badgeEl && !document.getElementById('mh-painel-link')) {
+    const a = document.createElement('a');
+    a.id = 'mh-painel-link';
+    a.href = 'admin-mh.html';
+    a.textContent = 'Abrir painel Elarah Mental Health →';
+    a.style.cssText = 'display:block;margin:14px auto 0;padding:10px 14px;border-radius:999px;background:#1f4d3f;color:#fff;font-weight:700;font-size:.85rem;text-align:center;text-decoration:none;max-width:240px;';
+    badgeEl.insertAdjacentElement('afterend', a);
+  }
 
   // ===== SECTION NAVIGATION =====
   const menuItems = document.querySelectorAll('.account__menu-item');

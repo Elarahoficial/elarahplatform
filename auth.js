@@ -89,6 +89,14 @@ const ElarahAuth = (function () {
   }
   function isLoggedIn() { return !!currentSession && !!currentProfile; }
   function isAdmin() { return !!currentProfile && currentProfile.role === 'admin'; }
+  // Equipe só da Elarah Mental Health (parceiras): não é admin, mas tem
+  // 'mental-health' em admin_panels. O painel dela é o admin-mh.html.
+  function isMHTeam() {
+    if (!currentProfile || currentProfile.role === 'admin') return false;
+    const p = currentProfile.admin_panels;
+    if (p == null) return false;
+    return String(Array.isArray(p) ? p.join(',') : p).indexOf('mental-health') !== -1;
+  }
 
   // ===== Hydration =====
   async function fetchProfile(userId) {
@@ -324,7 +332,7 @@ const ElarahAuth = (function () {
 
       const isAdminUser = currentProfile.role === 'admin';
       console.info('[Elarah AUTH] login: SUCESSO', { isAdmin: isAdminUser, ephemeral: !!currentProfile.__ephemeral });
-      return { success: true, user: getCurrentUser(), isAdmin: isAdminUser };
+      return { success: true, user: getCurrentUser(), isAdmin: isAdminUser, isMHTeam: isMHTeam() };
     } catch (e) {
       console.error('[Elarah AUTH] login: exceção', e);
       if (isNetworkError(e)) {
@@ -593,6 +601,11 @@ const ElarahAuth = (function () {
             window.location.href = 'admin.html';
             return;
           }
+          if (result.isMHTeam) {
+            closeModal();
+            window.location.href = 'admin-mh.html';
+            return;
+          }
           const redirect = localStorage.getItem('postLoginRedirect');
           closeModal();
           if (redirect) {
@@ -769,6 +782,10 @@ const ElarahAuth = (function () {
       window.location.href = 'admin.html';
       return;
     }
+    if (isMHTeam()) {
+      window.location.href = 'admin-mh.html';
+      return;
+    }
     if (isLoggedIn()) {
       window.location.href = 'conta.html';
       return;
@@ -840,6 +857,7 @@ const ElarahAuth = (function () {
     getCurrentUser,
     isLoggedIn,
     isAdmin,
+    isMHTeam,
     login,
     register,
     logout,
