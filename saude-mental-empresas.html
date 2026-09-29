@@ -23,6 +23,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
+/* links do menu param logo abaixo do menu fixo, não por trás dele */
+section[id],header[id],div[id]{scroll-margin-top:88px}
 html,body{max-width:100%}
 body{overflow-x:hidden}
 body{font-family:'DM Sans',system-ui,sans-serif;color:var(--ink);background:var(--cream);line-height:1.6;-webkit-font-smoothing:antialiased}
@@ -545,6 +547,7 @@ body.lm-open{overflow:hidden}
 }
 
 /* ===== CELULAR: página mais curta e centralizada ===== */
+@media (max-width:980px){section[id],header[id],div[id]{scroll-margin-top:72px}}
 .person__mais{display:none}
 @media (max-width:560px){
   section{padding:60px 0}
@@ -770,7 +773,7 @@ body.lm-open{overflow:hidden}
         <fieldset class="sim__q" data-q="objetivo"><legend><span>3</span> Qual é o principal objetivo?</legend>
           <button type="button" data-v="Bem-estar e pausa">Bem-estar e pausa</button><button type="button" data-v="Conexão entre equipes">Conexão entre equipes</button><button type="button" data-v="Criatividade">Criatividade</button><button type="button" data-v="Cuidado emocional">Cuidado emocional</button></fieldset>
         <fieldset class="sim__q" data-q="local"><legend><span>4</span> Onde vai acontecer?</legend>
-          <button type="button" data-v="Na empresa">Na empresa</button><button type="button" data-v="Em um espaço parceiro">Em um espaço parceiro</button><button type="button" data-v="Online">Online</button><button type="button" data-v="Kit para casa">Kit para casa</button></fieldset>
+          <button type="button" data-v="Na empresa">Na empresa</button><button type="button" data-v="Em um espaço parceiro">Em um espaço parceiro</button><button type="button" data-v="Kit para casa">Kit para casa</button></fieldset>
       </div>
       <aside class="sim__previa" aria-live="polite">
         <span class="sim__tag">Sua seleção</span>
@@ -1158,7 +1161,7 @@ body.lm-open{overflow:hidden}
       <details class="reveal"><summary>Preciso saber desenhar ou pintar?</summary><p>Não. Ninguém precisa ter experiência artística. O foco não é o resultado estético, e sim o processo de criação — é justamente isso que tira a pessoa do automático.</p></details>
       <details class="reveal"><summary>Quantos encontros precisamos contratar?</summary><p>Quantos fizerem sentido para vocês: 1 encontro pontual, 4 no ano (os meses-chave), 6 no semestre ou 12 no ano. O cronograma é montado a partir desse número.</p></details>
       <details class="reveal"><summary>E se um mês não der pra fazer o encontro?</summary><p>Sem problema: qualquer encontro do cronograma pode ser trocado por gift cards Elarah. Cada colaborador escolhe a experiência que quer viver — cerâmica, pintura, perfumaria, drinks — em São Paulo ou com kit em casa.</p></details>
-      <details class="reveal"><summary>Onde acontece?</summary><p>Onde fizer mais sentido: na sua empresa (sala de reunião, refeitório, terraço), em ateliês parceiros em São Paulo, online ou com kits enviados para a casa de cada pessoa — ótimo para times híbridos, remotos e turnos diferentes.</p></details>
+      <details class="reveal"><summary>Onde acontece?</summary><p>Onde fizer mais sentido: na sua empresa (sala de reunião, refeitório, terraço), em ateliês parceiros em São Paulo ou com kits enviados para a casa de cada pessoa — ótimo para times híbridos, remotos e turnos diferentes.</p></details>
       <details class="reveal"><summary>Para quantas pessoas?</summary><p>De 8 a 300 por ação, com turmas simultâneas quando o time é grande. Para empresas com várias unidades, combinamos ações presenciais e kits.</p></details>
       <details class="reveal"><summary>Quanto custa?</summary><p>Depende do formato, do número de pessoas e da frequência. Ações pontuais cabem em orçamentos de campanha; programas semestrais e anuais têm valor por colaborador mais baixo e investimento previsível. Mande seus dados que respondemos com 3 opções em até 1 dia útil.</p></details>
       <details class="reveal"><summary>Em quanto tempo conseguimos começar?</summary><p>Uma ação pontual pode ser organizada em até 7 dias. Programas semestrais e anuais começam no mês seguinte à aprovação do cronograma.</p></details>
@@ -1335,12 +1338,12 @@ body.lm-open{overflow:hidden}
   var LOCAL_TXT = {
     'Na empresa': 'Na sua empresa — levamos todo o material',
     'Em um espaço parceiro': 'Em um espaço parceiro da Elarah, fora da rotina do escritório',
-    'Online': 'Online, com materiais enviados para cada pessoa',
     'Kit para casa': 'Kit em casa com orientação da arteterapeuta'
   };
   var CHAVE = 'elarah_mh_experiencia';
   var EXP = { pessoas: '', freq: '', objetivo: '', local: '', via: '' };
   try { var sv = JSON.parse(localStorage.getItem(CHAVE) || 'null'); if (sv) EXP = Object.assign(EXP, sv); } catch (_) {}
+  if (EXP.local === 'Online') EXP.local = ''; // opção online saiu
   function salvarEXP() { try { localStorage.setItem(CHAVE, JSON.stringify(EXP)); } catch (_) {} }
   function temEscolha() { return !!(EXP.pessoas || EXP.freq || EXP.objetivo || EXP.local); }
   function freqTxt() {

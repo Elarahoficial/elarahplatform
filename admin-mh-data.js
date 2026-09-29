@@ -38,7 +38,7 @@
     { id: 'pausa-arte', emoji: '🎨', nome: 'Pausa com Arte (Arteterapia)',
       resumo: 'Vivência de pintura e expressão artística conduzida por arteterapeuta. Ninguém precisa saber desenhar.',
       beneficio: 'Desacelera, alivia as tensões do cotidiano e estimula o autoconhecimento — o foco é o processo, não o resultado.',
-      fatores: ['estresse', 'esgotamento'], duracao: '2h', grupo: '8 a 40', formatos: ['presencial_empresa', 'presencial_atelie', 'online'],
+      fatores: ['estresse', 'esgotamento'], duracao: '2h', grupo: '8 a 40', formatos: ['presencial_empresa', 'presencial_atelie'],
       preco: 'R$ 150–240', destaque: true },
     { id: 'criatividade', emoji: '💡', nome: 'Criatividade e novas perspectivas',
       resumo: 'Vivência de Arteterapia com tinta, argila, desenho e colagem para experimentar e flexibilizar padrões.',
@@ -68,12 +68,12 @@
     { id: 'aquarela', emoji: '🖌️', nome: 'Aquarela botânica',
       resumo: 'Folhas e flores em aquarela, passo a passo.',
       beneficio: 'Ritmo lento e respiração guiada pela pincelada; efeito calmante comprovado das atividades artísticas.',
-      fatores: ['estresse'], duracao: '2h', grupo: '8 a 40', formatos: ['presencial_empresa', 'online', 'kit_em_casa'],
+      fatores: ['estresse'], duracao: '2h', grupo: '8 a 40', formatos: ['presencial_empresa', 'kit_em_casa'],
       preco: 'R$ 130–200' },
     { id: 'bordado', emoji: '🧵', nome: 'Bordado livre',
       resumo: 'Ponto a ponto, cada pessoa borda uma palavra ou símbolo.',
       beneficio: 'Atividade repetitiva e manual que acalma o sistema nervoso. Rende conversa boa em roda.',
-      fatores: ['estresse', 'isolamento'], duracao: '2h', grupo: '6 a 30', formatos: ['presencial_empresa', 'online', 'kit_em_casa'],
+      fatores: ['estresse', 'isolamento'], duracao: '2h', grupo: '6 a 30', formatos: ['presencial_empresa', 'kit_em_casa'],
       preco: 'R$ 120–190' },
     { id: 'terrario', emoji: '🌿', nome: 'Terrário & kokedama',
       resumo: 'Montar um mini jardim pra levar pra mesa de trabalho.',
@@ -98,12 +98,12 @@
     { id: 'journaling', emoji: '📓', nome: 'Encadernação & journaling',
       resumo: 'Cada pessoa costura o próprio caderno e aprende práticas de escrita reflexiva.',
       beneficio: 'Escrita expressiva ajuda a organizar pensamentos e emoções; o caderno vira ferramenta diária.',
-      fatores: ['esgotamento', 'mudancas'], duracao: '2h', grupo: '8 a 30', formatos: ['presencial_empresa', 'online', 'kit_em_casa'],
+      fatores: ['esgotamento', 'mudancas'], duracao: '2h', grupo: '8 a 30', formatos: ['presencial_empresa', 'kit_em_casa'],
       preco: 'R$ 150–230' },
     { id: 'visionboard', emoji: '🗺️', nome: 'Colagem de intenções (vision board)',
       resumo: 'Revistas, papéis e tesoura: o ano que cada um quer viver.',
       beneficio: 'Clareza de propósito e conversa sobre expectativas — casa com planejamento de início de ano.',
-      fatores: ['pertencimento', 'mudancas'], duracao: '1h30', grupo: '8 a 60', formatos: ['presencial_empresa', 'online'],
+      fatores: ['pertencimento', 'mudancas'], duracao: '1h30', grupo: '8 a 60', formatos: ['presencial_empresa'],
       preco: 'R$ 110–170' },
     { id: 'mosaico', emoji: '🧩', nome: 'Mosaico coletivo',
       resumo: 'Cada pessoa faz uma peça; juntas formam um painel pra parede da empresa.',
@@ -128,32 +128,32 @@
     { id: 'cha', emoji: '🍵', nome: 'Chá & mindfulness',
       resumo: 'Degustação de chás com práticas de atenção plena entre as xícaras.',
       beneficio: 'Introduz a pausa consciente de um jeito leve, sem "cara de terapia".',
-      fatores: ['estresse', 'esgotamento'], duracao: '1h', grupo: '8 a 50', formatos: ['presencial_empresa', 'online'],
+      fatores: ['estresse', 'esgotamento'], duracao: '1h', grupo: '8 a 50', formatos: ['presencial_empresa'],
       preco: 'R$ 90–150' },
     { id: 'respiracao', emoji: '🌬️', nome: 'Respiração & meditação guiada',
       resumo: 'Técnicas de respiração pra usar em 3 minutos antes de uma reunião difícil.',
-      beneficio: 'Ferramenta prática e imediata de regulação emocional. Ótimo formato online pra times híbridos.',
-      fatores: ['estresse', 'esgotamento'], duracao: '45min', grupo: 'até 300', formatos: ['presencial_empresa', 'online'],
+      beneficio: 'Ferramenta prática e imediata de regulação emocional. Cabe em qualquer sala, até no intervalo de uma reunião.',
+      fatores: ['estresse', 'esgotamento'], duracao: '45min', grupo: 'até 300', formatos: ['presencial_empresa'],
       preco: 'R$ 1.500–3.500 (turma)' },
     { id: 'yoga', emoji: '🧘', nome: 'Yoga na empresa',
       resumo: 'Aula adaptada pra roupa de trabalho, na sala de reunião ou no terraço.',
       beneficio: 'Alivia dores posturais e tensão; pode virar encontro fixo semanal/quinzenal.',
-      fatores: ['estresse'], duracao: '50min', grupo: 'até 30', formatos: ['presencial_empresa', 'online'],
+      fatores: ['estresse'], duracao: '50min', grupo: 'até 30', formatos: ['presencial_empresa'],
       preco: 'R$ 900–1.800 (turma)' },
     { id: 'roda', emoji: '🫶', nome: 'Roda de conversa com psicóloga',
       resumo: 'Encontro mediado por psicóloga sobre um tema (ansiedade, limites, luto, sobrecarga).',
       beneficio: 'Espaço seguro de escuta; reduz estigma e mostra caminhos de apoio. Casa com qualquer atividade manual.',
-      fatores: ['isolamento', 'esgotamento', 'relacoes'], duracao: '1h30', grupo: '8 a 25', formatos: ['presencial_empresa', 'online'],
+      fatores: ['isolamento', 'esgotamento', 'relacoes'], duracao: '1h30', grupo: '8 a 25', formatos: ['presencial_empresa'],
       preco: 'R$ 2.000–4.000 (encontro)' },
     { id: 'lideres', emoji: '🧭', nome: 'Workshop NR-1 para lideranças',
       resumo: 'Como a liderança identifica sinais de risco psicossocial e conduz conversas difíceis.',
       beneficio: 'Líder preparado é a primeira barreira de prevenção — e é o que a fiscalização quer ver no plano de ação.',
-      fatores: ['lideranca', 'relacoes'], duracao: '3h', grupo: 'até 30 líderes', formatos: ['presencial_empresa', 'online'],
+      fatores: ['lideranca', 'relacoes'], duracao: '3h', grupo: 'até 30 líderes', formatos: ['presencial_empresa'],
       preco: 'R$ 4.500–9.000 (turma)', destaque: true },
     { id: 'cnv', emoji: '💬', nome: 'Comunicação não-violenta',
       resumo: 'Vivência prática de CNV com exercícios em duplas.',
       beneficio: 'Diminui conflitos e ruído entre áreas; melhora feedback.',
-      fatores: ['relacoes', 'lideranca'], duracao: '3h', grupo: 'até 40', formatos: ['presencial_empresa', 'online'],
+      fatores: ['relacoes', 'lideranca'], duracao: '3h', grupo: 'até 40', formatos: ['presencial_empresa'],
       preco: 'R$ 3.500–7.000 (turma)' },
     { id: 'totebag', emoji: '👜', nome: 'Pintura em ecobag',
       resumo: 'Cada pessoa customiza a própria ecobag com carimbos e tinta de tecido.',
@@ -175,7 +175,6 @@
   var FORMATOS = {
     presencial_empresa: 'Na empresa',
     presencial_atelie: 'No ateliê',
-    online: 'Online',
     kit_em_casa: 'Kit / em casa'
   };
 
@@ -218,7 +217,7 @@
     [2, 1,  'Dia do Publicitário', 'homenagem', 2, 'Agências vivem de criatividade — e de prazo. Uma pausa criativa de verdade.', 'Pintura intuitiva', 'pintura'],
     [3, 8,  'Dia Internacional da Mulher', 'homenagem', 3, 'Troque o bombom por uma experiência que ela vai lembrar.', 'Perfumaria botânica ou gift card', 'perfumaria'],
     [3, 20, 'Dia Internacional da Felicidade', 'cultura', 2, 'Pergunte ao time o que traz alegria no trabalho — e comece por uma pausa criativa.', 'Chá & mindfulness', 'cha'],
-    [4, 7,  'Dia Mundial da Saúde', 'saude', 3, 'Saúde é também mental: lance o programa anual nesta data.', 'Respiração guiada (online, pra todos)', 'respiracao'],
+    [4, 7,  'Dia Mundial da Saúde', 'saude', 3, 'Saúde é também mental: lance o programa anual nesta data.', 'Respiração guiada (pra todos)', 'respiracao'],
     [4, 28, 'Dia Mundial da Segurança e Saúde no Trabalho', 'saude', 3, 'Data-chave pra NR-1: mostre o plano de ação de riscos psicossociais.', 'Workshop NR-1 para lideranças', 'lideres'],
     [5, 1,  'Dia do Trabalhador', 'cultura', 2, 'Reconhecer quem faz a empresa acontecer.', 'Velas aromáticas pra levar pra casa', 'velas'],
     [5, 12, 'Dia da Enfermagem', 'homenagem', 2, 'Hospitais e clínicas: equipe com altíssimo risco de esgotamento.', 'Kit em casa + gift card', 'kit'],
@@ -302,7 +301,7 @@
   var SEGMENTOS = [
     { id: 'tech', label: 'Tecnologia', match: /tech|software|fintech|startup|ti\b|tecnolog|sistemas|digital|dados|saas/i,
       dor: 'times de tecnologia passam o dia inteiro em tela, com prazos apertados e muita reunião — é onde o esgotamento aparece primeiro',
-      atividade: 'cerâmica terapêutica (2 horas sem tela, só mãos na argila)', data: 'Dia do Programador e o Dia Mundial da Saúde Mental', ajuste: 'e temos formato online e kit em casa para quem é remoto' },
+      atividade: 'cerâmica terapêutica (2 horas sem tela, só mãos na argila)', data: 'Dia do Programador e o Dia Mundial da Saúde Mental', ajuste: 'e temos kit em casa para quem é remoto' },
     { id: 'juridico', label: 'Jurídico', match: /advoga|jur[ií]dic|direito|law|legal/i,
       dor: 'escritórios de advocacia vivem de prazo, pressão por resultado e jornada longa — um cenário clássico de sobrecarga',
       atividade: 'kintsugi, a arte japonesa de consertar cerâmica com ouro (vira uma conversa linda sobre pressão e recomeço)', data: 'o Dia do Advogado (11/8) e o Setembro Amarelo', ajuste: 'no fim do expediente, no próprio escritório, em 2 horas' },
@@ -333,7 +332,7 @@
   ];
   var SEG_PADRAO = { id: 'geral', label: 'Geral',
     dor: 'o time está cansado e as ações de sempre (palestra, cartaz, e-mail de campanha) não engajam',
-    atividade: 'cerâmica terapêutica ou kintsugi', data: 'o Dia Mundial da Saúde Mental e o Janeiro Branco', ajuste: 'na empresa, no ateliê ou online' };
+    atividade: 'cerâmica terapêutica ou kintsugi', data: 'o Dia Mundial da Saúde Mental e o Janeiro Branco', ajuste: 'na empresa, no ateliê ou com kit em casa' };
   function segmentoDe(p) {
     var txt = [p && p.segmento, p && p.tipo_empresa, p && p.nome].join(' ');
     for (var i = 0; i < SEGMENTOS.length; i++) if (SEGMENTOS[i].match.test(txt)) return SEGMENTOS[i];
@@ -357,6 +356,13 @@
 'Para a {empresa}, eu começaria por um workshop de Arteterapia com {atividade}, aproveitando {data_seg}, {ajuste}. Ninguém precisa saber desenhar: o foco é a pausa, não o resultado.\n\n' +
 '{promessa}\n\n' +
 'Posso te mandar um cronograma de exemplo montado para a {empresa}? Leva 1 dia e não tem compromisso.\n\n' +
+'{assinatura}' },
+      { id: 'email-evento', angulo: 'Evento corporativo (qualquer empresa)', assunto: 'Confraternização, integração ou data especial na {empresa}?',
+        corpo:
+'Olá, {contato}!\n\n' +
+'Sou a Larissa, da Elarah. A gente cria eventos corporativos com experiências que o time realmente quer viver — cerâmica, pintura, gastronomia, velas e mais de 20 opções — para confraternização, integração de novos, fim de ano, datas comemorativas ou reconhecimento de equipes.\n\n' +
+'Cuidamos de tudo: facilitadores, materiais, local (na empresa ou em um espaço parceiro) e fotos. E, se fizer sentido, esses encontros também podem virar um programa de saúde mental conectado à NR-1.\n\n' +
+'Tem algum evento no radar da {empresa} para os próximos meses? Te mando 3 ideias com valores.\n\n' +
 '{assinatura}' },
       { id: 'email-data', angulo: 'Gancho da próxima data forte', assunto: '{gancho} na {empresa}: já tem algo planejado?',
         corpo:
@@ -383,6 +389,8 @@
     linkedin: [
       { id: 'li-convite', angulo: 'Convite de conexão (até 300 caracteres)',
         corpo: 'Oi, {contato}! Sou a Larissa, arteterapeuta da Elarah Mental Health. Levamos workshops de Arteterapia para empresas (saúde mental / NR-1) e cuidamos de todo o cronograma. Adoraria trocar ideias sobre o time da {empresa}!' },
+      { id: 'li-evento', angulo: 'Evento corporativo (qualquer empresa)',
+        corpo: 'Oi, {contato}! Sou a Larissa, da Elarah. Criamos eventos corporativos com experiências criativas (cerâmica, pintura, gastronomia e +20 opções) para confraternização, integração e datas especiais, cuidando de tudo. Adoraria trocar ideias sobre o time da {empresa}!' },
       { id: 'li-followup', angulo: 'Depois que aceitar',
         corpo:
 'Obrigada por aceitar, {contato}! 💚\n\n' +
@@ -398,6 +406,11 @@
 'Olá! Aqui é a Larissa, da Elarah Mental Health 💚\n\n' +
 'A gente monta e executa o cronograma de saúde mental das empresas — pontual, semestral ou anual — com workshops de Arteterapia (pintura, argila, colagem, kintsugi) conduzidos por arteterapeutas, e o relatório pronto para a NR-1. O RH não precisa se preocupar com nada.\n\n' +
 'Com quem da {empresa} eu falo sobre ações para o time? (RH, Gente & Cultura ou SESMT)' },
+      { id: 'wa-evento', angulo: 'Evento corporativo (qualquer empresa)',
+        corpo:
+'Olá! Aqui é a Larissa, da Elarah.\n\n' +
+'A gente organiza eventos corporativos com experiências que o time adora — cerâmica, pintura, gastronomia, velas e mais de 20 opções — para confraternização, integração, fim de ano ou datas especiais. Cuidamos de tudo, na empresa ou em um espaço parceiro.\n\n' +
+'Com quem da {empresa} eu falo sobre eventos para o time?' },
       { id: 'wa-contato', angulo: 'Quando já tem o nome do RH',
         corpo: 'Oi, {contato}! Aqui é a Larissa, da Elarah Mental Health 💚 Pensei na {empresa} porque {dor}. A gente monta o cronograma do ano com a quantidade de encontros que vocês quiserem e cuida de tudo. Posso te mandar um modelo em PDF?' },
       { id: 'wa-data', angulo: 'Data próxima',
@@ -416,7 +429,19 @@
 '• "Já temos psicólogo / EAP" → "Ótimo! A gente complementa: o EAP atende quem já pediu ajuda; as experiências chegam em todo mundo, antes."\n' +
 '• "Sem orçamento" → "Dá pra começar com 1 encontro numa data forte, ou com gift cards no valor que couber."\n' +
 '• "Não tenho tempo pra organizar" → "Esse é justamente o ponto: a gente organiza tudo. Você só aprova."\n' +
-'• "Manda por e-mail" → "Mando agora. Pra personalizar: quantas pessoas são no time?"' }
+'• "Manda por e-mail" → "Mando agora. Pra personalizar: quantas pessoas são no time?"' },
+      { id: 'call-evento', angulo: 'Roteiro de ligação — evento corporativo',
+        corpo:
+'1) ABERTURA — "Oi, aqui é a Larissa, da Elarah. Você cuida de eventos ou ações para o time da {empresa}?"\n' +
+'   (Se não: "Quem seria a melhor pessoa? Pode me passar o e-mail dela?")\n\n' +
+'2) GANCHO — "A gente cria eventos corporativos com experiências criativas: cerâmica, pintura, gastronomia, velas e mais de 20 opções."\n\n' +
+'3) VALOR — "Serve para confraternização, integração de novos, fim de ano, datas comemorativas ou reconhecimento. Cuidamos de tudo — facilitadores, materiais, local e fotos."\n\n' +
+'4) PERGUNTA — "Vocês têm algum evento previsto para os próximos meses? O {gancho} está chegando."\n\n' +
+'5) FECHAMENTO — "Posso te mandar hoje 3 ideias com valores? Qual o melhor e-mail?"\n\n' +
+'OBJEÇÕES:\n' +
+'• "Já temos fornecedor" → "Ótimo! Posso mandar uma opção diferente para a próxima data? O time costuma amar sair do formato de sempre."\n' +
+'• "Sem orçamento" → "Dá pra começar pequeno, ou com gift cards no valor que couber."\n' +
+'• "Manda por e-mail" → "Mando agora. Quantas pessoas são no time?"' }
     ]
   };
 

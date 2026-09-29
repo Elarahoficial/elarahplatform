@@ -18,7 +18,7 @@ cronogramas (pontual, semestral ou anual) de experiências manuais.
 
 - **Visão geral** — eventos dos próximos 30 dias, faturamento, funil, meta de prospecção (100/semana), datas pra oferecer ao RH, pedidos do site.
 - **O que fazer hoje** — lista montada sozinha: meta de abordagens do dia, follow-ups, pedidos do site, eventos da semana, orçamentos parados, check-ins, janela de venda das datas.
-- **Agenda & datas do RH** — eventos in company / ateliê / online / kit (do orçamento ao realizado), datas fortes pro RH, agenda de captação e o "Hora de oferecer" com pitch pronto.
+- **Agenda & datas do RH** — eventos in company / ateliê / kit em casa (do orçamento ao realizado), datas fortes pro RH, agenda de captação e o "Hora de oferecer" com pitch pronto.
 - **Acompanhamento semanal** — check-in por empresa (termômetro 1–5, adesão, feito, próximo passo, 🚩 alerta).
 - **Cronogramas** — gera o plano pontual/semestral/anual em 1 minuto, com estimativa de investimento; copia texto, imprime em PDF, salva.
 - **Pedidos do site** — leads da landing page.
