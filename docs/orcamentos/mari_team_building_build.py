@@ -50,6 +50,16 @@ def opt3(foto, pos, local, nome, desc, preco_html):
       </div>'''
 
 
+def bcard(foto, pos, titulo, desc):
+    return f'''      <div class="opt">
+        <div class="oph" style="aspect-ratio:4/3">{img(foto, titulo, pos)}</div>
+        <div class="ob">
+          <h4>{titulo}</h4>
+          <p>{desc}</p>
+        </div>
+      </div>'''
+
+
 def egrid3(items):
     figs = "\n".join(f'      <figure>{img(s, c, p)}<figcaption>{c}</figcaption></figure>' for s, p, c in items)
     return f'<div class="egrid">\n{figs}\n    </div>'
@@ -79,6 +89,22 @@ cover = f'''
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Team building · Mari")}
+  </section>'''
+
+levajunto = f'''
+  <section class="slide">
+{head_simple("O que o time leva junto")}
+    <span class="eyebrow orange">◆ O que o time leva junto</span>
+    <h2>Team building que <em>ninguém finge gostar</em></h2>
+    <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos — <strong>sem hierarquia, sem quem sabe mais e quem sabe menos.</strong> 🧡</p>
+    <div class="rule"></div>
+    <div class="opts" style="grid-template-columns:repeat(3,1fr)">
+{bcard("mol-experiencia.webp", "center 30%", "Conversa que não rola no escritório", "As horas lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b>")}
+{bcard("tufting1.jpg", "center 30%", "Todo mundo no mesmo pé", "Ninguém precisa ter experiência. <b>Liderança e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.")}
+{bcard("ceramica2.jpg", "center 50%", "Fica depois do dia", "O que foi criado continua depois do encontro — <b>seja como peça individual ou como memória coletiva</b> do time.")}
+    </div>
+    <div class="bnote" style="margin-top:16px">◆ A gente cuida de tudo: profissional que conduz, material, estrutura e montagem. O RH só precisa avisar a data e reunir o time — e, se quiserem, a gente reserva um momento de fala da liderança no meio do encontro. 🌿</div>
+    {foot("O que o time leva junto")}
   </section>'''
 
 opcoes = f'''
@@ -268,7 +294,7 @@ contato = f'''
     {foot("Como funciona & contato")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + opcoes + vela + experiencia + atmosfera + tufting + comidinhas + investimento + contato + '\n\n</div>\n\n'
+deck = '<div class="deck">\n' + cover + levajunto + opcoes + vela + experiencia + atmosfera + tufting + comidinhas + investimento + contato + '\n\n</div>\n\n'
 html = head + deck + tail
 out = ROOT + "/proposta-mari-team-building.html"
 io.open(out, "w", encoding="utf-8").write(html)
