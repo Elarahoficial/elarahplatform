@@ -496,6 +496,84 @@
   .ginv .ginc b{color:var(--navy)}
   .statement h2{font-size:44px;line-height:1.08}
 </style>
+
+<style>
+  /* cardapio (menu comparativo) */
+  .menu{display:flex;flex-direction:column;gap:11px;margin-top:18px}
+  .menu-row{display:grid;grid-template-columns:66px 1fr auto auto;gap:20px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:11px 20px 11px 11px;box-shadow:0 12px 30px -26px rgba(0,0,0,.32)}
+  .menu-row .mthumb{width:66px;height:66px;border-radius:11px;overflow:hidden;background:#eee}
+  .menu-row .mthumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .menu-row .mname{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);line-height:1.08}
+  .menu-row .mrat{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.02em}
+  .menu-row .mdur{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;white-space:nowrap}
+  .menu-row .mprice{text-align:right;white-space:nowrap;min-width:96px}
+  .menu-row .mprice b{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);display:block;line-height:1}
+  .menu-row .mprice small{font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .menu-row .mprice .todo{font-family:'DM Sans',sans-serif;font-size:12px;font-style:italic;color:var(--orange-dark);font-weight:600}
+  /* filmstrip (paginas individuais) */
+  .filmstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:16px}
+  .filmstrip.two{grid-template-columns:1fr 1fr}
+  .filmstrip figure{margin:0;border-radius:15px;overflow:hidden;position:relative;height:240px;border:1px solid var(--line);box-shadow:0 14px 32px -26px rgba(0,0,0,.34)}
+  .filmstrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .filmstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 13px 10px;color:#fff;font-size:10.5px;font-weight:600;letter-spacing:.05em;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .expfoot{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;margin-top:20px;align-items:center}
+  .expfoot .why{font-size:13px;color:var(--navy-soft);line-height:1.5}
+  .expfoot .why b{color:var(--navy)}
+  .expfoot .inc{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.5}
+  .ginv.r{text-align:right}
+  /* comparativo */
+  .ctable{width:100%;border-collapse:collapse;margin-top:18px;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px -30px rgba(0,0,0,.32)}
+  .ctable th{background:var(--navy);color:#fff;text-align:left;padding:13px 22px;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:700}
+  .ctable th.r{text-align:right}
+  .ctable td{padding:15px 22px;border-bottom:1px solid var(--line);background:var(--card);vertical-align:middle}
+  .ctable tr:last-child td{border-bottom:none}
+  .ctable tr:nth-child(even) td{background:#FBF6EF}
+  .ctable td.exp{font-weight:700;color:var(--navy);font-size:14.5px}
+  .ctable td.exp small{display:block;font-weight:600;color:var(--muted);font-size:10.5px;letter-spacing:.02em;margin-top:2px}
+  .ctable td.grp{text-align:right;font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy);white-space:nowrap}
+  .ctable td.pp{text-align:right;color:var(--muted);font-size:12.5px;font-weight:600;white-space:nowrap}
+  .ctable td .todo{font-family:'DM Sans',sans-serif;font-size:12.5px;font-style:italic;color:var(--orange-dark);font-weight:600}
+  .statement h2{font-size:44px;line-height:1.08}
+</style>
+
+<style>
+  /* cardapio (menu comparativo) */
+  .menu{display:flex;flex-direction:column;gap:11px;margin-top:18px}
+  .menu-row{display:grid;grid-template-columns:66px 1fr auto auto;gap:20px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:15px;padding:11px 20px 11px 11px;box-shadow:0 12px 30px -26px rgba(0,0,0,.32)}
+  .menu-row .mthumb{width:66px;height:66px;border-radius:11px;overflow:hidden;background:#eee}
+  .menu-row .mthumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .menu-row .mname{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);line-height:1.08}
+  .menu-row .mrat{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.02em}
+  .menu-row .mdur{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;white-space:nowrap}
+  .menu-row .mprice{text-align:right;white-space:nowrap;min-width:96px}
+  .menu-row .mprice b{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);display:block;line-height:1}
+  .menu-row .mprice small{font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .menu-row .mprice .todo{font-family:'DM Sans',sans-serif;font-size:12px;font-style:italic;color:var(--orange-dark);font-weight:600}
+  /* filmstrip (paginas individuais) */
+  .filmstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:16px}
+  .filmstrip.two{grid-template-columns:1fr 1fr}
+  .filmstrip figure{margin:0;border-radius:15px;overflow:hidden;position:relative;height:240px;border:1px solid var(--line);box-shadow:0 14px 32px -26px rgba(0,0,0,.34)}
+  .filmstrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .filmstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 13px 10px;color:#fff;font-size:10.5px;font-weight:600;letter-spacing:.05em;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .expfoot{display:grid;grid-template-columns:1.1fr .9fr;gap:34px;margin-top:20px;align-items:center}
+  .expfoot .why{font-size:13px;color:var(--navy-soft);line-height:1.5}
+  .expfoot .why b{color:var(--navy)}
+  .expfoot .inc{font-size:11px;color:var(--muted);margin-top:9px;line-height:1.5}
+  .ginv.r{text-align:right}
+  /* comparativo */
+  .ctable{width:100%;border-collapse:collapse;margin-top:18px;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px -30px rgba(0,0,0,.32)}
+  .ctable th{background:var(--navy);color:#fff;text-align:left;padding:13px 22px;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:700}
+  .ctable th.r{text-align:right}
+  .ctable td{padding:15px 22px;border-bottom:1px solid var(--line);background:var(--card);vertical-align:middle}
+  .ctable tr:last-child td{border-bottom:none}
+  .ctable tr:nth-child(even) td{background:#FBF6EF}
+  .ctable td.exp{font-weight:700;color:var(--navy);font-size:14.5px}
+  .ctable td.exp small{display:block;font-weight:600;color:var(--muted);font-size:10.5px;letter-spacing:.02em;margin-top:2px}
+  .ctable td.grp{text-align:right;font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy);white-space:nowrap}
+  .ctable td.pp{text-align:right;color:var(--muted);font-size:12.5px;font-weight:600;white-space:nowrap}
+  .ctable td .todo{font-family:'DM Sans',sans-serif;font-size:12.5px;font-style:italic;color:var(--orange-dark);font-weight:600}
+  .statement h2{font-size:44px;line-height:1.08}
+</style>
 </head>
 <body>
 
@@ -513,7 +591,7 @@
       <div>
         <span class="eyebrow">✦ Um encontro sensorial &amp; autoral</span>
         <h1>Uma manhã para <em>criar juntas</em></h1>
-        <p class="lead">Uma experiência íntima e feminina para receber suas convidadas na <strong>Awake Health</strong>. Uma manhã de <strong>pausa, criação e beleza</strong> — cada uma coloca a mão na massa e leva uma lembrança feita por ela.</p>
+        <p class="lead">Uma experiência íntima e feminina para a Rafaella receber suas <strong>pacientes e convidadas</strong> na Awake Health. Uma manhã de <strong>pausa, criação e beleza</strong> — cada uma coloca a mão na massa e leva uma lembrança feita por ela.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>até 15</b> convidadas</span>
@@ -523,7 +601,7 @@
           <span class="chip">Awake Health · Jardim América</span>
         </div>
       </div>
-      <div class="cover-photo"><img src="assets/pinturatacaaaa.jpg" alt="Detalhe editorial de uma taça pintada à mão" style="object-position:center 40%"></div>
+      <div class="cover-photo"><img src="assets/pinturatacameninas.jpg" alt="Mulheres sorrindo enquanto pintam taças" style="object-position:center 28%"></div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Awake Health · Rafaella</span></div>
@@ -535,11 +613,14 @@
     </div>
     <span class="eyebrow orange">◆ A atmosfera do encontro</span>
     <h2>Uma manhã <em>para os sentidos</em></h2>
-    <p class="lead">Mãos que criam, materiais delicados e boas conversas. Uma manhã feminina, leve e sofisticada — do tipo que fica na memória.</p>
-    <div class="vibe">
-      <figure><img src="assets/pinturataca.jpg" alt="Mãos pintando uma taça de vidro" style="object-position:center 45%"><figcaption>Mãos que criam</figcaption></figure>
-      <figure><img src="assets/piranha-cristais-materiais.jpg" alt="Mesa com pedras, cristais e materiais" style="object-position:center 40%"><figcaption>Materiais &amp; texturas</figcaption></figure>
-      <figure><img src="assets/lipbalm1.jpg" alt="Ingredientes e cores de uma experiência beauty" style="object-position:center 50%"><figcaption>Detalhes beauty</figcaption></figure>
+    <p class="lead">Mãos que criam, materiais delicados e boas conversas. Cuidado, criatividade e conexão — uma manhã feminina, leve e sofisticada.</p>
+    <div class="gstrip">
+      <figure><img src="assets/pinturataca.jpg" alt="Mãos pintando uma taça" style="object-position:center 45%"><figcaption>Mãos que criam</figcaption></figure>
+      <figure><img src="assets/vela-grupo-oficina.jpg" alt="Mulheres criando juntas" style="object-position:center 35%"><figcaption>Criar junto</figcaption></figure>
+      <figure><img src="assets/lipbalm1.jpg" alt="Ingredientes e cores beauty" style="object-position:center 50%"><figcaption>Detalhes beauty</figcaption></figure>
+      <figure><img src="assets/piranha-cristais-materiais.jpg" alt="Materiais e pedras delicadas" style="object-position:center 40%"><figcaption>Materiais delicados</figcaption></figure>
+      <figure><img src="assets/vela-aromatica-real.jpg" alt="Aromas e texturas" style="object-position:center 45%"><figcaption>Aromas &amp; bem-estar</figcaption></figure>
+      <figure><img src="assets/charm-bolsa.jpg" alt="Peça finalizada" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A atmosfera do encontro</span></div>
   </section>
@@ -549,7 +630,7 @@
       <div class="head-right"><span class="kicker">A Elarah cuida de tudo</span></div>
     </div>
     <span class="eyebrow orange">◆ Sem preocupação com a operação</span>
-    <h2>Vocês recebem as convidadas.<br>A Elarah cuida <em>do resto</em>.</h2>
+    <h2>Vocês recebem as pacientes e convidadas.<br>A Elarah cuida <em>do resto</em>.</h2>
     <p class="lead">A experiência acontece na própria Awake — a produção inteira é nossa.</p>
     <div class="rule"></div>
     <div class="grid3">
@@ -562,22 +643,69 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Cardápio de experiências</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Escolham a cara da manhã</span>
+    <h2>O <em>cardápio</em> de experiências</h2>
+    <p class="lead">Uma curadoria para comparar rapidamente — cada uma vira a atividade e a lembrança da manhã. Todas com cerca de 40 min.</p>
+    <div class="menu">
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/lipbalm.jpg" alt="Lip Balm Autoral"></div>
+        <div><div class="mname">Lip Balm Autoral</div><div class="mrat">autocuidado · beauty · personalização</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><b>~ R$ 280</b><small>por pessoa</small></div>
+      </div>
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/pinturatacaaaa.jpg" alt="Pintura em Taça"></div>
+        <div><div class="mname">Pintura em Taça</div><div class="mrat">criatividade · leveza · interação</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><b>~ R$ 180</b><small>por pessoa</small></div>
+      </div>
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/charm-bolsa.jpg" alt="Charm de Bolsa"></div>
+        <div><div class="mname">Charm de Bolsa</div><div class="mrat">personalização · moda · lembrança afetiva</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><b>~ R$ 179</b><small>por pessoa</small></div>
+      </div>
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/vela-aromatica-real.jpg" alt="Vela Aromática"></div>
+        <div><div class="mname">Vela Aromática</div><div class="mrat">aroma · ritual · bem-estar</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><span class="todo">a confirmar</span></div>
+      </div>
+      <div class="menu-row">
+        <div class="mthumb"><img src="assets/aromatizador-corp.jpg" alt="Aromatizador de Ambiente"></div>
+        <div><div class="mname">Aromatizador de Ambiente</div><div class="mrat">aroma · casa · wellness</div></div>
+        <div class="mdur">40 min</div>
+        <div class="mprice"><span class="todo">a confirmar</span></div>
+      </div>
+    </div>
+    <p class="fineprint">✦ Valores por pessoa (aproximados) · experiência para até 15 convidadas, na Awake. Vela Aromática e Aromatizador de Ambiente com valores a confirmar.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Cardápio de experiências</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">A experiência</span></div>
     </div>
     <span class="eyebrow orange">◆ Autocuidado · universo beauty · autoral</span>
     <h2>Lip Balm <em>Autoral</em></h2>
-    <p class="lead">Um ritual de autocuidado: cada convidada cria o próprio lip balm natural — aromas, cores e textura. Beleza autoral, no clima da Awake.</p>
-    <div class="phero">
-      <div class="pheroph"><img src="assets/lipbalm.jpg" alt="Lip Balm Autoral" style="object-position:center 50%"></div>
-      <div style="display:flex;flex-direction:column;justify-content:center">
-        <span class="sugtag">✦ Nossa sugestão · maior aderência ao encontro</span>
-        <div class="ginv">
-          <span class="gl">Investimento do grupo</span>
-          <div class="gbig">R$ 4.200</div>
-          <div class="gsub">Experiência completa para até 15 convidadas</div>
-          <div class="gpp">equivale a aproximadamente <b>R$ 280</b> por participante</div>
-          <div class="ginc">Inclui a experiência na <b>Awake</b>, materiais, condução, equipe e montagem.</div>
-        </div>
+    <p class="lead">Cada convidada cria o próprio lip balm natural — aromas, cores e textura.</p>
+    <div class="filmstrip two">
+      <figure><img src="assets/lipbalm.jpg" alt="A criação" style="object-position:center 50%"><figcaption>A criação</figcaption></figure>
+      <figure><img src="assets/lipbalm1.jpg" alt="Aromas &amp; cores" style="object-position:center 50%"><figcaption>Aromas &amp; cores</figcaption></figure>
+    </div>
+    <div class="expfoot">
+      <div class="why">
+        <div style="margin-bottom:11px"><span class="sugtag" style="margin-bottom:0">✦ Nossa sugestão · maior aderência ao encontro</span></div>
+        <b>Por que combina:</b> autocuidado que conversa direto com o universo beauty da Awake — e cada uma leva o seu.
+        <div class="inc">Inclui experiência na Awake, materiais, condução, equipe e montagem.</div>
+      </div>
+      <div class="ginv r">
+        <span class="gl">Investimento do grupo</span>
+        <div class="gbig">R$ 4.200</div>
+        <div class="gsub">Experiência completa para até 15 participantes</div>
+        <div class="gpp">equivale a aproximadamente <b>R$ 280</b> por pessoa</div>
       </div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Lip Balm Autoral</span></div>
@@ -589,17 +717,22 @@
     </div>
     <span class="eyebrow orange">◆ Criatividade · leveza · interação</span>
     <h2>Pintura de <em>Taça</em></h2>
-    <p class="lead">Cada uma personaliza a própria taça de vidro, no seu tempo e traço. Leve e descontraída — a experiência que solta o grupo.</p>
-    <div class="phero">
-      <div class="pheroph"><img src="assets/pinturataca.jpg" alt="Pintura de Taça" style="object-position:center 45%"></div>
-      <div style="display:flex;flex-direction:column;justify-content:center">
-        <div class="ginv">
-          <span class="gl">Investimento do grupo</span>
-          <div class="gbig">R$ 2.700</div>
-          <div class="gsub">Experiência completa para até 15 convidadas</div>
-          <div class="gpp">equivale a aproximadamente <b>R$ 180</b> por participante</div>
-          <div class="ginc">Inclui a experiência na <b>Awake</b>, materiais, condução, equipe e montagem.</div>
-        </div>
+    <p class="lead">Cada uma personaliza a própria taça de vidro, no seu tempo e no seu traço.</p>
+    <div class="filmstrip">
+      <figure><img src="assets/pinturataca.jpg" alt="A experiência" style="object-position:center 45%"><figcaption>A experiência</figcaption></figure>
+      <figure><img src="assets/pinturatacaaaa.jpg" alt="Os detalhes" style="object-position:center 40%"><figcaption>Os detalhes</figcaption></figure>
+      <figure><img src="assets/pintura-taca.jpg" alt="O que fica" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
+    </div>
+    <div class="expfoot">
+      <div class="why">
+        <b>Por que combina:</b> leve e descontraída, solta o grupo e rende conversa e boas risadas.
+        <div class="inc">Inclui experiência na Awake, materiais, condução, equipe e montagem.</div>
+      </div>
+      <div class="ginv r">
+        <span class="gl">Investimento do grupo</span>
+        <div class="gbig">R$ 2.700</div>
+        <div class="gsub">Experiência completa para até 15 participantes</div>
+        <div class="gpp">equivale a aproximadamente <b>R$ 180</b> por pessoa</div>
       </div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Pintura de Taça</span></div>
@@ -611,17 +744,22 @@
     </div>
     <span class="eyebrow orange">◆ Personalização · moda · lembrança afetiva</span>
     <h2>Charm de <em>Bolsa</em></h2>
-    <p class="lead">Cada convidada compõe um charm exclusivo — pedras, letras e detalhes. Uma lembrança que continua com ela no dia a dia.</p>
-    <div class="phero">
-      <div class="pheroph"><img src="assets/charm-bolsa.jpg" alt="Charm de Bolsa" style="object-position:center 50%"></div>
-      <div style="display:flex;flex-direction:column;justify-content:center">
-        <div class="ginv">
-          <span class="gl">Investimento do grupo</span>
-          <div class="gbig">R$ 2.685</div>
-          <div class="gsub">Experiência completa para até 15 convidadas</div>
-          <div class="gpp">equivale a aproximadamente <b>R$ 179</b> por participante</div>
-          <div class="ginc">Inclui a experiência na <b>Awake</b>, materiais, condução, equipe e montagem.</div>
-        </div>
+    <p class="lead">Cada convidada compõe um charm exclusivo — pedras, letras e detalhes.</p>
+    <div class="filmstrip">
+      <figure><img src="assets/piranha-cristais-materiais.jpg" alt="A curadoria" style="object-position:center 40%"><figcaption>A curadoria</figcaption></figure>
+      <figure><img src="assets/charmbar.jpg" alt="Os charms" style="object-position:center 50%"><figcaption>Os charms</figcaption></figure>
+      <figure><img src="assets/charm-bolsa.jpg" alt="O que fica" style="object-position:center 50%"><figcaption>O que fica</figcaption></figure>
+    </div>
+    <div class="expfoot">
+      <div class="why">
+        <b>Por que combina:</b> personalização afetiva: uma lembrança que continua com ela no dia a dia.
+        <div class="inc">Inclui experiência na Awake, materiais, condução, equipe e montagem.</div>
+      </div>
+      <div class="ginv r">
+        <span class="gl">Investimento do grupo</span>
+        <div class="gbig">R$ 2.685</div>
+        <div class="gsub">Experiência completa para até 15 participantes</div>
+        <div class="gpp">equivale a aproximadamente <b>R$ 179</b> por pessoa</div>
       </div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Charm de Bolsa</span></div>
@@ -629,32 +767,25 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Opcionais</span></div>
+      <div class="head-right"><span class="kicker">Comparativo de investimento</span></div>
     </div>
-    <span class="eyebrow orange">◆ Para deixar ainda mais especial</span>
-    <h2>Camadas <em>sob medida</em></h2>
-    <p class="lead">Toques extras para elevar o encontro, se fizer sentido para vocês.</p>
-    <div class="vgrid">
-      <div class="vcard">
-        <div class="vph"><img src="assets/kit2esa.jpg" alt="Um presente delicado para as convidadas" style="object-position:center 50%"></div>
-        <div class="vb">
-          <span class="vt">Opcional</span>
-          <h3>Um mimo a mais</h3>
-          <p>Um presente pensado para as convidadas, alinhado ao universo da Awake e ao clima da manhã.</p>
-          <span style="margin-top:auto;padding-top:12px;font-family:'DM Serif Display',serif;font-size:19px;color:var(--orange-dark)">Sob consulta</span>
-        </div>
-      </div>
-      <div class="vcard">
-        <div class="vph"><img src="assets/abraco-elegante.jpg" alt="Registro intimista do encontro" style="object-position:center 25%"></div>
-        <div class="vb">
-          <span class="vt">Opcional</span>
-          <h3>Registro fotográfico</h3>
-          <p>Cobertura intimista da experiência — processo, mãos, detalhes e interação, prontos para as redes da Rafaella e da Awake.</p>
-          <span style="margin-top:auto;padding-top:12px;font-family:'DM Serif Display',serif;font-size:19px;color:var(--orange-dark)">Sob consulta</span>
-        </div>
-      </div>
-    </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Opcionais</span></div>
+    <span class="eyebrow orange">◆ Fácil de comparar</span>
+    <h2>Investimento <em>por experiência</em></h2>
+    <p class="lead">O valor principal é o do grupo fechado, para até 15 participantes. A média por pessoa é só uma referência.</p>
+    <table class="ctable">
+      <thead>
+        <tr><th>Experiência</th><th class="r">Investimento do grupo</th><th class="r">Média por pessoa</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="exp">Lip Balm Autoral<small>Nossa sugestão</small></td><td class="grp">R$ 4.200</td><td class="pp">R$ 280</td></tr>
+        <tr><td class="exp">Pintura em Taça</td><td class="grp">R$ 2.700</td><td class="pp">R$ 180</td></tr>
+        <tr><td class="exp">Charm de Bolsa</td><td class="grp">R$ 2.685</td><td class="pp">R$ 179</td></tr>
+        <tr><td class="exp">Vela Aromática</td><td class="grp"><span class="todo">a confirmar</span></td><td class="pp"><span class="todo">a confirmar</span></td></tr>
+        <tr><td class="exp">Aromatizador de Ambiente</td><td class="grp"><span class="todo">a confirmar</span></td><td class="pp"><span class="todo">a confirmar</span></td></tr>
+      </tbody>
+    </table>
+    <p class="fineprint">✦ Investimento do grupo para até 15 participantes · média por pessoa aproximada. Inclui experiência na Awake, materiais, condução, equipe e montagem. Vela Aromática e Aromatizador de Ambiente com valores a confirmar.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Comparativo de investimento</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -663,12 +794,12 @@
     </div>
     <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>Vamos <em>desenhar juntas</em></h2>
-    <p class="lead">Me conta qual experiência mais combina com a manhã de vocês que eu cuido de toda a produção e confirmo a disponibilidade para a data. 🤍</p>
+    <p class="lead">Me conta qual experiência mais combina com a manhã de vocês que eu confirmo a disponibilidade, alinho os detalhes e cuido de toda a produção. 🤍</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham a experiência</h3><p>A que mais combina com a manhã e com as convidadas.</p></div>
-      <div class="infocard"><div class="ico">2️⃣</div><h3>Cuidamos de tudo</h3><p>Fornecedor, materiais, equipe e montagem por nossa conta.</p></div>
-      <div class="infocard"><div class="ico">3️⃣</div><h3>Vocês só recebem</h3><p>No dia, é só receber as convidadas e viver o momento.</p></div>
+      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham</h3><p>A experiência que mais combina com a manhã e com as convidadas.</p></div>
+      <div class="infocard"><div class="ico">2️⃣</div><h3>Confirmamos &amp; alinhamos</h3><p>Disponibilidade, data e todos os detalhes com você.</p></div>
+      <div class="infocard"><div class="ico">3️⃣</div><h3>Cuidamos de tudo</h3><p>No dia, é só receber as convidadas e viver o momento.</p></div>
     </div>
     <div class="quote">
       Rafaella, é só me dar o sinal que eu deixo tudo pronto para a Awake. 🤍<br>
