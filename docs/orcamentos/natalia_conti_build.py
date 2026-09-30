@@ -1,12 +1,18 @@
-# Proposta Natália Conti · Aniversário · 28/11/2026 · 6 pessoas · Morumbi
-# Segue EXATAMENTE o modelo do Portfólio Aniversário (mesma identidade, estrutura e CSS).
-import io
+# Proposta Elarah · Aniversario Natalia Conti · 6 pessoas · 28/11/2026 · Morumbi
+# Formato Elarah Ate Voce. Segue o modelo do Portfolio Aniversario (base terracota/navy).
+# Clima intimista entre amigas, sofisticado e acolhedor. Valores exatos do briefing.
+import io, re
 
 ROOT = "/home/user/elarahplatform"
-ref = io.open(ROOT + "/experiencia-portfolio-aniversario.html", encoding="utf-8").read()
-
+# base: reaproveita o head/tail do deck de aniversario ja aprovado (todos os componentes + CSS)
+ref = io.open(ROOT + "/orcamento-adriana.html", encoding="utf-8").read()
 head = ref.split('<div class="deck">')[0]
 tail = '<div class="toolbar">' + ref.split('<div class="toolbar">', 1)[1]
+
+head = re.sub(r'<title>.*?</title>', '<title>Natália Conti · Aniversário · Elarah</title>', head, count=1, flags=re.DOTALL)
+head = re.sub(r'<meta name="description"[^>]*>',
+              '<meta name="description" content="Proposta Elarah para o aniversário da Natália Conti: uma comemoração intimista entre amigas, no formato Elarah Até Você.">',
+              head, count=1)
 
 
 def foot(right):
@@ -34,147 +40,140 @@ def head_simple(kicker):
     </div>'''
 
 
-def xcard(num, cat, name, desc, photo, price):
-    return f'''      <div class="xcard">
-        <div class="xph"><span class="xnum">{num}</span><div class="xpr"><small>por pessoa</small><b>{price}</b></div>{photo}</div>
-        <div class="xb">
-          <span class="xcat">{cat}</span>
-          <h4>{name}</h4>
-          <p>{desc}</p>
-        </div>
-      </div>'''
+def mm(src, alt, name, desc, price, pos="center 50%"):
+    return (f'<div class="mm"><div class="mmph">{img(src, alt, pos)}</div>'
+            f'<div class="mmb"><div class="mmn">{name}</div><div class="mmd">{desc}</div>'
+            f'<div class="mmprice">A partir de <b>{price}</b>/pessoa</div></div></div>')
 
 
-PROOF = "Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)"
-
-# 6 experiências (ordem = curadoria diversa)
-EXPS = [
-    ("01", "Pintura", "Pintura em taça", "Personalize a própria taça durante a experiência e leve a peça pra casa.", "pinturataca.jpg", "center 45%", "R$ 249"),
-    ("02", "Papelaria &amp; memórias", "Scrapbook", "Monte um álbum ou caderninho de memórias personalizado, do seu jeito.", "colagemamor.jpg", "center 50%", "R$ 259"),
-    ("03", "Personalização", "Berloque de bolsa", "Crie seu próprio charm e personalize o acessório com a sua cara.", "charm-bolsa.jpg", "center 50%", "R$ 279"),
-    ("04", "Perfumaria", "Perfume autoral", "Crie a própria fragrância, escolhendo notas e combinações.", "perfumaria-oficina.jpg", "center 55%", "R$ 279"),
-    ("05", "Floral", "Buquê de flores", "Monte o próprio buquê autoral, escolhendo e compondo as flores.", "buque.jpg", "center 45%", "R$ 289"),
-    ("06", "Cerâmica", "Acessório em cerâmica", "Faça pequenos acessórios em cerâmica — colares, brincos e mimos.", "ceramica-acessorio.jpg", "center 40%", "R$ 289"),
-]
-
+# ===== 1 · CAPA =====
 cover = f'''
   <section class="slide">
-{head_block("Portfólio de experiências · Aniversário", "Natália", "faz aniversário", "6 pessoas · 28/11")}
+{head_block("Aniversário · mão na massa", "Natália", "Conti", "Morumbi · 28/11")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Aniversário · Elarah Até Você</span>
-        <h1>Escolha a sua <em>experiência</em></h1>
-        <p class="lead">Reunimos uma curadoria de experiências criativas pra vocês escolherem a cara do aniversário — de pintura a perfume, cerâmica e flores. Cada uma vira a atividade <strong>e</strong> a lembrança, tudo numa coisa só. É só apontar a favorita. ✨</p>
+        <span class="eyebrow">✦ Um aniversário criativo</span>
+        <h1>Um aniversário para <em>criar &amp; celebrar</em></h1>
+        <p class="lead">Uma comemoração diferente para viver entre amigas: <strong>mão na massa</strong>, boas conversas, taças, flores e uma <strong>criação para levar pra casa</strong>. 🤍</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>6</b> pessoas</span>
           <span class="chip"><b>28/11</b> · sábado</span>
-          <span class="chip">Morumbi · SP</span>
+        </div>
+        <div class="chips" style="margin-top:10px">
+          <span class="chip">Morumbi</span>
+          <span class="chip">Elarah até você</span>
         </div>
       </div>
-      <div class="cover-photo">{img("capa-croche-cafe.jpg", "Amigas rindo numa experiência criativa com café", "center 28%")}</div>
+      <div class="cover-photo">{img("aniversario-mesa-real.jpg", "Amigas criando juntas em uma mesa bonita e cheia de flores", "center 35%")}</div>
     </div>
-    <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
-    {foot("Portfólio de experiências")}
+    {foot("Aniversário · Natália")}
   </section>'''
 
-intro = f'''
+# ===== 2 · CONCEITO =====
+conceito = f'''
   <section class="slide">
-{head_simple("O formato")}
-    <span class="eyebrow orange">◆ Elarah Até Você</span>
-    <h2>A experiência vai até <em>vocês</em></h2>
-    <p class="lead">A gente leva a experiência inteira até onde vocês estiverem — com artista, materiais e tudo montado. É só escolher a favorita e curtir o dia com quem você ama. 🤍</p>
-    <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><div class="ico">🎨</div><h3>Criativo &amp; leve</h3><p>Cada uma cria a própria peça, do seu jeito — sem precisar de experiência.</p></div>
-      <div class="infocard"><div class="ico">🤍</div><h3>Só de vocês</h3><p>Grupo fechado de 6, com artista acompanhando de perto.</p></div>
-      <div class="infocard"><div class="ico">✨</div><h3>Tudo montado</h3><p>Chegamos antes, conduzimos e desmontamos no fim. Vocês só aproveitam.</p></div>
+{head_simple("O conceito")}
+    <span class="eyebrow orange">◆ A proposta</span>
+    <h2>Criar, conversar e <em>comemorar</em></h2>
+    <p class="lead">Trocar a comemoração tradicional por uma experiência <strong>leve e cheia de afeto</strong> — daquelas em que todo mundo <strong>cria, conversa, ri</strong> e ainda leva uma lembrança feita à mão.</p>
+    <div class="pil3">
+      <div class="p"><div class="pt">Criar</div><div class="pd">Uma experiência de mão na massa: cada uma cria a própria peça, no seu ritmo.</div></div>
+      <div class="p"><div class="pt">Celebrar</div><div class="pd">Tempo para conversar, brindar e aproveitar o momento entre amigas.</div></div>
+      <div class="p"><div class="pt">Levar uma lembrança</div><div class="pd">No final, cada pessoa leva pra casa a criação feita por ela.</div></div>
     </div>
-    <div class="bnote">◆ Local a definir na região do Morumbi — podemos realizar a experiência na residência, condomínio ou avaliar um café próximo. 📍</div>
-    {foot("O formato · Elarah Até Você")}
+    <div class="gstrip" style="margin-top:16px">
+      <figure>{img("ceramica-meninas.jpg", "Amigas rindo durante a experiência", "center 30%")}<figcaption>Entre amigas</figcaption></figure>
+      <figure>{img("agora-selfie.jpg", "Mulheres rindo à mesa", "center 35%")}<figcaption>Muita risada</figcaption></figure>
+      <figure>{img("agora-pintura.jpg", "Mãos criando e pintando", "center 40%")}<figcaption>Mãos criando</figcaption></figure>
+      <figure>{img("agora-mesa.jpg", "Mesa posta com flores e velas", "center 50%")}<figcaption>Mesa posta</figcaption></figure>
+      <figure>{img("aniv-decor.jpg", "Flores, velas e clima de comemoração", "center 40%")}<figcaption>Flores &amp; clima</figcaption></figure>
+      <figure>{img("pintura-taca-brinde.jpg", "Brinde com as taças", "center 40%")}<figcaption>Um brinde</figcaption></figure>
+    </div>
+    {foot("O conceito")}
   </section>'''
 
-vibe = f'''
+# ===== 3 · CARDÁPIO =====
+cardapio = f'''
   <section class="slide">
-{head_simple("A vibe")}
-    <span class="eyebrow orange">◆ O que fica de verdade</span>
-    <h2>Amigas, risada e <em>memória</em></h2>
-    <p class="lead">No fim, o que fica não é só a peça — é a tarde inteira de conversa, mão na massa e foto boa. Um aniversário do jeitinho de vocês. 💛</p>
-    <div class="egrid">
-      <figure>{img("antonella-vibe-risada.jpg", "Amigas rindo enquanto criam juntas", "center 30%")}<figcaption>Rir e criar juntas</figcaption></figure>
-      <figure>{img("pintura-grupo.jpg", "Grupo reunido pintando", "center 40%")}<figcaption>Mão na massa</figcaption></figure>
-      <figure>{img("macaron-risada.jpg", "Amigas rindo na experiência", "center 30%")}<figcaption>Muita risada</figcaption></figure>
-      <figure>{img("abraco-elegante.jpg", "Amigas se reencontrando", "center 25%")}<figcaption>Entre amigas</figcaption></figure>
-      <figure>{img("vibe-risada.jpg", "Momento leve criando à mão", "center 20%")}<figcaption>No clima da experiência</figcaption></figure>
-      <figure>{img("encontro-1.jpg", "Amigas curtindo o momento juntas", "center 25%")}<figcaption>Um momento de vocês</figcaption></figure>
-    </div>
-    {foot("A vibe da experiência")}
-  </section>'''
-
-vitrine = f'''
-  <section class="slide">
-{head_simple("A vitrine")}
+{head_simple("O cardápio")}
     <span class="eyebrow orange">◆ Escolham a favorita</span>
-    <h2>As <em>experiências</em></h2>
-    <div class="xgrid">
-{chr(10).join(xcard(n, c, nm, d, img(src, nm, pos), pr) for n, c, nm, d, src, pos, pr in EXPS)}
+    <h2>Qual tem <em>mais a cara de vocês?</em></h2>
+    <p class="lead">Um cardápio de experiências para <strong>criar entre amigas</strong> — todas cabem no budget do grupo.</p>
+    <div class="mmg">
+      {mm("pinturataca.jpg", "Pintura em taça", "Pintura em Taça", "Cada uma personaliza a própria taça enquanto o grupo cria e brinda.", "R$ 249", "center 45%")}
+      {mm("colagem.jpg", "Scrapbook", "Scrapbook", "Recortes, texturas e memórias viram uma composição autoral.", "R$ 259", "center 55%")}
+      {mm("charm-making-mesa.jpg", "Berloque de bolsa", "Berloque de Bolsa", "Correntes, pingentes e charms para montar um acessório único.", "R$ 279", "center 45%")}
+      {mm("perfumaria-oficina.jpg", "Perfume autoral", "Perfume Autoral", "Explore notas e combinações e crie uma fragrância com a sua identidade.", "R$ 279", "center 40%")}
+      {mm("buque.jpg", "Buquê de flores", "Buquê de Flores", "Cada uma monta o próprio arranjo com uma curadoria de flores.", "R$ 289", "center 45%")}
+      {mm("ceramicamodelagem.jpg", "Acessório em cerâmica", "Acessório em Cerâmica", "Modele à mão uma peça de cerâmica para chamar de sua.", "R$ 289", "center 50%")}
     </div>
-    <p class="fineprint">✦ Valores por pessoa · artista, materiais e estrutura inclusos, no formato Elarah Até Você. Local a definir na região do Morumbi.</p>
-    {foot("A vitrine")}
+    <p class="fineprint">Valores por pessoa, referentes à <b>experiência</b>. No formato <b>Elarah até você</b>, levamos tudo até o espaço escolhido.</p>
+    {foot("O cardápio de experiências")}
   </section>'''
 
-_rows = "\n".join(
-    f'        <tr><td class="exp">{nm}</td><td class="ess">{c}</td><td class="prem">{pr}</td></tr>'
-    for n, c, nm, d, src, pos, pr in EXPS)
-
-valores = f'''
+# ===== 4 · ELARAH ATÉ VOCÊ =====
+atevoce = f'''
   <section class="slide">
-{head_simple("Valores")}
-    <span class="eyebrow orange">◆ Tudo por pessoa</span>
-    <h2>Os <em>valores</em></h2>
-    <p class="lead">Cada experiência já inclui artista, materiais e estrutura — no formato Elarah Até Você, dentro do seu orçamento. 💛</p>
-    <table class="ptable">
-      <thead>
-        <tr><th>Experiência</th><th>Categoria</th><th class="r">Por pessoa</th></tr>
-      </thead>
-      <tbody>
-{_rows}
-      </tbody>
-    </table>
-    <p class="fineprint">✦ Valores por pessoa, conforme informado. Artista, materiais e estrutura inclusos. Local a definir na região do Morumbi — residência, condomínio ou café próximo a avaliar.</p>
-    {foot("Valores")}
+{head_simple("Elarah até você")}
+    <span class="eyebrow orange">◆ No espaço de vocês</span>
+    <h2>A gente leva <em>até você</em></h2>
+    <p class="lead">A experiência acontece onde for mais gostoso pra vocês — <strong>em casa</strong>, no condomínio ou num <strong>café da região</strong>. É só receber as amigas. 🤍</p>
+    <div class="bfeat">
+      <div class="bphoto">{img("em-casa-hero-1.jpg", "Amigas criando juntas no espaço escolhido", "center 40%")}</div>
+      <div class="bbody">
+        <span class="btag">A gente leva até você</span>
+        <h3>É só receber as amigas</h3>
+        <ul class="feat">
+          <li><span class="st">✦</span><b>Profissionais</b> — condução da experiência por nossa conta</li>
+          <li><span class="st">✦</span><b>Materiais</b> — tudo o que precisa para criar</li>
+          <li><span class="st">✦</span><b>Estrutura</b> — montagem e organização no seu espaço</li>
+        </ul>
+      </div>
+    </div>
+    <div class="bnote" style="margin-top:16px">◆ Vocês escolhem a experiência favorita e a <b>Elarah cuida do resto</b> — da montagem à mesa posta. 🤍</div>
+    {foot("Elarah até você")}
   </section>'''
 
+# ===== 5 · INVESTIMENTO =====
+investimento = f'''
+  <section class="slide">
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ Investimento</span>
+    <h2>Tudo dentro do <em>seu budget</em></h2>
+    <div class="pbig"><div class="n">R$ 249</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
+    <div class="icards">
+      <div class="ic"><div class="k">Elarah até você</div><div class="v">No espaço de vocês</div><p>Levamos materiais, profissionais e estrutura até <b>residência, condomínio ou café</b>.</p></div>
+      <div class="ic"><div class="k">Dentro do budget</div><div class="v">R$ 249 a R$ 289</div><p>Todas as experiências por pessoa, para o <b>grupo de 6</b>.</p></div>
+      <div class="ic"><div class="k">Tudo incluso</div><div class="v">Da preparação à peça</div><p>Materiais, condução e a <b>criação</b> que cada uma leva pra casa.</p></div>
+    </div>
+    <p class="fineprint">Valores por pessoa, referentes à experiência escolhida, para o grupo de 6. Em café da região pode haver consumo mínimo, conforme o local. Aniversário em <b>28/11/2026</b>, sujeito à disponibilidade.</p>
+    {foot("Investimento")}
+  </section>'''
+
+# ===== 6 · PRÓXIMOS PASSOS =====
 proximos = f'''
   <section class="slide">
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Bora escolher? ✨</span>
     <h2>É só <em>apontar</em> a favorita</h2>
-    <p class="lead">Me conta qual experiência a Natália e as amigas mais curtiram que a gente confirma a disponibilidade e o local certinho pro dia. Qualquer dúvida, é só chamar. 💛</p>
+    <p class="lead">Natália, conta pra gente qual experiência (ou quais!) mais combina com a comemoração — a partir disso, confirmamos a data <b>28/11</b> e organizamos tudo. 🤍</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="ico">1️⃣</div><h3>Escolham</h3><p>A experiência favorita da curadoria.</p></div>
-      <div class="infocard"><div class="ico">2️⃣</div><h3>Confirmamos</h3><p>Disponibilidade, local no Morumbi e todos os detalhes.</p></div>
-      <div class="infocard"><div class="ico">3️⃣</div><h3>É só curtir</h3><p>No dia, chega tudo pronto. Vocês só aproveitam.</p></div>
+      <div class="infocard"><div class="num">1</div><h3>Escolham</h3><p>A(s) experiência(s) favorita(s) do grupo.</p></div>
+      <div class="infocard"><div class="num">2</div><h3>Organizamos</h3><p>Espaço, materiais e toda a estrutura por nossa conta.</p></div>
+      <div class="infocard"><div class="num">3</div><h3>É só curtir</h3><p>No dia, chega tudo pronto — vocês só aproveitam.</p></div>
     </div>
-    <div class="quote">
-      <i>Elarah · Experiências criativas</i><br>
-      contato@elarah.com.br &nbsp;·&nbsp; <strong>elarah.com.br</strong> &nbsp;·&nbsp; @elarah
+    <div class="quote" style="margin-top:20px">
+      Um aniversário para criar, celebrar e guardar na memória. 🤍<br>
+      <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
     {foot("Próximos passos")}
   </section>'''
 
-deck = '<div class="deck">\n' + cover + intro + vibe + vitrine + valores + proximos + '\n\n</div>\n\n'
-
-# título/descrição
-head = head.replace("<title>", "<title>", 1)
-import re
-head = re.sub(r'<title>.*?</title>', '<title>Aniversário · Natália Conti · Elarah</title>', head, count=1, flags=re.DOTALL)
-head = re.sub(r'<meta name="description"[^>]*>',
-              '<meta name="description" content="Proposta Elarah para o aniversário da Natália Conti — curadoria de 6 experiências criativas no formato Elarah Até Você.">',
-              head, count=1)
-
+deck = ('<div class="deck">\n' + cover + conceito + cardapio + atevoce
+        + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
-out = ROOT + "/proposta-natalia-conti.html"
+out = ROOT + "/natalia-conti.html"
 io.open(out, "w", encoding="utf-8").write(html)
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
