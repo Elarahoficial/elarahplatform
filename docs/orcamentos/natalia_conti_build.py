@@ -11,8 +11,17 @@ tail = '<div class="toolbar">' + ref.split('<div class="toolbar">', 1)[1]
 
 head = re.sub(r'<title>.*?</title>', '<title>Natália Conti · Aniversário · Elarah</title>', head, count=1, flags=re.DOTALL)
 head = re.sub(r'<meta name="description"[^>]*>',
-              '<meta name="description" content="Proposta Elarah para o aniversário da Natália Conti: uma comemoração em petit comité entre amigas, no formato Elarah Até Você.">',
+              '<meta name="description" content="Proposta Elarah para o aniversário da Natália Conti: uma comemoração intimista entre amigas, no formato Elarah Até Você.">',
               head, count=1)
+
+# faixa de foto do conceito
+extra = '''
+<style>
+  .cbanner{margin-top:20px;border-radius:16px;overflow:hidden;position:relative;height:212px;border:1px solid var(--line);box-shadow:0 16px 40px -26px rgba(0,0,0,.42)}
+  .cbanner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .cbanner figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 18px 14px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.82),transparent)}
+</style>'''
+head = head.replace("</head>", extra + "</head>", 1)
 
 
 def foot(right):
@@ -71,7 +80,7 @@ cover = f'''
           <span class="chip">Elarah até você</span>
         </div>
       </div>
-      <div class="cover-photo">{img("ceramica-meninas.jpg", "Amigas adultas rindo juntas durante a experiência", "center 28%")}</div>
+      <div class="cover-photo">{img("aniversario-mesa-real.jpg", "Amigas criando juntas em uma mesa bonita e cheia de flores", "center 35%")}</div>
     </div>
     {foot("Aniversário · Natália")}
   </section>'''
@@ -82,20 +91,13 @@ conceito = f'''
 {head_simple("O conceito")}
     <span class="eyebrow orange">◆ A proposta</span>
     <h2>Criar, conversar e <em>comemorar</em></h2>
-    <p class="lead">Trocar a comemoração tradicional por uma experiência <strong>leve e cheia de afeto</strong> — daquelas em que todo mundo <strong>cria, conversa, ri</strong> e ainda leva uma lembrança feita à mão.</p>
+    <p class="lead">Trocar a comemoração tradicional por uma experiência <strong>leve e cheia de afeto</strong>, para viver entre amigas.</p>
     <div class="pil3">
-      <div class="p"><div class="pt">Criar</div><div class="pd">Uma experiência de mão na massa: cada uma cria a própria peça, no seu ritmo.</div></div>
-      <div class="p"><div class="pt">Celebrar</div><div class="pd">Tempo para conversar, brindar e aproveitar o momento entre amigas.</div></div>
-      <div class="p"><div class="pt">Levar uma lembrança</div><div class="pd">No final, cada pessoa leva pra casa a criação feita por ela.</div></div>
+      <div class="p"><div class="pt">Criar</div><div class="pd">Cada uma cria a própria peça.</div></div>
+      <div class="p"><div class="pt">Celebrar</div><div class="pd">Conversar, brindar e aproveitar.</div></div>
+      <div class="p"><div class="pt">Levar uma lembrança</div><div class="pd">Cada uma leva a sua criação.</div></div>
     </div>
-    <div class="gstrip" style="margin-top:16px">
-      <figure>{img("agora-hero.jpg", "Amigas criando juntas em uma mesa cheia de luz", "center 45%")}<figcaption>Entre amigas</figcaption></figure>
-      <figure>{img("agora-selfie.jpg", "Mulheres rindo à mesa", "center 35%")}<figcaption>Muita risada</figcaption></figure>
-      <figure>{img("agora-pintura.jpg", "Mãos criando e pintando", "center 40%")}<figcaption>Mãos criando</figcaption></figure>
-      <figure>{img("agora-mesa.jpg", "Mesa posta com flores e velas", "center 50%")}<figcaption>Mesa posta</figcaption></figure>
-      <figure>{img("aniv-decor.jpg", "Flores, velas e clima de comemoração", "center 40%")}<figcaption>Flores &amp; clima</figcaption></figure>
-      <figure>{img("pintura-taca-brinde.jpg", "Brinde com as taças", "center 40%")}<figcaption>Um brinde</figcaption></figure>
-    </div>
+    <div class="cbanner">{img("agora-selfie.jpg", "Amigas rindo e celebrando à mesa", "center 35%")}<figcaption>Criar, conversar e comemorar 🤍</figcaption></div>
     {foot("O conceito")}
   </section>'''
 
@@ -105,14 +107,14 @@ cardapio = f'''
 {head_simple("O cardápio")}
     <span class="eyebrow orange">◆ Escolham a favorita</span>
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Um cardápio de experiências para <strong>criar entre amigas</strong> — todas cabem no budget do grupo.</p>
+    <p class="lead">Um cardápio de experiências para <strong>criar entre amigas</strong> — escolham as que mais têm a cara de vocês.</p>
     <div class="mmg">
-      {mm("escova-pintada-flores.webp", "Customização de escova & presilha", "Escova &amp; Presilha", "Personalize escovas e presilhas com pinturas e detalhes à mão.", "R$ 249", "center 50%")}
       {mm("pinturataca.jpg", "Pintura em taça", "Pintura em Taça", "Cada uma personaliza a própria taça enquanto o grupo cria e brinda.", "R$ 259", "center 45%")}
-      {mm("vela-grupo-oficina.jpg", "Vela aromática", "Vela Aromática", "Escolha fragrâncias e crie a sua própria vela aromática.", "R$ 269", "center 35%")}
+      {mm("escova-pintada-flores.webp", "Customização de escova & presilha", "Escova &amp; Presilha", "Personalize escovas e presilhas com pinturas e detalhes à mão.", "R$ 269", "center 50%")}
       {mm("charm-making-mesa.jpg", "Charm bar e berloque de bolsa", "Charm Bar &amp; Berloque", "Correntes, pingentes e charms para montar um acessório único.", "R$ 279", "center 45%")}
-      {mm("xicarapintada.jpg", "Pintura em caneca de porcelana", "Pintura em Caneca de Porcelana", "Pinte à mão a sua caneca de porcelana para levar pra casa.", "R$ 279", "center 50%")}
-      {mm("buque.jpg", "Buquê de flores", "Buquê de Flores", "Cada uma monta o próprio arranjo com uma curadoria de flores.", "R$ 289", "center 45%")}
+      {mm("vela-grupo-oficina.jpg", "Vela aromática", "Vela Aromática", "Escolha fragrâncias e crie a sua própria vela aromática.", "R$ 289", "center 35%")}
+      {mm("xicarapintada.jpg", "Pintura em caneca de porcelana", "Pintura em Caneca de Porcelana", "Pinte à mão a sua caneca de porcelana para levar pra casa.", "R$ 299", "center 50%")}
+      {mm("buque.jpg", "Buquê de flores", "Buquê de Flores", "Cada uma monta o próprio arranjo com uma curadoria de flores.", "R$ 319", "center 45%")}
     </div>
     <p class="fineprint">Valores por pessoa, referentes à <b>experiência</b>. Uma seleção do nosso portfólio — outras experiências sob consulta.</p>
     {foot("O cardápio de experiências")}
@@ -141,16 +143,34 @@ atevoce = f'''
     {foot("Elarah até você")}
   </section>'''
 
-# ===== 5 · INVESTIMENTO =====
+# ===== 5 · A MESA POSTA / ATMOSFERA =====
+mesaposta = f'''
+  <section class="slide">
+{head_simple("A mesa posta")}
+    <span class="eyebrow orange">◆ A atmosfera</span>
+    <h2>A mesa posta, do <em>jeito Elarah</em></h2>
+    <p class="lead">Não é só a atividade: é a <strong>mesa montada com carinho</strong>, as flores, as taças e cada detalhe pronto esperando vocês. A gente cuida de tudo — vocês só <strong>curtem</strong>. 🤍</p>
+    <div class="gstrip" style="margin-top:16px">
+      <figure>{img("agora-mesa.jpg", "Mesa posta com flores e velas", "center 50%")}<figcaption>Mesa posta</figcaption></figure>
+      <figure>{img("aniv-decor.jpg", "Flores, velas e clima de comemoração", "center 40%")}<figcaption>Flores &amp; velas</figcaption></figure>
+      <figure>{img("pintura-taca-brinde.jpg", "Brinde com as taças", "center 40%")}<figcaption>Um brinde</figcaption></figure>
+      <figure>{img("buqueflor.jpg", "Arranjo de flores", "center 45%")}<figcaption>Cada detalhe</figcaption></figure>
+      <figure>{img("mol-estacao.jpg", "Estações prontas para a experiência", "center 45%")}<figcaption>Estações prontas</figcaption></figure>
+      <figure>{img("agora-pintura.jpg", "Amigas criando e pintando", "center 40%")}<figcaption>Mãos na massa</figcaption></figure>
+    </div>
+    {foot("A atmosfera")}
+  </section>'''
+
+# ===== 6 · INVESTIMENTO =====
 investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Tudo dentro do <em>seu budget</em></h2>
-    <div class="pbig"><div class="n">R$ 249</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
+    <h2>Simples de <em>escolher</em></h2>
+    <div class="pbig"><div class="n">R$ 259</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
     <div class="icards">
       <div class="ic"><div class="k">Elarah até você</div><div class="v">No espaço de vocês</div><p>Levamos <b>materiais, profissionais e estrutura</b> até o espaço escolhido.</p></div>
-      <div class="ic"><div class="k">Dentro do budget</div><div class="v">R$ 249 a R$ 289</div><p>Todas as experiências por pessoa, para o <b>grupo de 6</b>.</p></div>
+      <div class="ic"><div class="k">Por experiência</div><div class="v">R$ 259 a R$ 319</div><p>Cada experiência tem seu valor por pessoa, para o <b>grupo de 6</b>.</p></div>
       <div class="ic"><div class="k">Tudo incluso</div><div class="v">Da preparação à peça</div><p>Materiais, condução e a <b>criação</b> que cada uma leva pra casa.</p></div>
     </div>
     <p class="fineprint">Valores por pessoa. Algumas experiências podem ter acréscimo de até <b>R$ 120 de deslocamento</b>, conforme a logística do atendimento. Aniversário em <b>28/11/2026</b>, sujeito à disponibilidade.</p>
@@ -178,7 +198,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n' + cover + conceito + cardapio + atevoce
-        + investimento + proximos + '\n\n</div>\n\n')
+        + mesaposta + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/natalia-conti.html"
 io.open(out, "w", encoding="utf-8").write(html)
