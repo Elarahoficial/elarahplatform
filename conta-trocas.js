@@ -141,9 +141,22 @@
 
   // O que a cliente PAGOU por pessoa: metadata.unit_price_centavos (gravado
   // no checkout, já com promoção); reserva antiga sem o campo → rótulo.
+  // Mesma regra de pagoPorPessoa (servidor): o que ela pagou DE VERDADE por
+  // pessoa — com promoção, cupom e crédito descontados, sem taxa do cartão.
   function precoMaxDe(booking) {
-    return Number(booking.metadata && booking.metadata.unit_price_centavos) ||
-      precoCentavos(booking.preco_label) || 0;
+    var m = booking.metadata || {};
+    var q = Math.max(1, Number(booking.quantidade) || 1);
+    var num = function (v) { var x = Number(v); return isFinite(x) && x > 0 ? x : null; };
+    var total = num(m.total_after_discount_centavos);
+    if (total == null) total = num(m.amount_before_grossup_centavos);
+    if (total == null && num(booking.amount_total) != null) {
+      total = Math.max(0, num(booking.amount_total) - (num(m.card_fee_total_centavos) || 0));
+    }
+    var unit = num(m.unit_price_centavos);
+    if (unit == null) unit = precoCentavos(booking.preco_label) || null;
+    if (total == null) return unit || 0;
+    var porPessoa = Math.round(total / q);
+    return unit != null ? Math.min(unit, porPessoa) : porPessoa;
   }
 
   // Quanto o site cobra HOJE por pessoa (com a promoção no ar).

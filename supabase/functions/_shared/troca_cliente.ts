@@ -117,6 +117,31 @@ function isKit(exp: Row): boolean {
   return cat.includes("em casa");
 }
 
+// Quanto a cliente PAGOU DE VERDADE por pessoa (centavos): já com
+// promoção, cupom e crédito descontados, e SEM a taxa do cartão (que ficou
+// com a operadora). É a base das duas contas da troca — usar o preço de
+// tabela aqui faria a Elarah devolver desconto que a cliente nunca pagou.
+//   1. total_after_discount_centavos  (Pix / cartão Mercado Pago)
+//   2. amount_before_grossup_centavos (cartão Pagar.me, antes da taxa)
+//   3. amount_total − taxa do cartão   (Stripe / demais)
+// E nunca acima do preço unitário gravado na compra (quando existe).
+export function pagoPorPessoa(bk: Row, meta: Record<string, unknown>, qty: number): number {
+  const q = Math.max(1, qty || 1);
+  const n = (v: unknown) => {
+    const x = Number(v);
+    return Number.isFinite(x) && x > 0 ? x : null;
+  };
+  let total = n(meta.total_after_discount_centavos) ?? n(meta.amount_before_grossup_centavos);
+  if (total == null) {
+    const bruto = n(bk.amount_total);
+    if (bruto != null) total = Math.max(0, bruto - (n(meta.card_fee_total_centavos) ?? 0));
+  }
+  const unit = n(meta.unit_price_centavos) ?? parsePrecoToCents(bk.preco_label) ?? null;
+  if (total == null) return unit ?? 0;
+  const porPessoa = Math.round(total / q);
+  return unit != null ? Math.min(unit, porPessoa) : porPessoa;
+}
+
 function chaveTexto(v: unknown): string {
   return String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -309,7 +334,7 @@ export async function validarTroca(
     const precoNovo = tabelaNova
       ? precoFinalCentavos(tabelaNova, await carregarDescontoGeral(sb), qty).cents
       : null;
-    const precoAntigo = Number(meta.unit_price_centavos) || parsePrecoToCents(bk.preco_label) || 0;
+    const precoAntigo = pagoPorPessoa(bk, meta, qty);
     precoNovoUnit = precoNovo;
     if (!precoNovo || !tabelaNova || !precoAntigo) {
       return falha("preco_invalido", "Não conseguimos calcular o valor dessa troca. Fale com a gente no WhatsApp.");
@@ -508,7 +533,7 @@ export async function aplicarTroca(
     update.preco_label = novaExp.preco ?? bk.preco_label;
     update.amount_total = Math.max(0, (Number(bk.amount_total) || 0) - sobra);
     // Passa a valer o que ficou pago: o de antes menos a sobra devolvida.
-    const pagoAntes = Number(meta.unit_price_centavos) || parsePrecoToCents(bk.preco_label) || 0;
+    const pagoAntes = pagoPorPessoa(bk, meta, qty);
     if (pagoAntes) meta.unit_price_centavos = Math.max(0, pagoAntes - Math.round(sobra / qty));
     meta.troca_devolucao = {
       tipo: devolucao.tipo,
