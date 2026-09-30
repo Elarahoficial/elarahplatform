@@ -14,13 +14,17 @@ head = re.sub(r'<meta name="description"[^>]*>',
               '<meta name="description" content="Proposta Elarah para o aniversário da Natália Conti: uma comemoração intimista entre amigas, no formato Elarah Até Você.">',
               head, count=1)
 
-# cards do cardapio um pouco mais compactos (para caber 8)
+# cardapio em grade 4x2 (cabe 8 cards dentro do A4, sem cortar)
 extra = '''
 <style>
-  .mm .mmph{height:150px}
-  .mm .mmb{padding:12px 15px 13px}
-  .mm .mmd{font-size:11px;line-height:1.4;margin-top:5px}
-  .mm .mmprice{padding-top:9px}
+  .mmg{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-top:18px}
+  .mm{width:auto}
+  .mm .mmph{height:132px}
+  .mm .mmb{padding:11px 14px 13px}
+  .mm .mmn{font-size:13.5px;line-height:1.12}
+  .mm .mmd{font-size:10px;line-height:1.38;margin-top:5px}
+  .mm .mmprice{padding-top:9px;font-size:10px;white-space:nowrap}
+  .mm .mmprice b{font-size:14px}
 </style>'''
 head = head.replace("</head>", extra + "</head>", 1)
 
@@ -53,7 +57,7 @@ def head_simple(kicker):
 def mm(src, alt, name, desc, price, pos="center 50%"):
     return (f'<div class="mm"><div class="mmph">{img(src, alt, pos)}</div>'
             f'<div class="mmb"><div class="mmn">{name}</div><div class="mmd">{desc}</div>'
-            f'<div class="mmprice">A partir de <b>{price}</b>/pessoa</div></div></div>')
+            f'<div class="mmprice"><b>{price}</b> / pessoa</div></div></div>')
 
 
 def vit(src, alt, name, price, pos="center 50%"):
@@ -117,16 +121,16 @@ cardapio = f'''
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
     <p class="lead">Um cardápio de experiências para <strong>criar entre amigas</strong> — escolham as que mais têm a cara de vocês.</p>
     <div class="mmg">
+      {mm("pinturataca.jpg", "Pintura em taça", "Pintura em Taça", "Cada uma personaliza a própria taça enquanto o grupo cria e brinda.", "R$ 259", "center 45%")}
       {mm("charm-making-mesa.jpg", "Charm bar e berloque de bolsa", "Charm Bar &amp; Berloque", "Correntes, pingentes e charms para montar um acessório único.", "R$ 259", "center 45%")}
       {mm("escova-pintada-flores.webp", "Customização de escova & presilha", "Escova &amp; Presilha", "Personalize escovas e presilhas com pinturas e detalhes à mão.", "R$ 269", "center 50%")}
       {mm("colagem.jpg", "Scrapbook", "Scrapbook", "Recortes, texturas e memórias viram uma composição autoral.", "R$ 279", "center 55%")}
       {mm("vela-grupo-oficina.jpg", "Vela aromática", "Vela Aromática", "Escolha fragrâncias e crie a sua própria vela aromática.", "R$ 289", "center 35%")}
       {mm("xicarapintada.jpg", "Pintura em caneca de porcelana", "Pintura em Caneca de Porcelana", "Pinte à mão a sua caneca de porcelana para levar pra casa.", "R$ 299", "center 50%")}
       {mm("agora-pintando.jpg", "Pintura em cerâmica", "Pintura em Cerâmica", "Peças de cerâmica ganham cores, desenhos e personalidade.", "R$ 299", "center 30%")}
-      {mm("perfumaria-oficina.jpg", "Perfume autoral", "Perfume Autoral", "Explore notas e combinações e crie uma fragrância com a sua identidade.", "R$ 299", "center 40%")}
       {mm("buque.jpg", "Buquê de flores", "Buquê de Flores", "Cada uma monta o próprio arranjo com uma curadoria de flores.", "R$ 319", "center 45%")}
     </div>
-    <p class="fineprint">Valores por pessoa, referentes à <b>experiência</b>. Uma seleção do nosso portfólio — outras experiências sob consulta.</p>
+    <p class="fineprint">Valores <b>a partir de</b>, por pessoa, referentes à experiência. Uma seleção do nosso portfólio — outras experiências sob consulta.</p>
     {foot("O cardápio de experiências")}
   </section>'''
 
