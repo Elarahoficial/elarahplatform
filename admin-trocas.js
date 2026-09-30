@@ -92,7 +92,8 @@
   }
 
   function msgRemarcacao(t) {
-    var mesmaExp = t.de_experiencia_id === t.para_experiencia_id;
+    var mesmaExp = t.de_experiencia_id === t.para_experiencia_id ||
+      String(t.de_experiencia_nome || '').trim().toLowerCase() === String(t.para_experiencia_nome || '').trim().toLowerCase();
     var l = [];
     l.push('Oi! Tudo bem? Passando para te avisar de uma *REMARCAÇÃO* 🔄');
     l.push('');

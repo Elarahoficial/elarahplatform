@@ -72,6 +72,37 @@
       (Array.isArray(exp.variantOptions) && exp.variantOptions.length > 0);
   }
 
+  function chaveTexto(v) {
+    var t = String(v == null ? '' : v);
+    if (t.normalize) t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return t.toLowerCase().replace(/\s+/g, ' ').trim();
+  }
+
+  // "Gêmea" da experiência comprada: outra ficha com o MESMO nome e a
+  // MESMA parceira (ex.: a mesma aula cadastrada em duas abas, cada uma com
+  // uma data pontual). Pra cliente é a mesma experiência, então as datas
+  // dela entram em "Mesma experiência, outra data" — e não na lista de
+  // "Outra experiência", onde apareceria repetida com o mesmo nome.
+  function ehGemea(exp, booking, atual) {
+    if (!exp || exp.id === booking.experiencia_id) return false;
+    var nomeRef = atual ? atual.nome : booking.experiencia_nome;
+    if (chaveTexto(exp.nome) !== chaveTexto(nomeRef)) return false;
+    var fRef = atual ? atual.fornecedorNome : null;
+    return !fRef || chaveTexto(exp.fornecedorNome) === chaveTexto(fRef);
+  }
+
+  // Pode ser DESTINO de troca pra outra ficha: o servidor recusa as demais.
+  function podeSerDestino(exp, precoMax) {
+    if (!exp || exp.arquivada || exp.isActive === false || exp.horarioFuncionamento || isKit(exp) || temVariacoes(exp)) return false;
+    var p = precoCentavos(exp.preco);
+    return !!(p && precoMax && p <= precoMax);
+  }
+
+  function precoMaxDe(booking) {
+    return Math.max(precoCentavos(booking.preco_label) || 0,
+      Number(booking.metadata && booking.metadata.unit_price_centavos) || 0);
+  }
+
   function isKit(exp) {
     var d = D();
     return !!(d && d.isHomeKit && d.isHomeKit(exp));
@@ -94,7 +125,7 @@
         if (now + cutoffMs > ts) return;
         if (s.vagasTotal != null && (s.vagasRestantes == null || s.vagasRestantes < qty)) return;
         if (booking.slot_id && s.id === booking.slot_id) return;
-        out.push({ slotId: s.id, data: String(s.data || '').trim() || ddmm(ts), horario: s.horario || '', ts: ts });
+        out.push({ exp: exp, slotId: s.id, data: String(s.data || '').trim() || ddmm(ts), horario: s.horario || '', ts: ts });
       });
     } else if (exp.data) {
       if (exp.vagasTotal != null && (exp.vagasRestantes == null || exp.vagasRestantes < qty)) return [];
@@ -107,7 +138,7 @@
         if (exp.id === booking.experiencia_id && !booking.slot_id &&
             String(booking.data || '').trim() === String(exp.data).trim() &&
             normHorario(booking.horario) === normHorario(h)) return;
-        out.push({ slotId: null, data: String(exp.data).trim(), horario: h, ts: ts });
+        out.push({ exp: exp, slotId: null, data: String(exp.data).trim(), horario: h, ts: ts });
       });
     }
     out.sort(function (a, b) { return a.ts - b.ts; });
@@ -236,7 +267,16 @@
         var exp = d ? await d.getExperienceById(booking.experiencia_id) : null;
         var ok = exp && exp.isActive !== false && !exp.arquivada && !exp.horarioFuncionamento;
         var datas = ok ? datasAVenda(exp, await d.getSlotsForExperience(exp.id), qty, booking) : [];
-        passoDatas(exp, datas, passoInicio, true);
+        // Datas das fichas "gêmeas" (mesmo nome + mesma parceira).
+        var todas = await d.getVisibleExperiences();
+        var slotsMap = await d.loadAllSlots();
+        var precoMax = precoMaxDe(booking);
+        todas.forEach(function (g) {
+          if (!ehGemea(g, booking, exp) || !podeSerDestino(g, precoMax)) return;
+          datas = datas.concat(datasAVenda(g, (slotsMap && slotsMap.get(g.id)) || [], qty, booking));
+        });
+        datas.sort(function (a, b) { return a.ts - b.ts; });
+        passoDatas(exp || { id: booking.experiencia_id, nome: booking.experiencia_nome }, datas.slice(0, MAX_DATAS), passoInicio, true);
       } catch (e) {
         console.error('[Elarah trocas] erro carregando datas', e);
         render(topo('Escolha a nova data') + '<p class="troca-vazio">Não conseguimos carregar as datas agora. Tente de novo em instantes.</p>' + rodape);
@@ -250,8 +290,8 @@
       var d = D();
       try {
         if (!cacheElegiveis) {
-          var precoMax = Math.max(precoCentavos(booking.preco_label) || 0,
-            Number(booking.metadata && booking.metadata.unit_price_centavos) || 0);
+          var precoMax = precoMaxDe(booking);
+          var atual = await d.getExperienceById(booking.experiencia_id);
           var todas = await d.getVisibleExperiences();
           // Cache global de turmas (uma consulta paginada). Não usa
           // getSlotsForExperience aqui: pra experiência sem turma ele faz
@@ -260,10 +300,9 @@
           var lista = [];
           for (var i = 0; i < todas.length; i++) {
             var e = todas[i];
-            if (!e || e.id === booking.experiencia_id) continue;
-            if (e.arquivada || e.horarioFuncionamento || isKit(e) || temVariacoes(e)) continue;
+            if (!e || e.id === booking.experiencia_id || ehGemea(e, booking, atual)) continue;
+            if (!podeSerDestino(e, precoMax)) continue;
             var p = precoCentavos(e.preco);
-            if (!p || !precoMax || p > precoMax) continue;
             var datas = datasAVenda(e, (slotsMap && slotsMap.get(e.id)) || [], qty, booking);
             if (!datas.length) continue;
             lista.push({ exp: e, datas: datas, preco: p });
@@ -349,7 +388,7 @@
               : 'Essa experiência não tem data disponível agora.') + '</p>') +
           (dt
             ? '<div class="troca-resumo"><p>❌ <strong>Sai:</strong> ' + esc(booking.experiencia_nome) + ' · ' + esc(booking.data) + ' ' + esc(booking.horario) + '</p>' +
-              '<p>✅ <strong>Entra:</strong> ' + esc(exp.nome) + ' · ' + esc(dt.data) + ' ' + esc(dt.horario) + '</p>' +
+              '<p>✅ <strong>Entra:</strong> ' + esc((dt.exp || exp).nome) + ' · ' + esc(dt.data) + ' ' + esc(dt.horario) + '</p>' +
               (qty > 1 ? '<p>👥 ' + qty + ' vagas</p>' : '') + '</div>' + avisoPreco +
               '<p class="troca-aviso">Depois de confirmar, essa reserva não pode ser remarcada de novo pela conta.</p>' +
               '<button type="button" class="troca-btn" data-confirmar>Confirmar remarcação</button>'
@@ -368,7 +407,7 @@
           });
         }
         var conf = box.querySelector('[data-confirmar]');
-        if (conf) conf.addEventListener('click', function () { confirmar(exp, datas[escolhida], conf, desenhar); });
+        if (conf) conf.addEventListener('click', function () { confirmar(datas[escolhida].exp || exp, datas[escolhida], conf, desenhar); });
       }
       desenhar();
     }
