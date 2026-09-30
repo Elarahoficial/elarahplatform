@@ -587,29 +587,27 @@ renderFavoritos();
     // localizar a compra, sem o vaivém de "qual reserva?".
     const refCurta = String(booking.id || '').slice(-8).toUpperCase();
     const contatoUrl = contatoWhatsappUrl(booking, 'Olá! Gostaria de remarcar minha reserva.');
-    const reembolsoUrl = contatoWhatsappUrl(booking, 'Olá! Gostaria de pedir o reembolso da minha reserva.');
-    // Cancelar COM reembolso: 48h pra todas as categorias (/cancelamento.html).
-    const podeReembolso = inicio - 48 * 3600000 > agora;
-    const linkReembolso = podeReembolso
-      ? ' <a class="purchase-card__prazo-link" href="' + reembolsoUrl + '" target="_blank" rel="noopener" data-reembolso-booking="' + escapeHtmlLocal(booking.id) + '">Pedir reembolso</a>'
-      : '';
 
     if (restante > 0) {
       const dl = new Date(limite);
       const quando = doisDigitos(dl.getDate()) + '/' + doisDigitos(dl.getMonth() + 1) +
         ' às ' + doisDigitos(dl.getHours()) + 'h' + doisDigitos(dl.getMinutes());
-      // Dentro do prazo a cliente troca sozinha (data ou experiência) —
-      // antes isso virava uma mensagem no WhatsApp. Reserva "aguardando
-      // experiência" já está com a equipe: continua pelo WhatsApp.
-      const podeTrocar = booking.aguardando_experiencia !== true && !!window.ElarahTrocas && !!refCurta;
+      // Dentro do prazo a cliente remarca sozinha — o card mostra só o
+      // prazo e o link "Remarcar"; as opções (outra data / outra
+      // experiência) aparecem depois do clique, na janela de troca.
+      // A remarcação pela conta vale UMA vez: depois, e em reserva
+      // "aguardando experiência", continua pelo WhatsApp.
+      const jaTrocou = !!meta.troca_cliente_feita_at;
+      const podeTrocar = !jaTrocou && booking.aguardando_experiencia !== true && !!window.ElarahTrocas && !!refCurta;
       const acao = podeTrocar
-        ? ' <button type="button" class="purchase-card__troca-btn" data-troca-booking="' + escapeHtmlLocal(booking.id) + '" data-troca-prazo="' + escapeHtmlLocal(quando) + '">Trocar data ou experiência</button>'
-        : ' <a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Pedir no WhatsApp</a>';
+        ? ' <button type="button" class="purchase-card__prazo-link purchase-card__troca-btn" data-troca-booking="' + escapeHtmlLocal(booking.id) + '" data-troca-prazo="' + escapeHtmlLocal(quando) + '">Remarcar</button>'
+        : (jaTrocou ? ' · você já usou sua remarcação' : '') +
+          ' <a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Pedir no WhatsApp</a>';
       return '<p class="purchase-card__prazo">' +
         '<span aria-hidden="true">🔄</span> ' +
-        'Troca sem custo até <strong>' + escapeHtmlLocal(quando) + '</strong> · ' +
+        'Remarcação sem custo até <strong>' + escapeHtmlLocal(quando) + '</strong> · ' +
         escapeHtmlLocal(tempoRestanteLabel(restante)) +
-        acao + linkReembolso +
+        acao +
         '</p>';
     }
     // Passou do prazo de remarcação sem custo. Não trava nada — só
@@ -619,7 +617,6 @@ renderFavoritos();
       '<span aria-hidden="true">⏳</span> ' +
       'Prazo de remarcação sem custo encerrado ' +
       '<a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Falar no WhatsApp</a>' +
-      linkReembolso +
       '</p>';
   }
 
@@ -632,9 +629,9 @@ renderFavoritos();
     return 'https://wa.me/5511914455930?text=' + encodeURIComponent(msg);
   }
 
-  // Cliques do card: "Trocar data ou experiência" abre a janela de troca;
-  // "Pedir reembolso" segue pro WhatsApp e registra o pedido pra Elarah
-  // ver na aba "Trocas e reembolsos".
+  // Clique no "Remarcar" do card abre a janela de troca (conta-trocas.js).
+  // O "Pedir reembolso" fica dentro dela: segue pro WhatsApp e registra o
+  // pedido pra Elarah ver na aba "Trocas e reembolsos".
   document.addEventListener('click', function (ev) {
     const t = ev.target && ev.target.closest ? ev.target : null;
     if (!t) return;
@@ -646,6 +643,7 @@ renderFavoritos();
       window.ElarahTrocas.abrir(bk, {
         prazoTexto: trocaBtn.getAttribute('data-troca-prazo') || '',
         whatsappUrl: contatoWhatsappUrl(bk, 'Olá! Preciso de ajuda com a minha reserva.'),
+        reembolsoUrl: contatoWhatsappUrl(bk, 'Olá! Gostaria de pedir o reembolso da minha reserva.'),
         onDone: function () {
           purchasesLoaded = false;
           loadPurchases();

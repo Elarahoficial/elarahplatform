@@ -629,22 +629,14 @@
   white-space: nowrap;
 }
 
-/* Botão da troca feita pela própria cliente (conta-trocas.js). */
+/* "Remarcar" do card (conta-trocas.js): mesmo visual do link do
+   WhatsApp, só que é um <button>. */
 .purchase-card__troca-btn {
   font: inherit;
-  font-weight: 700;
-  font-size: 0.76rem;
-  color: #fff;
-  background: #1a7a4a;
+  background: none;
   border: 0;
-  border-radius: 999px;
-  padding: 5px 11px;
+  padding: 0;
   cursor: pointer;
-  white-space: nowrap;
-}
-.purchase-card__troca-btn:hover,
-.purchase-card__troca-btn:focus-visible {
-  background: #146039;
 }
 
 .purchase-card__location-icon {

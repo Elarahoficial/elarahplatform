@@ -3,7 +3,7 @@
 ## O que mudou
 
 Antes, pra trocar a data a cliente chamava a Elarah no WhatsApp. Agora ela faz sozinha em
-**Minha conta → Minhas compras**, no botão **"Trocar data ou experiência"** do card da reserva.
+**Minha conta → Minhas compras**, no link **"Remarcar"** do card da reserva (as duas opções só aparecem depois do clique). Vale **1 remarcação por reserva**; depois disso, só pelo WhatsApp.
 
 - **Mesma experiência, outra data**: mostra só as datas que estão à venda no site (turma ativa,
   antes do encerramento de vendas e com vaga pra quantidade da reserva).
@@ -13,8 +13,8 @@ Antes, pra trocar a data a cliente chamava a Elarah no WhatsApp. Agora ela faz s
   não aparece: nesses casos a cliente fala com a Elarah.
 - **Prazo**: o botão só aparece dentro do prazo de remarcação sem custo congelado na compra
   (bartenderia 5 dias, gastronomia 72h, demais 48h). Fora do prazo continua o link do WhatsApp.
-- **Reembolso**: continua com a Elarah. O link "Pedir reembolso" (até 48h antes) abre o WhatsApp
-  e registra o pedido na aba do painel.
+- **Reembolso**: continua com a Elarah. O link "Prefere reembolso?" abre o WhatsApp
+  e registra o pedido na aba do painel. Fica dentro da janela de remarcação, não no card.
 
 Na troca, o servidor segura a vaga da data nova, devolve a da antiga, atualiza a reserva (e
 parceira, local e repasse quando muda de experiência) e manda a confirmação nova pra cliente

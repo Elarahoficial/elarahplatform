@@ -28,7 +28,9 @@
 //   3. A NOVA data está à venda no site: experiência ativa e não arquivada,
 //      turma ativa, antes do encerramento de vendas (cutoff) e com vaga
 //      pra quantidade da reserva.
-//   4. OUTRA experiência: preço de tabela igual ou menor que o da compra
+//   4. Só UMA remarcação pela conta por reserva
+//      (metadata.troca_cliente_feita_at).
+//   5. OUTRA experiência: preço de tabela igual ou menor que o da compra
 //      (mais cara → diferença a pagar, fala com a Elarah) e sem opções de
 //      variação (Individual/Dupla, modelo de pintura…), que exigiriam uma
 //      escolha que a tela de troca não faz. Agendamento livre (voucher) e
@@ -265,6 +267,12 @@ serve(async (req) => {
     return falha("aguardando_experiencia", "Essa reserva já está com a equipe da Elarah. Fale com a gente no WhatsApp.");
   }
 
+  // Remarcação pela conta vale UMA vez por reserva. Depois disso (ou se a
+  // Elarah precisar mexer de novo), é pelo WhatsApp / painel.
+  if (meta.troca_cliente_feita_at) {
+    return falha("ja_remarcada", "Você já usou sua remarcação pela conta. Pra mudar de novo, fale com a gente no WhatsApp.");
+  }
+
   // ===== 3. Prazo da reserva atual =====
   const now = Date.now();
   let inicioAtual: number | null = null;
@@ -454,6 +462,7 @@ serve(async (req) => {
   }
   meta.reagendamento_seq = (Number(meta.reagendamento_seq) || 0) + 1;
   const agoraIso = new Date().toISOString();
+  meta.troca_cliente_feita_at = agoraIso;
   const hist = Array.isArray(meta.reagendamento_history) ? meta.reagendamento_history.slice() : [];
   hist.push({
     at: agoraIso,

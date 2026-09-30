@@ -189,8 +189,10 @@
     document.addEventListener('keydown', onKey);
     ov.addEventListener('click', function (e) { if (e.target === ov) fechar(); });
 
-    var rodape = '<p class="troca-rodape">Quer reembolso ou precisa de outra coisa? ' +
-      '<a href="' + esc(opts.whatsappUrl || 'https://wa.me/5511914455930') + '" target="_blank" rel="noopener">Fale com a Elarah no WhatsApp</a>.</p>';
+    // Reembolso fica aqui dentro (não no card): segue pro WhatsApp da
+    // Elarah e registra o pedido pra aba "Trocas e reembolsos".
+    var rodape = '<p class="troca-rodape">Prefere reembolso? ' +
+      '<a href="' + esc(opts.reembolsoUrl || opts.whatsappUrl || 'https://wa.me/5511914455930') + '" target="_blank" rel="noopener" data-troca-reembolso>Fale com a Elarah no WhatsApp</a>.</p>';
 
     function topo(titulo, sub) {
       return '<div class="troca-top"><div><h2 class="troca-title" id="troca-title">' + esc(titulo) + '</h2>' +
@@ -201,18 +203,21 @@
       box.innerHTML = html;
       var x = box.querySelectorAll('[data-troca-fechar]');
       for (var i = 0; i < x.length; i++) x[i].addEventListener('click', fechar);
+      var rb = box.querySelector('[data-troca-reembolso]');
+      if (rb) rb.addEventListener('click', function () { pedirReembolso(booking.id); });
     }
 
     // Passo 1 — o que ela quer fazer.
     function passoInicio() {
       render(
-        topo('Trocar minha reserva',
+        topo('Remarcar minha reserva',
           '<strong>' + esc(booking.experiencia_nome || 'Experiência') + '</strong> · ' +
           esc(booking.data || '') + ' ' + esc(booking.horario || '') +
-          (opts.prazoTexto ? '<br>Troca sem custo até ' + esc(opts.prazoTexto) + '.' : '')) +
+          (opts.prazoTexto ? '<br>Remarcação sem custo até ' + esc(opts.prazoTexto) + '.' : '') +
+          '<br><strong>Atenção:</strong> dá pra remarcar pela conta só 1 vez.') +
         '<div class="troca-opcoes">' +
           '<button type="button" class="troca-opcao" data-op="mesma"><strong>📅 Mesma experiência, outra data</strong><span>Escolha outro dia ou horário que esteja disponível.</span></button>' +
-          '<button type="button" class="troca-opcao" data-op="outra"><strong>✨ Trocar por outra experiência</strong><span>Qualquer experiência do site com valor igual ou menor que o da sua.</span></button>' +
+          '<button type="button" class="troca-opcao" data-op="outra"><strong>🔁 Outra experiência</strong><span>Se preferir, troque por outra experiência de valor igual ou menor.</span></button>' +
         '</div>' + rodape
       );
       box.querySelector('[data-op="mesma"]').addEventListener('click', function () { passoMesma(); });
@@ -346,7 +351,8 @@
             ? '<div class="troca-resumo"><p>❌ <strong>Sai:</strong> ' + esc(booking.experiencia_nome) + ' · ' + esc(booking.data) + ' ' + esc(booking.horario) + '</p>' +
               '<p>✅ <strong>Entra:</strong> ' + esc(exp.nome) + ' · ' + esc(dt.data) + ' ' + esc(dt.horario) + '</p>' +
               (qty > 1 ? '<p>👥 ' + qty + ' vagas</p>' : '') + '</div>' + avisoPreco +
-              '<button type="button" class="troca-btn" data-confirmar>Confirmar troca</button>'
+              '<p class="troca-aviso">Depois de confirmar, essa reserva não pode ser remarcada de novo pela conta.</p>' +
+              '<button type="button" class="troca-btn" data-confirmar>Confirmar remarcação</button>'
             : '') +
           (erro ? '<p class="troca-erro">' + esc(erro) + '</p>' : '') +
           rodape
@@ -372,7 +378,7 @@
       if (!sb || !sb.functions) { redesenhar('Não conseguimos conectar agora. Recarregue a página.'); return; }
       ocupado = true;
       btn.disabled = true;
-      btn.textContent = 'Trocando…';
+      btn.textContent = 'Remarcando…';
       var res;
       try {
         res = await sb.functions.invoke('cliente-trocar-reserva', {
@@ -399,7 +405,7 @@
       }
       render(
         '<div class="troca-ok"><div class="troca-emoji">🎉</div>' +
-        '<h2 class="troca-title">Reserva trocada!</h2>' +
+        '<h2 class="troca-title">Reserva remarcada!</h2>' +
         '<p class="troca-sub" style="margin-top:8px;">Agora é <strong>' + esc(exp.nome) + '</strong><br>' +
         esc(dt.data) + ' · ' + esc(dt.horario) + '</p>' +
         '<p class="troca-sub">A confirmação nova chega no seu WhatsApp e e-mail, e a Elarah avisa o parceiro.</p>' +
