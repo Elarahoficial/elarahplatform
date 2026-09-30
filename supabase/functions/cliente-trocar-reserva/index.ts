@@ -109,11 +109,19 @@ async function limparPendentes(
   const { data } = await admin!.from("trocas_reserva").select("*")
     .eq("booking_id", bookingId).eq("tipo", "troca").in("status", ["aguardando_pagamento", "processando"]);
   const linhas = (Array.isArray(data) ? data : []) as Row[];
-  const cartao = linhas.find((l) =>
-    l.status === "processando" ||
-    (l.pagamento_metodo === "cartao" && Date.now() - new Date(l.created_at).getTime() < 15 * 60_000)
-  );
-  if (cartao) return { cartaoEmAnalise: cartao };
+  // Cartão: só sai da frente se o Pagar.me disser que falhou/cancelou —
+  // análise antifraude pode levar horas, e cancelar aqui abriria uma
+  // segunda cobrança.
+  for (const l of linhas) {
+    if (l.status === "processando") return { cartaoEmAnalise: l };
+    if (l.pagamento_metodo !== "cartao") continue;
+    let st = "";
+    if (l.pagamento_id && PAGARME_SECRET_KEY) {
+      const o = await getOrder(PAGARME_SECRET_KEY, String(l.pagamento_id)) as Row;
+      st = String(o?.status ?? "");
+    }
+    if (st !== "failed" && st !== "canceled") return { cartaoEmAnalise: l };
+  }
   for (const l of linhas) {
     if (l.id === manter) continue;
     const { data: upd } = await admin!.from("trocas_reserva").update({ status: "cancelada" })
@@ -298,9 +306,11 @@ serve(async (req) => {
   // A tela mostra um valor; se mudou até o clique (ex.: promoção acabou à
   // meia-noite), NÃO cobra outro valor em silêncio — devolve o novo.
   const esperado = payload.diferenca_centavos_esperada;
-  if (esperado != null && esperado !== "" && Number(esperado) !== dif) {
+  const sobraEsperada = payload.sobra_centavos_esperada;
+  if ((esperado != null && esperado !== "" && Number(esperado) !== dif) ||
+    (sobraEsperada != null && sobraEsperada !== "" && Number(sobraEsperada) !== ctx.sobraCentavos)) {
     return json({
-      ok: false, error: "valor_mudou", diferenca_centavos: dif,
+      ok: false, error: "valor_mudou", diferenca_centavos: dif, sobra_centavos: ctx.sobraCentavos,
       message: dif > 0
         ? "O valor da diferença mudou para " + ("R$ " + (dif / 100).toFixed(2).replace(".", ",")) + ". Confira antes de pagar."
         : "O valor da troca mudou. Confira antes de confirmar.",
@@ -323,7 +333,7 @@ serve(async (req) => {
         const confirmacao = String(dv.chave_pix_confirmacao ?? "").trim();
         const titular = String(dv.titular ?? "").trim().replace(/\s+/g, " ");
         if (chave.length < 5 || chave.length > 140) return falha("chave_pix_invalida", "Confira a sua chave Pix.", 400);
-        if (confirmacao && confirmacao !== chave) return falha("chave_pix_diferente", "As duas chaves Pix não são iguais. Confira.", 400);
+        if (confirmacao !== chave) return falha("chave_pix_diferente", "As duas chaves Pix não são iguais. Confira.", 400);
         if (titular.length < 5 || !/\s/.test(titular) || titular.length > 120) {
           return falha("titular_invalido", "Informe o nome completo do titular da chave Pix.", 400);
         }

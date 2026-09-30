@@ -146,13 +146,19 @@
   // ===== Estado =====
   // Situação da troca (sql/elarah_trocas_reserva_pagamento.sql). Vazio =
   // linha de antes da diferença a pagar = aplicada.
-  function aplicada(t) { return !t.status || t.status === 'aplicada'; }
+  // A troca deste pagamento já está gravada na reserva (a linha pode ter
+  // ficado 'processando' se a gravação dela falhou): conta como aplicada.
+  function aplicadaNaReserva(t) {
+    var td = t.bookings && t.bookings.metadata && t.bookings.metadata.troca_diferenca;
+    return !!(td && td.troca_id === t.id);
+  }
+  function aplicada(t) { return !t.status || t.status === 'aplicada' || aplicadaNaReserva(t); }
   // Pagou a diferença mas a troca não entrou (data esgotou / reserva mudou):
   // a Elarah precisa resolver com a cliente.
   // 'processando' há mais de 5 min = a função caiu depois de o pagamento
   // aprovar: a cliente pagou e a troca não entrou.
   function processandoTravado(t) {
-    return t.status === 'processando' && t.pago_at && Date.now() - new Date(t.pago_at).getTime() > 5 * 60000;
+    return t.status === 'processando' && !aplicadaNaReserva(t) && t.pago_at && Date.now() - new Date(t.pago_at).getTime() > 5 * 60000;
   }
   function pagoComProblema(t) {
     return t.status === 'pago_sem_vaga' || t.status === 'pago_sem_aplicar' || processandoTravado(t);
@@ -176,8 +182,10 @@
     // Dinheiro devido à cliente fica pendente mesmo que alguém clique em
     // "Concluir": só some quando o Pix for marcado como devolvido.
     if (pixADevolver(t) || creditoFalhou(t)) return true;
+    // Pagou e não entrou / estorno: só sai de Pendentes com a resolução
+    // escrita (botão "Resolver") — um clique solto não esconde dinheiro.
+    if ((pagoComProblema(t) || estornado(t)) && !t.resolucao) return true;
     if (t.resolvido_at) return false;
-    if (pagoComProblema(t) || estornado(t)) return true;
     if (t._teste || tentativa(t)) return false;
     if (t.tipo === 'reembolso') return true;
     if (t.modalidade === 'outro_parceiro') return !t.aviso_de_at || !t.aviso_para_at;
@@ -228,6 +236,18 @@
     }
     var linha = dados && dados.linhas.find(function (t) { return t.id === id; });
     if (linha) linha[campo] = patch[campo];
+    return true;
+  }
+
+  async function salvarCampos(id, patch) {
+    var r = await sb().from('trocas_reserva').update(patch).eq('id', id);
+    if (r.error) {
+      console.error('[Elarah Trocas] erro salvando', patch, r.error);
+      alert('Não consegui salvar. Tente de novo.\n' + (r.error.message || ''));
+      return false;
+    }
+    var linha = dados && dados.linhas.find(function (t) { return t.id === id; });
+    if (linha) Object.assign(linha, patch);
     return true;
   }
 
@@ -362,7 +382,10 @@
         ? '<p style="margin:8px 0 0;font-size:.78rem;color:#1a8a4a;font-weight:600;">🎟 Crédito gerado: ' + esc(t.credito_codigo) +
           ' · ' + esc(brl(t.devolucao_centavos)) + (t.credito_expira_em ? ' · vale até ' + esc(quando(t.credito_expira_em)) : '') + '</p>'
         : '<p style="margin:8px 0 0;padding:8px 10px;border-radius:8px;background:#fdeaea;color:#b3261e;font-size:.8rem;font-weight:600;">' +
-          '⚠ O crédito de ' + esc(brl(t.devolucao_centavos)) + ' NÃO foi gerado. Crie o cupom à mão em Cupons e mande pra cliente.</p>';
+          '⚠ O crédito de ' + esc(brl(t.devolucao_centavos)) + ' NÃO foi gerado. Crie o cupom à mão em Cupons (valor fixo, 1 uso, 90 dias), mande pra cliente e registre o código aqui.</p>';
+      if (!t.credito_codigo) {
+        acoes.push('<button type="button" class="trc-btn trc-btn--wa" data-trc-credito="' + esc(t.id) + '">🎟 Registrar cupom criado</button>');
+      }
     }
     if (!aplicada(t)) {
       // Troca que não entrou: nada pra avisar à parceira.
@@ -381,7 +404,12 @@
     }
     acoes.push(t.resolvido_at
       ? '<button type="button" class="trc-btn trc-btn--ghost" data-trc-reabrir="' + esc(t.id) + '">↺ Reabrir</button>'
-      : '<button type="button" class="trc-btn trc-btn--ghost" data-trc-resolver="' + esc(t.id) + '">✓ ' + (reemb ? 'Reembolso resolvido' : 'Concluir') + '</button>');
+      : ((pagoComProblema(t) || estornado(t))
+        ? '<button type="button" class="trc-btn trc-btn--wa" data-trc-resolver-nota="' + esc(t.id) + '">✓ Resolver (dizer como)</button>'
+        : '<button type="button" class="trc-btn trc-btn--ghost" data-trc-resolver="' + esc(t.id) + '">✓ ' + (reemb ? 'Reembolso resolvido' : 'Concluir') + '</button>'));
+    if (t.resolucao) {
+      alerta += '<p style="margin:8px 0 0;font-size:.78rem;color:#1a8a4a;">✓ Resolvido: ' + esc(t.resolucao) + '</p>';
+    }
 
     var de = '<div class="trc-box"><small>' + (reemb ? 'Reserva' : 'Era') + '</small>' +
       '<strong>' + esc(t.de_experiencia_nome || '—') + '</strong><br>' +
@@ -507,8 +535,25 @@
       render(); atualizarContador();
       return;
     }
+    if ((el = ev.target.closest('[data-trc-resolver-nota]'))) {
+      var idN = el.getAttribute('data-trc-resolver-nota');
+      var nota = window.prompt('Como foi resolvido? (ex.: "devolvi R$ 50 por Pix em 02/10" ou "remarquei pra 15/10 no painel")');
+      if (!nota || !nota.trim()) return;
+      if (await salvarCampos(idN, { resolucao: nota.trim().slice(0, 300), resolvido_at: new Date().toISOString() })) { render(); atualizarContador(); }
+      return;
+    }
+    if ((el = ev.target.closest('[data-trc-credito]'))) {
+      var idC = el.getAttribute('data-trc-credito');
+      var cod = window.prompt('Código do cupom de crédito que você criou e mandou pra cliente:');
+      if (!cod || !cod.trim()) return;
+      if (await salvarCampos(idC, { credito_codigo: cod.trim().toUpperCase().slice(0, 60) })) { render(); atualizarContador(); }
+      return;
+    }
     if ((el = ev.target.closest('[data-trc-reabrir]'))) {
-      await desmarcar(el.getAttribute('data-trc-reabrir'), 'resolvido_at');
+      var idR = el.getAttribute('data-trc-reabrir');
+      await desmarcar(idR, 'resolvido_at');
+      var lr = dados && dados.linhas.find(function (t) { return t.id === idR; });
+      if (lr && lr.resolucao) await salvarCampos(idR, { resolucao: null });
       render(); atualizarContador();
     }
   });
