@@ -629,6 +629,24 @@
   white-space: nowrap;
 }
 
+/* Botão da troca feita pela própria cliente (conta-trocas.js). */
+.purchase-card__troca-btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.76rem;
+  color: #fff;
+  background: #1a7a4a;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.purchase-card__troca-btn:hover,
+.purchase-card__troca-btn:focus-visible {
+  background: #146039;
+}
+
 .purchase-card__location-icon {
   flex: 0 0 auto;
   font-size: 0.85rem;

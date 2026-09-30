@@ -120,6 +120,17 @@
         <span>Compras</span>
       </button>
 
+      <!-- Trocas e reembolsos: trocas que a cliente fez sozinha em "Minhas
+           compras" + pedidos de reembolso. Aviso pra parceira a 1 clique
+           (admin-trocas.js). -->
+      <button class="admin__nav-item" data-panel="trocas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+        </svg>
+        <span>Trocas e reembolsos</span>
+        <span id="trocas-contador" style="display:none;margin-left:auto;background:#c0392b;color:#fff;border-radius:999px;font-size:.66rem;font-weight:700;padding:1px 7px;"></span>
+      </button>
+
       <button class="admin__nav-item" data-panel="eventos">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20 7h-4V3"/><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M2 11h20"/>
@@ -907,6 +918,24 @@
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- ===== TROCAS E REEMBOLSOS ===== -->
+    <div class="admin__panel" id="panel-trocas">
+      <div class="admin__header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 class="admin__page-title">Trocas e reembolsos</h1>
+          <p class="admin__page-subtitle">
+            Trocas que a cliente fez sozinha em <strong>Minhas compras</strong> (outra data ou outra
+            experiência, dentro do prazo) e pedidos de reembolso. A vaga e a confirmação da cliente já
+            foram atualizadas — aqui é só <strong>avisar a parceira</strong>: o botão abre o WhatsApp com
+            a mensagem pronta. Troca pra outro parceiro tem dois avisos (cancelamento pro antigo, reserva
+            nova pro novo).
+          </p>
+        </div>
+        <button id="trocas-refresh" class="admin__add-btn admin__add-btn--ghost" type="button">↻ Atualizar</button>
+      </div>
+      <div id="trocas-root"></div>
     </div>
 
     <!-- ===== BOOKINGS / PURCHASES PANEL ===== -->
@@ -4955,15 +4984,16 @@
 <script src="admin-prospect-analise.js?v=1"></script>
 <script src="admin-ceo.js?v=5"></script>
 <script src="admin-feedbacks.js?v=3"></script>
+<script src="admin-trocas.js?v=1"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
 <script src="admin-conversas.js?v=2"></script>
-<script src="admin-acessos.js?v=4"></script>
+<script src="admin-acessos.js?v=5"></script>
 <script src="admin-equipe.js?v=1"></script>
 <script src="admin-datas-comemorativas.js?v=3"></script>
 <script src="admin-switcher.js?v=2"></script>
-<script src="admin.js?v=249"></script>
+<script src="admin.js?v=250"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
