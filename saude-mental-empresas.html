@@ -189,6 +189,7 @@ section{padding:96px 0}
 .xcard h3{font-size:1.35rem;margin-bottom:6px}
 .xcard p{font-size:.93rem;color:var(--muted)}
 .xcard .why{margin-top:12px;font-size:.84rem;color:var(--green-2);font-weight:600}
+.ver-todas{text-align:center;margin-top:34px}
 .chips__tit{text-align:center;margin-top:34px;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--terra)}
 .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;justify-content:center}
 .chip{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:.9rem}
@@ -870,7 +871,7 @@ body.lm-open{overflow:hidden}
     </div>
     <div class="mais20 reveal">
       <div><b>Mais de 20 experiências para escolher</b><p>Cerâmica, velas, pintura, gastronomia, kintsugi, perfumaria e muito mais. Os temas do calendário são uma sugestão: a empresa escolhe o que faz mais sentido para o momento e o perfil da equipe.</p></div>
-      <a href="#experiencias">Ver as experiências →</a>
+      <a href="experiencias-empresas.html">Ver as experiências →</a>
     </div>
   </div>
 </section>
@@ -889,9 +890,8 @@ body.lm-open{overflow:hidden}
       <div class="xcard reveal"><img src="assets/mh-exp-gastronomia.jpg" style="object-position:50% 50%" alt="Time fazendo massa fresca junto em uma mesa comprida" loading="lazy"><div class="in"><h3>Gastronomia afetiva</h3><p>Receitas preparadas em grupo e compartilhadas à mesa: cozinhar junto aproxima as pessoas.</p><div class="why">Ajuda com: clima e conexão entre áreas</div></div></div>
       <div class="xcard reveal"><img src="assets/aquarela.jpg" style="object-position:50% 55%" alt="Pintura em aquarela de uma paisagem com lago" loading="lazy"><div class="in"><h3>Pintura intuitiva</h3><p>Tinta, pincel e nenhuma regra: pinceladas livres, respiração guiada e zero autojulgamento.</p><div class="why">Ajuda com: ansiedade e pressão por entrega</div></div></div>
     </div>
-    <p class="chips__tit reveal">E muitas outras para combinar no cronograma</p>
-    <div class="chips reveal">
-      <span class="chip">Kintsugi</span><span class="chip">Aquarela botânica</span><span class="chip">Terrário e kokedama</span><span class="chip">Bordado livre</span><span class="chip">Macramê</span><span class="chip">Mosaico coletivo</span><span class="chip">Perfumaria botânica</span><span class="chip">Sabonete artesanal</span><span class="chip">Arranjo floral</span><span class="chip">Colagem de intenções</span><span class="chip">Journaling</span><span class="chip">Pintura em ecobag</span><span class="chip">Chá e mindfulness</span><span class="chip">Respiração guiada</span><span class="chip">Yoga na empresa</span><span class="chip">Roda de conversa com psicóloga</span><span class="chip">Workshop NR-1 para lideranças</span><span class="chip">Comunicação não-violenta</span><span class="chip">Kit em casa para times remotos</span>
+    <div class="ver-todas reveal">
+      <a class="btn btn--ghost" href="experiencias-empresas.html">Ver todas as 24 experiências →</a>
     </div>
   </div>
 </section>
@@ -1407,6 +1407,10 @@ body.lm-open{overflow:hidden}
       : 'Assim conseguimos chegar ao WhatsApp com uma proposta mais alinhada ao que vocês procuram.';
     document.getElementById('lm-resumo').hidden = !montou;
     document.getElementById('lm-resumo-txt').textContent = resumoEXP();
+    if (INTERESSE) {
+      document.getElementById('lm-resumo').hidden = false;
+      document.getElementById('lm-resumo-txt').textContent = (montou ? resumoEXP() + ' · ' : '') + INTERESSE;
+    }
     // Só pergunta o que ainda não sabemos.
     formModal.querySelector('[data-campo="pessoas"]').hidden = !!EXP.pessoas;
     formModal.querySelector('[data-campo="freq"]').hidden = !!EXP.freq;
@@ -1425,6 +1429,17 @@ body.lm-open{overflow:hidden}
     if (e.target === modalEl || e.target.closest('[data-lm-close]')) fecharModal();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modalEl.hidden) fecharModal(); });
+
+  // Vindo da página de experiências (experiencias-empresas.html?exp=Nome):
+  // abre o pedido de orçamento já sabendo qual experiência a pessoa quer.
+  var INTERESSE = '';
+  (function () {
+    var q = new URLSearchParams(location.search).get('exp');
+    if (!q) return;
+    if (q !== 'orcamento') INTERESSE = q.slice(0, 80);
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (_) {}
+    setTimeout(function () { abrirModal('pagina_experiencias'); }, 400);
+  })();
 
   // O que a pessoa escolher nos selects dos formulários volta para a jornada.
   [formModal, formFinal].forEach(function (form) {
@@ -1461,7 +1476,8 @@ body.lm-open{overflow:hidden}
       var fr = FREQ[f.encontros.value || EXP.freq];
       var extraMsg = [
         temEscolha() ? 'Experiência: ' + resumoEXP() : '',
-        EXP.via ? 'Começou pelo ' + EXP.via.replace('_', ' ') : ''
+        EXP.via ? 'Começou pelo ' + EXP.via.replace('_', ' ') : '',
+        INTERESSE ? 'Interesse: ' + INTERESSE : ''
       ].filter(Boolean).join(' · ');
       var livre = f.mensagem ? f.mensagem.value.trim() : '';
       var d = {
@@ -1486,7 +1502,7 @@ body.lm-open{overflow:hidden}
       try { ok = await salvar(d); } catch (err) { console.warn('[MH lead]', err); }
       try { if (window.ElarahAnalytics && ElarahAnalytics.track) ElarahAnalytics.track('mh_lead', { origem: d.origem, encontros: d.encontros }); } catch (_) {}
       var msg = 'Olá! Sou ' + d.nome + (d.cargo ? ' (' + d.cargo + ')' : '') + ' da ' + d.empresa + '. Quero receber a proposta da Elarah Mental Health' +
-        (temEscolha() ? ' para: ' + resumoEXP() : (d.encontros ? ' para ' + d.encontros + ' encontro(s)' : '')) + '. E-mail: ' + d.email + (livre ? '. ' + livre : '');
+        (temEscolha() ? ' para: ' + resumoEXP() : (d.encontros ? ' para ' + d.encontros + ' encontro(s)' : '')) + (INTERESSE ? ' (experiência: ' + INTERESSE + ')' : '') + '. E-mail: ' + d.email + (livre ? '. ' + livre : '');
       var wa = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
       form.innerHTML = '<div class="ok"><h3>Recebido!</h3><p style="color:var(--muted);margin-bottom:18px">' +
         (ok ? 'Sua experiência já está com a gente. Abrindo o WhatsApp pra continuar a conversa…' : 'Abrindo o WhatsApp com a mensagem pronta…') +
