@@ -45,9 +45,14 @@ extra = '''
   .inclist li{list-style:none;position:relative;padding-left:28px;font-size:13px;color:var(--ink);line-height:1.4}
   .inclist li b{color:var(--navy);font-weight:700}
   .inclist li .ck{position:absolute;left:0;top:1px;width:18px;height:18px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
-  .split{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:20px;align-items:center}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:18px;align-items:center}
   .split .sph{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.4);height:380px}
   .split .sph img{width:100%;height:100%;object-fit:cover;display:block}
+  .twoph{display:grid;grid-template-rows:1fr 1fr;gap:14px;height:388px}
+  .twoph figure{margin:0;border-radius:16px;overflow:hidden;position:relative;border:1px solid var(--line);box-shadow:0 14px 34px -24px rgba(0,0,0,.4)}
+  .twoph img{width:100%;height:100%;object-fit:cover;display:block}
+  .twoph figcaption{position:absolute;left:0;right:0;bottom:0;padding:20px 13px 10px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .inclist.charm li{font-size:12.5px}
   /* espacos: O Jardim */
   .jhero{margin:18px 0 0;border-radius:18px;overflow:hidden;position:relative;height:250px;border:1px solid var(--line);box-shadow:0 18px 44px -28px rgba(0,0,0,.42)}
   .jhero img{width:100%;height:100%;object-fit:cover;display:block}
@@ -192,24 +197,28 @@ momento = f'''
     {foot("Momento Elarah")}
   </section>'''
 
-incluso = f'''
+charmbar = f'''
   <section class="slide">
-{head_simple("O que está incluso")}
-    <span class="eyebrow orange">◆ Tudo pronto</span>
-    <h2>O que está <em>incluso</em></h2>
+{head_simple("Charm Bar")}
+    <span class="eyebrow orange">◆ Charm Bar · Ateliê AGIR</span>
+    <h2>O que você vai <em>viver</em></h2>
+    <p class="lead"><strong>Escolha. Combine. Crie uma peça com a sua cara.</strong> Cada convidada monta o próprio acessório de bolsa a partir de uma curadoria de <strong>cores, pedras, letras e charms</strong> do <strong>Ateliê AGIR</strong> — testando combinações e escolhendo <strong>até 5 charms</strong>. Sem precisar de experiência: o <strong>Ateliê AGIR acompanha</strong> cada etapa. 🤎</p>
     <div class="split">
-      <div class="sph">{img("charm-flatlay.jpg", "Bag charm finalizado", "center 50%")}</div>
-      <ul class="inclist">
-        <li><span class="ck">✓</span><b>Curadoria e produção</b> Elarah</li>
-        <li><span class="ck">✓</span><b>Facilitadora</b> da experiência</li>
-        <li><span class="ck">✓</span><b>Materiais</b> para os bag charms</li>
-        <li><span class="ck">✓</span>Variedade de <b>charms e elementos</b></li>
-        <li><span class="ck">✓</span><b>Ferramentas</b> necessárias</li>
-        <li><span class="ck">✓</span><b>Montagem</b> e acompanhamento da atividade</li>
-        <li><span class="ck">✓</span>Cada participante <b>leva sua criação</b></li>
+      <div class="twoph">
+        <figure>{img("charm-materials-tray.jpg", "Curadoria de cores, pedras, letras e charms", "center 55%")}<figcaption>A curadoria de charms</figcaption></figure>
+        <figure>{img("charm-flatlay.jpg", "Acessório de bolsa personalizado finalizado", "center 50%")}<figcaption>Sua peça única</figcaption></figure>
+      </div>
+      <ul class="inclist charm">
+        <li><span class="ck">✓</span><b>Todos os materiais</b> para a criação</li>
+        <li><span class="ck">✓</span>Escolha entre <b>cores, pedras e letras</b></li>
+        <li><span class="ck">✓</span>Até <b>5 charms</b> por pessoa</li>
+        <li><span class="ck">✓</span><b>Acompanhamento</b> do Ateliê AGIR na montagem</li>
+        <li><span class="ck">✓</span><b>1 acessório de bolsa</b> personalizado por você</li>
+        <li><span class="ck">✓</span><b>Embalagem</b> para levar a criação pra casa</li>
       </ul>
     </div>
-    {foot("O que está incluso")}
+    <div class="bnote" style="margin-top:16px">◆ Mais do que montar um acessório, é um momento pra <strong>criar, conversar e se divertir</strong>. Venha sozinha ou convide uma amiga — no fim, você leva uma <strong>peça única</strong>, feita por você e com a sua história. 🤎</div>
+    {foot("Charm Bar · Ateliê AGIR")}
   </section>'''
 
 espaco = f'''
@@ -298,7 +307,7 @@ encerramento = f'''
     {foot("Vamos criar?")}
   </section>'''
 
-deck = ('<div class="deck">\n' + cover + experiencia + momento + incluso + espaco
+deck = ('<div class="deck">\n' + cover + experiencia + momento + charmbar + espaco
         + investimento + encerramento + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-bag-charms.html"
