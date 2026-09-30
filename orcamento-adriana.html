@@ -470,7 +470,34 @@
     @page{size:A4 portrait;margin:0}
   }
 </style>
-</head>
+
+<style>
+  /* cotacao — cards experiencia+local+valor */
+  .exg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+  .exc{background:var(--card);border:1px solid var(--line);border-radius:15px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -24px rgba(0,0,0,.3);position:relative}
+  .exc.prem{border:1.6px solid var(--orange)}
+  .exph{height:116px;overflow:hidden;background:#eee;position:relative}
+  .exph img{width:100%;height:100%;object-fit:cover;display:block}
+  .excap{position:absolute;top:8px;right:8px;background:var(--navy);color:#fff;font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+  .excap.big{background:var(--orange-dark);font-size:9px;padding:5px 11px}
+  .expremtag{position:absolute;top:8px;left:8px;background:var(--orange);color:#fff;font-size:8px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+  .exb{padding:11px 15px 14px;display:flex;flex-direction:column;flex:1}
+  .exn{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy);line-height:1.06}
+  .exloc{font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:5px;line-height:1.4}
+  .exval{font-size:11px;color:var(--navy-soft);font-weight:600;margin-top:7px}
+  .exval b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy)}
+  .exd{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:7px}
+  .exinc{font-size:9.5px;color:var(--ink);margin-top:6px;line-height:1.4}
+  .exinc b{color:var(--navy)}
+  .outros{margin-top:15px;background:#FBF1EE;border:1px solid var(--line);border-radius:14px;padding:13px 20px}
+  .outros .ott{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .outros .oll{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px}
+  .outros .oll span{font-size:12px;color:var(--navy);font-weight:600}
+  .outros .oll span small{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:8px;letter-spacing:.06em;margin-left:4px}
+  .outros p{font-size:10px;color:var(--muted);line-height:1.45;margin:8px 0 0}
+  .somar{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+  .somar span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:12.5px;color:var(--ink);font-weight:600;box-shadow:0 4px 14px -8px rgba(0,0,0,.2)}
+</style></head>
 <body>
 
 <div class="deck">
@@ -511,7 +538,7 @@
     <div class="mmg">
       <div class="mm"><div class="mmph"><img src="assets/pinturatacavinho.jpg" alt="Pintura em taças" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Pintura em taças</div><div class="mmd">Cada um cria e personaliza a própria taça.</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/ceramicamodelagem.jpg" alt="Modelagem em cerâmica" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Cerâmica</div><div class="mmd">Argila na mão para modelar uma peça do zero.</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/buque.jpg" alt="Flores e arranjos" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Flores &amp; arranjos</div><div class="mmd">Cada um monta o próprio arranjo com flores frescas.</div></div></div>
+      <div class="mm"><div class="mmph"><img src="assets/lado-b-grupo-pecas.webp" alt="Tufting" style="object-position:center 25%"></div><div class="mmb"><div class="mmn">Tufting</div><div class="mmd">Fios, texturas e criatividade para desenvolver uma peça autoral.</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/pinturapratoceramica.jpg" alt="Pintura em cerâmica" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Pintura em cerâmica</div><div class="mmd">Peças prontas ganham cor e personalidade.</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/vela-aromatica-real.jpg" alt="Velas aromáticas" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Velas aromáticas</div><div class="mmd">Cada um escolhe os aromas e cria a própria vela.</div></div></div>
     </div>
@@ -520,80 +547,89 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Onde pode acontecer</span></div>
+      <div class="head-right"><span class="kicker">Experiências · local · valor</span></div>
     </div>
-    <span class="eyebrow orange">◆ Os espaços</span>
-    <h2>Escolhemos o espaço de acordo com <em>a experiência</em></h2>
-    <p class="lead">Opções na região que vocês preferem — e, se quiserem, a gente também leva a experiência até o local de vocês.</p>
-    <div class="vg">
-      <div class="vc"><div class="vcph"><img src="assets/agora-grupo.jpg" alt="Agora Intu" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Agora Intu</div><div class="vcbairro">Pinheiros</div><div class="vcd">Ateliê criativo, ótimo para cerâmica, pintura e experiências manuais.</div></div></div>
-      <div class="vc"><div class="vcph"><img src="assets/yucafe-real.jpg" alt="Raüs Café" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Raüs Café</div><div class="vcbairro">Pinheiros</div><div class="vcd">Intimista e descontraído, para propostas criativas e sensoriais.</div></div></div>
-      <div class="vc"><div class="vcph"><img src="assets/sterna-painel.webp" alt="Sterna Faria Lima" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Sterna Faria Lima</div><div class="vcbairro">Itaim Bibi</div><div class="vcd">Café urbano e bem localizado, para workshops e encontros criativos.</div></div></div>
+    <span class="eyebrow orange">◆ A cotação</span>
+    <h2>Onde vocês querem <em>criar?</em></h2>
+    <p class="lead">Experiências em ateliês parceiros ou levadas até o espaço de vocês.</p>
+    <div class="exg">
+      <div class="exc"><div class="exph"><img src="assets/pinturataca.jpg" alt="Pintura em taças" style="object-position:center 45%"><span class="excap">Até 20 pessoas</span></div><div class="exb"><div class="exn">Pintura em taças</div><div class="exloc">Elarah até você · casa, salão ou espaço do grupo</div><div class="exval">a partir de <b>R$ 249</b> / pessoa</div><div class="exd">Cada pessoa personaliza a própria taça enquanto o grupo cria, conversa e brinda.</div></div></div>
+      <div class="exc"><div class="exph"><img src="assets/agora-hero.jpg" alt="Cerâmica" style="object-position:center 45%"><span class="excap big">Até 16 pessoas</span></div><div class="exb"><div class="exn">Cerâmica</div><div class="exloc">Agora Intu · Pinheiros</div><div class="exval">a partir de <b>R$ 281,25</b> / pessoa</div><div class="exd">Modelagem à mão para cada participante criar uma peça do zero.</div><div class="exinc">Inclui <b>materiais</b>, <b>condução</b> e <b>queima</b> da peça.</div></div></div>
+      <div class="exc"><div class="exph"><img src="assets/agora-pintando.jpg" alt="Pintura em cerâmica" style="object-position:center 30%"><span class="excap big">Até 16 pessoas</span></div><div class="exb"><div class="exn">Pintura em cerâmica</div><div class="exloc">Agora Intu · Pinheiros</div><div class="exval">a partir de <b>R$ 281,25</b> / pessoa</div><div class="exd">Cada participante escolhe e personaliza uma peça com cores e desenhos próprios.</div><div class="exinc">Inclui <b>peça</b>, <b>materiais</b>, <b>condução</b> e <b>queima</b>.</div></div></div>
+      <div class="exc"><div class="exph"><img src="assets/vela-grupo-oficina.jpg" alt="Velas aromáticas" style="object-position:center 35%"><span class="excap">Até 20 pessoas</span></div><div class="exb"><div class="exn">Velas aromáticas</div><div class="exloc">Espaço parceiro ou Elarah até você</div><div class="exval">a partir de <b>R$ 309</b> / pessoa</div><div class="exd">Cada participante escolhe aromas e cria sua própria vela para levar para casa.</div></div></div>
+      <div class="exc prem"><div class="exph"><img src="assets/tufting-cereja.jpg" alt="Tufting" style="object-position:center 45%"><span class="expremtag">Opção premium</span></div><div class="exb"><div class="exn">Tufting</div><div class="exloc">Lado B Studio · Perdizes</div><div class="exval">a partir de <b>R$ 799</b> / pessoa</div><div class="exd">Experiência criativa com fios e texturas para desenvolver uma peça têxtil autoral.</div></div></div>
+      <div class="exc"><div class="exph"><img src="assets/em-casa-hero-1.jpg" alt="No espaço de vocês" style="object-position:center 40%"><span class="excap">Até 20 pessoas</span></div><div class="exb"><div class="exn">No espaço de vocês</div><div class="exloc">Casa · salão · condomínio · espaço do grupo</div><div class="exval">a partir de <b>R$ 249</b> / pessoa</div><div class="exd">Se já têm um lugar em mente, a Elarah leva a experiência até lá — profissional, materiais e estrutura conforme a atividade.</div></div></div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Também dá pra <b>levar a experiência até vocês</b> — casa, salão do prédio ou outro espaço escolhido por vocês. É só combinar conforme o formato.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Onde pode acontecer</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Investimento</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Investimento</span>
-    <h2>O valor da <em>experiência</em></h2>
-    <div class="phero">
-      <div class="pheroph"><img src="assets/agora-mesa.jpg" alt="Mesa criativa montada no ateliê" style="object-position:center 50%"></div>
-      <div class="pval">
-        <span class="pct">Valor por experiência</span>
-        <div class="pcons">Sob consulta</div>
-        <div class="fld">
-          <div class="f"><div class="fl">Por pessoa</div><div class="fv">a confirmar</div></div>
-          <div class="f"><div class="fl">Grupo · até 20</div><div class="fv">a confirmar</div></div>
-        </div>
-        <p class="pnote">Cada experiência tem um valor por pessoa próprio, que inclui profissional, materiais e estrutura. Confirmamos o valor por pessoa e o total do grupo assim que vocês escolherem a experiência e o número final de convidados.</p>
+    <div class="outros">
+      <div class="ott">Outros espaços parceiros</div>
+      <div class="oll">
+        <span>Raüs Café <small>Pinheiros</small></span>
+        <span>Sala Bar <small>Pinheiros</small></span>
+        <span>Espaço Cardeal <small>Pinheiros</small></span>
+        <span>Sterna Faria Lima <small>Itaim Bibi</small></span>
       </div>
+      <p>Também podemos montar a experiência em outros espaços parceiros próximos à região escolhida. Valores e condições variam conforme atividade, número de convidados e disponibilidade.</p>
     </div>
-    <p class="fineprint">Valores por pessoa definidos conforme a experiência escolhida, o espaço e o número final de convidados (até 20). O espaço pode ter condições próprias de reserva, locação ou consumo, confirmadas conforme o local. Aniversário em 07/11, sujeito à disponibilidade de agenda.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Experiências · local · valor</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Adicional</span></div>
+      <div class="head-right"><span class="kicker">Como funciona</span></div>
     </div>
-    <span class="eyebrow orange">◆ Pra guardar o dia</span>
-    <h2>Registro <em>fotográfico</em></h2>
+    <span class="eyebrow orange">◆ Simples do começo ao fim</span>
+    <h2>Vocês escolhem. <em>A gente monta.</em></h2>
+    <div class="rule"></div>
+    <div class="grid3">
+      <div class="infocard"><div class="num">01</div><h3>Escolham</h3><p>A experiência e o espaço que mais combinam com o grupo.</p></div>
+      <div class="infocard"><div class="num">02</div><h3>Confirmamos</h3><p>Validamos a disponibilidade para 07/11 e o número final de convidados.</p></div>
+      <div class="infocard"><div class="num">03</div><h3>A Elarah cuida do resto</h3><p>Profissional, materiais, produção e organização da experiência.</p></div>
+    </div>
+    <div class="datecall">
+      <span class="di">✦</span>
+      <p>Se preferirem, <b>levamos tudo até o espaço de vocês</b>. Experiências <b>a partir de R$ 249 por pessoa</b>.</p>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Como funciona</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Adicionais</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Pra deixar completo</span>
+    <h2>Adicionais <em>opcionais</em></h2>
     <div class="bfeat">
       <div class="bphoto"><img src="assets/bfa-grupo2.webp" alt="Grupo comemorando junto, registro espontâneo" style="object-position:center 45%"></div>
       <div class="bbody">
-        <span class="btag">Opcional</span>
-        <h3>As memórias do aniversário</h3>
-        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-top:12px">Um fotógrafo acompanha a comemoração e registra os melhores momentos — o grupo, as criações e a celebração. Vocês recebem um álbum digital pronto pra compartilhar.</p>
+        <span class="btag">Registro fotográfico</span>
+        <h3>As memórias do dia</h3>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-top:12px">Um fotógrafo acompanha a experiência e registra o grupo, as criações e a comemoração. Vocês recebem um álbum digital pronto pra compartilhar.</p>
         <div class="avalpill">R$ 450 <small>valor total</small></div>
       </div>
     </div>
-    <p class="fineprint">Adicional opcional de registro fotográfico profissional: R$ 450 (valor total), somado à experiência escolhida. Cobertura do encontro e álbum digital entregues após a comemoração.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Adicional · registro</span></div>
+    <p class="subh" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0">Podemos somar</p>
+    <div class="somar">
+      <span>Vinho</span><span>Drinks</span><span>Bolo</span><span>Comidinhas</span>
+      <span>Flores</span><span>Fotografia</span><span>Pequenos mimos</span><span>Ambientação</span>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Adicionais</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Próximos passos</span></div>
     </div>
-    <span class="eyebrow orange">◆ Simples e sob medida</span>
-    <h2>Qual delas <em>vocês fariam?</em></h2>
-    <p class="lead">Conta pra gente quais <b>2 ou 3 experiências</b> mais chamaram atenção que a gente monta a proposta final:</p>
+    <span class="eyebrow orange">◆ Bora reservar?</span>
+    <h2>Qual tem <em>mais a cara de vocês?</em></h2>
+    <p class="lead">Adriana, conta pra gente qual opção vocês mais gostaram. A partir dela, confirmamos a disponibilidade para <b>07/11</b> e seguimos com a reserva.</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolham</h3><p>A experiência e o espaço (ou o local de vocês) que mais combinam com o grupo.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>Fechamos o valor</h3><p>Confirmamos o valor por pessoa e o total, conforme a experiência e o número de convidados.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>A gente cuida do resto</h3><p>Reservamos a agenda, levamos tudo e organizamos cada detalhe.</p></div>
-    </div>
-    <div class="datecall">
-      <span class="di">✦</span>
-      <p>O aniversário é em <b>07/11</b> — assim que definirmos a experiência e o espaço, confirmamos a <b>disponibilidade de agenda</b> e seguimos com a reserva.</p>
+      <div class="infocard"><div class="num">01</div><h3>Escolhem</h3><p>Experiência + espaço.</p></div>
+      <div class="infocard"><div class="num">02</div><h3>Confirmamos</h3><p>Agenda e número final de convidados.</p></div>
+      <div class="infocard"><div class="num">03</div><h3>A gente cuida do resto</h3><p>Produção, materiais e organização.</p></div>
     </div>
     <div class="quote" style="margin-top:18px">
-      Adriana, me conta quais experiências mais gostaram que a gente segue com a curadoria e o orçamento final. 🧡<br>
+      Vocês escolhem a favorita. A Elarah cuida do resto. 🧡<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Próximos passos</span></div>
