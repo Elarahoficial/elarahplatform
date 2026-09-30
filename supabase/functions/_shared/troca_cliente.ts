@@ -117,6 +117,10 @@ function isKit(exp: Row): boolean {
   return cat.includes("em casa");
 }
 
+function chaveTexto(v: unknown): string {
+  return String(v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
 export function fornecedorKey(nome: unknown): string {
   return String(nome ?? "").trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -155,6 +159,10 @@ export interface Pedido {
   experiencia_id: string;
   slot_id: string | null;
   horario: string | null;
+  // Agendamento livre (voucher): dia/hora de PREFERÊNCIA, opcionais —
+  // mesma lógica do site; a Elarah acerta o horário com a cliente.
+  preferencia_data?: string | null; // YYYY-MM-DD
+  preferencia_hora?: string | null; // HH:MM
 }
 
 export interface TrocaCtx {
@@ -271,33 +279,46 @@ export async function validarTroca(
     return falha("experiencia_indisponivel", "Essa experiência não está mais disponível.");
   }
   const mesmaExp = novaExp.id === bk.experiencia_id;
-  if (novaExp.horario_funcionamento && String(novaExp.horario_funcionamento).trim()) {
-    return falha("agendamento_livre", "Essa experiência tem agendamento direto com o parceiro. Fale com a gente no WhatsApp.");
+  const agendamentoLivre = !!(novaExp.horario_funcionamento && String(novaExp.horario_funcionamento).trim());
+  if (agendamentoLivre && mesmaExp) {
+    return falha("agendamento_livre", "Essa experiência é de agendamento livre: pra mudar o dia, fale com a gente no WhatsApp.");
   }
   let diferencaCentavos = 0;
   let sobraCentavos = 0;
   let precoNovoUnit: number | null = null;
+  // "Gêmea": outra ficha com o MESMO nome e a MESMA parceira (a mesma aula
+  // cadastrada várias vezes, uma data em cada). Pra cliente é a mesma
+  // experiência → nunca tem diferença, nem a pagar nem a receber.
+  const gemea = !mesmaExp && !!expAtual &&
+    chaveTexto(novaExp.nome) === chaveTexto(expAtual.nome) &&
+    fornecedorKey(novaExp.fornecedor_nome) === fornecedorKey(expAtual.fornecedor_nome);
   if (!mesmaExp) {
     if (isKit(novaExp)) return falha("kit", "Kits não entram na troca. Fale com a gente no WhatsApp.");
     if (temVariacoes(novaExp)) {
       return falha("tem_variacoes", "Essa experiência tem opções pra escolher. Fale com a gente no WhatsApp pra trocar por ela.");
     }
-    // Diferença = o que o site cobra HOJE pela nova (com a promoção que
-    // estiver no ar, igual ao checkout) − o que a cliente PAGOU por pessoa
-    // (metadata.unit_price_centavos, gravado no checkout já com promoção;
-    // reserva antiga sem o campo cai no preço do rótulo). Vezes a
-    // quantidade da reserva.
+  }
+  if (!mesmaExp && !gemea) {
+    // A PAGAR  = o que o site cobra HOJE pela nova (com a promoção no ar,
+    //            igual ao checkout) − o que a cliente PAGOU por pessoa.
+    // A RECEBER = o que ela PAGOU − o preço CHEIO da nova (sem promoção).
+    //            Promoção nunca vira crédito nem Pix: quem comprou antes da
+    //            campanha não "resgata" o desconto trocando de experiência.
+    // Entre um e outro (nova mais cara só por causa da promoção sair, ou
+    // mais barata só por causa da promoção) → troca sem diferença.
+    // O que ela pagou = metadata.unit_price_centavos (gravado no checkout,
+    // já com promoção); reserva antiga sem o campo cai no rótulo.
     const tabelaNova = parsePrecoToCents(novaExp.preco);
     const precoNovo = tabelaNova
       ? precoFinalCentavos(tabelaNova, await carregarDescontoGeral(sb), qty).cents
       : null;
     const precoAntigo = Number(meta.unit_price_centavos) || parsePrecoToCents(bk.preco_label) || 0;
     precoNovoUnit = precoNovo;
-    if (!precoNovo || !precoAntigo) {
+    if (!precoNovo || !tabelaNova || !precoAntigo) {
       return falha("preco_invalido", "Não conseguimos calcular o valor dessa troca. Fale com a gente no WhatsApp.");
     }
     if (precoNovo > precoAntigo) diferencaCentavos = (precoNovo - precoAntigo) * qty;
-    else if (precoNovo < precoAntigo) sobraCentavos = (precoAntigo - precoNovo) * qty;
+    else if (tabelaNova < precoAntigo) sobraCentavos = (precoAntigo - tabelaNova) * qty;
   }
 
   // Turma nova: ativa, à venda e com vaga.
@@ -306,7 +327,23 @@ export async function validarTroca(
   let novaData: string;
   let novoHorario: string;
   let inicioNovo: number | null;
-  if (slotIdNovo) {
+  if (agendamentoLivre) {
+    // Sem turma: dia/hora de preferência (opcionais). Sem data, fica
+    // "A combinar" e a Elarah acerta com a cliente — igual ao checkout.
+    const pd = String(pedido.preferencia_data ?? "").trim();
+    const ph = String(pedido.preferencia_hora ?? "").trim();
+    const md = pd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const mh = ph.match(/^(\d{1,2}):(\d{2})$/);
+    if (pd && !md) return falha("preferencia_invalida", "Confira o dia de preferência.", 400);
+    if (ph && !mh) return falha("preferencia_invalida", "Confira a hora de preferência.", 400);
+    if (md) {
+      const dia = new Date(`${md[1]}-${md[2]}-${md[3]}T23:59:00-03:00`).getTime();
+      if (!Number.isFinite(dia) || dia < now) return falha("preferencia_invalida", "Escolha um dia a partir de hoje.", 400);
+    }
+    novaData = md ? `${md[3]}/${md[2]}/${md[1]}` : "A combinar";
+    novoHorario = mh ? `${mh[1].padStart(2, "0")}h${mh[2]}` : "A combinar com a Elarah";
+    inicioNovo = null;
+  } else if (slotIdNovo) {
     const { data: slotRow } = await sb
       .from("experience_slots")
       .select("id, experience_id, data, horario, vagas_total, vagas_restantes, event_at, is_active")
@@ -344,10 +381,12 @@ export async function validarTroca(
       return falha("sem_vaga", "Essa experiência não tem mais vaga. Escolha outra.");
     }
   }
-  if (!opts.pagamentoConfirmado && now + cutoffH * 3600_000 > inicioNovo) {
-    return falha("turma_encerrada", "As vendas pra essa data já encerraram. Escolha outra.");
+  if (inicioNovo != null) {
+    if (!opts.pagamentoConfirmado && now + cutoffH * 3600_000 > inicioNovo) {
+      return falha("turma_encerrada", "As vendas pra essa data já encerraram. Escolha outra.");
+    }
+    if (inicioNovo <= now) return falha("turma_passou", "Essa data já passou.");
   }
-  if (inicioNovo <= now) return falha("turma_passou", "Essa data já passou.");
   const slotIdAntigo: string | null = bk.slot_id ?? null;
   const mesmaTurma = mesmaExp && (
     slotIdNovo ? slotIdNovo === slotIdAntigo
@@ -489,7 +528,9 @@ export async function aplicarTroca(
     // Pix), então o total da reserva cai junto.
     update.preco_label = novaExp.preco ?? bk.preco_label;
     update.amount_total = Math.max(0, (Number(bk.amount_total) || 0) - sobra);
-    if (ctx.precoNovoUnit) meta.unit_price_centavos = ctx.precoNovoUnit;
+    // Passa a valer o que ficou pago: o de antes menos a sobra devolvida.
+    const pagoAntes = Number(meta.unit_price_centavos) || parsePrecoToCents(bk.preco_label) || 0;
+    if (pagoAntes) meta.unit_price_centavos = Math.max(0, pagoAntes - Math.round(sobra / qty));
     meta.troca_devolucao = {
       tipo: devolucao.tipo,
       valor_centavos: sobra,
