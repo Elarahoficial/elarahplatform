@@ -102,7 +102,7 @@
   // servidor: preço de tabela novo − o da compra, por pessoa, × quantidade.
   function diferencaDe(exp, booking) {
     if (!exp || exp.id === booking.experiencia_id) return 0;
-    var novo = precoCentavos(exp.preco) || 0;
+    var novo = precoHoje(exp);
     var antigo = precoMaxDe(booking);
     var q = Math.max(1, Number(booking.quantidade) || 1);
     return novo > antigo && antigo > 0 ? (novo - antigo) * q : 0;
@@ -112,9 +112,18 @@
     return 'R$ ' + (Number(cents || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  // O que a cliente PAGOU por pessoa: metadata.unit_price_centavos (gravado
+  // no checkout, já com promoção); reserva antiga sem o campo → rótulo.
   function precoMaxDe(booking) {
-    return Math.max(precoCentavos(booking.preco_label) || 0,
-      Number(booking.metadata && booking.metadata.unit_price_centavos) || 0);
+    return Number(booking.metadata && booking.metadata.unit_price_centavos) ||
+      precoCentavos(booking.preco_label) || 0;
+  }
+
+  // Quanto o site cobra HOJE por pessoa (com a promoção no ar).
+  function precoHoje(exp) {
+    var d = D();
+    var v = d && d.precoVigenteCentavos ? d.precoVigenteCentavos(exp) : null;
+    return Number(v) || precoCentavos(exp.preco) || 0;
   }
 
   function isKit(exp) {
@@ -447,7 +456,7 @@
         var expSel = dt ? (dt.exp || exp) : null;
         var dif = dt ? diferencaDe(expSel, booking) : 0;
         var maisBarata = dt && expSel.id !== booking.experiencia_id &&
-          (precoCentavos(expSel.preco) || 0) < precoMaxDe(booking);
+          precoHoje(expSel) < precoMaxDe(booking);
         render(
           topo(titulo, sub) +
           '<button type="button" class="troca-voltar" data-voltar>← Voltar</button>' +
@@ -563,7 +572,7 @@
       render(
         topo('Pagar a diferença', '<strong>' + esc(exp.nome) + '</strong> · ' + esc(dt.data) + ' ' + esc(dt.horario)) +
         '<button type="button" class="troca-voltar" data-voltar>← Voltar</button>' +
-        '<div class="troca-pagar">Diferença a pagar: <b>' + esc(brl(dif)) + '</b></div>' +
+        '<div class="troca-pagar">Diferença a pagar: <b data-dif>' + esc(brl(dif)) + '</b></div>' +
         '<div class="troca-metodos">' +
           '<button type="button" class="troca-metodo troca-metodo--on" data-metodo="pix">Pix</button>' +
           '<button type="button" class="troca-metodo" data-metodo="cartao">Cartão de crédito</button>' +
@@ -598,11 +607,23 @@
       }
       $('[data-voltar]').addEventListener('click', voltar);
 
+      // Cotação do SERVIDOR (quem cobra): corrige o valor da tela se a conta
+      // do navegador (promoção, preço pago) divergir.
+      var cotacao = chamar(Object.assign(corpoTroca(exp, dt), { acao: 'cotar' })).then(function (c) {
+        if (c && c.ok && Number(c.diferenca_centavos) > 0 && c.diferenca_centavos !== dif) {
+          dif = c.diferenca_centavos;
+          var el = $('[data-dif]');
+          if (el) el.textContent = brl(dif);
+          atualizarBotao();
+        }
+        return c || { ok: false };
+      });
+
       var parcelasCarregadas = false;
       async function carregarParcelas() {
         if (parcelasCarregadas) return;
         var sel = $('#tr-parcelas');
-        var cot = await chamar(Object.assign(corpoTroca(exp, dt), { acao: 'cotar' }));
+        var cot = await cotacao;
         if (!cot.ok || !Array.isArray(cot.parcelas) || !cot.parcelas.length) {
           sel.innerHTML = '<option value="">Indisponível</option>';
           erro(cot.message || 'Não conseguimos carregar as parcelas. Tente o Pix.');

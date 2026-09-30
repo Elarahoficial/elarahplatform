@@ -23,6 +23,7 @@
 // =============================================================
 
 import { effectiveCutoffHours } from "./booking_guard.ts";
+import { carregarDescontoGeral, precoFinalCentavos } from "./promo.ts";
 import { prazoRemarcacaoPorCategoria, PRAZO_REMARCACAO_PADRAO } from "./booking_policy.ts";
 import {
   enviarConfirmacaoReagendamento,
@@ -167,6 +168,8 @@ export interface TrocaCtx {
   novoHorario: string;
   // Diferença a pagar (total da reserva, em centavos). 0 = troca direta.
   diferencaCentavos: number;
+  // Preço por pessoa cobrado hoje pela experiência nova (com promoção).
+  precoNovoUnit: number | null;
 }
 
 export type Falha = { ok: false; error: string; message: string; status: number };
@@ -240,18 +243,23 @@ export async function validarTroca(
     return falha("agendamento_livre", "Essa experiência tem agendamento direto com o parceiro. Fale com a gente no WhatsApp.");
   }
   let diferencaCentavos = 0;
+  let precoNovoUnit: number | null = null;
   if (!mesmaExp) {
     if (isKit(novaExp)) return falha("kit", "Kits não entram na troca. Fale com a gente no WhatsApp.");
     if (temVariacoes(novaExp)) {
       return falha("tem_variacoes", "Essa experiência tem opções pra escolher. Fale com a gente no WhatsApp pra trocar por ela.");
     }
-    // Diferença pelo preço de TABELA (o do site, antes de promoção), por
-    // pessoa, vezes a quantidade da reserva.
-    const precoNovo = parsePrecoToCents(novaExp.preco);
-    const precoAntigo = Math.max(
-      parsePrecoToCents(bk.preco_label) ?? 0,
-      Number(meta.unit_price_centavos) || 0,
-    );
+    // Diferença = o que o site cobra HOJE pela nova (com a promoção que
+    // estiver no ar, igual ao checkout) − o que a cliente PAGOU por pessoa
+    // (metadata.unit_price_centavos, gravado no checkout já com promoção;
+    // reserva antiga sem o campo cai no preço do rótulo). Vezes a
+    // quantidade da reserva.
+    const tabelaNova = parsePrecoToCents(novaExp.preco);
+    const precoNovo = tabelaNova
+      ? precoFinalCentavos(tabelaNova, await carregarDescontoGeral(sb), qty).cents
+      : null;
+    const precoAntigo = Number(meta.unit_price_centavos) || parsePrecoToCents(bk.preco_label) || 0;
+    precoNovoUnit = precoNovo;
     if (!precoNovo || !precoAntigo) {
       return falha("preco_invalido", "Não conseguimos calcular o valor dessa troca. Fale com a gente no WhatsApp.");
     }
@@ -315,7 +323,7 @@ export async function validarTroca(
 
   return {
     ok: true,
-    ctx: { bk, meta, qty, expAtual, novaExp, mesmaExp, slotIdNovo, novaData, novoHorario, diferencaCentavos },
+    ctx: { bk, meta, qty, expAtual, novaExp, mesmaExp, slotIdNovo, novaData, novoHorario, diferencaCentavos, precoNovoUnit },
   };
 }
 
@@ -444,6 +452,8 @@ export async function aplicarTroca(
     // valor pago entra no total da reserva (a contabilidade soma daqui) e
     // o detalhe fica no metadata.
     update.preco_label = novaExp.preco ?? bk.preco_label;
+    // Próximas comparações (e o e-mail) partem do que ela passou a pagar.
+    if (ctx.precoNovoUnit) meta.unit_price_centavos = ctx.precoNovoUnit;
     update.amount_total = (Number(bk.amount_total) || 0) + opts.pagamento.valorCentavos;
     meta.troca_diferenca = {
       diferenca_centavos: opts.pagamento.diferencaCentavos,
