@@ -78,7 +78,7 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Um aniversário criativo</span>
         <h1>Um aniversário para <em>criar juntos</em></h1>
-        <p class="lead">Reunir os amigos, <strong>colocar a mão na massa</strong>, brindar, rir e <strong>fazer algo diferente juntos</strong> — e ainda <strong>levar uma lembrança do dia</strong>. ✨</p>
+        <p class="lead">Um aniversário para <strong>reunir os amigos</strong>, <strong>colocar a mão na massa</strong>, brindar, rir e <strong>criar algo juntos</strong> — uma comemoração diferente para guardar na memória. ✨</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>Até 20</b> pessoas</span>
@@ -97,7 +97,7 @@ conceito = f'''
 {head_simple("O conceito")}
     <span class="eyebrow orange">◆ A proposta</span>
     <h2>Criar, conversar e <em>comemorar</em></h2>
-    <p class="lead">Trocar a comemoração tradicional por uma experiência <strong>leve, participativa e cheia de troca</strong> — daquelas em que <strong>todo mundo cria, conversa, ri e brinda junto</strong>.</p>
+    <p class="lead">Trocar a comemoração tradicional por uma experiência leve e cheia de troca — daquelas em que todo mundo <strong>cria</strong>, <strong>conversa</strong>, <strong>ri</strong>, <strong>brinda</strong> e ainda <strong>leva uma lembrança feita por vocês</strong>.</p>
     <div class="pil3">
       <div class="p"><div class="pt">Mão na massa</div><div class="pd">Todo mundo participa e cria alguma coisa.</div></div>
       <div class="p"><div class="pt">Leve &amp; social</div><div class="pd">Pra conversar, brindar e curtir sem pressa.</div></div>
@@ -108,7 +108,7 @@ conceito = f'''
       <figure>{img("ceramicamodelagem.jpg", "Mãos trabalhando a argila", "center 50%")}<figcaption>Mãos na obra</figcaption></figure>
       <figure>{img("pinturataca.jpg", "Pintura em taça", "center 45%")}<figcaption>Criar &amp; brindar</figcaption></figure>
       <figure>{img("agora-selfie.jpg", "Grupo rindo durante a experiência", "center 35%")}<figcaption>Muita risada</figcaption></figure>
-      <figure>{img("lado-b-vermelho.webp", "Materiais e texturas", "center 30%")}<figcaption>Materiais &amp; texturas</figcaption></figure>
+      <figure>{img("agora-ceramica.jpg", "Materiais e texturas", "center 45%")}<figcaption>Materiais &amp; texturas</figcaption></figure>
       <figure>{img("agora-grupo.jpg", "Grupo reunido à mesa", "center 45%")}<figcaption>Em volta da mesa</figcaption></figure>
     </div>
     {foot("O conceito")}
@@ -139,10 +139,10 @@ espacos = f'''
     <span class="eyebrow orange">◆ Onde pode acontecer</span>
     <h2>Quatro espaços, <em>quatro vibes</em></h2>
     <div class="vg" style="grid-template-columns:1fr 1fr">
-      {vc("agora-grupo.jpg", "Agora Intu", "Agora Intu", "Pinheiros · Ateliê", "Ateliê criativo e acolhedor. Ótimo para cerâmica e pintura.", "center 50%")}
-      {vc("lado-b-grupo-pecas.webp", "Lado B Studio", "Lado B Studio", "Perdizes · Ateliê", "Estúdio contemporâneo e colorido. Ideal para tufting & punch.", "center 25%")}
-      {vc("yucafe-real.jpg", "Raüs Café", "Raüs Café", "Pinheiros · Café", "Intimista e descontraído. Ótimo para taças, velas e experiências sensoriais.", "center 50%")}
-      {vc("casa-aquario-lounge.jpg", "Casa Aquário", "Casa Aquário", "Pinheiros · Privativo", "Espaço reservado e versátil, ideal para montar uma experiência exclusiva para o grupo.", "center 50%")}
+      {vc("yucafe-real.jpg", "Café & Eventos", "Café &amp; Eventos", "Café · Eventos", "Espaço acolhedor para reunir o grupo, criar juntos e comemorar com conforto. <b>Até 20 · ~3h · R$ 100/pessoa</b> — inclui bolo, água, café e pão de queijo.", "center 50%")}
+      {vc("agora-grupo.jpg", "Agora Intu", "Agora Intu", "Pinheiros · Ateliê criativo", "Ateliê criativo e acolhedor. Ótimo para cerâmica e pintura.", "center 50%")}
+      {vc("shoyu-atelie.jpg", "Shoyu Crafts", "Shoyu Crafts", "Pinheiros · Ateliê de cerâmica", "Ateliê de cerâmica cheio de charme. Perfeito para modelar e pintar peças.", "center 55%")}
+      {vc("piselli-salao.jpg", "Espaço Cardeal", "Espaço Cardeal", "Pinheiros · Espaço privativo", "Espaço reservado e versátil, ideal para uma experiência exclusiva do grupo.", "center 50%")}
     </div>
     {foot("Espaços parceiros")}
   </section>'''
@@ -160,9 +160,9 @@ atevoce = f'''
         <span class="btag">A gente leva até você</span>
         <h3>É só receber o grupo</h3>
         <ul class="feat">
-          <li><span class="st">✦</span><b>A experiência</b> — vocês escolhem a favorita</li>
-          <li><span class="st">✦</span><b>A estrutura</b> — materiais e profissionais por nossa conta</li>
-          <li><span class="st">✦</span><b>O espaço</b> — a gente leva a experiência até vocês</li>
+          <li><span class="st">✦</span><b>Profissionais</b> — condução da experiência por nossa conta</li>
+          <li><span class="st">✦</span><b>Materiais</b> — tudo o que precisa para criar</li>
+          <li><span class="st">✦</span><b>Estrutura</b> — montagem e organização no seu espaço</li>
         </ul>
       </div>
     </div>
@@ -192,7 +192,7 @@ proximos = f'''
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Bora fechar?</span>
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Adriana, conta pra gente qual <b>experiência + espaço</b> vocês mais gostaram. A partir daí, confirmamos a disponibilidade para <b>07/11</b> e seguimos com a reserva.</p>
+    <p class="lead">Adriana, conta pra gente qual <b>experiência e formato</b> vocês mais gostaram. A partir disso, confirmamos <b>disponibilidade</b> e seguimos com a reserva.</p>
     <div class="rule"></div>
     <div class="grid3">
       <div class="infocard"><div class="num">01</div><h3>Escolhem</h3><p><b>Experiência + espaço</b>.</p></div>
@@ -211,6 +211,8 @@ deck = ('<div class="deck">\n' + cover + conceito + cardapio + espacos + atevoce
 html = head + deck + tail
 out = ROOT + "/orcamento-adriana.html"
 io.open(out, "w", encoding="utf-8").write(html)
-for bad in ["Sob consulta", "sob consulta", "aniversário no ateliê"]:
+for bad in ["Sob consulta", "sob consulta", "aniversário no ateliê",
+            "lado-b", "Lado B", "casa-aquario", "Casa Aquário", "greta", "Greta",
+            "foldingbook", "Folding Book"]:
     assert bad not in deck, f"PROIBIDO presente: {bad}"
 print("wrote", out, "| slides:", html.count('<section class="slide">'), "| ok")
