@@ -125,7 +125,8 @@ function isKit(exp: Row): boolean {
 //   2. amount_before_grossup_centavos (cartão Pagar.me, antes da taxa)
 //   3. amount_total − taxa do cartão   (Stripe / demais)
 // E nunca acima do preço unitário gravado na compra (quando existe).
-export function pagoPorPessoa(bk: Row, meta: Record<string, unknown>, qty: number): number {
+// null = não dá pra saber (reserva sem nenhum valor gravado); 0 = pagou nada.
+export function pagoPorPessoa(bk: Row, meta: Record<string, unknown>, qty: number): number | null {
   const q = Math.max(1, qty || 1);
   // 0 é válido (compra paga inteira com cupom/crédito: não pagou nada).
   const n = (v: unknown) => {
@@ -141,7 +142,7 @@ export function pagoPorPessoa(bk: Row, meta: Record<string, unknown>, qty: numbe
   // Teto só com o preço unitário GRAVADO na compra (o rótulo pode ser o
   // preço base de uma variação mais cara, tipo "Dupla").
   const unit = n(meta.unit_price_centavos);
-  if (total == null) return unit ?? parsePrecoToCents(bk.preco_label) ?? 0;
+  if (total == null) return unit ?? parsePrecoToCents(bk.preco_label) ?? null;
   const porPessoa = Math.round(total / q);
   return unit != null && unit > 0 ? Math.min(unit, porPessoa) : porPessoa;
 }
@@ -349,7 +350,8 @@ export async function validarTroca(
       : null;
     const precoAntigo = pagoPorPessoa(bk, meta, qty);
     precoNovoUnit = precoNovo;
-    if (!precoNovo || !tabelaNova || !precoAntigo) {
+    // precoAntigo = 0 é válido (compra paga inteira com cupom/crédito).
+    if (!precoNovo || !tabelaNova || precoAntigo == null) {
       return falha("preco_invalido", "Não conseguimos calcular o valor dessa troca. Fale com a gente no WhatsApp.");
     }
     if (precoNovo > precoAntigo) diferencaCentavos = (precoNovo - precoAntigo) * qty;
@@ -549,7 +551,7 @@ export async function aplicarTroca(
     update.preco_label = novaExp.preco ?? bk.preco_label;
     update.amount_total = Math.max(0, (Number(bk.amount_total) || 0) - sobra);
     // Passa a valer o que ficou pago: o de antes menos a sobra devolvida.
-    const pagoAntes = pagoPorPessoa(bk, meta, qty);
+    const pagoAntes = pagoPorPessoa(bk, meta, qty) ?? 0;
     if (pagoAntes) meta.unit_price_centavos = Math.max(0, pagoAntes - Math.round(sobra / qty));
     meta.troca_devolucao = {
       tipo: devolucao.tipo,
