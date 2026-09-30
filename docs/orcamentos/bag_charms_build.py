@@ -1,6 +1,7 @@
-# Proposta Elarah · Bag Charms · ATIVACAO DE MARCA / lancamento · 15 a 20 · SP
-# v3: capa com pessoas; experiencia mais animada + negrito; momento vende vibe + rodape ativacao;
-# investimento = tabela comparativa (Experiencia x Experiencia Completa); encerramento com passos + botao WhatsApp.
+# Proposta Elarah · Entre Charms · ATIVACAO DE MARCA / lancamento · 15 a 20 · SP
+# v4: nome "Entre Charms" (experiencia, nao produto); capa com maos criando;
+# composicao social; "Os charms" com elementos reais; investimento em 2 opcoes claras
+# (Experiencia x Mais Completo - Sugestao Elarah); encerramento com passos + botao WhatsApp.
 import io, re
 
 ROOT = "/home/user/elarahplatform"
@@ -8,24 +9,81 @@ ref = io.open(ROOT + "/proposta-bag-charms.html", encoding="utf-8").read()
 head = ref.split('<div class="deck">')[0]
 tail = '<div class="toolbar">' + ref.split('<div class="toolbar">', 1)[1]
 
+# --- limpa <style> injetados por builds anteriores: mantem apenas os 2 blocos base ---
+_parts = re.split(r'(<style>.*?</style>)', head, flags=re.DOTALL)
+_kept = 0
+_out = []
+for _p in _parts:
+    if _p.startswith('<style>'):
+        _kept += 1
+        if _kept <= 2:
+            _out.append(_p)
+    else:
+        _out.append(_p)
+head = ''.join(_out)
+
+# --- titulo / meta ---
+head = re.sub(r'<title>.*?</title>', '<title>Entre Charms · Elarah</title>', head, count=1, flags=re.DOTALL)
+head = re.sub(r'<meta name="description"[^>]*>',
+              '<meta name="description" content="Entre Charms · uma experiência Elarah de criação, encontros e personalidade: cada convidada monta o próprio bag charm. Ativação de marca em São Paulo.">',
+              head, count=1)
+
+# --- CSS consolidado (uma unica injecao) ---
 extra = '''
 <style>
-  .cmt{width:100%;border-collapse:collapse;margin-top:18px;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px -30px rgba(0,0,0,.3)}
-  .cmt thead th{background:var(--navy);color:#fff;padding:15px 18px;font-size:12px;font-weight:700;text-align:center;letter-spacing:.02em}
-  .cmt thead th.feat{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)}
-  .cmt thead th.prem{background:var(--orange-dark)}
-  .cmt thead th small{display:block;font-family:'DM Sans',sans-serif;font-weight:600;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-top:3px}
-  .cmt td{padding:13px 18px;border-bottom:1px solid var(--line);background:var(--card);font-size:12.5px;text-align:center;color:var(--ink)}
-  .cmt td.feat{text-align:left;font-weight:600;color:var(--navy)}
-  .cmt td.prem{background:#FBF0F3}
-  .cmt .inc{color:var(--orange-dark);font-weight:700}
-  .cmt .no{color:var(--muted)}
-  .cmt tr.val td{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);background:#F7EFEC}
-  .cmt tr.val td.feat{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
-  .cmt tr.val td.prem{background:#F2D9E1}
-  .cmt tr.tot td{background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px}
-  .cmt tr.tot td.feat{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.8);font-weight:700}
-  .cmt tr.tot td.prem{background:var(--orange-dark)}
+  /* fluxo da experiencia */
+  .flow4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+  .flow4 .fs{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 12px 28px -22px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .flow4 .fsph{height:118px;overflow:hidden;background:#eee}
+  .flow4 .fsph img{width:100%;height:100%;object-fit:cover;display:block}
+  .flow4 .fsb{padding:11px 14px 14px}
+  .flow4 .fsn{font-family:'DM Serif Display',serif;color:var(--orange);font-size:17px;line-height:1}
+  .flow4 .fst{font-family:'DM Serif Display',serif;font-size:14.5px;color:var(--navy);line-height:1.12;margin-top:3px}
+  .flow4 .fsd{font-size:10px;color:var(--muted);line-height:1.4;margin-top:6px}
+  /* incluso */
+  .inclist{display:grid;grid-template-columns:1fr;gap:11px;margin:0;padding:0}
+  .inclist li{list-style:none;position:relative;padding-left:28px;font-size:13px;color:var(--ink);line-height:1.4}
+  .inclist li b{color:var(--navy);font-weight:700}
+  .inclist li .ck{position:absolute;left:0;top:1px;width:18px;height:18px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:20px;align-items:center}
+  .split .sph{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.4);height:380px}
+  .split .sph img{width:100%;height:100%;object-fit:cover;display:block}
+  /* espacos */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+  .duo figure{margin:0;border-radius:18px;overflow:hidden;position:relative;height:330px;border:1px solid var(--line);box-shadow:0 16px 40px -26px rgba(0,0,0,.4)}
+  .duo img{width:100%;height:100%;object-fit:cover;display:block}
+  .duo figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 15px 13px;color:#fff;font-size:12.5px;font-weight:600;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  /* momento */
+  .mos2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .mos2 figure{margin:0;border-radius:15px;overflow:hidden;position:relative;height:200px;border:1px solid var(--line);box-shadow:0 14px 34px -24px rgba(0,0,0,.36)}
+  .mos2 img{width:100%;height:100%;object-fit:cover;display:block}
+  .mos2 figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 14px 11px;color:#fff;font-size:11.5px;font-weight:600;letter-spacing:.03em;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  /* investimento: 2 opcoes claras */
+  .invduo{display:grid;grid-template-columns:1fr 1.18fr;gap:18px;margin-top:24px;align-items:stretch}
+  .iopt{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 26px 24px;box-shadow:0 16px 40px -28px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .iopt .tag{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .iopt .desc{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
+  .iopt .big{font-family:'DM Serif Display',serif;font-size:42px;color:var(--navy);line-height:1.02;margin:16px 0 2px}
+  .iopt .per{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .iopt .grp{margin-top:14px;font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy)}
+  .iopt .grp small{display:block;font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
+  .iopt .spacer{flex:1}
+  .iopt .brk{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;display:grid;gap:8px}
+  .iopt .brk .row{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;color:var(--muted)}
+  .iopt .brk .row b{font-weight:700;white-space:nowrap}
+  /* opcao recomendada */
+  .iopt.rec{background:linear-gradient(158deg,var(--navy),#241722);border-color:transparent;color:#fff;position:relative;overflow:hidden}
+  .iopt.rec .badge{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;background:var(--orange);color:#fff;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:5px 12px;border-radius:999px;margin-bottom:14px}
+  .iopt.rec .htop{display:flex;align-items:center;gap:13px}
+  .iopt.rec .recph{width:66px;height:66px;border-radius:14px;object-fit:cover;flex:none;border:1px solid rgba(255,255,255,.22)}
+  .iopt.rec .tag{color:var(--orange)}
+  .iopt.rec .desc{color:rgba(255,255,255,.78)}
+  .iopt.rec .big,.iopt.rec .grp{color:#fff}
+  .iopt.rec .per{color:rgba(255,255,255,.72)}
+  .iopt.rec .grp small{color:rgba(255,255,255,.6)}
+  .iopt.rec .brk{border-top-color:rgba(255,255,255,.16)}
+  .iopt.rec .brk .row{color:rgba(255,255,255,.82)}
+  /* encerramento */
   .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:14px}
   .steps .step{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px 15px;box-shadow:0 10px 26px -22px rgba(0,0,0,.3)}
   .steps .step .num{font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange);line-height:1}
@@ -75,12 +133,12 @@ PROOF = "Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidra
 
 cover = f'''
   <section class="slide">
-{head_block("Ativação de marca · São Paulo", "Bag", "Charms", "15 a 20 convidadas")}
+{head_block("Ativação de marca · São Paulo", "Entre", "Charms", "15 a 20 convidadas")}
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Uma ativação Elarah</span>
-        <h1>Crie seu <em>Bag Charm</em></h1>
-        <p class="lead">Uma experiência para <strong>criar, personalizar e celebrar juntas</strong>: cada convidada monta o próprio bag charm — <strong>correntes, pingentes, pérolas, letras e fitas</strong> — e leva pra casa.</p>
+        <h1>Entre <em>Charms</em></h1>
+        <p class="lead"><strong>Uma experiência de criação, encontros e personalidade.</strong> Cada convidada monta o próprio bag charm — <strong>correntes, pingentes, pérolas, letras e fitas</strong> — no seu tempo, entre boas conversas.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>15 a 20</b> convidadas</span>
@@ -91,10 +149,10 @@ cover = f'''
           <span class="chip"><b>1h30</b> de experiência</span>
         </div>
       </div>
-      <div class="cover-photo">{img("antonella-capa-grupo.jpg", "Mulheres juntas, rindo e criando", "center 30%")}</div>
+      <div class="cover-photo">{img("charm-making-mesa.jpg", "Mulheres criando seus bag charms juntas", "center 42%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
-    {foot("Bag Charms · São Paulo")}
+    {foot("Entre Charms · São Paulo")}
   </section>'''
 
 experiencia = f'''
@@ -105,7 +163,7 @@ experiencia = f'''
     <p class="lead">Uma <strong>ativação criativa</strong> para o seu lançamento: cada convidada escolhe entre correntes, pingentes, pérolas e letras e <strong>monta o próprio bag charm</strong> — <strong>espontâneo, autoral e cheio de conexão</strong>, do começo ao fim.</p>
     <div class="flow4">
       {fstep("01", "charm-materials-tray.jpg", "center 55%", "Escolha", "Escolhem charms, pingentes, pérolas e letras.")}
-      {fstep("02", "charmbar.jpg", "center 50%", "Composição", "Combinam cores, texturas e elementos.")}
+      {fstep("02", "antonella-capa-grupo.jpg", "center 30%", "Composição", "Entre risadas, combinam cores, texturas e elementos.")}
       {fstep("03", "charm-making-maos.jpg", "center 45%", "Montagem", "Montam a peça com acompanhamento.")}
       {fstep("04", "charm-bolsa-suede.jpg", "center 45%", "Peça final", "Cada uma leva o próprio charm na bolsa.")}
     </div>
@@ -123,7 +181,7 @@ momento = f'''
       <figure>{img("hidrateimeninas.jpg", "Grupo de mulheres rindo e criando", "center 30%")}<figcaption>Risadas &amp; conexão</figcaption></figure>
       <figure>{img("charm-mesa-rosa.jpg", "Mesa montada com charms e ferramentas", "center 45%")}<figcaption>Escolher os elementos</figcaption></figure>
       <figure>{img("charm-final-flatlay.jpg", "Detalhe do bag charm finalizado", "center 50%")}<figcaption>Cada detalhe</figcaption></figure>
-      <figure>{img("charmbar.jpg", "Variedade de charms e pingentes", "center 50%")}<figcaption>Os charms</figcaption></figure>
+      <figure>{img("charm-elementos-mesa.jpg", "Variedade de correntes, letras, pingentes e pérolas", "center 50%")}<figcaption>Os charms</figcaption></figure>
       <figure>{img("charm-bolsa.jpg", "Bag charm finalizado na bolsa", "center 50%")}<figcaption>O resultado</figcaption></figure>
     </div>
     <div class="bnote" style="margin-top:16px">◆ Mais do que uma oficina, uma <strong>experiência que aproxima pessoas e marca</strong> de um jeito leve, criativo e espontâneo. A <strong>Elarah cuida da ativação</strong> — da curadoria à experiência acontecendo.</div>
@@ -171,20 +229,34 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Escolham a <em>ativação</em></h2>
-    <table class="cmt">
-      <thead>
-        <tr><th class="feat">O que inclui</th><th>Experiência</th><th class="prem">Experiência Completa<small>Ativação + registro + mimo</small></th></tr>
-      </thead>
-      <tbody>
-        <tr><td class="feat">Charm de Bolsa</td><td class="inc">Incluso</td><td class="prem inc">Incluso</td></tr>
-        <tr><td class="feat">Produção Elarah</td><td class="inc">Incluso</td><td class="prem inc">Incluso</td></tr>
-        <tr><td class="feat">Fotografia</td><td class="no">—</td><td class="prem inc">Incluso</td></tr>
-        <tr><td class="feat">Mimo para cada convidada</td><td class="no">—</td><td class="prem inc">Incluso</td></tr>
-        <tr class="val"><td class="feat">Valor por pessoa</td><td>a partir de R$ 189</td><td class="prem">R$ 353,94</td></tr>
-        <tr class="tot"><td class="feat">Total · 20 pessoas</td><td>R$ 3.780</td><td class="prem">R$ 7.078,80</td></tr>
-      </tbody>
-    </table>
-    <p class="fineprint">Valores por pessoa. A <b>Experiência Completa</b> entrega uma ativação mais completa para o lançamento, com <b>registro fotográfico + mimo para cada convidada</b>. Fotografia R$ 499 (valor total) e mimo R$ 139,99 por pessoa inclusos na opção completa.</p>
+    <div class="invduo">
+      <div class="iopt">
+        <span class="tag">Experiência</span>
+        <p class="desc">A experiência de charms completa, com curadoria e produção Elarah.</p>
+        <div class="big">R$ 179</div>
+        <span class="per">por pessoa</span>
+        <div class="spacer"></div>
+        <div class="grp">R$ 3.580<small>20 participantes</small></div>
+      </div>
+      <div class="iopt rec">
+        <span class="badge">✦ Sugestão Elarah</span>
+        <div class="htop">
+          <img class="recph" src="assets/garrafa-rosa-personalizada.jpg" alt="Mimo personalizado">
+          <div>
+            <span class="tag">Mais Completo</span>
+            <p class="desc">Experiência + registro fotográfico + mimo personalizado.</p>
+          </div>
+        </div>
+        <div class="big">R$ 6.867</div>
+        <span class="per">20 pessoas · R$ 343,35 por pessoa</span>
+        <div class="brk">
+          <div class="row"><span>Experiência</span><b>R$ 179 / pessoa</b></div>
+          <div class="row"><span>Registro fotográfico</span><b>R$ 489 total</b></div>
+          <div class="row"><span>Mimo personalizado</span><b>R$ 139,90 / pessoa</b></div>
+        </div>
+      </div>
+    </div>
+    <p class="fineprint">Valores por pessoa (exceto registro fotográfico, valor total). A opção <b>Mais Completo — Sugestão Elarah</b> é a nossa recomendação para uma ativação de lançamento, com registro profissional e um mimo personalizado para cada convidada.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -201,7 +273,7 @@ encerramento = f'''
       {step("3", "Confirme a data", "Com a confirmação, reservamos e organizamos a produção.")}
       {step("4", "A Elarah cuida do resto", "Curadoria, materiais, montagem e todos os detalhes.")}
     </div>
-    <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Quero%20falar%20sobre%20a%20ativa%C3%A7%C3%A3o%20de%20Bag%20Charms%20para%20o%20lan%C3%A7amento." target="_blank" rel="noopener">💬 Falar com a Elarah no WhatsApp</a>
+    <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Quero%20falar%20sobre%20a%20experi%C3%AAncia%20Entre%20Charms%20para%20o%20lan%C3%A7amento." target="_blank" rel="noopener">💬 Falar com a Elarah no WhatsApp</a>
     {foot("Vamos criar?")}
   </section>'''
 
@@ -210,5 +282,6 @@ deck = ('<div class="deck">\n' + cover + experiencia + momento + incluso + espac
 html = head + deck + tail
 out = ROOT + "/proposta-bag-charms.html"
 io.open(out, "w", encoding="utf-8").write(html)
-assert "piranha" not in deck and "joia-atelie" not in deck, "PROIBIDO"
-print("wrote", out, "| slides:", html.count('<section class="slide">'), "| ok")
+assert "piranha" not in deck and "joia-atelie" not in deck and "charmbar" not in deck, "PROIBIDO"
+_ns = html.count('<style>', 0, html.find('<div class="deck">'))
+print("wrote", out, "| slides:", html.count('<section class="slide">'), "| style blocks:", _ns)
