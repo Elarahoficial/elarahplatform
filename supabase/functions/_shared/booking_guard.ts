@@ -760,7 +760,7 @@ export async function reserveExperienceSlot(
   // é o preço da Dupla que leva o desconto.
   const descontoGeral = await carregarDescontoGeral(supabase);
   const precoAntesDaPromo = baseCents;
-  const precoFinal = precoFinalCentavos(baseCents, descontoGeral, quantidade);
+  const precoFinal = precoFinalCentavos(baseCents, descontoGeral, quantidade, new Date(), exp.categoria ?? null);
   baseCents = precoFinal.cents;
   if (baseCents !== precoAntesDaPromo) {
     console.info(

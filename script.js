@@ -6555,7 +6555,7 @@ if (groupForm) {
       // de reserva lê pra pré-selecionar a Pessoa 1.
       var _descVariantItems = (Array.isArray(exp.variantItems) && exp.variantItems.length)
         ? ((window.ElarahPromo && ElarahPromo.itensComDesconto)
-            ? ElarahPromo.itensComDesconto(exp.variantItems)
+            ? ElarahPromo.itensComDesconto(exp.variantItems, exp)
             : exp.variantItems)
         : (Array.isArray(exp.variantOptions) && exp.variantOptions.length
             ? exp.variantOptions.map(function (n) { return { nome: String(n), preco: '', imagem: '' }; })
@@ -7384,7 +7384,7 @@ if (groupForm) {
             if (Array.isArray(exp.variantItems) && exp.variantItems.length) {
               // Cópia JÁ com o desconto da promoção nos preços das opções.
               variantItemsArr = (window.ElarahPromo && ElarahPromo.itensComDesconto)
-                ? ElarahPromo.itensComDesconto(exp.variantItems)
+                ? ElarahPromo.itensComDesconto(exp.variantItems, exp)
                 : exp.variantItems.slice();
             }
           }

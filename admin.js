@@ -980,6 +980,8 @@
     var fim = dgDoInput((document.getElementById('dg-fim') || {}).value);
     var titulo = ((document.getElementById('dg-titulo') || {}).value || '').trim();
     var subtitulo = ((document.getElementById('dg-subtitulo') || {}).value || '').trim();
+    var categoria = ((document.getElementById('dg-categoria') || {}).value || '').trim();
+    var alvo = categoria ? 'todas as experiências de ' + categoria : 'todas as experiências';
 
     var fimCurto = '';
     if (fim) {
@@ -1004,7 +1006,7 @@
 
     var previa = document.getElementById('dg-previa');
     if (previa) {
-      previa.textContent = (titulo || (pct > 0 ? pct + '% OFF em todas as experiências' : 'Sem desconto configurado')) +
+      previa.textContent = (titulo || (pct > 0 ? pct + '% OFF em ' + alvo : 'Sem desconto configurado')) +
         (subtitulo ? '  ' + subtitulo : (fimCurto ? '  Só até ' + fimCurto : '')) + contagem;
       previa.style.opacity = (ativo && pct > 0) ? '1' : '.45';
     }
@@ -1016,17 +1018,19 @@
     var agora = Date.now();
     var valendo = ativo && pct > 0 && inicio && fim &&
       agora >= new Date(inicio).getTime() && agora <= new Date(fim).getTime();
+    dgAtualizarCarrinho(valendo);
 
     if (valendo) {
-      texto.textContent = pct + '% OFF valendo agora';
+      texto.textContent = pct + '% OFF valendo agora' + (categoria ? ' em ' + categoria : '');
       texto.style.color = '#1a8a4a';
-      detalhe.textContent = 'Uma experiência de R$ 180 está sendo vendida por ' +
+      detalhe.textContent = (categoria ? 'Só as experiências de ' + categoria + ' têm desconto; as outras estão no preço normal. ' : '') +
+        'Uma experiência de R$ 180 está sendo vendida por ' +
         'R$ ' + (180 * (100 - pct) / 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) +
         '. Termina em ' + new Date(fim).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '.';
     } else if (ativo && pct > 0 && inicio && agora < new Date(inicio).getTime()) {
       texto.textContent = 'Programado, ainda não começou';
       texto.style.color = '#b8860b';
-      detalhe.textContent = 'Começa em ' + new Date(inicio).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '.';
+      detalhe.textContent = pct + '% OFF em ' + alvo + '. Começa em ' + new Date(inicio).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '.';
     } else if (ativo && pct > 0 && fim && agora > new Date(fim).getTime()) {
       texto.textContent = 'Validade encerrada — preços normais';
       texto.style.color = '#666';
@@ -1044,8 +1048,56 @@
     }
   }
 
+  // Desconto do carrinho ("Mês do Cliente") — MESMA regra e prazo de
+  // promo.js (CARRINHO_*) e _shared/promo.ts (DESCONTO_CARRINHO_*). Ele
+  // não mora na tabela desconto_geral; aqui só é MOSTRADO, pra aba não
+  // dizer "sem desconto" enquanto o site dá 10%/15%. Mudou lá, muda aqui.
+  var DG_CARRINHO_1_PCT = 10;
+  var DG_CARRINHO_2_MAIS_PCT = 15;
+  var DG_CARRINHO_FIM = '2026-09-30T23:59:59-03:00';
+
+  function dgAtualizarCarrinho(campanhaNaJanela) {
+    var el = document.getElementById('dg-carrinho');
+    if (!el) return;
+    var fim = new Date(DG_CARRINHO_FIM);
+    if (Date.now() > fim.getTime()) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    el.innerHTML = '<strong style="color:#c55a12;">🎉 Mês do Cliente (desconto do carrinho)</strong><br>' +
+      DG_CARRINHO_1_PCT + '% OFF com 1 pessoa · ' + DG_CARRINHO_2_MAIS_PCT + '% OFF por pessoa com 2 ou mais — ' +
+      'em todas as experiências. Encerra em <strong>' +
+      fim.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) + '</strong>, sozinho.' +
+      (campanhaNaJanela
+        ? '<br><span style="color:#b8860b;">Enquanto o desconto abaixo estiver valendo, ele substitui o do carrinho (não acumulam).</span>'
+        : '');
+  }
+
   var dgSujo = false;
   var dgWired = false;
+
+  var dgTemColunaCategoria = false;
+
+  // Sugestões pro campo de categoria: as categorias que existem hoje
+  // no catálogo (uma experiência pode ter várias, separadas por "|").
+  async function dgPreencherCategorias() {
+    var dl = document.getElementById('dg-categorias');
+    var sb = window.supabaseClient;
+    if (!dl || !sb || dl.childElementCount) return;
+    try {
+      var res = await sb.from('experiences').select('categoria').eq('is_active', true);
+      var vistos = {};
+      (res.data || []).forEach(function (r) {
+        String(r.categoria || '').split('|').forEach(function (c) {
+          c = c.trim();
+          if (c && !vistos[c.toLowerCase()]) {
+            vistos[c.toLowerCase()] = true;
+            var o = document.createElement('option');
+            o.value = c;
+            dl.appendChild(o);
+          }
+        });
+      });
+    } catch (e) {}
+  }
 
   async function renderDescontoGeral() {
     var sb = window.supabaseClient;
@@ -1059,6 +1111,7 @@
       var res = await sb.from('desconto_geral').select('*').eq('id', 1).maybeSingle();
       if (res.error) throw res.error;
       var row = res.data || { ativo: false, percentual: 0, inicio: null, fim: null, titulo: '', subtitulo: '' };
+      dgTemColunaCategoria = !!(res.data && Object.prototype.hasOwnProperty.call(res.data, 'categoria'));
 
       var set = function (id, valor) {
         var el = document.getElementById(id);
@@ -1071,6 +1124,8 @@
       set('dg-fim', dgParaInput(row.fim));
       set('dg-titulo', row.titulo || '');
       set('dg-subtitulo', row.subtitulo || '');
+      set('dg-categoria', row.categoria || '');
+      dgPreencherCategorias();
       dgSujo = false;
       dgAtualizarPrevia();
     } catch (e) {
@@ -1083,7 +1138,7 @@
     if (dgWired) return;
     dgWired = true;
 
-    ['dg-ativo', 'dg-percentual', 'dg-inicio', 'dg-fim', 'dg-titulo', 'dg-subtitulo'].forEach(function (id) {
+    ['dg-ativo', 'dg-percentual', 'dg-inicio', 'dg-fim', 'dg-titulo', 'dg-subtitulo', 'dg-categoria'].forEach(function (id) {
       var el = document.getElementById(id);
       if (!el) return;
       el.addEventListener('input', function () { dgSujo = true; dgAtualizarPrevia(); });
@@ -1135,6 +1190,7 @@
     var fim = dgDoInput((document.getElementById('dg-fim') || {}).value);
     var titulo = ((document.getElementById('dg-titulo') || {}).value || '').trim();
     var subtitulo = ((document.getElementById('dg-subtitulo') || {}).value || '').trim();
+    var categoria = ((document.getElementById('dg-categoria') || {}).value || '').trim();
 
     // Validação só aperta quando o desconto vai ficar LIGADO — desligar
     // nunca pode ser bloqueado por campo mal preenchido.
@@ -1162,6 +1218,12 @@
       titulo: titulo || null,
       subtitulo: subtitulo || null,
     };
+    // Só manda a coluna quando há categoria: assim salvar "todas as
+    // experiências" continua funcionando mesmo antes da migração
+    // sql/elarah_desconto_geral_categoria.sql. Com categoria preenchida
+    // e sem a coluna, o banco recusa e a mensagem de erro aparece.
+    if (categoria) payload.categoria = categoria;
+    else if (dgTemColunaCategoria) payload.categoria = null;
     try {
       var user = null;
       try {
@@ -1180,7 +1242,8 @@
       dgSujo = false;
       dgAtualizarPrevia();
       dgMsg(ativo
-        ? 'Salvo. O desconto de ' + pct + '% já está valendo no site e no checkout.'
+        ? 'Salvo. O desconto de ' + pct + '%' + (categoria ? ' em ' + categoria : '') +
+          ' vale no site e no checkout dentro das datas escolhidas.'
         : 'Desconto desligado. O site voltou aos preços normais.', false);
     } catch (e) {
       console.error('[Admin] desconto geral — falha ao salvar:', e);

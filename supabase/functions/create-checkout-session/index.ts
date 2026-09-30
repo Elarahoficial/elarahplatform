@@ -742,7 +742,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
   if (cents) {
     const descontoGeral = await carregarDescontoGeral(supabase);
     const precoAntesDaPromo = cents;
-    const precoFinal = precoFinalCentavos(cents, descontoGeral, quantidade);
+    const precoFinal = precoFinalCentavos(cents, descontoGeral, quantidade, new Date(), exp.categoria ?? null);
     cents = precoFinal.cents;
     const origem = precoFinal.origem;
     const pct = precoFinal.pct;

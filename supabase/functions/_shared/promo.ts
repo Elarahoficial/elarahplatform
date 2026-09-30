@@ -36,6 +36,8 @@ export interface DescontoGeral {
   percentual: number;
   inicio: string | null;
   fim: string | null;
+  // Categoria (ex.: "Barismo"). null = vale pra TODAS as experiências.
+  categoria?: string | null;
 }
 
 export const SEM_DESCONTO: DescontoGeral = {
@@ -43,7 +45,28 @@ export const SEM_DESCONTO: DescontoGeral = {
   percentual: 0,
   inicio: null,
   fim: null,
+  categoria: null,
 };
+
+// "Barismo" == "barismo" == " Barísmo " — mesma normalização do promo.js.
+function normCat(s: unknown): string {
+  return String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .trim().toLowerCase();
+}
+
+// A campanha vale pra uma experiência desta(s) categoria(s)? Sem
+// categoria configurada, vale pra todas. Uma experiência pode ter
+// várias ("Barismo | Bartenderia"). Categoria da experiência
+// desconhecida com campanha de categoria = não aplica (igual à vitrine).
+export function descontoAplicaA(
+  cfg: DescontoGeral | null | undefined,
+  categoriaExp: string | null | undefined,
+): boolean {
+  const alvo = normCat(cfg?.categoria);
+  if (!alvo) return true;
+  if (categoriaExp == null) return false;
+  return String(categoriaExp).split("|").some((c) => normCat(c) === alvo);
+}
 
 // Cache por instância da function. Instâncias quentes atendem várias
 // reservas seguidas; sem isto, toda cobrança faria um select a mais.
@@ -60,7 +83,9 @@ export async function carregarDescontoGeral(
   try {
     const { data, error } = await supabase
       .from("desconto_geral")
-      .select("ativo, percentual, inicio, fim")
+      // "*" e não a lista de colunas: funciona antes e depois da coluna
+      // `categoria` existir (sql/elarah_desconto_geral_categoria.sql).
+      .select("*")
       .eq("id", 1)
       .maybeSingle();
 
@@ -83,6 +108,7 @@ export async function carregarDescontoGeral(
       ativo: data?.ativo === true,
       inicio: data?.inicio ?? null,
       fim: data?.fim ?? null,
+      categoria: (data?.categoria && String(data.categoria).trim()) || null,
     };
     cache = { valor, em: agora };
     return valor;
@@ -114,10 +140,12 @@ export function descontoAtivo(
 export function precoPromocionalCentavos(
   precoCents: number,
   cfg: DescontoGeral | null | undefined,
+  categoriaExp?: string | null,
 ): number {
   const praticado = Math.round(Number(precoCents));
   if (!isFinite(praticado) || praticado <= 0) return praticado;
   if (!descontoAtivo(cfg)) return praticado;
+  if (!descontoAplicaA(cfg, categoriaExp)) return praticado;
 
   const comDesconto = Math.round(praticado * (100 - cfg!.percentual) / 100);
   return comDesconto > 0 ? comDesconto : praticado;
@@ -196,14 +224,23 @@ export function precoCarrinhoCentavos(
 
 // O preço unitário que é COBRADO: campanha geral quando está no ar,
 // senão o desconto do carrinho pela quantidade.
+//
+// Campanha de UMA categoria (cfg.categoria): só as experiências dela
+// levam o desconto; as demais ficam no preço normal — o carrinho não
+// entra enquanto a campanha estiver na janela (igual ao promo.js).
+// `categoriaExp` = experiences.categoria (pode ter "|").
 export function precoFinalCentavos(
   precoCents: number,
   cfg: DescontoGeral | null | undefined,
   quantidade: number,
   agora: Date = new Date(),
+  categoriaExp?: string | null,
 ): { cents: number; origem: "geral" | "carrinho" | null; pct: number } {
   if (descontoAtivo(cfg)) {
-    const cents = precoPromocionalCentavos(precoCents, cfg);
+    if (!descontoAplicaA(cfg, categoriaExp)) {
+      return { cents: Math.round(Number(precoCents)), origem: null, pct: 0 };
+    }
+    const cents = precoPromocionalCentavos(precoCents, cfg, categoriaExp);
     return { cents, origem: cents !== Math.round(Number(precoCents)) ? "geral" : null, pct: cfg!.percentual };
   }
   const cents = precoCarrinhoCentavos(precoCents, quantidade, agora);

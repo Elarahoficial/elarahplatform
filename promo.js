@@ -45,6 +45,10 @@
     FIM: null,
     TITULO: null,
     SUBTITULO: null,
+    // Categoria (ex.: "Barismo"). null = vale pra TODAS as experiências.
+    // Com categoria, só as experiências dela levam o desconto — as
+    // demais ficam no preço normal (o carrinho também não entra).
+    CATEGORIA: null,
   };
 
   // Desconto do carrinho (ver bloco DESCONTO DO CARRINHO mais abaixo).
@@ -105,6 +109,26 @@
     CONFIG.FIM = row.fim || null;
     CONFIG.TITULO = (row.titulo && String(row.titulo).trim()) || null;
     CONFIG.SUBTITULO = (row.subtitulo && String(row.subtitulo).trim()) || null;
+    CONFIG.CATEGORIA = (row.categoria && String(row.categoria).trim()) || null;
+  }
+
+  // "Barismo" == "barismo" == " Barísmo " — a admin digita, o cadastro
+  // da experiência também; comparar sem caixa nem acento evita que um
+  // detalhe de digitação deixe a categoria sem desconto.
+  function normCat(s) {
+    return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .trim().toLowerCase();
+  }
+
+  // A campanha vale pra esta experiência? Sem categoria configurada,
+  // vale pra todas. Com categoria, a experiência precisa estar nela
+  // (uma experiência pode ter várias: "Barismo | Bartenderia").
+  // Sem a experiência em mãos, não dá pra saber — não aplica.
+  function aplicaA(exp) {
+    if (!CONFIG.CATEGORIA) return true;
+    if (!exp || typeof exp !== 'object' || exp.categoria == null) return false;
+    var alvo = normCat(CONFIG.CATEGORIA);
+    return String(exp.categoria).split('|').some(function (c) { return normCat(c) === alvo; });
   }
 
   // Data final formatada pra usar em texto ("20/09").
@@ -116,9 +140,11 @@
       String(d.getMonth() + 1).padStart(2, '0');
   }
 
-  // O desconto está valendo AGORA? Datas inválidas ou faltando
-  // desligam (falha pro lado seguro: preço normal).
-  function geralAtiva() {
+  // A campanha está na janela de datas AGORA (pra qualquer experiência)?
+  // Datas inválidas ou faltando desligam (falha pro lado seguro: preço
+  // normal). Com campanha na janela, o desconto do carrinho não entra
+  // — nem nas experiências fora da categoria.
+  function geralNaJanela() {
     if (!CONFIG.ATIVA || !CONFIG.PERCENTUAL) return false;
     if (!CONFIG.INICIO || !CONFIG.FIM) return false;
     var agora = Date.now();
@@ -128,20 +154,25 @@
     return agora >= ini && agora <= fim;
   }
 
+  // A campanha está valendo AGORA para esta experiência?
+  function geralAtiva(exp) {
+    return geralNaJanela() && aplicaA(exp);
+  }
+
   // Aplica o desconto sobre um valor em centavos. Devolve null pra
   // entrada inválida — quem chama decide o fallback.
   // Percentual que a VITRINE mostra: o da campanha geral quando ela
   // está no ar; senão, o desconto do carrinho de 1 pessoa (10%) — o
   // mínimo que qualquer compra de experiência leva.
-  function percentualVitrine() {
-    if (geralAtiva()) return CONFIG.PERCENTUAL;
+  function percentualVitrine(exp) {
+    if (geralNaJanela()) return aplicaA(exp) ? CONFIG.PERCENTUAL : 0;
     return carrinhoAtivo() ? CARRINHO_1_PCT : 0;
   }
 
   // A vitrine está mostrando preço com desconto? (campanha geral OU
   // desconto do carrinho). É o que experiences-data.js consulta.
-  function ativa() {
-    return percentualVitrine() > 0;
+  function ativa(exp) {
+    return percentualVitrine(exp) > 0;
   }
 
   // preço de vitrine (centavos) → preço do site (centavos). Guardado a
@@ -149,13 +180,13 @@
   // exato quando precisa aplicar os 15% (2+ pessoas).
   var BASE_DE = {};
 
-  function centavos(base) {
+  function centavos(base, exp) {
     var n = Number(base);
     if (!isFinite(n) || n <= 0) return null;
-    var pct = percentualVitrine();
+    var pct = percentualVitrine(exp);
     if (!pct) return Math.round(n);
     var com = Math.round(n * (100 - pct) / 100);
-    if (!geralAtiva()) BASE_DE[com] = Math.round(n);
+    if (!geralNaJanela()) BASE_DE[com] = Math.round(n);
     return com;
   }
 
@@ -165,7 +196,7 @@
     var v = Math.round(Number(vitrineCents));
     if (!isFinite(v) || v <= 0) return v;
     if (BASE_DE[v]) return BASE_DE[v];
-    if (geralAtiva() || !carrinhoAtivo()) return v;
+    if (geralNaJanela() || !carrinhoAtivo()) return v;
     return Math.round(v * 100 / (100 - CARRINHO_1_PCT));
   }
 
@@ -188,11 +219,11 @@
   // Dupla, Trio...), que não têm valor cheio próprio — ali a base do
   // desconto é o preço da própria opção.
   // Texto sem número ("Sob consulta") volta intacto.
-  function label(raw) {
-    if (!ativa()) return raw;
+  function label(raw, exp) {
+    if (!ativa(exp)) return raw;
     var base = paraCentavos(raw);
     if (!base) return raw;
-    var com = centavos(base);
+    var com = centavos(base, exp);
     if (!com) return raw;
     return formatar(com);
   }
@@ -216,14 +247,16 @@
   // dado de cadastro que o admin edita e grava no banco — se a gente
   // mexesse nela, um salvar no admin gravaria o preço promocional como
   // preço oficial e o desconto viraria permanente.
-  function itensComDesconto(items) {
+  // `exp` é a experiência dona das variações — necessária quando a
+  // campanha é de uma categoria só.
+  function itensComDesconto(items, exp) {
     if (!Array.isArray(items)) return [];
-    if (!ativa()) return items.slice();
+    if (!ativa(exp)) return items.slice();
     return items.map(function (it) {
       if (!it || typeof it !== 'object') return it;
       var copia = {};
       for (var k in it) { if (Object.prototype.hasOwnProperty.call(it, k)) copia[k] = it[k]; }
-      if (copia.preco && String(copia.preco).trim()) copia.preco = label(copia.preco);
+      if (copia.preco && String(copia.preco).trim()) copia.preco = label(copia.preco, exp);
       return copia;
     });
   }
@@ -233,7 +266,10 @@
   // percentual e da data de fim, que é o que a maioria das campanhas
   // precisa.
   function tituloDoAviso() {
-    return CONFIG.TITULO || (CONFIG.PERCENTUAL + '% OFF em todas as experiências');
+    if (CONFIG.TITULO) return CONFIG.TITULO;
+    return CONFIG.CATEGORIA
+      ? CONFIG.PERCENTUAL + '% OFF em todas as experiências de ' + CONFIG.CATEGORIA
+      : CONFIG.PERCENTUAL + '% OFF em todas as experiências';
   }
 
   // "Acaba hoje à meia-noite" vale mais que "Só até 18/09": quem lê a
@@ -276,7 +312,7 @@
 
   // Percentual do carrinho pra essa quantidade (0 = não se aplica).
   function carrinhoPct(qtd) {
-    if (geralAtiva() || !carrinhoAtivo()) return 0;
+    if (geralNaJanela() || !carrinhoAtivo()) return 0;
     var q = Math.floor(Number(qtd));
     if (!isFinite(q) || q < 1) return 0;
     return q >= 2 ? CARRINHO_2_MAIS_PCT : CARRINHO_1_PCT;
@@ -290,7 +326,7 @@
   function carrinhoCentavos(vitrineCents, qtd) {
     var v = Math.round(Number(vitrineCents));
     if (!isFinite(v) || v <= 0) return v;
-    if (geralAtiva()) return v;
+    if (geralNaJanela()) return v;
     // Se o prazo virou com a página aberta, o preço da tela (com 10%)
     // está vencido: volta ao preço do site, que é o que o servidor cobra.
     var base = BASE_DE[v] || baseDe(v);
@@ -335,8 +371,10 @@
   // Injetado por JS em vez de copiado no HTML de 50+ páginas: quando a
   // promoção acabar, some de tudo de uma vez.
   function renderBanner() {
-    if (!ativa()) return;
-    var ehCarrinho = !geralAtiva();
+    // Campanha de uma categoria só: ativa() sem experiência dá false,
+    // mas o aviso tem que aparecer — é ele que leva a cliente até lá.
+    var ehCarrinho = !geralNaJanela();
+    if (ehCarrinho && !ativa()) return;
     if (document.getElementById('elarah-promo-bar')) return;
     // Páginas internas (admin) não recebem o aviso.
     var path = (location.pathname || '').toLowerCase();
@@ -367,6 +405,17 @@
     relogio.className = 'elarah-promo-bar__relogio';
     relogio.setAttribute('aria-hidden', 'true');
     bar.appendChild(relogio);
+
+    // Campanha de uma categoria: link direto pra aba dela.
+    if (CONFIG.CATEGORIA) {
+      var ver = document.createElement('a');
+      ver.className = 'elarah-promo-bar__btn';
+      ver.href = '/categoria.html?cat=' + encodeURIComponent(CONFIG.CATEGORIA);
+      ver.textContent = 'Ver experiências →';
+      ver.style.textDecoration = 'none';
+      ver.style.display = 'inline-block';
+      bar.appendChild(ver);
+    }
 
     // Vai como primeiro elemento do body: o header é sticky (não
     // fixed), então a barra rola pra fora e o header continua colando
@@ -623,6 +672,9 @@
     paraCentavos: paraCentavos,
     fimCurto: fimCurto,
     geralAtiva: geralAtiva,
+    geralNaJanela: geralNaJanela,
+    aplicaA: aplicaA,
+    categoria: function () { return CONFIG.CATEGORIA; },
     carrinhoAtivo: carrinhoAtivo,
     baseDe: baseDe,
     carrinhoPct: carrinhoPct,

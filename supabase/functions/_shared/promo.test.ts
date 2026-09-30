@@ -17,6 +17,7 @@ import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   type DescontoGeral,
   descontoAtivo,
+  descontoAplicaA,
   carrinhoAtivo,
   descontoCarrinhoPct,
   precoCarrinhoCentavos,
@@ -136,4 +137,21 @@ Deno.test("carrinho: sem campanha geral, vale o desconto por quantidade", () => 
 Deno.test("carrinho: não acumula com a campanha geral — vale a campanha", () => {
   assertEquals(precoFinalCentavos(18000, VINTE, 1, DURANTE), { cents: 14400, origem: "geral", pct: 20 });
   assertEquals(precoFinalCentavos(18000, VINTE, 3, DURANTE), { cents: 14400, origem: "geral", pct: 20 });
+});
+
+// ===== Campanha de UMA categoria (ex.: 10% OFF em Barismo) =====
+const BARISMO: DescontoGeral = { ...VINTE, percentual: 10, categoria: "Barismo" };
+
+Deno.test("categoria: só a categoria da campanha leva o desconto", () => {
+  assertEquals(precoFinalCentavos(18000, BARISMO, 1, undefined, "Barismo"), { cents: 16200, origem: "geral", pct: 10 });
+  assertEquals(precoFinalCentavos(18000, BARISMO, 2, undefined, "Barismo | Bartenderia"), { cents: 16200, origem: "geral", pct: 10 });
+  assertEquals(precoFinalCentavos(18000, BARISMO, 1, undefined, "Cerâmica"), { cents: 18000, origem: null, pct: 0 });
+  assertEquals(precoFinalCentavos(18000, BARISMO, 1, undefined, null), { cents: 18000, origem: null, pct: 0 });
+});
+
+Deno.test("categoria: comparação sem caixa nem acento", () => {
+  assertEquals(descontoAplicaA(BARISMO, " barismo "), true);
+  assertEquals(descontoAplicaA({ ...BARISMO, categoria: "Cerâmica" }, "ceramica"), true);
+  assertEquals(descontoAplicaA(VINTE, "Qualquer"), true);
+  assertEquals(descontoAplicaA(VINTE, null), true);
 });
