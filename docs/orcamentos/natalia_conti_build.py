@@ -11,8 +11,22 @@ tail = '<div class="toolbar">' + ref.split('<div class="toolbar">', 1)[1]
 
 head = re.sub(r'<title>.*?</title>', '<title>Natália Conti · Aniversário · Elarah</title>', head, count=1, flags=re.DOTALL)
 head = re.sub(r'<meta name="description"[^>]*>',
-              '<meta name="description" content="Proposta Elarah para o aniversário da Natália Conti: uma comemoração intimista entre amigas, no formato Elarah Até Você.">',
+              '<meta name="description" content="Proposta Elarah para o aniversário da Natália Conti: uma comemoração em petit comité entre amigas, no formato Elarah Até Você.">',
               head, count=1)
+
+# vitrine de experiencias (cards compactos)
+extra = '''
+<style>
+  .vitg{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:16px}
+  .vitc{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 12px 30px -24px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .vitc .vph{height:132px;overflow:hidden;background:#eee}
+  .vitc .vph img{width:100%;height:100%;object-fit:cover;display:block}
+  .vitc .vb{padding:11px 14px 13px}
+  .vitc .vn{font-family:'DM Serif Display',serif;font-size:14.5px;color:var(--navy);line-height:1.12}
+  .vitc .vp{font-size:10px;letter-spacing:.03em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:6px}
+  .vitc .vp b{font-family:'DM Serif Display',serif;font-weight:400;font-size:14px;color:var(--orange-dark);letter-spacing:0;text-transform:none}
+</style>'''
+head = head.replace("</head>", extra + "</head>", 1)
 
 
 def foot(right):
@@ -46,15 +60,21 @@ def mm(src, alt, name, desc, price, pos="center 50%"):
             f'<div class="mmprice">A partir de <b>{price}</b>/pessoa</div></div></div>')
 
 
+def vit(src, alt, name, price, pos="center 50%"):
+    return (f'<div class="vitc"><div class="vph">{img(src, alt, pos)}</div>'
+            f'<div class="vb"><div class="vn">{name}</div>'
+            f'<div class="vp">a partir de <b>{price}</b>/pessoa</div></div></div>')
+
+
 # ===== 1 · CAPA =====
 cover = f'''
   <section class="slide">
 {head_block("Aniversário · mão na massa", "Natália", "Conti", "Morumbi · 28/11")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Um aniversário criativo</span>
+        <span class="eyebrow">✦ Um petit comité criativo</span>
         <h1>Um aniversário para <em>criar &amp; celebrar</em></h1>
-        <p class="lead">Uma comemoração diferente para viver entre amigas: <strong>mão na massa</strong>, boas conversas, taças, flores e uma <strong>criação para levar pra casa</strong>. 🤍</p>
+        <p class="lead">Uma comemoração em <strong>petit comité</strong>, entre amigas: <strong>mão na massa</strong>, boas conversas, taças, flores e uma <strong>criação para levar pra casa</strong>. 🤍</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>6</b> pessoas</span>
@@ -97,18 +117,21 @@ conceito = f'''
 cardapio = f'''
   <section class="slide">
 {head_simple("O cardápio")}
-    <span class="eyebrow orange">◆ Escolham a favorita</span>
-    <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Um cardápio de experiências para <strong>criar entre amigas</strong> — todas cabem no budget do grupo.</p>
-    <div class="mmg">
-      {mm("pinturataca.jpg", "Pintura em taça", "Pintura em Taça", "Cada uma personaliza a própria taça enquanto o grupo cria e brinda.", "R$ 249", "center 45%")}
-      {mm("colagem.jpg", "Scrapbook", "Scrapbook", "Recortes, texturas e memórias viram uma composição autoral.", "R$ 259", "center 55%")}
-      {mm("charm-making-mesa.jpg", "Berloque de bolsa", "Berloque de Bolsa", "Correntes, pingentes e charms para montar um acessório único.", "R$ 279", "center 45%")}
-      {mm("perfumaria-oficina.jpg", "Perfume autoral", "Perfume Autoral", "Explore notas e combinações e crie uma fragrância com a sua identidade.", "R$ 279", "center 40%")}
-      {mm("buque.jpg", "Buquê de flores", "Buquê de Flores", "Cada uma monta o próprio arranjo com uma curadoria de flores.", "R$ 289", "center 45%")}
-      {mm("ceramicamodelagem.jpg", "Acessório em cerâmica", "Acessório em Cerâmica", "Modele à mão uma peça de cerâmica para chamar de sua.", "R$ 289", "center 50%")}
+    <span class="eyebrow orange">◆ Escolham as favoritas</span>
+    <h2>Uma vitrine de <em>experiências</em></h2>
+    <p class="lead">Opções criativas para viver em <strong>petit comité</strong> — escolham as que mais têm a cara de vocês.</p>
+    <div class="vitg">
+      {vit("escova-pintada-flores.webp", "Customização de escova & presilha", "Escova &amp; Presilha", "R$ 249", "center 50%")}
+      {vit("pinturataca.jpg", "Pintura em taça", "Pintura em Taça", "R$ 259", "center 45%")}
+      {vit("vela-aromatica-real.jpg", "Vela aromática", "Vela Aromática", "R$ 269", "center 50%")}
+      {vit("agora-aquarela.jpg", "Pintura em tela", "Pintura em Tela", "R$ 269", "center 40%")}
+      {vit("charm-making-mesa.jpg", "Charm bar e berloque de bolsa", "Charm Bar &amp; Berloque", "R$ 279", "center 45%")}
+      {vit("perfumaria-oficina.jpg", "Perfume autoral", "Perfume Autoral", "R$ 279", "center 40%")}
+      {vit("buque.jpg", "Arranjos florais e buquê de flores", "Buquê de Flores", "R$ 289", "center 45%")}
+      {vit("vidronomacarico.jpg", "Pintura em fusing e vitro fusão", "Fusing · Vitro Fusão", "R$ 289", "center 50%")}
+      {vit("foldingbook2.jpg", "Folding book", "Folding Book", "R$ 299", "center 45%")}
     </div>
-    <p class="fineprint">Valores por pessoa, referentes à <b>experiência</b>. No formato <b>Elarah até você</b>, levamos tudo até o espaço escolhido.</p>
+    <p class="fineprint">Valores por pessoa, referentes à <b>experiência</b>. Uma seleção do nosso portfólio — outras experiências sob consulta.</p>
     {foot("O cardápio de experiências")}
   </section>'''
 
@@ -118,7 +141,7 @@ atevoce = f'''
 {head_simple("Elarah até você")}
     <span class="eyebrow orange">◆ No espaço de vocês</span>
     <h2>A gente leva <em>até você</em></h2>
-    <p class="lead">A experiência acontece onde for mais gostoso pra vocês — <strong>em casa</strong>, no condomínio ou num <strong>café da região</strong>. É só receber as amigas. 🤍</p>
+    <p class="lead">A experiência acontece <strong>no espaço de vocês</strong> — a gente leva tudo até aí. É só receber as amigas e aproveitar. 🤍</p>
     <div class="bfeat">
       <div class="bphoto">{img("em-casa-hero-1.jpg", "Amigas criando juntas no espaço escolhido", "center 40%")}</div>
       <div class="bbody">
@@ -143,11 +166,11 @@ investimento = f'''
     <h2>Tudo dentro do <em>seu budget</em></h2>
     <div class="pbig"><div class="n">R$ 249</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
     <div class="icards">
-      <div class="ic"><div class="k">Elarah até você</div><div class="v">No espaço de vocês</div><p>Levamos materiais, profissionais e estrutura até <b>residência, condomínio ou café</b>.</p></div>
-      <div class="ic"><div class="k">Dentro do budget</div><div class="v">R$ 249 a R$ 289</div><p>Todas as experiências por pessoa, para o <b>grupo de 6</b>.</p></div>
+      <div class="ic"><div class="k">Elarah até você</div><div class="v">No espaço de vocês</div><p>Levamos <b>materiais, profissionais e estrutura</b> até o espaço escolhido.</p></div>
+      <div class="ic"><div class="k">Dentro do budget</div><div class="v">R$ 249 a R$ 299</div><p>Todas as experiências por pessoa, para o <b>grupo de 6</b>.</p></div>
       <div class="ic"><div class="k">Tudo incluso</div><div class="v">Da preparação à peça</div><p>Materiais, condução e a <b>criação</b> que cada uma leva pra casa.</p></div>
     </div>
-    <p class="fineprint">Valores por pessoa, referentes à experiência escolhida, para o grupo de 6. Em café da região pode haver consumo mínimo, conforme o local. Aniversário em <b>28/11/2026</b>, sujeito à disponibilidade.</p>
+    <p class="fineprint">Valores por pessoa. Algumas experiências podem ter acréscimo de até <b>R$ 120 de deslocamento</b>, conforme a logística do atendimento. Aniversário em <b>28/11/2026</b>, sujeito à disponibilidade.</p>
     {foot("Investimento")}
   </section>'''
 
