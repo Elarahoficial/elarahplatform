@@ -88,6 +88,7 @@ cover = f'''
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip">Lançamento de marca</span>
+          <span class="chip"><b>1h30</b> de experiência</span>
         </div>
       </div>
       <div class="cover-photo">{img("antonella-capa-grupo.jpg", "Mulheres juntas, rindo e criando", "center 30%")}</div>
@@ -103,12 +104,12 @@ experiencia = f'''
     <h2>Do charm à <em>peça final</em></h2>
     <p class="lead">Uma <strong>ativação criativa</strong> para o seu lançamento: cada convidada escolhe entre correntes, pingentes, pérolas e letras e <strong>monta o próprio bag charm</strong> — <strong>espontâneo, autoral e cheio de conexão</strong>, do começo ao fim.</p>
     <div class="flow4">
-      {fstep("01", "fazendojoia.jpg", "center 45%", "Escolha", "Escolhem charms, pingentes, pérolas e letras.")}
+      {fstep("01", "charm-materials-tray.jpg", "center 55%", "Escolha", "Escolhem charms, pingentes, pérolas e letras.")}
       {fstep("02", "charmbar.jpg", "center 50%", "Composição", "Combinam cores, texturas e elementos.")}
-      {fstep("03", "charm-bolsa.jpg", "center 50%", "Montagem", "Montam a peça com acompanhamento.")}
+      {fstep("03", "charm-making-maos.jpg", "center 45%", "Montagem", "Montam a peça com acompanhamento.")}
       {fstep("04", "charm-bolsa-suede.jpg", "center 45%", "Peça final", "Cada uma leva o próprio charm na bolsa.")}
     </div>
-    <div class="bnote" style="margin-top:18px">◆ <strong>Não precisa de experiência:</strong> a facilitadora conduz o grupo do começo ao fim, e cada convidada sai com um <strong>acessório único</strong>. 🧡</div>
+    <div class="bnote" style="margin-top:18px">◆ <strong>Não precisa de experiência:</strong> em cerca de <strong>1h30</strong>, a facilitadora conduz o grupo do começo ao fim, e cada convidada sai com um <strong>acessório único</strong>. 🧡</div>
     {foot("A experiência")}
   </section>'''
 
@@ -118,12 +119,12 @@ momento = f'''
     <span class="eyebrow orange">◆ Momento Elarah</span>
     <h2>A experiência <em>acontecendo</em></h2>
     <div class="mos2">
-      <figure>{img("hidrateimeninas.jpg", "Mulheres criando e rindo juntas", "center 30%")}<figcaption>Criar junto</figcaption></figure>
-      <figure>{img("antonella-capa-grupo.jpg", "Grupo rindo e criando à mesa", "center 30%")}<figcaption>Risadas &amp; conexão</figcaption></figure>
-      <figure>{img("charm-bolsa.jpg", "Escolhendo os elementos do charm", "center 50%")}<figcaption>Escolher os elementos</figcaption></figure>
-      <figure>{img("charm-flatlay.jpg", "Detalhe do charm", "center 50%")}<figcaption>Cada detalhe</figcaption></figure>
-      <figure>{img("charmbar.jpg", "Variedade de charms", "center 50%")}<figcaption>Os charms</figcaption></figure>
-      <figure>{img("charm-bolsa-suede.jpg", "Bag charm finalizado na bolsa", "center 45%")}<figcaption>O resultado</figcaption></figure>
+      <figure>{img("charm-making-grupo.jpg", "Mulheres montando os bag charms juntas", "center 45%")}<figcaption>Criar junto</figcaption></figure>
+      <figure>{img("hidrateimeninas.jpg", "Grupo de mulheres rindo e criando", "center 30%")}<figcaption>Risadas &amp; conexão</figcaption></figure>
+      <figure>{img("charm-mesa-rosa.jpg", "Mesa montada com charms e ferramentas", "center 45%")}<figcaption>Escolher os elementos</figcaption></figure>
+      <figure>{img("charm-final-flatlay.jpg", "Detalhe do bag charm finalizado", "center 50%")}<figcaption>Cada detalhe</figcaption></figure>
+      <figure>{img("charmbar.jpg", "Variedade de charms e pingentes", "center 50%")}<figcaption>Os charms</figcaption></figure>
+      <figure>{img("charm-bolsa.jpg", "Bag charm finalizado na bolsa", "center 50%")}<figcaption>O resultado</figcaption></figure>
     </div>
     <div class="bnote" style="margin-top:16px">◆ Mais do que uma oficina, uma <strong>experiência que aproxima pessoas e marca</strong> de um jeito leve, criativo e espontâneo. A <strong>Elarah cuida da ativação</strong> — da curadoria à experiência acontecendo.</div>
     {foot("Momento Elarah")}

@@ -526,6 +526,56 @@
   .steps .step p{font-size:10.5px;color:var(--muted);line-height:1.4}
   .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0}
   .btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;font-weight:700;font-size:15px;padding:14px 26px;border-radius:999px;text-decoration:none;box-shadow:0 14px 30px -12px rgba(37,211,102,.55);margin-top:18px}
+</style>
+<style>
+  .cmt{width:100%;border-collapse:collapse;margin-top:18px;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px -30px rgba(0,0,0,.3)}
+  .cmt thead th{background:var(--navy);color:#fff;padding:15px 18px;font-size:12px;font-weight:700;text-align:center;letter-spacing:.02em}
+  .cmt thead th.feat{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+  .cmt thead th.prem{background:var(--orange-dark)}
+  .cmt thead th small{display:block;font-family:'DM Sans',sans-serif;font-weight:600;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-top:3px}
+  .cmt td{padding:13px 18px;border-bottom:1px solid var(--line);background:var(--card);font-size:12.5px;text-align:center;color:var(--ink)}
+  .cmt td.feat{text-align:left;font-weight:600;color:var(--navy)}
+  .cmt td.prem{background:#FBF0F3}
+  .cmt .inc{color:var(--orange-dark);font-weight:700}
+  .cmt .no{color:var(--muted)}
+  .cmt tr.val td{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);background:#F7EFEC}
+  .cmt tr.val td.feat{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .cmt tr.val td.prem{background:#F2D9E1}
+  .cmt tr.tot td{background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px}
+  .cmt tr.tot td.feat{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.8);font-weight:700}
+  .cmt tr.tot td.prem{background:var(--orange-dark)}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:14px}
+  .steps .step{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px 15px;box-shadow:0 10px 26px -22px rgba(0,0,0,.3)}
+  .steps .step .num{font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange);line-height:1}
+  .steps .step h3{font-size:13px;font-weight:700;color:var(--navy);margin:7px 0 5px;line-height:1.15}
+  .steps .step p{font-size:10.5px;color:var(--muted);line-height:1.4}
+  .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0}
+  .btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;font-weight:700;font-size:15px;padding:14px 26px;border-radius:999px;text-decoration:none;box-shadow:0 14px 30px -12px rgba(37,211,102,.55);margin-top:18px}
+</style>
+<style>
+  .cmt{width:100%;border-collapse:collapse;margin-top:18px;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px -30px rgba(0,0,0,.3)}
+  .cmt thead th{background:var(--navy);color:#fff;padding:15px 18px;font-size:12px;font-weight:700;text-align:center;letter-spacing:.02em}
+  .cmt thead th.feat{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+  .cmt thead th.prem{background:var(--orange-dark)}
+  .cmt thead th small{display:block;font-family:'DM Sans',sans-serif;font-weight:600;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-top:3px}
+  .cmt td{padding:13px 18px;border-bottom:1px solid var(--line);background:var(--card);font-size:12.5px;text-align:center;color:var(--ink)}
+  .cmt td.feat{text-align:left;font-weight:600;color:var(--navy)}
+  .cmt td.prem{background:#FBF0F3}
+  .cmt .inc{color:var(--orange-dark);font-weight:700}
+  .cmt .no{color:var(--muted)}
+  .cmt tr.val td{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);background:#F7EFEC}
+  .cmt tr.val td.feat{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .cmt tr.val td.prem{background:#F2D9E1}
+  .cmt tr.tot td{background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px}
+  .cmt tr.tot td.feat{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.8);font-weight:700}
+  .cmt tr.tot td.prem{background:var(--orange-dark)}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:14px}
+  .steps .step{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px 15px;box-shadow:0 10px 26px -22px rgba(0,0,0,.3)}
+  .steps .step .num{font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange);line-height:1}
+  .steps .step h3{font-size:13px;font-weight:700;color:var(--navy);margin:7px 0 5px;line-height:1.15}
+  .steps .step p{font-size:10.5px;color:var(--muted);line-height:1.4}
+  .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0}
+  .btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;font-weight:700;font-size:15px;padding:14px 26px;border-radius:999px;text-decoration:none;box-shadow:0 14px 30px -12px rgba(37,211,102,.55);margin-top:18px}
 </style></head>
 <body>
 
@@ -551,6 +601,7 @@
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip">Lançamento de marca</span>
+          <span class="chip"><b>1h30</b> de experiência</span>
         </div>
       </div>
       <div class="cover-photo"><img src="assets/antonella-capa-grupo.jpg" alt="Mulheres juntas, rindo e criando" style="object-position:center 30%"></div>
@@ -567,12 +618,12 @@
     <h2>Do charm à <em>peça final</em></h2>
     <p class="lead">Uma <strong>ativação criativa</strong> para o seu lançamento: cada convidada escolhe entre correntes, pingentes, pérolas e letras e <strong>monta o próprio bag charm</strong> — <strong>espontâneo, autoral e cheio de conexão</strong>, do começo ao fim.</p>
     <div class="flow4">
-      <div class="fs"><div class="fsph"><img src="assets/fazendojoia.jpg" alt="Escolha" style="object-position:center 45%"></div><div class="fsb"><div class="fsn">01</div><div class="fst">Escolha</div><div class="fsd">Escolhem charms, pingentes, pérolas e letras.</div></div></div>
+      <div class="fs"><div class="fsph"><img src="assets/charm-materials-tray.jpg" alt="Escolha" style="object-position:center 55%"></div><div class="fsb"><div class="fsn">01</div><div class="fst">Escolha</div><div class="fsd">Escolhem charms, pingentes, pérolas e letras.</div></div></div>
       <div class="fs"><div class="fsph"><img src="assets/charmbar.jpg" alt="Composição" style="object-position:center 50%"></div><div class="fsb"><div class="fsn">02</div><div class="fst">Composição</div><div class="fsd">Combinam cores, texturas e elementos.</div></div></div>
-      <div class="fs"><div class="fsph"><img src="assets/charm-bolsa.jpg" alt="Montagem" style="object-position:center 50%"></div><div class="fsb"><div class="fsn">03</div><div class="fst">Montagem</div><div class="fsd">Montam a peça com acompanhamento.</div></div></div>
+      <div class="fs"><div class="fsph"><img src="assets/charm-making-maos.jpg" alt="Montagem" style="object-position:center 45%"></div><div class="fsb"><div class="fsn">03</div><div class="fst">Montagem</div><div class="fsd">Montam a peça com acompanhamento.</div></div></div>
       <div class="fs"><div class="fsph"><img src="assets/charm-bolsa-suede.jpg" alt="Peça final" style="object-position:center 45%"></div><div class="fsb"><div class="fsn">04</div><div class="fst">Peça final</div><div class="fsd">Cada uma leva o próprio charm na bolsa.</div></div></div>
     </div>
-    <div class="bnote" style="margin-top:18px">◆ <strong>Não precisa de experiência:</strong> a facilitadora conduz o grupo do começo ao fim, e cada convidada sai com um <strong>acessório único</strong>. 🧡</div>
+    <div class="bnote" style="margin-top:18px">◆ <strong>Não precisa de experiência:</strong> em cerca de <strong>1h30</strong>, a facilitadora conduz o grupo do começo ao fim, e cada convidada sai com um <strong>acessório único</strong>. 🧡</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
   </section>
   <section class="slide">
@@ -583,12 +634,12 @@
     <span class="eyebrow orange">◆ Momento Elarah</span>
     <h2>A experiência <em>acontecendo</em></h2>
     <div class="mos2">
-      <figure><img src="assets/hidrateimeninas.jpg" alt="Mulheres criando e rindo juntas" style="object-position:center 30%"><figcaption>Criar junto</figcaption></figure>
-      <figure><img src="assets/antonella-capa-grupo.jpg" alt="Grupo rindo e criando à mesa" style="object-position:center 30%"><figcaption>Risadas &amp; conexão</figcaption></figure>
-      <figure><img src="assets/charm-bolsa.jpg" alt="Escolhendo os elementos do charm" style="object-position:center 50%"><figcaption>Escolher os elementos</figcaption></figure>
-      <figure><img src="assets/charm-flatlay.jpg" alt="Detalhe do charm" style="object-position:center 50%"><figcaption>Cada detalhe</figcaption></figure>
-      <figure><img src="assets/charmbar.jpg" alt="Variedade de charms" style="object-position:center 50%"><figcaption>Os charms</figcaption></figure>
-      <figure><img src="assets/charm-bolsa-suede.jpg" alt="Bag charm finalizado na bolsa" style="object-position:center 45%"><figcaption>O resultado</figcaption></figure>
+      <figure><img src="assets/charm-making-grupo.jpg" alt="Mulheres montando os bag charms juntas" style="object-position:center 45%"><figcaption>Criar junto</figcaption></figure>
+      <figure><img src="assets/hidrateimeninas.jpg" alt="Grupo de mulheres rindo e criando" style="object-position:center 30%"><figcaption>Risadas &amp; conexão</figcaption></figure>
+      <figure><img src="assets/charm-mesa-rosa.jpg" alt="Mesa montada com charms e ferramentas" style="object-position:center 45%"><figcaption>Escolher os elementos</figcaption></figure>
+      <figure><img src="assets/charm-final-flatlay.jpg" alt="Detalhe do bag charm finalizado" style="object-position:center 50%"><figcaption>Cada detalhe</figcaption></figure>
+      <figure><img src="assets/charmbar.jpg" alt="Variedade de charms e pingentes" style="object-position:center 50%"><figcaption>Os charms</figcaption></figure>
+      <figure><img src="assets/charm-bolsa.jpg" alt="Bag charm finalizado na bolsa" style="object-position:center 50%"><figcaption>O resultado</figcaption></figure>
     </div>
     <div class="bnote" style="margin-top:16px">◆ Mais do que uma oficina, uma <strong>experiência que aproxima pessoas e marca</strong> de um jeito leve, criativo e espontâneo. A <strong>Elarah cuida da ativação</strong> — da curadoria à experiência acontecendo.</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Momento Elarah</span></div>
