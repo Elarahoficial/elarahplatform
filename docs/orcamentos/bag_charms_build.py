@@ -1,6 +1,6 @@
-# Proposta Elarah · Bag Charms · lancamento de marca · 15 a 20 meninas · SP
-# v2: enxuto. Capa mao na massa (montando acessorio); experiencia unida com passo a passo;
-# momento Elarah = mosaico 6; incluso com foto de charm; espaco com 4 sugestoes; investimento em tabela (Completa/Premium).
+# Proposta Elarah · Bag Charms · ATIVACAO DE MARCA / lancamento · 15 a 20 · SP
+# v3: capa com pessoas; experiencia mais animada + negrito; momento vende vibe + rodape ativacao;
+# investimento = tabela comparativa (Experiencia x Experiencia Completa); encerramento com passos + botao WhatsApp.
 import io, re
 
 ROOT = "/home/user/elarahplatform"
@@ -10,21 +10,29 @@ tail = '<div class="toolbar">' + ref.split('<div class="toolbar">', 1)[1]
 
 extra = '''
 <style>
-  .mos2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
-  .mos2 figure{margin:0;border-radius:15px;overflow:hidden;position:relative;height:200px;border:1px solid var(--line);box-shadow:0 14px 34px -24px rgba(0,0,0,.36)}
-  .mos2 img{width:100%;height:100%;object-fit:cover;display:block}
-  .mos2 figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 14px 11px;color:#fff;font-size:11.5px;font-weight:600;letter-spacing:.03em;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
-  .itbl{width:100%;border-collapse:collapse;margin-top:20px;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px -30px rgba(0,0,0,.32)}
-  .itbl th{background:var(--navy);color:#fff;text-align:left;padding:13px 20px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
-  .itbl th.r{text-align:right}
-  .itbl td{padding:16px 20px;border-bottom:1px solid var(--line);background:var(--card);vertical-align:top}
-  .itbl tr:last-child td{border-bottom:none}
-  .itbl tr.prem td{background:#FBF0F3}
-  .itbl .opt{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);line-height:1.06}
-  .itbl .opt small{display:block;font-family:'DM Sans',sans-serif;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:3px}
-  .itbl .inc{font-size:11px;color:var(--muted);line-height:1.45}
-  .itbl .pp,.itbl .tot{text-align:right;white-space:nowrap}
-  .itbl .todo{font-family:'DM Sans',sans-serif;font-size:12.5px;font-style:italic;color:var(--orange-dark);font-weight:600}
+  .cmt{width:100%;border-collapse:collapse;margin-top:18px;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px -30px rgba(0,0,0,.3)}
+  .cmt thead th{background:var(--navy);color:#fff;padding:15px 18px;font-size:12px;font-weight:700;text-align:center;letter-spacing:.02em}
+  .cmt thead th.feat{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+  .cmt thead th.prem{background:var(--orange-dark)}
+  .cmt thead th small{display:block;font-family:'DM Sans',sans-serif;font-weight:600;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-top:3px}
+  .cmt td{padding:13px 18px;border-bottom:1px solid var(--line);background:var(--card);font-size:12.5px;text-align:center;color:var(--ink)}
+  .cmt td.feat{text-align:left;font-weight:600;color:var(--navy)}
+  .cmt td.prem{background:#FBF0F3}
+  .cmt .inc{color:var(--orange-dark);font-weight:700}
+  .cmt .no{color:var(--muted)}
+  .cmt tr.val td{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);background:#F7EFEC}
+  .cmt tr.val td.feat{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .cmt tr.val td.prem{background:#F2D9E1}
+  .cmt tr.tot td{background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px}
+  .cmt tr.tot td.feat{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.8);font-weight:700}
+  .cmt tr.tot td.prem{background:var(--orange-dark)}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:14px}
+  .steps .step{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px 15px;box-shadow:0 10px 26px -22px rgba(0,0,0,.3)}
+  .steps .step .num{font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange);line-height:1}
+  .steps .step h3{font-size:13px;font-weight:700;color:var(--navy);margin:7px 0 5px;line-height:1.15}
+  .steps .step p{font-size:10.5px;color:var(--muted);line-height:1.4}
+  .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0}
+  .btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;font-weight:700;font-size:15px;padding:14px 26px;border-radius:999px;text-decoration:none;box-shadow:0 14px 30px -12px rgba(37,211,102,.55);margin-top:18px}
 </style>'''
 head = head.replace("</head>", extra + "</head>", 1)
 
@@ -59,6 +67,10 @@ def fstep(n, foto, pos, titulo, desc):
             f'<div class="fsb"><div class="fsn">{n}</div><div class="fst">{titulo}</div><div class="fsd">{desc}</div></div></div>')
 
 
+def step(n, titulo, desc):
+    return f'<div class="step"><div class="num">{n}</div><h3>{titulo}</h3><p>{desc}</p></div>'
+
+
 PROOF = "Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)"
 
 cover = f'''
@@ -66,9 +78,9 @@ cover = f'''
 {head_block("Ativação de marca · São Paulo", "Bag", "Charms", "15 a 20 convidadas")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Uma experiência Elarah</span>
+        <span class="eyebrow">✦ Uma ativação Elarah</span>
         <h1>Crie seu <em>Bag Charm</em></h1>
-        <p class="lead">Uma experiência para <strong>criar, personalizar e celebrar juntas</strong>: cada convidada monta o próprio bag charm — correntes, pingentes, pérolas, letras e fitas — e leva pra casa.</p>
+        <p class="lead">Uma experiência para <strong>criar, personalizar e celebrar juntas</strong>: cada convidada monta o próprio bag charm — <strong>correntes, pingentes, pérolas, letras e fitas</strong> — e leva pra casa.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>15 a 20</b> convidadas</span>
@@ -78,7 +90,7 @@ cover = f'''
           <span class="chip">Lançamento de marca</span>
         </div>
       </div>
-      <div class="cover-photo">{img("fazendojoia.jpg", "Mãos montando um acessório com pingentes e pedras", "center 45%")}</div>
+      <div class="cover-photo">{img("antonella-capa-grupo.jpg", "Mulheres juntas, rindo e criando", "center 30%")}</div>
     </div>
     <div class="proof proof--wide"><span class="star">★</span> {PROOF}</div>
     {foot("Bag Charms · São Paulo")}
@@ -89,14 +101,14 @@ experiencia = f'''
 {head_simple("A experiência")}
     <span class="eyebrow orange">◆ Cada uma cria o seu</span>
     <h2>Do charm à <em>peça final</em></h2>
-    <p class="lead">Cada convidada escolhe entre correntes, pingentes, letras, pérolas e acessórios e monta o próprio bag charm — do jeitinho dela, com acompanhamento da facilitadora.</p>
+    <p class="lead">Uma <strong>ativação criativa</strong> para o seu lançamento: cada convidada escolhe entre correntes, pingentes, pérolas e letras e <strong>monta o próprio bag charm</strong> — <strong>espontâneo, autoral e cheio de conexão</strong>, do começo ao fim.</p>
     <div class="flow4">
-      {fstep("01", "charmbar.jpg", "center 50%", "Escolha", "Escolhem charms, pingentes, pérolas e letras.")}
-      {fstep("02", "charm-flatlay.jpg", "center 50%", "Composição", "Combinam cores, texturas e elementos.")}
-      {fstep("03", "joia-atelie.jpg", "center 50%", "Montagem", "Montam a peça com acompanhamento.")}
+      {fstep("01", "fazendojoia.jpg", "center 45%", "Escolha", "Escolhem charms, pingentes, pérolas e letras.")}
+      {fstep("02", "charmbar.jpg", "center 50%", "Composição", "Combinam cores, texturas e elementos.")}
+      {fstep("03", "charm-bolsa.jpg", "center 50%", "Montagem", "Montam a peça com acompanhamento.")}
       {fstep("04", "charm-bolsa-suede.jpg", "center 45%", "Peça final", "Cada uma leva o próprio charm na bolsa.")}
     </div>
-    <div class="bnote" style="margin-top:18px">◆ Não precisa de experiência: a facilitadora conduz o grupo do começo ao fim, e cada convidada sai com um acessório único. 🧡</div>
+    <div class="bnote" style="margin-top:18px">◆ <strong>Não precisa de experiência:</strong> a facilitadora conduz o grupo do começo ao fim, e cada convidada sai com um <strong>acessório único</strong>. 🧡</div>
     {foot("A experiência")}
   </section>'''
 
@@ -106,13 +118,14 @@ momento = f'''
     <span class="eyebrow orange">◆ Momento Elarah</span>
     <h2>A experiência <em>acontecendo</em></h2>
     <div class="mos2">
-      <figure>{img("hidrateimeninas.jpg", "Meninas criando e rindo juntas", "center 30%")}<figcaption>Criar junto</figcaption></figure>
-      <figure>{img("fazendojoia.jpg", "Mãos montando o acessório", "center 50%")}<figcaption>Mão na massa</figcaption></figure>
-      <figure>{img("charmbar.jpg", "Escolhendo charms e pingentes", "center 50%")}<figcaption>Escolher os charms</figcaption></figure>
-      <figure>{img("joia-atelie.jpg", "Detalhe das mãos criando", "center 50%")}<figcaption>Cada detalhe</figcaption></figure>
-      <figure>{img("charm-flatlay.jpg", "Mesa com materiais e resultado", "center 50%")}<figcaption>Materiais &amp; resultado</figcaption></figure>
-      <figure>{img("charm-bolsa.jpg", "Bag charm finalizado na bolsa", "center 50%")}<figcaption>Na bolsa</figcaption></figure>
+      <figure>{img("hidrateimeninas.jpg", "Mulheres criando e rindo juntas", "center 30%")}<figcaption>Criar junto</figcaption></figure>
+      <figure>{img("antonella-capa-grupo.jpg", "Grupo rindo e criando à mesa", "center 30%")}<figcaption>Risadas &amp; conexão</figcaption></figure>
+      <figure>{img("charm-bolsa.jpg", "Escolhendo os elementos do charm", "center 50%")}<figcaption>Escolher os elementos</figcaption></figure>
+      <figure>{img("charm-flatlay.jpg", "Detalhe do charm", "center 50%")}<figcaption>Cada detalhe</figcaption></figure>
+      <figure>{img("charmbar.jpg", "Variedade de charms", "center 50%")}<figcaption>Os charms</figcaption></figure>
+      <figure>{img("charm-bolsa-suede.jpg", "Bag charm finalizado na bolsa", "center 45%")}<figcaption>O resultado</figcaption></figure>
     </div>
+    <div class="bnote" style="margin-top:16px">◆ Mais do que uma oficina, uma <strong>experiência que aproxima pessoas e marca</strong> de um jeito leve, criativo e espontâneo. A <strong>Elarah cuida da ativação</strong> — da curadoria à experiência acontecendo.</div>
     {foot("Momento Elarah")}
   </section>'''
 
@@ -122,7 +135,7 @@ incluso = f'''
     <span class="eyebrow orange">◆ Tudo pronto</span>
     <h2>O que está <em>incluso</em></h2>
     <div class="split">
-      <div class="sph">{img("charm-bolsa-suede.jpg", "Bag charm finalizado", "center 45%")}</div>
+      <div class="sph">{img("charm-flatlay.jpg", "Bag charm finalizado", "center 50%")}</div>
       <ul class="inclist">
         <li><span class="ck">✓</span><b>Curadoria e produção</b> Elarah</li>
         <li><span class="ck">✓</span><b>Facilitadora</b> da experiência</li>
@@ -141,7 +154,7 @@ espaco = f'''
 {head_simple("Local & formato")}
     <span class="eyebrow orange">◆ Onde acontece</span>
     <h2>O espaço certo para <em>o lançamento</em></h2>
-    <p class="lead">A Elarah trabalha com espaços parceiros e outras opções de locação em São Paulo. Dependendo do formato, o espaço pode ter ou não custo de locação — buscamos o ambiente com a cara da marca.</p>
+    <p class="lead">A Elarah trabalha com <strong>espaços parceiros e outras opções de locação</strong> em São Paulo. Dependendo do formato, o espaço pode ter ou não custo de locação — buscamos o ambiente com <strong>a cara da marca</strong>.</p>
     <div class="duo">
       <figure>{img("betchavas.jpg", "Rooftop e lounge contemporâneo", "center 50%")}<figcaption>Rooftop &amp; lounge</figcaption></figure>
       <figure>{img("betchavas3.jpg", "Espaço envidraçado e verde", "center 50%")}<figcaption>Envidraçado &amp; verde</figcaption></figure>
@@ -156,47 +169,39 @@ investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Escolham a <em>opção</em></h2>
-    <table class="itbl">
+    <h2>Escolham a <em>ativação</em></h2>
+    <table class="cmt">
       <thead>
-        <tr><th>Opção</th><th>O que inclui</th><th class="r">Por pessoa</th><th class="r">Total</th></tr>
+        <tr><th class="feat">O que inclui</th><th>Experiência</th><th class="prem">Experiência Completa<small>Ativação + registro + mimo</small></th></tr>
       </thead>
       <tbody>
-        <tr>
-          <td class="opt">Completa</td>
-          <td class="inc">Experiência + curadoria de charms + materiais + facilitadora — cada uma leva a peça.</td>
-          <td class="pp"><span class="todo">a confirmar</span></td>
-          <td class="tot"><span class="todo">a confirmar</span></td>
-        </tr>
-        <tr class="prem">
-          <td class="opt">Premium<small>+ foto &amp; mimo</small></td>
-          <td class="inc">Tudo da Completa + <b>registro fotográfico</b> do evento + <b>mimo</b> para as convidadas.</td>
-          <td class="pp"><span class="todo">a confirmar</span></td>
-          <td class="tot"><span class="todo">a confirmar</span></td>
-        </tr>
+        <tr><td class="feat">Charm de Bolsa</td><td class="inc">Incluso</td><td class="prem inc">Incluso</td></tr>
+        <tr><td class="feat">Produção Elarah</td><td class="inc">Incluso</td><td class="prem inc">Incluso</td></tr>
+        <tr><td class="feat">Fotografia</td><td class="no">—</td><td class="prem inc">Incluso</td></tr>
+        <tr><td class="feat">Mimo para cada convidada</td><td class="no">—</td><td class="prem inc">Incluso</td></tr>
+        <tr class="val"><td class="feat">Valor por pessoa</td><td>a partir de R$ 189</td><td class="prem">R$ 353,94</td></tr>
+        <tr class="tot"><td class="feat">Total · 20 pessoas</td><td>R$ 3.780</td><td class="prem">R$ 7.078,80</td></tr>
       </tbody>
     </table>
-    <p class="fineprint">Valores por pessoa e total a confirmar conforme o número de convidadas, o espaço e o nível de personalização. Experiência para 15 a 20 convidadas.</p>
+    <p class="fineprint">Valores por pessoa. A <b>Experiência Completa</b> entrega uma ativação mais completa para o lançamento, com <b>registro fotográfico + mimo para cada convidada</b>. Fotografia R$ 499 (valor total) e mimo R$ 139,99 por pessoa inclusos na opção completa.</p>
     {foot("Investimento")}
   </section>'''
 
 encerramento = f'''
   <section class="slide">
-{head_simple("Próximos passos")}
+{head_simple("Vamos criar?")}
     <span class="eyebrow orange">◆ Bora criar?</span>
-    <h2>A gente cuida de <em>tudo</em></h2>
-    <p class="lead">Da curadoria à montagem, a Elarah cuida da experiência do início ao fim. Vocês escolhem a data e recebem as convidadas.</p>
-    <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolham a data</h3><p>A gente confirma a disponibilidade e o espaço.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>A gente organiza</h3><p>Curadoria, materiais, facilitadora e montagem por nossa conta.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>É só criar</h3><p>No dia, cada convidada monta e leva o próprio bag charm.</p></div>
+    <h2>E aí, <em>vamos criar?</em></h2>
+    <p class="lead"><strong>A gente cuida de tudo</strong> — da curadoria à montagem. Uma <strong>ativação by Elarah</strong> pensada para transformar o lançamento em um momento de <strong>criação, conexão e marca</strong>.</p>
+    <p class="subh">Bora reunir o time?</p>
+    <div class="steps">
+      {step("1", "Escolha a experiência", "Confirme a opção que mais combina com o lançamento.")}
+      {step("2", "Defina o espaço", "Escolhemos juntas o espaço e o formato ideal.")}
+      {step("3", "Confirme a data", "Com a confirmação, reservamos e organizamos a produção.")}
+      {step("4", "A Elarah cuida do resto", "Curadoria, materiais, montagem e todos os detalhes.")}
     </div>
-    <div class="quote" style="margin-top:20px">
-      Me conta a data que vocês têm em mente que a gente reserva o espaço e organiza cada detalhe do lançamento. 🧡<br>
-      <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
-    </div>
-    {foot("Próximos passos")}
+    <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Quero%20falar%20sobre%20a%20ativa%C3%A7%C3%A3o%20de%20Bag%20Charms%20para%20o%20lan%C3%A7amento." target="_blank" rel="noopener">💬 Falar com a Elarah no WhatsApp</a>
+    {foot("Vamos criar?")}
   </section>'''
 
 deck = ('<div class="deck">\n' + cover + experiencia + momento + incluso + espaco
@@ -204,5 +209,5 @@ deck = ('<div class="deck">\n' + cover + experiencia + momento + incluso + espac
 html = head + deck + tail
 out = ROOT + "/proposta-bag-charms.html"
 io.open(out, "w", encoding="utf-8").write(html)
-assert "piranha" not in deck, "PROIBIDO: piranha"
+assert "piranha" not in deck and "joia-atelie" not in deck, "PROIBIDO"
 print("wrote", out, "| slides:", html.count('<section class="slide">'), "| ok")
