@@ -180,7 +180,7 @@ experiencia = f'''
     <p class="lead">Uma <strong>ativação criativa</strong> para o seu lançamento: cada convidada escolhe entre correntes, pingentes, pérolas e letras e <strong>monta o próprio bag charm</strong> — <strong>espontâneo, autoral e cheio de conexão</strong>, do começo ao fim.</p>
     <div class="flow4">
       {fstep("01", "charm-materials-tray.jpg", "center 55%", "Escolha", "Escolhem charms, pingentes, pérolas e letras.")}
-      {fstep("02", "antonella-capa-grupo.jpg", "center 30%", "Composição", "Entre risadas, combinam cores, texturas e elementos.")}
+      {fstep("02", "charm-making-grupo.jpg", "center 45%", "Composição", "Entre risadas, combinam cores, texturas e elementos.")}
       {fstep("03", "charm-making-maos.jpg", "center 45%", "Montagem", "Montam a peça com acompanhamento.")}
       {fstep("04", "charm-bolsa-suede.jpg", "center 45%", "Peça final", "Cada uma leva o próprio charm na bolsa.")}
     </div>
@@ -194,8 +194,8 @@ momento = f'''
     <span class="eyebrow orange">◆ Momento Elarah</span>
     <h2>A experiência <em>acontecendo</em></h2>
     <div class="mos2">
-      <figure>{img("charm-making-grupo.jpg", "Mulheres montando os bag charms juntas", "center 45%")}<figcaption>Criar junto</figcaption></figure>
-      <figure>{img("hidrateimeninas.jpg", "Grupo de mulheres rindo e criando", "center 30%")}<figcaption>Risadas &amp; conexão</figcaption></figure>
+      <figure>{img("charm-making-mesa.jpg", "Mulheres montando os bag charms juntas", "center 45%")}<figcaption>Criar junto</figcaption></figure>
+      <figure>{img("charm-making-grupo.jpg", "Grupo de mulheres rindo e criando os charms", "center 45%")}<figcaption>Risadas &amp; conexão</figcaption></figure>
       <figure>{img("charm-mesa-rosa.jpg", "Mesa montada com charms e ferramentas", "center 45%")}<figcaption>Escolher os elementos</figcaption></figure>
       <figure>{img("charm-final-flatlay.jpg", "Detalhe do bag charm finalizado", "center 50%")}<figcaption>Cada detalhe</figcaption></figure>
       <figure>{img("charm-elementos-mesa.jpg", "Variedade de correntes, letras, pingentes e pérolas", "center 50%")}<figcaption>Os charms</figcaption></figure>
@@ -253,11 +253,11 @@ investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Escolham a <em>ativação</em></h2>
+    <h2>Escolha o formato da <em>experiência</em></h2>
     <div class="invduo">
       <div class="iopt">
         <span class="tag">Experiência</span>
-        <p class="desc">A experiência Entre Charms, com curadoria e produção Elarah.</p>
+        <p class="desc">Entre Charms com curadoria e produção Elarah.</p>
         <div class="big">R$ 179</div>
         <span class="per">por pessoa</span>
         <div class="note">✦ Mesmo valor no formato Elarah até você.</div>
@@ -273,7 +273,7 @@ investimento = f'''
             <p class="desc">Experiência + registro fotográfico + garrafa personalizada.</p>
           </div>
         </div>
-        <div class="big">R$ 343,35</div>
+        <div class="big">R$ 349</div>
         <span class="per">por pessoa</span>
         <div class="brk">
           <div class="row"><span>Experiência Entre Charms</span><b>Incluso</b></div>
@@ -281,7 +281,7 @@ investimento = f'''
           <div class="row"><span>Garrafa personalizada</span><b>Incluso</b></div>
         </div>
         <div class="spacer"></div>
-        <div class="grp">R$ 6.867<small>20 participantes</small></div>
+        <div class="grp">R$ 6.980<small>20 participantes</small></div>
       </div>
     </div>
     <p class="fineprint">Valores por pessoa, base de 20 participantes. No formato <b>Elarah até você</b> o valor da experiência é o mesmo (R$ 179/pessoa) — custos adicionais só existiriam por necessidade específica de deslocamento, estrutura ou produção fora do escopo já previsto. A opção <b>Mais Completo — Sugestão Elarah</b> é a nossa recomendação para uma ativação de lançamento.</p>
@@ -310,6 +310,7 @@ deck = ('<div class="deck">\n' + cover + experiencia + momento + incluso + espac
 html = head + deck + tail
 out = ROOT + "/proposta-bag-charms.html"
 io.open(out, "w", encoding="utf-8").write(html)
-assert "piranha" not in deck and "joia-atelie" not in deck and "charmbar" not in deck, "PROIBIDO"
+for _bad in ["piranha", "joia-atelie", "charmbar", "antonella", "hidrateimeninas", "fazendojoia"]:
+    assert _bad not in deck, f"FOTO PROIBIDA (fora do tema bag charms): {_bad}"
 _ns = html.count('<style>', 0, html.find('<div class="deck">'))
 print("wrote", out, "| slides:", html.count('<section class="slide">'), "| style blocks:", _ns)
