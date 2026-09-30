@@ -197,28 +197,24 @@ momento = f'''
     {foot("Momento Elarah")}
   </section>'''
 
-charmbar = f'''
+incluso = f'''
   <section class="slide">
-{head_simple("Charm Bar")}
-    <span class="eyebrow orange">◆ Charm Bar · Ateliê AGIR</span>
-    <h2>O que você vai <em>viver</em></h2>
-    <p class="lead"><strong>Escolha. Combine. Crie uma peça com a sua cara.</strong> Cada convidada monta o próprio acessório de bolsa a partir de uma curadoria de <strong>cores, pedras, letras e charms</strong> do <strong>Ateliê AGIR</strong> — testando combinações e escolhendo <strong>até 5 charms</strong>. Sem precisar de experiência: o <strong>Ateliê AGIR acompanha</strong> cada etapa. 🤎</p>
+{head_simple("O que está incluso")}
+    <span class="eyebrow orange">◆ Tudo pronto</span>
+    <h2>O que está <em>incluso</em></h2>
     <div class="split">
-      <div class="twoph">
-        <figure>{img("charm-materials-tray.jpg", "Curadoria de cores, pedras, letras e charms", "center 55%")}<figcaption>A curadoria de charms</figcaption></figure>
-        <figure>{img("charm-flatlay.jpg", "Acessório de bolsa personalizado finalizado", "center 50%")}<figcaption>Sua peça única</figcaption></figure>
-      </div>
-      <ul class="inclist charm">
-        <li><span class="ck">✓</span><b>Todos os materiais</b> para a criação</li>
-        <li><span class="ck">✓</span>Escolha entre <b>cores, pedras e letras</b></li>
-        <li><span class="ck">✓</span>Até <b>5 charms</b> por pessoa</li>
-        <li><span class="ck">✓</span><b>Acompanhamento</b> do Ateliê AGIR na montagem</li>
-        <li><span class="ck">✓</span><b>1 acessório de bolsa</b> personalizado por você</li>
-        <li><span class="ck">✓</span><b>Embalagem</b> para levar a criação pra casa</li>
+      <div class="sph">{img("charm-flatlay.jpg", "Bag charm finalizado", "center 50%")}</div>
+      <ul class="inclist">
+        <li><span class="ck">✓</span><b>Curadoria e produção</b> Elarah</li>
+        <li><span class="ck">✓</span><b>Facilitadora</b> da experiência</li>
+        <li><span class="ck">✓</span><b>Materiais</b> para os bag charms</li>
+        <li><span class="ck">✓</span>Variedade de <b>charms e elementos</b></li>
+        <li><span class="ck">✓</span><b>Ferramentas</b> necessárias</li>
+        <li><span class="ck">✓</span><b>Montagem</b> e acompanhamento da atividade</li>
+        <li><span class="ck">✓</span>Cada participante <b>leva sua criação</b></li>
       </ul>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Mais do que montar um acessório, é um momento pra <strong>criar, conversar e se divertir</strong>. Venha sozinha ou convide uma amiga — no fim, você leva uma <strong>peça única</strong>, feita por você e com a sua história. 🤎</div>
-    {foot("Charm Bar · Ateliê AGIR")}
+    {foot("O que está incluso")}
   </section>'''
 
 espaco = f'''
@@ -307,7 +303,7 @@ encerramento = f'''
     {foot("Vamos criar?")}
   </section>'''
 
-deck = ('<div class="deck">\n' + cover + experiencia + momento + charmbar + espaco
+deck = ('<div class="deck">\n' + cover + experiencia + momento + incluso + espaco
         + investimento + encerramento + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-bag-charms.html"

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Entre Charms · Elarah</title>
-<meta name="description" content="Entre Charms · uma experiência Elarah de criação, encontros e personalidade: cada convidada monta o próprio bag charm. Ativação de marca em São Paulo.">
+<title>Charm Bar · Elarah</title>
+<meta name="description" content="Charm Bar · Ateliê AGIR: crie seu acessório de bolsa personalizado. Uma experiência Elarah de escolher, combinar e criar.">
 <meta name="robots" content="noindex, nofollow">
 <style>
 /* latin-ext */
@@ -466,260 +466,94 @@
 
 
 
+
 <style>
-  /* fluxo da experiencia */
-  .flow4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
-  .flow4 .fs{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 12px 28px -22px rgba(0,0,0,.3);display:flex;flex-direction:column}
-  .flow4 .fsph{height:118px;overflow:hidden;background:#eee}
-  .flow4 .fsph img{width:100%;height:100%;object-fit:cover;display:block}
-  .flow4 .fsb{padding:11px 14px 14px}
-  .flow4 .fsn{font-family:'DM Serif Display',serif;color:var(--orange);font-size:17px;line-height:1}
-  .flow4 .fst{font-family:'DM Serif Display',serif;font-size:14.5px;color:var(--navy);line-height:1.12;margin-top:3px}
-  .flow4 .fsd{font-size:10px;color:var(--muted);line-height:1.4;margin-top:6px}
-  /* incluso */
-  .inclist{display:grid;grid-template-columns:1fr;gap:11px;margin:0;padding:0}
-  .inclist li{list-style:none;position:relative;padding-left:28px;font-size:13px;color:var(--ink);line-height:1.4}
-  .inclist li b{color:var(--navy);font-weight:700}
-  .inclist li .ck{position:absolute;left:0;top:1px;width:18px;height:18px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
-  .split{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:18px;align-items:center}
-  .split .sph{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.4);height:380px}
-  .split .sph img{width:100%;height:100%;object-fit:cover;display:block}
-  .twoph{display:grid;grid-template-rows:1fr 1fr;gap:14px;height:388px}
-  .twoph figure{margin:0;border-radius:16px;overflow:hidden;position:relative;border:1px solid var(--line);box-shadow:0 14px 34px -24px rgba(0,0,0,.4)}
-  .twoph img{width:100%;height:100%;object-fit:cover;display:block}
-  .twoph figcaption{position:absolute;left:0;right:0;bottom:0;padding:20px 13px 10px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
-  .inclist.charm li{font-size:12.5px}
-  /* espacos: O Jardim */
-  .jhero{margin:18px 0 0;border-radius:18px;overflow:hidden;position:relative;height:250px;border:1px solid var(--line);box-shadow:0 18px 44px -28px rgba(0,0,0,.42)}
-  .jhero img{width:100%;height:100%;object-fit:cover;display:block}
-  .jhero figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 18px 14px;color:#fff;font-size:13px;font-weight:600;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
-  .jrow3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
-  .jrow3 figure{margin:0;border-radius:15px;overflow:hidden;position:relative;height:150px;border:1px solid var(--line);box-shadow:0 14px 32px -24px rgba(0,0,0,.36)}
-  .jrow3 img{width:100%;height:100%;object-fit:cover;display:block}
-  .jrow3 figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 10px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
-  /* momento */
-  .mos2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
-  .mos2 figure{margin:0;border-radius:15px;overflow:hidden;position:relative;height:200px;border:1px solid var(--line);box-shadow:0 14px 34px -24px rgba(0,0,0,.36)}
-  .mos2 img{width:100%;height:100%;object-fit:cover;display:block}
-  .mos2 figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 14px 11px;color:#fff;font-size:11.5px;font-weight:600;letter-spacing:.03em;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
-  /* investimento: 3 opcoes claras */
-  .invtrio{display:grid;grid-template-columns:1fr 1fr 1.14fr;gap:14px;margin-top:22px;align-items:stretch}
-  .iopt{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 20px 18px;box-shadow:0 16px 40px -28px rgba(0,0,0,.3);display:flex;flex-direction:column}
-  .iopt .tag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);line-height:1.25}
-  .iopt .desc{font-size:11px;color:var(--muted);line-height:1.4;margin-top:5px}
-  .iopt .big{font-family:'DM Serif Display',serif;font-size:33px;color:var(--navy);line-height:1.02;margin:12px 0 2px}
-  .iopt .per{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
-  .iopt .grp{margin-top:13px;font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy)}
-  .iopt .grp small{display:block;font-family:'DM Sans',sans-serif;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
-  .iopt .spacer{flex:1}
-  .iopt .brk{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:6px}
-  .iopt .brk .row{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--muted)}
-  .iopt .brk .row b{font-weight:700;white-space:nowrap;color:var(--navy-soft)}
-  /* opcao recomendada */
-  .iopt.rec{background:linear-gradient(158deg,var(--navy),#241722);border-color:transparent;color:#fff;position:relative;overflow:hidden}
-  .iopt.rec .badge{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;background:var(--orange);color:#fff;font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;padding:4px 11px;border-radius:999px;margin-bottom:12px}
-  .iopt.rec .htop{display:flex;align-items:center;gap:11px}
-  .iopt.rec .recph{width:52px;height:52px;border-radius:12px;object-fit:cover;flex:none;border:1px solid rgba(255,255,255,.22)}
-  .iopt.rec .tag{color:var(--orange)}
-  .iopt.rec .desc{color:rgba(255,255,255,.78)}
-  .iopt.rec .big,.iopt.rec .grp{color:#fff}
-  .iopt.rec .per{color:rgba(255,255,255,.72)}
-  .iopt.rec .grp small{color:rgba(255,255,255,.6)}
-  .iopt.rec .brk{border-top-color:rgba(255,255,255,.16)}
-  .iopt.rec .brk .row{color:rgba(255,255,255,.82)}
-  .iopt.rec .brk .row b{color:#fff}
-  /* encerramento */
-  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-top:14px}
-  .steps .step{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:17px 15px;box-shadow:0 10px 26px -22px rgba(0,0,0,.3)}
-  .steps .step .num{font-family:'DM Serif Display',serif;font-size:26px;color:var(--orange);line-height:1}
-  .steps .step h3{font-size:13px;font-weight:700;color:var(--navy);margin:7px 0 5px;line-height:1.15}
-  .steps .step p{font-size:10.5px;color:var(--muted);line-height:1.4}
-  .subh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0}
-  .btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#fff;font-weight:700;font-size:15px;padding:14px 26px;border-radius:999px;text-decoration:none;box-shadow:0 14px 30px -12px rgba(37,211,102,.55);margin-top:18px}
+  @page{size:A4;margin:0}
+  html,body{margin:0;padding:0;background:#E9E0D6}
+  .op{width:210mm;min-height:297mm;margin:0 auto;background:#F5EDE6;box-sizing:border-box;
+      padding:18mm 16mm 15mm;position:relative;font-family:'DM Sans',sans-serif;color:var(--ink);overflow:hidden}
+  .op .brandrow{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:12px}
+  .op .brandrow .logo{height:28px;width:auto;display:block}
+  .op .krow{text-align:right;line-height:1.5}
+  .op .krow b{display:block;font-size:13px;color:var(--navy);font-weight:700}
+  .op .krow b em{font-style:normal;color:var(--orange)}
+  .op .krow span{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .op .ey{font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-top:24px}
+  .op h1{font-family:'DM Serif Display',serif;font-size:48px;color:var(--navy);line-height:1.02;margin:8px 0 6px}
+  .op h1 em{font-style:italic;color:var(--orange)}
+  .op .sub{font-family:'DM Serif Display',serif;font-size:21px;color:var(--navy-soft);font-style:italic;margin:0 0 18px}
+  .op .main{display:grid;grid-template-columns:1.06fr .94fr;gap:26px;align-items:start}
+  .op p.tx{font-size:13.5px;line-height:1.68;color:var(--ink);margin:0 0 13px}
+  .op p.tx b{color:var(--navy);font-weight:700}
+  .op .inclcard{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 22px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);margin-top:16px}
+  .op .inclcard h3{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:0 0 13px}
+  .op ul.oplist{list-style:none;margin:0;padding:0;border:none;border-radius:0;min-width:0;display:grid;gap:12px}
+  .op ul.oplist li{position:relative;padding-left:27px;font-size:12.5px;color:var(--ink);line-height:1.4}
+  .op ul.oplist li b{color:var(--navy);font-weight:700}
+  .op ul.oplist li .ck{position:absolute;left:0;top:1px;width:18px;height:18px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .op .photos{display:grid;gap:14px}
+  .op .photos figure{margin:0;border-radius:16px;overflow:hidden;position:relative;border:1px solid var(--line);box-shadow:0 16px 38px -26px rgba(0,0,0,.42);height:88mm}
+  .op .photos figure.sm{height:58mm}
+  .op .photos .pair{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .op .photos img{width:100%;height:100%;object-fit:cover;display:block}
+  .op .photos figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 13px 10px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .op .close{margin-top:18px;background:linear-gradient(158deg,var(--navy),#241722);color:#fff;border-radius:16px;padding:18px 22px;font-size:13px;line-height:1.6}
+  .op .close b{color:#fff;font-weight:700}
+  .op .close .heart{color:var(--orange)}
+  .op .proofline{margin-top:14px;background:#FBF0F3;border-radius:999px;padding:12px 22px;font-size:11px;color:var(--navy-soft);text-align:center}
+  .op .proofline b{color:var(--navy);font-weight:700}
+  .op .proofline .star{color:var(--orange);margin-right:5px}
+  .op .foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:10.5px;color:var(--navy-soft);letter-spacing:.02em}
+  .op .foot .wa{font-weight:700;color:var(--navy)}
 </style></head>
 <body>
 
-<div class="deck">
+<div class="op">
+  <div class="brandrow">
+    <img class="logo" src="assets/logo.png" alt="Elarah">
+    <div class="krow"><b>Charm <em>Bar</em></b><span>Crie seu acessório de bolsa</span></div>
+  </div>
 
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right">
-        <span class="kicker">Ativação de marca · São Paulo</span>
-        <span class="compass">Entre <span>Charms</span><small>15 a 20 convidadas</small></span>
-      </div>
-    </div>
-    <div class="cover">
-      <div>
-        <span class="eyebrow">✦ Uma ativação Elarah</span>
-        <h1>Entre <em>Charms</em></h1>
-        <p class="lead"><strong>Uma experiência de criação, encontros e personalidade.</strong> Cada convidada monta o próprio bag charm — <strong>correntes, pingentes, pérolas, letras e fitas</strong> — no seu tempo, entre boas conversas.</p>
-        <div class="rule"></div>
-        <div class="chips">
-          <span class="chip"><b>15 a 20</b> convidadas</span>
-          <span class="chip">São Paulo</span>
-        </div>
-        <div class="chips" style="margin-top:10px">
-          <span class="chip">Lançamento de marca</span>
-          <span class="chip"><b>1h30</b> de experiência</span>
-        </div>
-      </div>
-      <div class="cover-photo"><img src="assets/charm-making-mesa.jpg" alt="Mulheres criando seus bag charms juntas" style="object-position:center 42%"></div>
-    </div>
-    <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Entre Charms · São Paulo</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">A experiência</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Cada uma cria o seu</span>
-    <h2>Do charm à <em>peça final</em></h2>
-    <p class="lead">Uma <strong>ativação criativa</strong> para o seu lançamento: cada convidada escolhe entre correntes, pingentes, pérolas e letras e <strong>monta o próprio bag charm</strong> — <strong>espontâneo, autoral e cheio de conexão</strong>, do começo ao fim.</p>
-    <div class="flow4">
-      <div class="fs"><div class="fsph"><img src="assets/charm-materials-tray.jpg" alt="Escolha" style="object-position:center 55%"></div><div class="fsb"><div class="fsn">01</div><div class="fst">Escolha</div><div class="fsd">Escolhem charms, pingentes, pérolas e letras.</div></div></div>
-      <div class="fs"><div class="fsph"><img src="assets/antonella-capa-grupo.jpg" alt="Composição" style="object-position:center 30%"></div><div class="fsb"><div class="fsn">02</div><div class="fst">Composição</div><div class="fsd">Entre risadas, combinam cores, texturas e elementos.</div></div></div>
-      <div class="fs"><div class="fsph"><img src="assets/charm-making-maos.jpg" alt="Montagem" style="object-position:center 45%"></div><div class="fsb"><div class="fsn">03</div><div class="fst">Montagem</div><div class="fsd">Montam a peça com acompanhamento.</div></div></div>
-      <div class="fs"><div class="fsph"><img src="assets/charm-bolsa-suede.jpg" alt="Peça final" style="object-position:center 45%"></div><div class="fsb"><div class="fsn">04</div><div class="fst">Peça final</div><div class="fsd">Cada uma leva o próprio charm na bolsa.</div></div></div>
-    </div>
-    <div class="bnote" style="margin-top:18px">◆ <strong>Não precisa de experiência:</strong> em cerca de <strong>1h30</strong>, a facilitadora conduz o grupo do começo ao fim, e cada convidada sai com um <strong>acessório único</strong>. 🧡</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>A experiência</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Momento Elarah</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Momento Elarah</span>
-    <h2>A experiência <em>acontecendo</em></h2>
-    <div class="mos2">
-      <figure><img src="assets/charm-making-grupo.jpg" alt="Mulheres montando os bag charms juntas" style="object-position:center 45%"><figcaption>Criar junto</figcaption></figure>
-      <figure><img src="assets/hidrateimeninas.jpg" alt="Grupo de mulheres rindo e criando" style="object-position:center 30%"><figcaption>Risadas &amp; conexão</figcaption></figure>
-      <figure><img src="assets/charm-mesa-rosa.jpg" alt="Mesa montada com charms e ferramentas" style="object-position:center 45%"><figcaption>Escolher os elementos</figcaption></figure>
-      <figure><img src="assets/charm-final-flatlay.jpg" alt="Detalhe do bag charm finalizado" style="object-position:center 50%"><figcaption>Cada detalhe</figcaption></figure>
-      <figure><img src="assets/charm-elementos-mesa.jpg" alt="Variedade de correntes, letras, pingentes e pérolas" style="object-position:center 50%"><figcaption>Os charms</figcaption></figure>
-      <figure><img src="assets/charm-bolsa.jpg" alt="Bag charm finalizado na bolsa" style="object-position:center 50%"><figcaption>O resultado</figcaption></figure>
-    </div>
-    <div class="bnote" style="margin-top:16px">◆ Mais do que uma oficina, uma <strong>experiência que aproxima pessoas e marca</strong> de um jeito leve, criativo e espontâneo. A <strong>Elarah cuida da ativação</strong> — da curadoria à experiência acontecendo.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Momento Elarah</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O que está incluso</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Tudo pronto</span>
-    <h2>O que está <em>incluso</em></h2>
-    <div class="split">
-      <div class="sph"><img src="assets/charm-flatlay.jpg" alt="Bag charm finalizado" style="object-position:center 50%"></div>
-      <ul class="inclist">
-        <li><span class="ck">✓</span><b>Curadoria e produção</b> Elarah</li>
-        <li><span class="ck">✓</span><b>Facilitadora</b> da experiência</li>
-        <li><span class="ck">✓</span><b>Materiais</b> para os bag charms</li>
-        <li><span class="ck">✓</span>Variedade de <b>charms e elementos</b></li>
-        <li><span class="ck">✓</span><b>Ferramentas</b> necessárias</li>
-        <li><span class="ck">✓</span><b>Montagem</b> e acompanhamento da atividade</li>
-        <li><span class="ck">✓</span>Cada participante <b>leva sua criação</b></li>
-      </ul>
-    </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>O que está incluso</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Local & atmosfera</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Onde acontece</span>
-    <h2>O Jardim — <em>ou o seu espaço</em></h2>
-    <p class="lead">A nossa recomendação é o <strong>O Jardim · Café &amp; Brunch</strong>: um café charmoso com <strong>área externa arborizada</strong>, o cenário natural perfeito pra experiência acontecer entre o verde e render foto o dia inteiro. Também dá pra levar tudo até o <strong>seu espaço</strong>. 🌿</p>
-    <div class="jhero"><img src="assets/ojardim1.jpg" alt="Área externa arborizada do O Jardim" style="object-position:center 55%"><figcaption>Área externa arborizada</figcaption></div>
-    <div class="jrow3">
-      <figure><img src="assets/ojardim4.jpg" alt="Coffee break e brunch servido à mesa" style="object-position:center 55%"><figcaption>Coffee break &amp; brunch</figcaption></figure>
-      <figure><img src="assets/ojardim2.jpg" alt="Jardim e deck do O Jardim" style="object-position:center 50%"><figcaption>Jardim &amp; deck</figcaption></figure>
-      <figure><img src="assets/ojardim3.jpg" alt="Fachada do O Jardim Café & Brunch" style="object-position:center 50%"><figcaption>O Jardim · Café &amp; Brunch</figcaption></figure>
-    </div>
-    <div class="bnote" style="margin-top:16px">◆ No Jardim: <strong>R$ 600</strong> de locação do espaço + <strong>R$ 99</strong> de brunch por pessoa. Data e disponibilidade a confirmar.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Local & atmosfera</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Investimento</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Escolham a <em>ativação</em></h2>
-    <div class="invtrio">
-      <div class="iopt">
-        <span class="tag">Só experiência</span>
-        <p class="desc">A experiência de charms, com curadoria e produção Elarah.</p>
-        <div class="big">R$ 179</div>
-        <span class="per">por pessoa</span>
-        <div class="spacer"></div>
-        <div class="grp">R$ 3.580<small>20 participantes</small></div>
-      </div>
-      <div class="iopt">
-        <span class="tag">Brunch + espaço + experiência</span>
-        <p class="desc">A experiência no O Jardim, com brunch e espaço privado.</p>
-        <div class="big">R$ 308</div>
-        <span class="per">por pessoa</span>
-        <div class="brk">
-          <div class="row"><span>Experiência</span><b>R$ 179 / pessoa</b></div>
-          <div class="row"><span>Brunch (O Jardim)</span><b>R$ 99 / pessoa</b></div>
-          <div class="row"><span>Locação do espaço</span><b>R$ 600 total</b></div>
-        </div>
-        <div class="spacer"></div>
-        <div class="grp">R$ 6.160<small>20 participantes</small></div>
-      </div>
-      <div class="iopt rec">
-        <span class="badge">✦ Sugestão Elarah</span>
-        <div class="htop">
-          <img class="recph" src="assets/garrafa-rosa-personalizada.jpg" alt="Mimo personalizado">
-          <div>
-            <span class="tag">Premium</span>
-            <p class="desc">Tudo + registro fotográfico + mimo personalizado.</p>
-          </div>
-        </div>
-        <div class="big">R$ 472,35</div>
-        <span class="per">por pessoa</span>
-        <div class="brk">
-          <div class="row"><span>Experiência</span><b>R$ 179 / pessoa</b></div>
-          <div class="row"><span>Brunch (O Jardim)</span><b>R$ 99 / pessoa</b></div>
-          <div class="row"><span>Locação do espaço</span><b>R$ 600 total</b></div>
-          <div class="row"><span>Registro fotográfico</span><b>R$ 489 total</b></div>
-          <div class="row"><span>Mimo personalizado</span><b>R$ 139,90 / pessoa</b></div>
-        </div>
-        <div class="spacer"></div>
-        <div class="grp">R$ 9.447<small>20 participantes</small></div>
-      </div>
-    </div>
-    <p class="fineprint">Valores por pessoa (locação do espaço e registro fotográfico são valores totais), com base em 20 participantes no <b>O Jardim · Café &amp; Brunch</b>. A opção <b>Premium — Sugestão Elarah</b> é a nossa recomendação para uma ativação de lançamento, com registro profissional e mimo personalizado para cada convidada.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Vamos criar?</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Bora criar?</span>
-    <h2>E aí, <em>vamos criar?</em></h2>
-    <p class="lead"><strong>A gente cuida de tudo</strong> — da curadoria à montagem. Uma <strong>ativação by Elarah</strong> pensada para transformar o lançamento em um momento de <strong>criação, conexão e marca</strong>.</p>
-    <p class="subh">Bora reunir o time?</p>
-    <div class="steps">
-      <div class="step"><div class="num">1</div><h3>Escolha a experiência</h3><p>Confirme a opção que mais combina com o lançamento.</p></div>
-      <div class="step"><div class="num">2</div><h3>Defina o espaço</h3><p>Escolhemos juntas o espaço e o formato ideal.</p></div>
-      <div class="step"><div class="num">3</div><h3>Confirme a data</h3><p>Com a confirmação, reservamos e organizamos a produção.</p></div>
-      <div class="step"><div class="num">4</div><h3>A Elarah cuida do resto</h3><p>Curadoria, materiais, montagem e todos os detalhes.</p></div>
-    </div>
-    <a class="btn-wa" href="https://wa.me/5511914455930?text=Oi%2C%20Elarah!%20Quero%20falar%20sobre%20a%20experi%C3%AAncia%20Entre%20Charms%20para%20o%20lan%C3%A7amento." target="_blank" rel="noopener">💬 Falar com a Elarah no WhatsApp</a>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Vamos criar?</span></div>
-  </section>
+  <div class="ey">◆ Charm Bar · Ateliê AGIR</div>
+  <h1>O que você vai <em>viver</em></h1>
+  <p class="sub">Escolha. Combine. Crie uma peça que tenha a sua cara.</p>
 
+  <div class="main">
+    <div>
+      <p class="tx">Viva uma experiência de <b>Charm Bar</b> e crie seu próprio acessório de bolsa personalizado, escolhendo entre uma curadoria de <b>cores, pedras, letras e charms</b> do <b>Ateliê AGIR</b>.</p>
+      <p class="tx">Você poderá explorar os materiais, testar combinações e escolher <b>até 5 charms</b> para criar uma composição única e cheia de personalidade.</p>
+      <p class="tx">Durante toda a experiência, você será acompanhada pelo <b>Ateliê AGIR</b> em cada etapa da criação. <b>Não é necessário ter experiência</b> — você escolhe os elementos que mais combinam com você e nós ajudamos a transformar suas escolhas em uma peça especial.</p>
+      <div class="inclcard">
+        <h3>A experiência inclui</h3>
+        <ul class="oplist">
+          <li><span class="ck">✓</span><b>Todos os materiais</b> para a criação</li>
+          <li><span class="ck">✓</span>Escolha entre diferentes <b>cores, pedras e letras</b></li>
+          <li><span class="ck">✓</span>Até <b>5 charms</b></li>
+          <li><span class="ck">✓</span><b>Acompanhamento</b> durante a montagem</li>
+          <li><span class="ck">✓</span><b>1 acessório de bolsa</b> personalizado criado por você</li>
+          <li><span class="ck">✓</span><b>Embalagem</b> para levar sua criação para casa</li>
+        </ul>
+      </div>
+    </div>
+    <div class="photos">
+      <figure><img src="assets/charm-making-mesa.jpg" alt="Mulheres criando seus acessórios de bolsa" style="object-position:center 42%"><figcaption>Escolher, combinar e criar</figcaption></figure>
+      <div class="pair">
+        <figure class="sm"><img src="assets/charm-materials-tray.jpg" alt="Curadoria de cores, pedras, letras e charms" style="object-position:center 55%"><figcaption>A curadoria</figcaption></figure>
+        <figure class="sm"><img src="assets/charm-flatlay.jpg" alt="Acessório de bolsa personalizado" style="object-position:center 50%"><figcaption>Sua peça única</figcaption></figure>
+      </div>
+    </div>
+  </div>
+
+  <div class="close">
+    Mais do que montar um acessório, é um momento para <b>criar, conversar, se divertir e viver algo diferente</b>. Venha sozinha ou convide uma amiga. Ao final, você leva uma <b>peça única</b> — feita por você e com a sua história. <span class="heart">🤎</span>
+  </div>
+
+  <div class="proofline"><span class="star">★</span> Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
+
+  <div class="foot">
+    <span class="wa">WhatsApp +55 (11) 91445-5930</span>
+    <span>@elarah.oficial · elarah.com.br</span>
+  </div>
 </div>
-
-<div class="toolbar">
-  <button class="ghost" onclick="window.print()">⬇ Salvar / Imprimir PDF</button>
-</div>
-
 </body>
 </html>
