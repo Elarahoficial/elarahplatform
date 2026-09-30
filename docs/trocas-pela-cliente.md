@@ -12,8 +12,14 @@ Antes, pra trocar a data a cliente chamava a Elarah no WhatsApp. Agora ela faz s
   (Pagar.me, com a taxa da parcela, igual ao checkout). Se for **mais barata**, a sobra vira
   **crédito** (cupom de valor fixo, uso único, 90 dias — opção em destaque) ou, num link discreto,
   **reembolso por Pix** na chave que ela informar (a Elarah tem 72h; fica pendente na aba).
-  A diferença é sempre: preço de hoje da nova (com promoção) − o que ela pagou por pessoa. Experiência com opções pra escolher (Individual/Dupla, modelo de
-  pintura…), agendamento livre ou kit não aparece: nesses casos a cliente fala com a Elarah.
+  - **A pagar** = preço de hoje da nova (com promoção) − o que ela pagou por pessoa.
+  - **A receber** = o que ela pagou − o preço **cheio** da nova. **Promoção nunca vira crédito
+    nem Pix**: trocar pra algo que só está mais barato por causa da campanha é troca sem diferença.
+  - **Mesma experiência** (mesma ficha ou ficha com o mesmo nome e parceiro) nunca tem diferença.
+  - Experiência de **agendamento livre** (ex.: Charutaria) aparece com "agendamento com a
+    Elarah": a cliente deixa dia/hora de preferência (opcionais) e a Elarah combina.
+  - Experiência com opções pra escolher (Individual/Dupla, modelo de pintura…) ou kit não
+    aparece: nesses casos a cliente fala com a Elarah.
 - **Mesma experiência em fichas separadas**: fichas com o mesmo nome e o mesmo parceiro (a mesma
   aula cadastrada várias vezes, uma data em cada) aparecem juntas em "Mesma experiência, outra
   data". Se alguma custar mais, a data mostra a diferença.
