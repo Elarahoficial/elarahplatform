@@ -159,10 +159,6 @@ export interface Pedido {
   experiencia_id: string;
   slot_id: string | null;
   horario: string | null;
-  // Agendamento livre (voucher): dia/hora de PREFERÊNCIA, opcionais —
-  // mesma lógica do site; a Elarah acerta o horário com a cliente.
-  preferencia_data?: string | null; // YYYY-MM-DD
-  preferencia_hora?: string | null; // HH:MM
 }
 
 export interface TrocaCtx {
@@ -279,9 +275,10 @@ export async function validarTroca(
     return falha("experiencia_indisponivel", "Essa experiência não está mais disponível.");
   }
   const mesmaExp = novaExp.id === bk.experiencia_id;
-  const agendamentoLivre = !!(novaExp.horario_funcionamento && String(novaExp.horario_funcionamento).trim());
-  if (agendamentoLivre && mesmaExp) {
-    return falha("agendamento_livre", "Essa experiência é de agendamento livre: pra mudar o dia, fale com a gente no WhatsApp.");
+  // Só experiências com DATA marcada entram na troca. Agendamento livre
+  // (voucher, horario_funcionamento) fica com a Elarah no WhatsApp.
+  if (novaExp.horario_funcionamento && String(novaExp.horario_funcionamento).trim()) {
+    return falha("agendamento_livre", "Essa experiência tem agendamento direto com a Elarah. Fale com a gente no WhatsApp.");
   }
   let diferencaCentavos = 0;
   let sobraCentavos = 0;
@@ -327,23 +324,7 @@ export async function validarTroca(
   let novaData: string;
   let novoHorario: string;
   let inicioNovo: number | null;
-  if (agendamentoLivre) {
-    // Sem turma: dia/hora de preferência (opcionais). Sem data, fica
-    // "A combinar" e a Elarah acerta com a cliente — igual ao checkout.
-    const pd = String(pedido.preferencia_data ?? "").trim();
-    const ph = String(pedido.preferencia_hora ?? "").trim();
-    const md = pd.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    const mh = ph.match(/^(\d{1,2}):(\d{2})$/);
-    if (pd && !md) return falha("preferencia_invalida", "Confira o dia de preferência.", 400);
-    if (ph && !mh) return falha("preferencia_invalida", "Confira a hora de preferência.", 400);
-    if (md) {
-      const dia = new Date(`${md[1]}-${md[2]}-${md[3]}T23:59:00-03:00`).getTime();
-      if (!Number.isFinite(dia) || dia < now) return falha("preferencia_invalida", "Escolha um dia a partir de hoje.", 400);
-    }
-    novaData = md ? `${md[3]}/${md[2]}/${md[1]}` : "A combinar";
-    novoHorario = mh ? `${mh[1].padStart(2, "0")}h${mh[2]}` : "A combinar com a Elarah";
-    inicioNovo = null;
-  } else if (slotIdNovo) {
+  if (slotIdNovo) {
     const { data: slotRow } = await sb
       .from("experience_slots")
       .select("id, experience_id, data, horario, vagas_total, vagas_restantes, event_at, is_active")
@@ -381,12 +362,10 @@ export async function validarTroca(
       return falha("sem_vaga", "Essa experiência não tem mais vaga. Escolha outra.");
     }
   }
-  if (inicioNovo != null) {
-    if (!opts.pagamentoConfirmado && now + cutoffH * 3600_000 > inicioNovo) {
-      return falha("turma_encerrada", "As vendas pra essa data já encerraram. Escolha outra.");
-    }
-    if (inicioNovo <= now) return falha("turma_passou", "Essa data já passou.");
+  if (!opts.pagamentoConfirmado && now + cutoffH * 3600_000 > inicioNovo) {
+    return falha("turma_encerrada", "As vendas pra essa data já encerraram. Escolha outra.");
   }
+  if (inicioNovo <= now) return falha("turma_passou", "Essa data já passou.");
   const slotIdAntigo: string | null = bk.slot_id ?? null;
   const mesmaTurma = mesmaExp && (
     slotIdNovo ? slotIdNovo === slotIdAntigo

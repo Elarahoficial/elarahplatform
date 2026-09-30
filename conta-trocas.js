@@ -94,7 +94,7 @@
   // Pode ser DESTINO de troca pra outra ficha: o servidor recusa as demais.
   // Mais cara pode — a cliente paga a diferença.
   function podeSerDestino(exp) {
-    if (!exp || exp.arquivada || exp.isActive === false || isKit(exp) || temVariacoes(exp)) return false;
+    if (!exp || exp.arquivada || exp.isActive === false || ehLivre(exp) || isKit(exp) || temVariacoes(exp)) return false;
     return !!precoCentavos(exp.preco);
   }
 
@@ -129,8 +129,8 @@
     return cheio > 0 && cheio < antigo ? (antigo - cheio) * q : 0;
   }
 
-  // Agendamento livre (voucher): sem turma — a cliente deixa dia/hora de
-  // preferência (opcionais) e a Elarah combina, igual ao site.
+  // Agendamento livre (voucher, sem data marcada): fica fora da troca —
+  // só entram experiências com data. Pra essas, a cliente fala com a Elarah.
   function ehLivre(exp) {
     return !!(exp && exp.horarioFuncionamento && String(exp.horarioFuncionamento).trim());
   }
@@ -162,8 +162,6 @@
   // turma ativa, antes do encerramento de vendas (cutoff) e com vaga.
   // Sem turmas cadastradas, usa a data/horários da própria experiência.
   function datasAVenda(exp, slots, qty, booking) {
-    // Agendamento livre: uma "opção" só, sem data fixa.
-    if (ehLivre(exp)) return [{ exp: exp, livre: true, slotId: null, data: '', horario: '', ts: 9e15 }];
     var d = D();
     var now = Date.now();
     var cutoffMs = (d && d.effectiveCutoffHours ? d.effectiveCutoffHours(exp) : 24) * HORA;
@@ -384,7 +382,7 @@
         var todas = await d.getVisibleExperiences();
         var slotsMap = await d.loadAllSlots();
         todas.forEach(function (g) {
-          if (!ehGemea(g, booking, exp) || !podeSerDestino(g) || ehLivre(g)) return;
+          if (!ehGemea(g, booking, exp) || !podeSerDestino(g)) return;
           datas = datas.concat(datasAVenda(g, (slotsMap && slotsMap.get(g.id)) || [], qty, booking));
         });
         datas.sort(function (a, b) { return a.ts - b.ts; });
@@ -441,7 +439,7 @@
         return '<button type="button" class="troca-exp" data-idx="' + lista.indexOf(it) + '">' +
           (e.imagem ? '<img src="' + esc(e.imagem) + '" alt="" loading="lazy">' : '<img alt="">') +
           '<span><b>' + esc(e.nome) + '</b><small>' + esc(precoLabel(e)) +
-          (e.bairro ? ' · ' + esc(e.bairro) : '') + ' · ' + (ehLivre(e) ? '📞 agendamento com a Elarah' : it.datas.length + (it.datas.length === 1 ? ' data' : ' datas')) +
+          (e.bairro ? ' · ' + esc(e.bairro) : '') + ' · ' + it.datas.length + (it.datas.length === 1 ? ' data' : ' datas') +
           (diferencaDe(e, booking) > 0 ? '<span class="troca-dif">+ ' + esc(brl(diferencaDe(e, booking))) + '</span>' : '') +
           '</small></span></button>';
       }).join('');
@@ -477,10 +475,6 @@
     // Passo 3 — escolher a data e confirmar (ou seguir pro pagamento).
     function passoDatas(exp, datas, voltar, mesma) {
       var escolhida = null;
-      // Agendamento livre: sem chips de data — dia/hora de PREFERÊNCIA
-      // (opcionais) e a Elarah combina, igual à página da experiência.
-      var livre = !!(datas.length === 1 && datas[0].livre);
-      if (livre) escolhida = 0;
       // Sobra (nova mais barata): crédito é o padrão; Pix fica escondido.
       var devolucao = 'credito';
       var chavePix = '';
@@ -516,22 +510,14 @@
         render(
           topo(titulo, sub) +
           '<button type="button" class="troca-voltar" data-voltar>← Voltar</button>' +
-          (livre
-            ? '<div class="troca-resumo"><p><strong>Horário de funcionamento</strong><br>' +
-                esc(exp.horarioFuncionamento).replace(/\n/g, '<br>') + '</p></div>' +
-              '<div class="troca-campos">' +
-                '<label>Dia de preferência (opcional)<input type="date" id="tr-pref-data" min="' + hojeISO() + '" value="' + esc(datas[0].preferencia_data || '') + '"></label>' +
-                '<label>Hora (opcional)<input type="time" id="tr-pref-hora" value="' + esc(datas[0].preferencia_hora || '') + '"></label>' +
-              '</div>' +
-              '<p class="troca-sub" style="margin:-4px 0 12px;">A Elarah entra em contato com você pra acertar o melhor dia e horário, dentro do horário de funcionamento. 🤍</p>'
-            : datas.length
+          (datas.length
             ? '<div class="troca-datas">' + chips + '</div>'
             : '<p class="troca-vazio">' + (mesma
               ? 'Essa experiência não tem outra data disponível no site agora. Você pode trocar por outra experiência ou falar com a Elarah no WhatsApp.'
               : 'Essa experiência não tem data disponível agora.') + '</p>') +
           (dt
             ? '<div class="troca-resumo"><p>❌ <strong>Sai:</strong> ' + esc(booking.experiencia_nome) + ' · ' + esc(booking.data) + ' ' + esc(booking.horario) + '</p>' +
-              '<p>✅ <strong>Entra:</strong> ' + esc(expSel.nome) + ' · ' + (dt.livre ? esc(prefTexto(dt)) : esc(dt.data) + ' ' + esc(dt.horario)) + '</p>' +
+              '<p>✅ <strong>Entra:</strong> ' + esc(expSel.nome) + ' · ' + esc(dt.data) + ' ' + esc(dt.horario) + '</p>' +
               (qty > 1 ? '<p>👥 ' + qty + ' vagas</p>' : '') + '</div>' +
               (dif > 0 ? '<div class="troca-pagar">Diferença a pagar: <b>' + esc(brl(dif)) + '</b><br><small>No Pix ou no cartão. A troca é confirmada assim que o pagamento aprovar.</small></div>' : '') +
               blocoSobra +
@@ -555,10 +541,6 @@
         for (var k = 0; k < dv.length; k++) {
           dv[k].addEventListener('click', function () { devolucao = this.getAttribute('data-devolucao'); desenhar(); });
         }
-        var pdI = box.querySelector('#tr-pref-data');
-        var phI = box.querySelector('#tr-pref-hora');
-        if (pdI) pdI.addEventListener('change', function () { datas[0].preferencia_data = pdI.value; desenhar(); });
-        if (phI) phI.addEventListener('change', function () { datas[0].preferencia_hora = phI.value; desenhar(); });
         var cp = box.querySelector('#tr-chavepix');
         if (cp) cp.addEventListener('input', function () { chavePix = cp.value; });
         var conf = box.querySelector('[data-confirmar]');
@@ -604,24 +586,7 @@
         slot_id: dt.slotId,
         data: dt.data,
         horario: dt.horario,
-        preferencia_data: dt.preferencia_data || null,
-        preferencia_hora: dt.preferencia_hora || null,
       };
-    }
-
-    function hojeISO() {
-      var n = new Date();
-      return n.getFullYear() + '-' + pad(n.getMonth() + 1) + '-' + pad(n.getDate());
-    }
-
-    // "dia 15/10 às 19:00" / "dia e horário a combinar com a Elarah".
-    function prefTexto(dt) {
-      var d = dt.preferencia_data ? dt.preferencia_data.split('-').reverse().join('/') : '';
-      var h = dt.preferencia_hora || '';
-      if (d && h) return 'preferência ' + d + ' às ' + h + ' (a Elarah confirma)';
-      if (d) return 'preferência ' + d + ' (a Elarah confirma o horário)';
-      if (h) return 'preferência às ' + h + ' (a Elarah confirma o dia)';
-      return 'dia e horário a combinar com a Elarah';
     }
 
     async function confirmar(exp, dt, btn, redesenhar, extra) {
@@ -644,7 +609,7 @@
         '<h2 class="troca-title">Reserva remarcada!</h2>' +
         (pago ? '<p class="troca-sub" style="margin-top:8px;">Pagamento da diferença aprovado ✓</p>' : '') +
         '<p class="troca-sub" style="margin-top:8px;">Agora é <strong>' + esc(exp.nome) + '</strong><br>' +
-        (dt.livre ? esc(prefTexto(dt)) : esc(dt.data) + ' · ' + esc(dt.horario)) + '</p>' +
+        esc(dt.data) + ' · ' + esc(dt.horario) + '</p>' +
         (data && data.credito && data.credito.codigo
           ? '<p class="troca-sub" style="margin-top:12px;">🎟 Seu crédito de <strong>' + esc(brl(data.credito.valor_centavos)) + '</strong>:</p>' +
             '<div class="troca-codigo">' + esc(data.credito.codigo) + '</div>' +
@@ -683,7 +648,7 @@
       var metodo = 'pix';
       var cpfIni = String((booking.metadata && booking.metadata.cpf) || '').replace(/\D+/g, '');
       render(
-        topo('Pagar a diferença', '<strong>' + esc(exp.nome) + '</strong> · ' + (dt.livre ? esc(prefTexto(dt)) : esc(dt.data) + ' ' + esc(dt.horario))) +
+        topo('Pagar a diferença', '<strong>' + esc(exp.nome) + '</strong> · ' + esc(dt.data) + ' ' + esc(dt.horario)) +
         '<button type="button" class="troca-voltar" data-voltar>← Voltar</button>' +
         '<div class="troca-pagar">Diferença a pagar: <b data-dif>' + esc(brl(dif)) + '</b></div>' +
         '<div class="troca-metodos">' +

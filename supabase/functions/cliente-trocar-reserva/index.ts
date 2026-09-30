@@ -84,8 +84,6 @@ function pedidoDe(payload: Record<string, unknown>): Pedido {
     experiencia_id: String(payload.experiencia_id ?? "").trim(),
     slot_id: payload.slot_id ? String(payload.slot_id).trim() : null,
     horario: payload.horario != null ? String(payload.horario).trim() : null,
-    preferencia_data: payload.preferencia_data ? String(payload.preferencia_data).trim() : null,
-    preferencia_hora: payload.preferencia_hora ? String(payload.preferencia_hora).trim() : null,
   };
 }
 
@@ -93,9 +91,7 @@ function mesmoPedido(a: unknown, b: Pedido): boolean {
   const p = (a && typeof a === "object") ? a as Pedido : null;
   return !!p && p.experiencia_id === b.experiencia_id &&
     (p.slot_id ?? null) === (b.slot_id ?? null) &&
-    String(p.horario ?? "") === String(b.horario ?? "") &&
-    String(p.preferencia_data ?? "") === String(b.preferencia_data ?? "") &&
-    String(p.preferencia_hora ?? "") === String(b.preferencia_hora ?? "");
+    String(p.horario ?? "") === String(b.horario ?? "");
 }
 
 // Resposta pública de uma linha de troca (o que a tela da cliente precisa).
