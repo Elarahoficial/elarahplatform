@@ -14,17 +14,21 @@ extra = '''
   .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
   .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
   .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
-  .itbl{width:100%;border-collapse:collapse;margin-top:16px;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px -30px rgba(0,0,0,.3)}
-  .itbl th{background:var(--navy);color:#fff;text-align:left;padding:12px 18px;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
-  .itbl th.r{text-align:right}
-  .itbl td{padding:13px 18px;border-bottom:1px solid var(--line);background:var(--card);vertical-align:middle}
-  .itbl tr:last-child td{border-bottom:none}
-  .itbl tr:nth-child(even) td{background:#FBF1EE}
-  .itbl .exp{font-family:'DM Serif Display',serif;font-size:15px;color:var(--navy);line-height:1.1}
-  .itbl .loc{font-size:11px;color:var(--muted);line-height:1.35}
-  .itbl .val{text-align:right;font-family:'DM Serif Display',serif;font-size:16px;color:var(--orange-dark);white-space:nowrap}
-  .itbl .cap{text-align:right;font-size:11.5px;color:var(--navy-soft);font-weight:700;white-space:nowrap}
-  .itbl .todo{font-family:'DM Sans',sans-serif;font-size:12px;font-style:italic;color:var(--muted)}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
 </style>'''
 head = head.replace("</head>", extra + "</head>", 1)
 
@@ -54,9 +58,10 @@ def head_simple(kicker):
     </div>'''
 
 
-def mm(src, alt, num, name, desc, pos="center 50%"):
+def mm(src, alt, name, desc, price, pos="center 50%"):
     return (f'<div class="mm"><div class="mmph">{img(src, alt, pos)}</div>'
-            f'<div class="mmb"><div class="mmn">{num} · {name}</div><div class="mmd">{desc}</div></div></div>')
+            f'<div class="mmb"><div class="mmn">{name}</div><div class="mmd">{desc}</div>'
+            f'<div class="mmprice">A partir de <b>{price}</b>/pessoa</div></div></div>')
 
 
 def vc(src, alt, name, bairro, desc, pos="center 50%"):
@@ -73,15 +78,12 @@ cover = f'''
       <div>
         <span class="eyebrow">✦ Um aniversário criativo</span>
         <h1>Um aniversário para <em>criar juntos</em></h1>
-        <p class="lead">Reunir todo mundo em volta da mesa, colocar a mão na massa e fazer algo diferente juntos — e ainda levar uma lembrança do dia.</p>
+        <p class="lead">Reunir os amigos, <strong>colocar a mão na massa</strong>, brindar, rir e <strong>fazer algo diferente juntos</strong> — e ainda <strong>levar uma lembrança do dia</strong>. ✨</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>Até 20</b> pessoas</span>
           <span class="chip">Homens &amp; mulheres</span>
           <span class="chip"><b>07/11</b></span>
-        </div>
-        <div class="chips" style="margin-top:10px">
-          <span class="chip">Vila Madalena · Vila Romana · Pinheiros e arredores</span>
         </div>
       </div>
       <div class="cover-photo">{img("bfa-grupo1.webp", "Homens e mulheres criando juntos numa experiência de mão na massa", "center 45%")}</div>
@@ -95,7 +97,7 @@ conceito = f'''
 {head_simple("O conceito")}
     <span class="eyebrow orange">◆ A proposta</span>
     <h2>Criar, conversar e <em>comemorar</em></h2>
-    <p class="lead">Trocar a comemoração tradicional por uma experiência leve e participativa — daquelas em que todo mundo cria, conversa, ri e ainda leva uma lembrança do dia.</p>
+    <p class="lead">Trocar a comemoração tradicional por uma experiência <strong>leve, participativa e cheia de troca</strong> — daquelas em que <strong>todo mundo cria, conversa, ri e brinda junto</strong>.</p>
     <div class="pil3">
       <div class="p"><div class="pt">Mão na massa</div><div class="pd">Todo mundo participa e cria alguma coisa.</div></div>
       <div class="p"><div class="pt">Leve &amp; social</div><div class="pd">Pra conversar, brindar e curtir sem pressa.</div></div>
@@ -118,14 +120,14 @@ cardapio = f'''
 {head_simple("O cardápio")}
     <span class="eyebrow orange">◆ Escolham a favorita</span>
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Um cardápio de experiências para colocar a mão na massa.</p>
+    <p class="lead">Um cardápio de experiências para <strong>colocar a mão na massa</strong>.</p>
     <div class="mmg">
-      {mm("pinturataca.jpg", "Pintura em taças", "01", "Pintura em taças", "Cada um personaliza a própria taça enquanto o grupo cria e brinda.", "center 45%")}
-      {mm("ceramicamodelagem.jpg", "Cerâmica à mão", "02", "Cerâmica à mão", "Argila na mão para modelar uma peça do zero.", "center 50%")}
-      {mm("tufting1.jpg", "Tufting & Punch", "03", "Tufting &amp; Punch", "Fios, cores e texturas para criar uma peça autoral.", "center 30%")}
-      {mm("agora-pintando.jpg", "Pintura em cerâmica", "04", "Pintura em cerâmica", "Peças prontas ganham cores, desenhos e personalidade.", "center 30%")}
-      {mm("vela-grupo-oficina.jpg", "Crie sua vela aromática", "05", "Crie sua vela", "Escolha as fragrâncias e crie a própria vela aromática.", "center 35%")}
-      {mm("foldingbook2.jpg", "Folding Book", "06", "Folding Book", "Dobras transformam livros em peças decorativas e autorais.", "center 45%")}
+      {mm("pinturataca.jpg", "Pintura em taças", "Pintura em Taças", "Cada um personaliza a própria taça enquanto o grupo cria e brinda.", "R$ 269", "center 45%")}
+      {mm("ceramicamodelagem.jpg", "Cerâmica à mão", "Cerâmica à Mão", "Argila na mão para modelar uma peça do zero.", "R$ 369", "center 50%")}
+      {mm("tufting1.jpg", "Tufting & Punch", "Tufting &amp; Punch", "Fios, cores e texturas para criar uma peça autoral.", "R$ 799", "center 30%")}
+      {mm("agora-pintando.jpg", "Pintura em cerâmica", "Pintura em Cerâmica", "Peças prontas ganham cores, desenhos e personalidade.", "R$ 349", "center 30%")}
+      {mm("vela-grupo-oficina.jpg", "Crie sua vela aromática", "Crie sua Vela Aromática", "Escolha fragrâncias e crie sua própria vela.", "R$ 329", "center 35%")}
+      {mm("perfumaria-oficina.jpg", "Perfume autoral", "Perfume Autoral", "Explore notas e combinações para criar uma fragrância com a sua identidade.", "R$ 459", "center 40%")}
     </div>
     {foot("O cardápio de experiências")}
   </section>'''
@@ -139,8 +141,8 @@ espacos = f'''
     <div class="vg" style="grid-template-columns:1fr 1fr">
       {vc("agora-grupo.jpg", "Agora Intu", "Agora Intu", "Pinheiros · Ateliê", "Ateliê criativo e acolhedor. Ótimo para cerâmica e pintura.", "center 50%")}
       {vc("lado-b-grupo-pecas.webp", "Lado B Studio", "Lado B Studio", "Perdizes · Ateliê", "Estúdio contemporâneo e colorido. Ideal para tufting & punch.", "center 25%")}
-      {vc("yucafe-real.jpg", "Raüs Café", "Raüs Café", "Pinheiros · Café", "Intimista e descontraído. Perfeito para taças, velas e folding book.", "center 50%")}
-      {vc("casa-aquario-lounge.jpg", "Casa Aquário", "Casa Aquário", "Pinheiros · Privativo", "Casarão reservado e cheio de charme. Liberdade para qualquer formato.", "center 50%")}
+      {vc("yucafe-real.jpg", "Raüs Café", "Raüs Café", "Pinheiros · Café", "Intimista e descontraído. Ótimo para taças, velas e experiências sensoriais.", "center 50%")}
+      {vc("casa-aquario-lounge.jpg", "Casa Aquário", "Casa Aquário", "Pinheiros · Privativo", "Espaço reservado e versátil, ideal para montar uma experiência exclusiva para o grupo.", "center 50%")}
     </div>
     {foot("Espaços parceiros")}
   </section>'''
@@ -151,7 +153,7 @@ atevoce = f'''
 {head_simple("Elarah até você")}
     <span class="eyebrow orange">◆ No espaço de vocês</span>
     <h2>Elarah <em>até você</em></h2>
-    <p class="lead">A experiência também pode acontecer em casa, no salão de festas, no condomínio ou em outro espaço escolhido pelo grupo.</p>
+    <p class="lead">A experiência também pode acontecer <strong>em casa</strong>, no salão de festas, no condomínio ou em <strong>outro espaço escolhido pelo grupo</strong>.</p>
     <div class="bfeat">
       <div class="bphoto">{img("em-casa-hero-1.jpg", "Grupo criando junto em casa", "center 40%")}</div>
       <div class="bbody">
@@ -164,7 +166,7 @@ atevoce = f'''
         </ul>
       </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Qual delas combina mais com o grupo?</b> Cerâmica, pintura, tufting, velas, taças ou folding book — vocês escolhem a experiência e nós montamos o formato. 🧡</div>
+    <div class="bnote" style="margin-top:16px">◆ <b>Qual delas combina mais com o grupo?</b> Cerâmica, pintura, tufting, velas, taças ou <b>perfume</b> — vocês escolhem a experiência e nós montamos o formato. 🧡</div>
     {foot("Elarah até você")}
   </section>'''
 
@@ -173,21 +175,14 @@ investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Fácil de <em>comparar</em></h2>
-    <table class="itbl">
-      <thead>
-        <tr><th>Experiência</th><th>Local / formato</th><th class="r">A partir de</th><th class="r">Capacidade</th></tr>
-      </thead>
-      <tbody>
-        <tr><td class="exp">Pintura em taças</td><td class="loc">Elarah até você · espaço parceiro</td><td class="val">R$ 249</td><td class="cap">até 20</td></tr>
-        <tr><td class="exp">Cerâmica à mão</td><td class="loc">Agora Intu · Pinheiros</td><td class="val">R$ 281,25</td><td class="cap">até 16</td></tr>
-        <tr><td class="exp">Pintura em cerâmica</td><td class="loc">Agora Intu · Pinheiros</td><td class="val">R$ 281,25</td><td class="cap">até 16</td></tr>
-        <tr><td class="exp">Velas aromáticas</td><td class="loc">Espaço parceiro · Elarah até você</td><td class="val">R$ 309</td><td class="cap">até 20</td></tr>
-        <tr><td class="exp">Tufting &amp; Punch</td><td class="loc">Lado B Studio · Perdizes</td><td class="val">R$ 799</td><td class="cap">até 20</td></tr>
-        <tr><td class="exp">Folding Book</td><td class="loc">Espaço parceiro · Elarah até você</td><td class="val"><span class="todo">a confirmar</span></td><td class="cap">até 20</td></tr>
-      </tbody>
-    </table>
-    <p class="fineprint">Valores por pessoa (a partir de). <b>Elarah até você</b> — experiências a partir de R$ 249 por pessoa. Registro fotográfico opcional: R$ 450 (valor total). Cerâmica e pintura em cerâmica no Agora Intu, até 16 pessoas. Valor do Folding Book a confirmar. Aniversário em 07/11, sujeito à disponibilidade.</p>
+    <h2>Simples de <em>fechar</em></h2>
+    <div class="pbig"><div class="n">R$ 269</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
+    <div class="icards">
+      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b> e o <b>local</b> escolhido.</p></div>
+      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 269</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
+      <div class="ic"><div class="k">Adicional</div><div class="v">Registro fotográfico</div><p><b>R$ 450</b> — valor total.</p></div>
+    </div>
+    <p class="fineprint">Valores por pessoa, considerando experiência, formato e número final de convidados. Algumas experiências possuem capacidade específica. Data sujeita à disponibilidade.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -197,15 +192,15 @@ proximos = f'''
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Bora fechar?</span>
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Adriana, conta pra gente qual experiência e espaço vocês mais gostaram. A partir daí, confirmamos a disponibilidade para <b>07/11</b> e seguimos com a reserva.</p>
+    <p class="lead">Adriana, conta pra gente qual <b>experiência + espaço</b> vocês mais gostaram. A partir daí, confirmamos a disponibilidade para <b>07/11</b> e seguimos com a reserva.</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolhem</h3><p>Experiência + espaço.</p></div>
+      <div class="infocard"><div class="num">01</div><h3>Escolhem</h3><p><b>Experiência + espaço</b>.</p></div>
       <div class="infocard"><div class="num">02</div><h3>Confirmamos</h3><p>Agenda e número final de convidados.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>A gente cuida do resto</h3><p>Produção, materiais e organização.</p></div>
+      <div class="infocard"><div class="num">03</div><h3>A Elarah cuida do resto</h3><p>Produção, materiais e organização.</p></div>
     </div>
     <div class="quote" style="margin-top:20px">
-      Vocês escolhem a favorita. A Elarah cuida do resto. 🧡<br>
+      Vocês escolhem a favorita. <b>A Elarah cuida do resto.</b> 🧡<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
     {foot("Próximos passos")}

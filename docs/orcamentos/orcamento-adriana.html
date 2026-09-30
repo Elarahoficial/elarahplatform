@@ -527,6 +527,27 @@
   .itbl .val{text-align:right;font-family:'DM Serif Display',serif;font-size:16px;color:var(--orange-dark);white-space:nowrap}
   .itbl .cap{text-align:right;font-size:11.5px;color:var(--navy-soft);font-weight:700;white-space:nowrap}
   .itbl .todo{font-family:'DM Sans',sans-serif;font-size:12px;font-style:italic;color:var(--muted)}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
 </style></head>
 <body>
 
@@ -544,15 +565,12 @@
       <div>
         <span class="eyebrow">✦ Um aniversário criativo</span>
         <h1>Um aniversário para <em>criar juntos</em></h1>
-        <p class="lead">Reunir todo mundo em volta da mesa, colocar a mão na massa e fazer algo diferente juntos — e ainda levar uma lembrança do dia.</p>
+        <p class="lead">Reunir os amigos, <strong>colocar a mão na massa</strong>, brindar, rir e <strong>fazer algo diferente juntos</strong> — e ainda <strong>levar uma lembrança do dia</strong>. ✨</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>Até 20</b> pessoas</span>
           <span class="chip">Homens &amp; mulheres</span>
           <span class="chip"><b>07/11</b></span>
-        </div>
-        <div class="chips" style="margin-top:10px">
-          <span class="chip">Vila Madalena · Vila Romana · Pinheiros e arredores</span>
         </div>
       </div>
       <div class="cover-photo"><img src="assets/bfa-grupo1.webp" alt="Homens e mulheres criando juntos numa experiência de mão na massa" style="object-position:center 45%"></div>
@@ -566,7 +584,7 @@
     </div>
     <span class="eyebrow orange">◆ A proposta</span>
     <h2>Criar, conversar e <em>comemorar</em></h2>
-    <p class="lead">Trocar a comemoração tradicional por uma experiência leve e participativa — daquelas em que todo mundo cria, conversa, ri e ainda leva uma lembrança do dia.</p>
+    <p class="lead">Trocar a comemoração tradicional por uma experiência <strong>leve, participativa e cheia de troca</strong> — daquelas em que <strong>todo mundo cria, conversa, ri e brinda junto</strong>.</p>
     <div class="pil3">
       <div class="p"><div class="pt">Mão na massa</div><div class="pd">Todo mundo participa e cria alguma coisa.</div></div>
       <div class="p"><div class="pt">Leve &amp; social</div><div class="pd">Pra conversar, brindar e curtir sem pressa.</div></div>
@@ -589,14 +607,14 @@
     </div>
     <span class="eyebrow orange">◆ Escolham a favorita</span>
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Um cardápio de experiências para colocar a mão na massa.</p>
+    <p class="lead">Um cardápio de experiências para <strong>colocar a mão na massa</strong>.</p>
     <div class="mmg">
-      <div class="mm"><div class="mmph"><img src="assets/pinturataca.jpg" alt="Pintura em taças" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">01 · Pintura em taças</div><div class="mmd">Cada um personaliza a própria taça enquanto o grupo cria e brinda.</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/ceramicamodelagem.jpg" alt="Cerâmica à mão" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">02 · Cerâmica à mão</div><div class="mmd">Argila na mão para modelar uma peça do zero.</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/tufting1.jpg" alt="Tufting & Punch" style="object-position:center 30%"></div><div class="mmb"><div class="mmn">03 · Tufting &amp; Punch</div><div class="mmd">Fios, cores e texturas para criar uma peça autoral.</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/agora-pintando.jpg" alt="Pintura em cerâmica" style="object-position:center 30%"></div><div class="mmb"><div class="mmn">04 · Pintura em cerâmica</div><div class="mmd">Peças prontas ganham cores, desenhos e personalidade.</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/vela-grupo-oficina.jpg" alt="Crie sua vela aromática" style="object-position:center 35%"></div><div class="mmb"><div class="mmn">05 · Crie sua vela</div><div class="mmd">Escolha as fragrâncias e crie a própria vela aromática.</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/foldingbook2.jpg" alt="Folding Book" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">06 · Folding Book</div><div class="mmd">Dobras transformam livros em peças decorativas e autorais.</div></div></div>
+      <div class="mm"><div class="mmph"><img src="assets/pinturataca.jpg" alt="Pintura em taças" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">Pintura em Taças</div><div class="mmd">Cada um personaliza a própria taça enquanto o grupo cria e brinda.</div><div class="mmprice">A partir de <b>R$ 269</b>/pessoa</div></div></div>
+      <div class="mm"><div class="mmph"><img src="assets/ceramicamodelagem.jpg" alt="Cerâmica à mão" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Cerâmica à Mão</div><div class="mmd">Argila na mão para modelar uma peça do zero.</div><div class="mmprice">A partir de <b>R$ 369</b>/pessoa</div></div></div>
+      <div class="mm"><div class="mmph"><img src="assets/tufting1.jpg" alt="Tufting & Punch" style="object-position:center 30%"></div><div class="mmb"><div class="mmn">Tufting &amp; Punch</div><div class="mmd">Fios, cores e texturas para criar uma peça autoral.</div><div class="mmprice">A partir de <b>R$ 799</b>/pessoa</div></div></div>
+      <div class="mm"><div class="mmph"><img src="assets/agora-pintando.jpg" alt="Pintura em cerâmica" style="object-position:center 30%"></div><div class="mmb"><div class="mmn">Pintura em Cerâmica</div><div class="mmd">Peças prontas ganham cores, desenhos e personalidade.</div><div class="mmprice">A partir de <b>R$ 349</b>/pessoa</div></div></div>
+      <div class="mm"><div class="mmph"><img src="assets/vela-grupo-oficina.jpg" alt="Crie sua vela aromática" style="object-position:center 35%"></div><div class="mmb"><div class="mmn">Crie sua Vela Aromática</div><div class="mmd">Escolha fragrâncias e crie sua própria vela.</div><div class="mmprice">A partir de <b>R$ 329</b>/pessoa</div></div></div>
+      <div class="mm"><div class="mmph"><img src="assets/perfumaria-oficina.jpg" alt="Perfume autoral" style="object-position:center 40%"></div><div class="mmb"><div class="mmn">Perfume Autoral</div><div class="mmd">Explore notas e combinações para criar uma fragrância com a sua identidade.</div><div class="mmprice">A partir de <b>R$ 459</b>/pessoa</div></div></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>O cardápio de experiências</span></div>
   </section>
@@ -610,8 +628,8 @@
     <div class="vg" style="grid-template-columns:1fr 1fr">
       <div class="vc"><div class="vcph"><img src="assets/agora-grupo.jpg" alt="Agora Intu" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Agora Intu</div><div class="vcbairro">Pinheiros · Ateliê</div><div class="vcd">Ateliê criativo e acolhedor. Ótimo para cerâmica e pintura.</div></div></div>
       <div class="vc"><div class="vcph"><img src="assets/lado-b-grupo-pecas.webp" alt="Lado B Studio" style="object-position:center 25%"></div><div class="vcb"><div class="vcn">Lado B Studio</div><div class="vcbairro">Perdizes · Ateliê</div><div class="vcd">Estúdio contemporâneo e colorido. Ideal para tufting & punch.</div></div></div>
-      <div class="vc"><div class="vcph"><img src="assets/yucafe-real.jpg" alt="Raüs Café" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Raüs Café</div><div class="vcbairro">Pinheiros · Café</div><div class="vcd">Intimista e descontraído. Perfeito para taças, velas e folding book.</div></div></div>
-      <div class="vc"><div class="vcph"><img src="assets/casa-aquario-lounge.jpg" alt="Casa Aquário" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Casa Aquário</div><div class="vcbairro">Pinheiros · Privativo</div><div class="vcd">Casarão reservado e cheio de charme. Liberdade para qualquer formato.</div></div></div>
+      <div class="vc"><div class="vcph"><img src="assets/yucafe-real.jpg" alt="Raüs Café" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Raüs Café</div><div class="vcbairro">Pinheiros · Café</div><div class="vcd">Intimista e descontraído. Ótimo para taças, velas e experiências sensoriais.</div></div></div>
+      <div class="vc"><div class="vcph"><img src="assets/casa-aquario-lounge.jpg" alt="Casa Aquário" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Casa Aquário</div><div class="vcbairro">Pinheiros · Privativo</div><div class="vcd">Espaço reservado e versátil, ideal para montar uma experiência exclusiva para o grupo.</div></div></div>
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Espaços parceiros</span></div>
   </section>
@@ -622,7 +640,7 @@
     </div>
     <span class="eyebrow orange">◆ No espaço de vocês</span>
     <h2>Elarah <em>até você</em></h2>
-    <p class="lead">A experiência também pode acontecer em casa, no salão de festas, no condomínio ou em outro espaço escolhido pelo grupo.</p>
+    <p class="lead">A experiência também pode acontecer <strong>em casa</strong>, no salão de festas, no condomínio ou em <strong>outro espaço escolhido pelo grupo</strong>.</p>
     <div class="bfeat">
       <div class="bphoto"><img src="assets/em-casa-hero-1.jpg" alt="Grupo criando junto em casa" style="object-position:center 40%"></div>
       <div class="bbody">
@@ -635,7 +653,7 @@
         </ul>
       </div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ <b>Qual delas combina mais com o grupo?</b> Cerâmica, pintura, tufting, velas, taças ou folding book — vocês escolhem a experiência e nós montamos o formato. 🧡</div>
+    <div class="bnote" style="margin-top:16px">◆ <b>Qual delas combina mais com o grupo?</b> Cerâmica, pintura, tufting, velas, taças ou <b>perfume</b> — vocês escolhem a experiência e nós montamos o formato. 🧡</div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Elarah até você</span></div>
   </section>
   <section class="slide">
@@ -644,21 +662,14 @@
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Fácil de <em>comparar</em></h2>
-    <table class="itbl">
-      <thead>
-        <tr><th>Experiência</th><th>Local / formato</th><th class="r">A partir de</th><th class="r">Capacidade</th></tr>
-      </thead>
-      <tbody>
-        <tr><td class="exp">Pintura em taças</td><td class="loc">Elarah até você · espaço parceiro</td><td class="val">R$ 249</td><td class="cap">até 20</td></tr>
-        <tr><td class="exp">Cerâmica à mão</td><td class="loc">Agora Intu · Pinheiros</td><td class="val">R$ 281,25</td><td class="cap">até 16</td></tr>
-        <tr><td class="exp">Pintura em cerâmica</td><td class="loc">Agora Intu · Pinheiros</td><td class="val">R$ 281,25</td><td class="cap">até 16</td></tr>
-        <tr><td class="exp">Velas aromáticas</td><td class="loc">Espaço parceiro · Elarah até você</td><td class="val">R$ 309</td><td class="cap">até 20</td></tr>
-        <tr><td class="exp">Tufting &amp; Punch</td><td class="loc">Lado B Studio · Perdizes</td><td class="val">R$ 799</td><td class="cap">até 20</td></tr>
-        <tr><td class="exp">Folding Book</td><td class="loc">Espaço parceiro · Elarah até você</td><td class="val"><span class="todo">a confirmar</span></td><td class="cap">até 20</td></tr>
-      </tbody>
-    </table>
-    <p class="fineprint">Valores por pessoa (a partir de). <b>Elarah até você</b> — experiências a partir de R$ 249 por pessoa. Registro fotográfico opcional: R$ 450 (valor total). Cerâmica e pintura em cerâmica no Agora Intu, até 16 pessoas. Valor do Folding Book a confirmar. Aniversário em 07/11, sujeito à disponibilidade.</p>
+    <h2>Simples de <em>fechar</em></h2>
+    <div class="pbig"><div class="n">R$ 269</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
+    <div class="icards">
+      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b> e o <b>local</b> escolhido.</p></div>
+      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 269</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
+      <div class="ic"><div class="k">Adicional</div><div class="v">Registro fotográfico</div><p><b>R$ 450</b> — valor total.</p></div>
+    </div>
+    <p class="fineprint">Valores por pessoa, considerando experiência, formato e número final de convidados. Algumas experiências possuem capacidade específica. Data sujeita à disponibilidade.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
@@ -668,15 +679,15 @@
     </div>
     <span class="eyebrow orange">◆ Bora fechar?</span>
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Adriana, conta pra gente qual experiência e espaço vocês mais gostaram. A partir daí, confirmamos a disponibilidade para <b>07/11</b> e seguimos com a reserva.</p>
+    <p class="lead">Adriana, conta pra gente qual <b>experiência + espaço</b> vocês mais gostaram. A partir daí, confirmamos a disponibilidade para <b>07/11</b> e seguimos com a reserva.</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolhem</h3><p>Experiência + espaço.</p></div>
+      <div class="infocard"><div class="num">01</div><h3>Escolhem</h3><p><b>Experiência + espaço</b>.</p></div>
       <div class="infocard"><div class="num">02</div><h3>Confirmamos</h3><p>Agenda e número final de convidados.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>A gente cuida do resto</h3><p>Produção, materiais e organização.</p></div>
+      <div class="infocard"><div class="num">03</div><h3>A Elarah cuida do resto</h3><p>Produção, materiais e organização.</p></div>
     </div>
     <div class="quote" style="margin-top:20px">
-      Vocês escolhem a favorita. A Elarah cuida do resto. 🧡<br>
+      Vocês escolhem a favorita. <b>A Elarah cuida do resto.</b> 🧡<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Próximos passos</span></div>
