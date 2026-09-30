@@ -122,7 +122,7 @@ cardapio = f'''
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
     <p class="lead">Um cardápio de experiências para <strong>colocar a mão na massa</strong>.</p>
     <div class="mmg">
-      {mm("pinturataca.jpg", "Pintura em taças", "Pintura em Taças", "Cada um personaliza a própria taça enquanto o grupo cria e brinda.", "R$ 269", "center 45%")}
+      {mm("pinturataca.jpg", "Pintura em taças", "Pintura em Taças", "Cada um personaliza a própria taça enquanto o grupo cria e brinda.", "R$ 249", "center 45%")}
       {mm("ceramicamodelagem.jpg", "Cerâmica à mão", "Cerâmica à Mão", "Argila na mão para modelar uma peça do zero.", "R$ 369", "center 50%")}
       {mm("tufting1.jpg", "Tufting & Punch", "Tufting &amp; Punch", "Fios, cores e texturas para criar uma peça autoral.", "R$ 799", "center 30%")}
       {mm("agora-pintando.jpg", "Pintura em cerâmica", "Pintura em Cerâmica", "Peças prontas ganham cores, desenhos e personalidade.", "R$ 349", "center 30%")}
@@ -139,11 +139,12 @@ espacos = f'''
     <span class="eyebrow orange">◆ Onde pode acontecer</span>
     <h2>Quatro espaços, <em>quatro vibes</em></h2>
     <div class="vg" style="grid-template-columns:1fr 1fr">
-      {vc("yucafe-real.jpg", "Café & Eventos", "Café &amp; Eventos", "Café · Eventos", "Espaço acolhedor para reunir o grupo, criar juntos e comemorar com conforto. <b>Até 20 · ~3h · R$ 100/pessoa</b> — inclui bolo, água, café e pão de queijo.", "center 50%")}
-      {vc("agora-grupo.jpg", "Agora Intu", "Agora Intu", "Pinheiros · Ateliê criativo", "Ateliê criativo e acolhedor. Ótimo para cerâmica e pintura.", "center 50%")}
+      {vc("agora-grupo.jpg", "Agora Intu", "Agora Intu", "Pinheiros · Ateliê criativo", "Nossa recomendação: ateliê criativo e acolhedor, ótimo para cerâmica, pintura e velas.", "center 50%")}
+      {vc("yucafe-real.jpg", "Café & Eventos", "Café &amp; Eventos", "Café · Eventos", "Espaço acolhedor para reunir o grupo e comemorar com conforto. <b>Até 20 · ~3h · R$ 100/pessoa</b> — inclui bolo, água, café e pão de queijo.", "center 50%")}
       {vc("shoyu-atelie.jpg", "Shoyu Crafts", "Shoyu Crafts", "Pinheiros · Ateliê de cerâmica", "Ateliê de cerâmica cheio de charme. Perfeito para modelar e pintar peças.", "center 55%")}
-      {vc("piselli-salao.jpg", "Espaço Cardeal", "Espaço Cardeal", "Pinheiros · Espaço privativo", "Espaço reservado e versátil, ideal para uma experiência exclusiva do grupo.", "center 50%")}
+      {vc("em-casa-hero-2.jpg", "Elarah até você", "Elarah até você", "No espaço do grupo", "Levamos a experiência até casa, salão, condomínio ou outro espaço — <b>mesma experiência, mesmo valor</b>.", "center 40%")}
     </div>
+    <p class="fineprint">Também trabalhamos com o <b>Espaço Cardeal</b> (Pinheiros · privativo), disponível <b>sob locação</b>. Disponibilidade, alimentação e eventuais valores de locação estão sujeitos a confirmação.</p>
     {foot("Espaços parceiros")}
   </section>'''
 
@@ -170,19 +171,37 @@ atevoce = f'''
     {foot("Elarah até você")}
   </section>'''
 
+# ===== 6 · COMO FICA NA PRÁTICA (A MESA POSTA) =====
+mesaposta = f'''
+  <section class="slide">
+{head_simple("Como fica na prática")}
+    <span class="eyebrow orange">◆ Como fica na prática</span>
+    <h2>A mesa posta, do <em>jeito Elarah</em></h2>
+    <p class="lead">Não é só a atividade: é a <strong>mesa montada com carinho</strong>, a decoração no clima e cada <strong>estação pronta</strong> esperando a turma. A gente chega antes, deixa tudo lindo e <strong>desmonta no fim</strong> — vocês só curtem. 🎀</p>
+    <div class="gstrip" style="margin-top:16px">
+      <figure>{img("aniversario-mesa-real.jpg", "Mesa de aniversário montada", "center 45%")}<figcaption>Mesa de aniversário</figcaption></figure>
+      <figure>{img("aniv-decor.jpg", "Decoração e clima", "center 40%")}<figcaption>Decoração &amp; clima</figcaption></figure>
+      <figure>{img("agora-mesa.jpg", "Mesa posta para a turma", "center 55%")}<figcaption>Mesa posta pra turma</figcaption></figure>
+      <figure>{img("vela-aromatica-real.jpg", "Lembrancinha que fica", "center 50%")}<figcaption>Lembrancinha que fica</figcaption></figure>
+      <figure>{img("mol-estacao.jpg", "Estações prontas", "center 45%")}<figcaption>Estações prontas</figcaption></figure>
+      <figure>{img("pintura-taca-brinde.jpg", "Peças que elas levam", "center 45%")}<figcaption>Peças que elas levam</figcaption></figure>
+    </div>
+    {foot("Como fica na prática")}
+  </section>'''
+
 # ===== 6 · INVESTIMENTO =====
 investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Simples de <em>fechar</em></h2>
-    <div class="pbig"><div class="n">R$ 269</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
+    <div class="pbig"><div class="n">R$ 249</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
     <div class="icards">
-      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b> e o <b>local</b> escolhido.</p></div>
-      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 269</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
-      <div class="ic"><div class="k">Adicional</div><div class="v">Registro fotográfico</div><p><b>R$ 450</b> — valor total.</p></div>
+      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b>, o <b>espaço</b> e o número final de convidados.</p></div>
+      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 249</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
+      <div class="ic"><div class="k">Opcionais</div><div class="v">Comidinhas, bebidas, brindes &amp; fotos</div><p>Registro fotográfico a partir de <b>R$ 450</b>. Demais itens sob confirmação.</p></div>
     </div>
-    <p class="fineprint">Valores por pessoa, considerando experiência, formato e número final de convidados. Algumas experiências possuem capacidade específica. Data sujeita à disponibilidade.</p>
+    <p class="fineprint">Valores por pessoa, conforme experiência, espaço e número final de convidados. Algumas experiências possuem capacidade específica. Opcionais (comidinhas, bebidas, brindes e registro) e data <b>sujeitos a confirmação</b>.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -207,7 +226,7 @@ proximos = f'''
   </section>'''
 
 deck = ('<div class="deck">\n' + cover + conceito + cardapio + espacos + atevoce
-        + investimento + proximos + '\n\n</div>\n\n')
+        + mesaposta + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/orcamento-adriana.html"
 io.open(out, "w", encoding="utf-8").write(html)

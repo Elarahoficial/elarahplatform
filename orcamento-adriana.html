@@ -590,6 +590,27 @@
   .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
   .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
   .ic p b{color:var(--navy);font-weight:700}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
 </style></head>
 <body>
 
@@ -651,7 +672,7 @@
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
     <p class="lead">Um cardápio de experiências para <strong>colocar a mão na massa</strong>.</p>
     <div class="mmg">
-      <div class="mm"><div class="mmph"><img src="assets/pinturataca.jpg" alt="Pintura em taças" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">Pintura em Taças</div><div class="mmd">Cada um personaliza a própria taça enquanto o grupo cria e brinda.</div><div class="mmprice">A partir de <b>R$ 269</b>/pessoa</div></div></div>
+      <div class="mm"><div class="mmph"><img src="assets/pinturataca.jpg" alt="Pintura em taças" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">Pintura em Taças</div><div class="mmd">Cada um personaliza a própria taça enquanto o grupo cria e brinda.</div><div class="mmprice">A partir de <b>R$ 249</b>/pessoa</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/ceramicamodelagem.jpg" alt="Cerâmica à mão" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Cerâmica à Mão</div><div class="mmd">Argila na mão para modelar uma peça do zero.</div><div class="mmprice">A partir de <b>R$ 369</b>/pessoa</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/tufting1.jpg" alt="Tufting & Punch" style="object-position:center 30%"></div><div class="mmb"><div class="mmn">Tufting &amp; Punch</div><div class="mmd">Fios, cores e texturas para criar uma peça autoral.</div><div class="mmprice">A partir de <b>R$ 799</b>/pessoa</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/agora-pintando.jpg" alt="Pintura em cerâmica" style="object-position:center 30%"></div><div class="mmb"><div class="mmn">Pintura em Cerâmica</div><div class="mmd">Peças prontas ganham cores, desenhos e personalidade.</div><div class="mmprice">A partir de <b>R$ 349</b>/pessoa</div></div></div>
@@ -668,11 +689,12 @@
     <span class="eyebrow orange">◆ Onde pode acontecer</span>
     <h2>Quatro espaços, <em>quatro vibes</em></h2>
     <div class="vg" style="grid-template-columns:1fr 1fr">
-      <div class="vc"><div class="vcph"><img src="assets/yucafe-real.jpg" alt="Café & Eventos" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Café &amp; Eventos</div><div class="vcbairro">Café · Eventos</div><div class="vcd">Espaço acolhedor para reunir o grupo, criar juntos e comemorar com conforto. <b>Até 20 · ~3h · R$ 100/pessoa</b> — inclui bolo, água, café e pão de queijo.</div></div></div>
-      <div class="vc"><div class="vcph"><img src="assets/agora-grupo.jpg" alt="Agora Intu" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Agora Intu</div><div class="vcbairro">Pinheiros · Ateliê criativo</div><div class="vcd">Ateliê criativo e acolhedor. Ótimo para cerâmica e pintura.</div></div></div>
+      <div class="vc"><div class="vcph"><img src="assets/agora-grupo.jpg" alt="Agora Intu" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Agora Intu</div><div class="vcbairro">Pinheiros · Ateliê criativo</div><div class="vcd">Nossa recomendação: ateliê criativo e acolhedor, ótimo para cerâmica, pintura e velas.</div></div></div>
+      <div class="vc"><div class="vcph"><img src="assets/yucafe-real.jpg" alt="Café & Eventos" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Café &amp; Eventos</div><div class="vcbairro">Café · Eventos</div><div class="vcd">Espaço acolhedor para reunir o grupo e comemorar com conforto. <b>Até 20 · ~3h · R$ 100/pessoa</b> — inclui bolo, água, café e pão de queijo.</div></div></div>
       <div class="vc"><div class="vcph"><img src="assets/shoyu-atelie.jpg" alt="Shoyu Crafts" style="object-position:center 55%"></div><div class="vcb"><div class="vcn">Shoyu Crafts</div><div class="vcbairro">Pinheiros · Ateliê de cerâmica</div><div class="vcd">Ateliê de cerâmica cheio de charme. Perfeito para modelar e pintar peças.</div></div></div>
-      <div class="vc"><div class="vcph"><img src="assets/piselli-salao.jpg" alt="Espaço Cardeal" style="object-position:center 50%"></div><div class="vcb"><div class="vcn">Espaço Cardeal</div><div class="vcbairro">Pinheiros · Espaço privativo</div><div class="vcd">Espaço reservado e versátil, ideal para uma experiência exclusiva do grupo.</div></div></div>
+      <div class="vc"><div class="vcph"><img src="assets/em-casa-hero-2.jpg" alt="Elarah até você" style="object-position:center 40%"></div><div class="vcb"><div class="vcn">Elarah até você</div><div class="vcbairro">No espaço do grupo</div><div class="vcd">Levamos a experiência até casa, salão, condomínio ou outro espaço — <b>mesma experiência, mesmo valor</b>.</div></div></div>
     </div>
+    <p class="fineprint">Também trabalhamos com o <b>Espaço Cardeal</b> (Pinheiros · privativo), disponível <b>sob locação</b>. Disponibilidade, alimentação e eventuais valores de locação estão sujeitos a confirmação.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Espaços parceiros</span></div>
   </section>
   <section class="slide">
@@ -701,17 +723,35 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Como fica na prática</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Como fica na prática</span>
+    <h2>A mesa posta, do <em>jeito Elarah</em></h2>
+    <p class="lead">Não é só a atividade: é a <strong>mesa montada com carinho</strong>, a decoração no clima e cada <strong>estação pronta</strong> esperando a turma. A gente chega antes, deixa tudo lindo e <strong>desmonta no fim</strong> — vocês só curtem. 🎀</p>
+    <div class="gstrip" style="margin-top:16px">
+      <figure><img src="assets/aniversario-mesa-real.jpg" alt="Mesa de aniversário montada" style="object-position:center 45%"><figcaption>Mesa de aniversário</figcaption></figure>
+      <figure><img src="assets/aniv-decor.jpg" alt="Decoração e clima" style="object-position:center 40%"><figcaption>Decoração &amp; clima</figcaption></figure>
+      <figure><img src="assets/agora-mesa.jpg" alt="Mesa posta para a turma" style="object-position:center 55%"><figcaption>Mesa posta pra turma</figcaption></figure>
+      <figure><img src="assets/vela-aromatica-real.jpg" alt="Lembrancinha que fica" style="object-position:center 50%"><figcaption>Lembrancinha que fica</figcaption></figure>
+      <figure><img src="assets/mol-estacao.jpg" alt="Estações prontas" style="object-position:center 45%"><figcaption>Estações prontas</figcaption></figure>
+      <figure><img src="assets/pintura-taca-brinde.jpg" alt="Peças que elas levam" style="object-position:center 45%"><figcaption>Peças que elas levam</figcaption></figure>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Como fica na prática</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Simples de <em>fechar</em></h2>
-    <div class="pbig"><div class="n">R$ 269</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
+    <div class="pbig"><div class="n">R$ 249</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
     <div class="icards">
-      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b> e o <b>local</b> escolhido.</p></div>
-      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 269</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
-      <div class="ic"><div class="k">Adicional</div><div class="v">Registro fotográfico</div><p><b>R$ 450</b> — valor total.</p></div>
+      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b>, o <b>espaço</b> e o número final de convidados.</p></div>
+      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 249</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
+      <div class="ic"><div class="k">Opcionais</div><div class="v">Comidinhas, bebidas, brindes &amp; fotos</div><p>Registro fotográfico a partir de <b>R$ 450</b>. Demais itens sob confirmação.</p></div>
     </div>
-    <p class="fineprint">Valores por pessoa, considerando experiência, formato e número final de convidados. Algumas experiências possuem capacidade específica. Data sujeita à disponibilidade.</p>
+    <p class="fineprint">Valores por pessoa, conforme experiência, espaço e número final de convidados. Algumas experiências possuem capacidade específica. Opcionais (comidinhas, bebidas, brindes e registro) e data <b>sujeitos a confirmação</b>.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
