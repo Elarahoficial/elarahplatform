@@ -795,6 +795,64 @@
   .nxstep p{font-size:11.5px;color:var(--muted);line-height:1.45}
   .nxcontact{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--navy-soft)}
   .nxcontact b{color:var(--navy)}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+  /* espaco em destaque (Agora Intu) */
+  .agf{display:grid;grid-template-columns:1.15fr 1fr;margin-top:16px;border-radius:18px;overflow:hidden;border:1.5px solid var(--orange);box-shadow:0 18px 44px -28px rgba(0,0,0,.38)}
+  .agf .ph{position:relative;min-height:244px}
+  .agf .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .agf .bd{background:#FBF1EE;padding:22px 28px;display:flex;flex-direction:column;justify-content:center}
+  .agf .tag{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .agf h3{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);margin:5px 0 2px;line-height:1.05}
+  .agf .bairro{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .agf ul{list-style:none;margin:13px 0 0;padding:0;display:grid;gap:8px}
+  .agf ul li{position:relative;padding-left:22px;font-size:12.5px;color:var(--ink);line-height:1.4}
+  .agf ul li .st{position:absolute;left:0;top:0;color:var(--orange);font-weight:700}
+  /* investimento visual (foto + valores) */
+  .invsplit{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:18px;align-items:stretch}
+  .invphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:400px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .invphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .invphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:30px 18px 15px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .invbd{display:flex;flex-direction:column;justify-content:center}
+  .invbig{font-family:'DM Serif Display',serif;font-size:66px;color:var(--navy);line-height:1}
+  .invper{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:5px}
+  .invrows{display:grid;gap:16px;margin-top:24px}
+  .invrow{border-left:3px solid var(--orange);padding-left:15px}
+  .invrow .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .invrow .t{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:3px}
+  .invrow .t b{color:var(--navy);font-weight:700}
+  /* proximos passos visual (foto + passos) */
+  .nxsplit{display:grid;grid-template-columns:1fr 1.05fr;gap:30px;margin-top:16px;align-items:stretch}
+  .nxphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:430px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .nxphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .nxphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 16px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.9),transparent)}
+  .nxbd{display:flex;flex-direction:column;justify-content:center}
+  .nxsteps{display:grid;gap:15px;margin-top:20px}
+  .nxstep{display:flex;gap:14px;align-items:flex-start}
+  .nxstep .num{flex:none;width:36px;height:36px;border-radius:999px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .nxstep h3{font-size:14.5px;font-weight:700;color:var(--navy);margin:3px 0 3px}
+  .nxstep p{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .nxcontact{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--navy-soft)}
+  .nxcontact b{color:var(--navy)}
 </style></head>
 <body>
 
@@ -856,13 +914,14 @@
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
     <p class="lead">Um cardápio de experiências para <strong>colocar a mão na massa</strong>.</p>
     <div class="mmg">
-      <div class="mm"><div class="mmph"><img src="assets/pinturataca.jpg" alt="Pintura em taças" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">Pintura em Taças</div><div class="mmd">Cada um personaliza a própria taça enquanto o grupo cria e brinda.</div><div class="mmprice">A partir de <b>R$ 249</b>/pessoa</div></div></div>
+      <div class="mm"><div class="mmph"><img src="assets/pinturataca.jpg" alt="Pintura em taças" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">Pintura em Taças</div><div class="mmd">Cada um personaliza a própria taça enquanto o grupo cria e brinda.</div><div class="mmprice">A partir de <b>R$ 269</b>/pessoa</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/ceramicamodelagem.jpg" alt="Cerâmica à mão" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Cerâmica à Mão</div><div class="mmd">Argila na mão para modelar uma peça do zero.</div><div class="mmprice">A partir de <b>R$ 369</b>/pessoa</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/tufting1.jpg" alt="Tufting & Punch" style="object-position:center 30%"></div><div class="mmb"><div class="mmn">Tufting &amp; Punch</div><div class="mmd">Fios, cores e texturas para criar uma peça autoral.</div><div class="mmprice">A partir de <b>R$ 799</b>/pessoa</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/agora-pintando.jpg" alt="Pintura em cerâmica" style="object-position:center 30%"></div><div class="mmb"><div class="mmn">Pintura em Cerâmica</div><div class="mmd">Peças prontas ganham cores, desenhos e personalidade.</div><div class="mmprice">A partir de <b>R$ 349</b>/pessoa</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/vela-grupo-oficina.jpg" alt="Crie sua vela aromática" style="object-position:center 35%"></div><div class="mmb"><div class="mmn">Crie sua Vela Aromática</div><div class="mmd">Escolha fragrâncias e crie sua própria vela.</div><div class="mmprice">A partir de <b>R$ 329</b>/pessoa</div></div></div>
       <div class="mm"><div class="mmph"><img src="assets/perfumaria-oficina.jpg" alt="Perfume autoral" style="object-position:center 40%"></div><div class="mmb"><div class="mmn">Perfume Autoral</div><div class="mmd">Explore notas e combinações para criar uma fragrância com a sua identidade.</div><div class="mmprice">A partir de <b>R$ 459</b>/pessoa</div></div></div>
     </div>
+    <p class="fineprint">Valores por pessoa, referentes à <b>experiência</b>. O espaço é combinado à parte, conforme o formato escolhido.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>O cardápio de experiências</span></div>
   </section>
   <section class="slide">
@@ -889,7 +948,7 @@
       <div class="vc"><div class="vcph"><img src="assets/shoyu-atelie.jpg" alt="Shoyu Crafts" style="object-position:center 55%"></div><div class="vcb"><div class="vcn">Shoyu Crafts</div><div class="vcbairro">Pinheiros · Ateliê de cerâmica</div><div class="vcd">Ateliê de cerâmica cheio de charme. Perfeito para modelar e pintar peças.</div></div></div>
       <div class="vc"><div class="vcph"><img src="assets/em-casa-hero-2.jpg" alt="Elarah até você" style="object-position:center 40%"></div><div class="vcb"><div class="vcn">Elarah até você</div><div class="vcbairro">No espaço do grupo</div><div class="vcd">Levamos a experiência até casa, salão ou condomínio — <b>mesma experiência, mesmo valor</b>.</div></div></div>
     </div>
-    <p class="fineprint">Também trabalhamos com o <b>Espaço Cardeal</b> (Pinheiros · privativo), disponível <b>sob locação</b>. Disponibilidade, alimentação e eventuais valores de locação estão sujeitos a confirmação.</p>
+    <p class="fineprint">Nos espaços parceiros, a disponibilidade, a alimentação e eventuais valores de <b>locação ou consumo mínimo</b> estão sujeitos a confirmação. Também trabalhamos com o <b>Espaço Cardeal</b> (Pinheiros · privativo), sob locação.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Espaços</span></div>
   </section>
   <section class="slide">
@@ -940,13 +999,13 @@
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Simples de <em>fechar</em></h2>
-    <div class="pbig"><div class="n">R$ 249</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
+    <div class="pbig"><div class="n">R$ 269</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
     <div class="icards">
-      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b>, o <b>espaço</b> e o número final de convidados.</p></div>
-      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 249</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
+      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Conforme o local escolhido</div><p>A experiência acontece em um dos nossos espaços parceiros; turmas fechadas podem ter <b>locação</b> ou <b>consumo mínimo</b> específicos.</p></div>
+      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 269</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
       <div class="ic"><div class="k">Opcionais</div><div class="v">Comidinhas, bebidas, brindes &amp; fotos</div><p>Registro fotográfico a partir de <b>R$ 450</b>. Demais itens sob confirmação.</p></div>
     </div>
-    <p class="fineprint">Valores por pessoa, conforme experiência, espaço e número final de convidados. Algumas experiências possuem capacidade específica. Opcionais e data <b>sujeitos a confirmação</b>.</p>
+    <p class="fineprint">Os valores consideram a <b>experiência escolhida</b>. Para turmas fechadas em espaços parceiros, pode haver valor adicional de locação ou consumo mínimo, conforme o local e o formato. Antes da confirmação, apresentamos o <b>valor final completo</b> — experiência + espaço + eventuais adicionais.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">

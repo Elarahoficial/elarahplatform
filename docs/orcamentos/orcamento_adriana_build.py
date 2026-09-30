@@ -159,13 +159,14 @@ cardapio = f'''
     <h2>Qual tem <em>mais a cara de vocês?</em></h2>
     <p class="lead">Um cardápio de experiências para <strong>colocar a mão na massa</strong>.</p>
     <div class="mmg">
-      {mm("pinturataca.jpg", "Pintura em taças", "Pintura em Taças", "Cada um personaliza a própria taça enquanto o grupo cria e brinda.", "R$ 249", "center 45%")}
+      {mm("pinturataca.jpg", "Pintura em taças", "Pintura em Taças", "Cada um personaliza a própria taça enquanto o grupo cria e brinda.", "R$ 269", "center 45%")}
       {mm("ceramicamodelagem.jpg", "Cerâmica à mão", "Cerâmica à Mão", "Argila na mão para modelar uma peça do zero.", "R$ 369", "center 50%")}
       {mm("tufting1.jpg", "Tufting & Punch", "Tufting &amp; Punch", "Fios, cores e texturas para criar uma peça autoral.", "R$ 799", "center 30%")}
       {mm("agora-pintando.jpg", "Pintura em cerâmica", "Pintura em Cerâmica", "Peças prontas ganham cores, desenhos e personalidade.", "R$ 349", "center 30%")}
       {mm("vela-grupo-oficina.jpg", "Crie sua vela aromática", "Crie sua Vela Aromática", "Escolha fragrâncias e crie sua própria vela.", "R$ 329", "center 35%")}
       {mm("perfumaria-oficina.jpg", "Perfume autoral", "Perfume Autoral", "Explore notas e combinações para criar uma fragrância com a sua identidade.", "R$ 459", "center 40%")}
     </div>
+    <p class="fineprint">Valores por pessoa, referentes à <b>experiência</b>. O espaço é combinado à parte, conforme o formato escolhido.</p>
     {foot("O cardápio de experiências")}
   </section>'''
 
@@ -192,7 +193,7 @@ espacos = f'''
       {vc("shoyu-atelie.jpg", "Shoyu Crafts", "Shoyu Crafts", "Pinheiros · Ateliê de cerâmica", "Ateliê de cerâmica cheio de charme. Perfeito para modelar e pintar peças.", "center 55%")}
       {vc("em-casa-hero-2.jpg", "Elarah até você", "Elarah até você", "No espaço do grupo", "Levamos a experiência até casa, salão ou condomínio — <b>mesma experiência, mesmo valor</b>.", "center 40%")}
     </div>
-    <p class="fineprint">Também trabalhamos com o <b>Espaço Cardeal</b> (Pinheiros · privativo), disponível <b>sob locação</b>. Disponibilidade, alimentação e eventuais valores de locação estão sujeitos a confirmação.</p>
+    <p class="fineprint">Nos espaços parceiros, a disponibilidade, a alimentação e eventuais valores de <b>locação ou consumo mínimo</b> estão sujeitos a confirmação. Também trabalhamos com o <b>Espaço Cardeal</b> (Pinheiros · privativo), sob locação.</p>
     {foot("Espaços")}
   </section>'''
 
@@ -243,13 +244,13 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Simples de <em>fechar</em></h2>
-    <div class="pbig"><div class="n">R$ 249</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
+    <div class="pbig"><div class="n">R$ 269</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
     <div class="icards">
-      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b>, o <b>espaço</b> e o número final de convidados.</p></div>
-      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 249</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
+      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Conforme o local escolhido</div><p>A experiência acontece em um dos nossos espaços parceiros; turmas fechadas podem ter <b>locação</b> ou <b>consumo mínimo</b> específicos.</p></div>
+      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 269</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
       <div class="ic"><div class="k">Opcionais</div><div class="v">Comidinhas, bebidas, brindes &amp; fotos</div><p>Registro fotográfico a partir de <b>R$ 450</b>. Demais itens sob confirmação.</p></div>
     </div>
-    <p class="fineprint">Valores por pessoa, conforme experiência, espaço e número final de convidados. Algumas experiências possuem capacidade específica. Opcionais e data <b>sujeitos a confirmação</b>.</p>
+    <p class="fineprint">Os valores consideram a <b>experiência escolhida</b>. Para turmas fechadas em espaços parceiros, pode haver valor adicional de locação ou consumo mínimo, conforme o local e o formato. Antes da confirmação, apresentamos o <b>valor final completo</b> — experiência + espaço + eventuais adicionais.</p>
     {foot("Investimento")}
   </section>'''
 
