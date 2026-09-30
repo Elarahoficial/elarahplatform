@@ -657,6 +657,23 @@ renderFavoritos();
     }
   });
 
+  // Remarcou pra uma opção mais barata: mostra o cupom de crédito (ou o
+  // reembolso Pix combinado) no card, pra ela não depender do e-mail.
+  function renderCreditoTroca(meta) {
+    const dv = meta && meta.troca_devolucao;
+    if (!dv || typeof dv !== 'object') return '';
+    const valor = formatBrlCents(dv.valor_centavos);
+    if (dv.tipo === 'credito' && dv.codigo) {
+      return '<p class="purchase-card__prazo">🎟 Crédito de <strong>' + escapeHtmlLocal(valor) + '</strong>: ' +
+        '<strong style="letter-spacing:.5px;">' + escapeHtmlLocal(dv.codigo) + '</strong>' +
+        (dv.valido_ate ? ' · vale até ' + escapeHtmlLocal(formatCreatedAt(dv.valido_ate)) : '') + '</p>';
+    }
+    if (dv.tipo === 'pix') {
+      return '<p class="purchase-card__prazo">💸 Reembolso de <strong>' + escapeHtmlLocal(valor) + '</strong> por Pix em até 72h.</p>';
+    }
+    return '';
+  }
+
   function renderBookingCard(booking, group) {
     const nome = booking.experiencia_nome || 'Experiência';
     const data = booking.data || '';
@@ -709,6 +726,7 @@ renderFavoritos();
           '<h3 class="purchase-card__title">' + escapeHtmlLocal(nome) + '</h3>' +
           '<div class="purchase-card__meta">' + metaParts.join('') + '</div>' +
           localHtml +
+          renderCreditoTroca(meta) +
           renderPrazoRemarcacao(booking, group) +
         '</div>' +
       '</article>'

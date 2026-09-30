@@ -158,9 +158,14 @@
     return 'R$ ' + (Number(c || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  // Sobra da troca por opção mais barata: Pix a devolver (ou crédito que
+  // não foi gerado) fica pendente até a Elarah resolver.
+  function pixADevolver(t) { return t.devolucao_tipo === 'pix' && !t.reembolso_feito_at; }
+  function creditoFalhou(t) { return t.devolucao_tipo === 'credito' && !t.credito_codigo; }
+
   function pendente(t) {
     if (t.resolvido_at) return false;
-    if (pagoComProblema(t)) return true;
+    if (pagoComProblema(t) || pixADevolver(t) || creditoFalhou(t)) return true;
     if (t._teste || tentativa(t)) return false;
     if (t.tipo === 'reembolso') return true;
     if (t.modalidade === 'outro_parceiro') return !t.aviso_de_at || !t.aviso_para_at;
@@ -306,6 +311,27 @@
           ? 'cartão' + (t.pagamento_parcelas > 1 ? ' (' + t.pagamento_parcelas + 'x)' : '')
           : 'Pix') + ' · ' + esc(quando(t.pago_at)) + '</p>';
     }
+    if (t.devolucao_tipo === 'pix') {
+      var prazo = t.reembolso_prazo ? new Date(t.reembolso_prazo) : null;
+      var atrasado = prazo && !t.reembolso_feito_at && prazo.getTime() < Date.now();
+      alerta += '<p style="margin:8px 0 0;padding:8px 10px;border-radius:8px;font-size:.8rem;' +
+        (t.reembolso_feito_at ? 'background:#e6f4ea;color:#1a8a4a;' : 'background:' + (atrasado ? '#fdeaea;color:#b3261e;' : '#fff6e5;color:#8a5a00;')) + '">' +
+        (t.reembolso_feito_at
+          ? '✓ Pix de ' + esc(brl(t.devolucao_centavos)) + ' devolvido em ' + esc(quando(t.reembolso_feito_at))
+          : '💸 <strong>Devolver ' + esc(brl(t.devolucao_centavos)) + ' por Pix</strong>' +
+            (prazo ? ' até ' + esc(quando(t.reembolso_prazo)) + (atrasado ? ' — <strong>ATRASADO</strong>' : '') : '') +
+            '<br>Chave: <strong style="user-select:all;">' + esc(t.reembolso_pix_chave || '—') + '</strong>') +
+        '</p>';
+      if (!t.reembolso_feito_at) {
+        acoes.push('<button type="button" class="trc-btn trc-btn--wa" data-trc-pixfeito="' + esc(t.id) + '">✓ Pix devolvido</button>');
+      }
+    } else if (t.devolucao_tipo === 'credito') {
+      alerta += t.credito_codigo
+        ? '<p style="margin:8px 0 0;font-size:.78rem;color:#1a8a4a;font-weight:600;">🎟 Crédito gerado: ' + esc(t.credito_codigo) +
+          ' · ' + esc(brl(t.devolucao_centavos)) + (t.credito_expira_em ? ' · vale até ' + esc(quando(t.credito_expira_em)) : '') + '</p>'
+        : '<p style="margin:8px 0 0;padding:8px 10px;border-radius:8px;background:#fdeaea;color:#b3261e;font-size:.8rem;font-weight:600;">' +
+          '⚠ O crédito de ' + esc(brl(t.devolucao_centavos)) + ' NÃO foi gerado. Crie o cupom à mão em Cupons e mande pra cliente.</p>';
+    }
     if (!aplicada(t)) {
       // Troca que não entrou: nada pra avisar à parceira.
     } else if (t._teste) {
@@ -433,6 +459,13 @@
     }
     if ((el = ev.target.closest('[data-trc-desfaz]'))) {
       await desmarcar(el.getAttribute('data-trc-id'), el.getAttribute('data-trc-desfaz'));
+      render(); atualizarContador();
+      return;
+    }
+    if ((el = ev.target.closest('[data-trc-pixfeito]'))) {
+      if (!window.confirm('Confirma que o Pix já foi devolvido pra cliente?')) return;
+      el.disabled = true;
+      await marcar(el.getAttribute('data-trc-pixfeito'), 'reembolso_feito_at');
       render(); atualizarContador();
       return;
     }

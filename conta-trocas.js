@@ -102,19 +102,37 @@
   // servidor: preço de tabela novo − o da compra, por pessoa, × quantidade.
   function diferencaDe(exp, booking) {
     if (!exp || exp.id === booking.experiencia_id) return 0;
-    var novo = precoCentavos(exp.preco) || 0;
+    var novo = precoHoje(exp);
     var antigo = precoMaxDe(booking);
     var q = Math.max(1, Number(booking.quantidade) || 1);
     return novo > antigo && antigo > 0 ? (novo - antigo) * q : 0;
+  }
+
+  // Nova mais barata: quanto sobra (crédito ou Pix). Mesma conta do servidor.
+  function sobraDe(exp, booking) {
+    if (!exp || exp.id === booking.experiencia_id) return 0;
+    var novo = precoHoje(exp);
+    var antigo = precoMaxDe(booking);
+    var q = Math.max(1, Number(booking.quantidade) || 1);
+    return novo > 0 && novo < antigo ? (antigo - novo) * q : 0;
   }
 
   function brl(cents) {
     return 'R$ ' + (Number(cents || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  // O que a cliente PAGOU por pessoa: metadata.unit_price_centavos (gravado
+  // no checkout, já com promoção); reserva antiga sem o campo → rótulo.
   function precoMaxDe(booking) {
-    return Math.max(precoCentavos(booking.preco_label) || 0,
-      Number(booking.metadata && booking.metadata.unit_price_centavos) || 0);
+    return Number(booking.metadata && booking.metadata.unit_price_centavos) ||
+      precoCentavos(booking.preco_label) || 0;
+  }
+
+  // Quanto o site cobra HOJE por pessoa (com a promoção no ar).
+  function precoHoje(exp) {
+    var d = D();
+    var v = d && d.precoVigenteCentavos ? d.precoVigenteCentavos(exp) : null;
+    return Number(v) || precoCentavos(exp.preco) || 0;
   }
 
   function isKit(exp) {
@@ -253,7 +271,13 @@
       '.troca-qr{display:block;width:210px;height:210px;margin:6px auto 10px;image-rendering:pixelated;}',
       '.troca-copia{width:100%;box-sizing:border-box;font:inherit;font-size:.72rem;padding:8px;border:1px solid #ddd;border-radius:9px;resize:none;height:62px;color:#555;}',
       '.troca-btn--sec{background:#fff;color:#e07b39;border:1.5px solid #e07b39;margin-top:8px;}',
-      '.troca-status{font-size:.8rem;color:#7a6f68;text-align:center;margin:10px 0 0;}'
+      '.troca-status{font-size:.8rem;color:#7a6f68;text-align:center;margin:10px 0 0;}',
+      '.troca-sobra{background:#f2faf5;border:1px solid #d8ecdf;border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:.84rem;line-height:1.5;}',
+      '.troca-sobra p{margin:0 0 6px;}',
+      '.troca-credito{background:#fff;border:1.5px solid #1a7a4a;border-radius:10px;padding:9px 11px;}',
+      '.troca-credito small{color:#5a6b60;}',
+      '.troca-linkzinho{background:none;border:0;padding:0;margin-top:8px;font:inherit;font-size:.72rem;color:#8a8a8a;text-decoration:underline;cursor:pointer;}',
+      '.troca-codigo{font-size:1.25rem;font-weight:800;letter-spacing:1px;background:#fff3ea;border-radius:10px;padding:12px;margin:10px 0 4px;text-align:center;}'
     ].join('\n');
     var st = document.createElement('style');
     st.id = 'troca-css';
@@ -431,6 +455,9 @@
     // Passo 3 — escolher a data e confirmar (ou seguir pro pagamento).
     function passoDatas(exp, datas, voltar, mesma) {
       var escolhida = null;
+      // Sobra (nova mais barata): crédito é o padrão; Pix fica escondido.
+      var devolucao = 'credito';
+      var chavePix = '';
       var titulo = mesma ? 'Escolha a nova data' : (exp ? exp.nome : 'Experiência');
       var sub = mesma
         ? 'Datas de <strong>' + esc(exp ? exp.nome : booking.experiencia_nome) + '</strong> disponíveis no site' + (qty > 1 ? ' para ' + qty + ' pessoas' : '') + '.'
@@ -446,8 +473,20 @@
         var dt = escolhida != null ? datas[escolhida] : null;
         var expSel = dt ? (dt.exp || exp) : null;
         var dif = dt ? diferencaDe(expSel, booking) : 0;
-        var maisBarata = dt && expSel.id !== booking.experiencia_id &&
-          (precoCentavos(expSel.preco) || 0) < precoMaxDe(booking);
+        var sobra = dt ? sobraDe(expSel, booking) : 0;
+        var blocoSobra = '';
+        if (sobra > 0) {
+          blocoSobra = '<div class="troca-sobra"><p>Essa opção custa <strong>' + esc(brl(sobra)) + ' a menos</strong>. A diferença vira:</p>' +
+            (devolucao === 'credito'
+              ? '<div class="troca-credito">🎟 <strong>Crédito de ' + esc(brl(sobra)) + ' na Elarah</strong><br>' +
+                '<small>Um cupom pra usar em qualquer experiência do site, válido por 90 dias.</small></div>' +
+                '<button type="button" class="troca-linkzinho" data-devolucao="pix">Prefiro receber a diferença por Pix</button>'
+              : '<div class="troca-campos" style="margin:4px 0 4px;"><label class="troca-full">Sua chave Pix' +
+                '<input id="tr-chavepix" autocomplete="off" placeholder="CPF, e-mail, celular ou chave aleatória" value="' + esc(chavePix) + '"></label></div>' +
+                '<small>A Elarah devolve ' + esc(brl(sobra)) + ' nessa chave em até 72h.</small><br>' +
+                '<button type="button" class="troca-linkzinho" data-devolucao="credito">Voltar pro crédito de ' + esc(brl(sobra)) + '</button>') +
+            '</div>';
+        }
         render(
           topo(titulo, sub) +
           '<button type="button" class="troca-voltar" data-voltar>← Voltar</button>' +
@@ -461,7 +500,7 @@
               '<p>✅ <strong>Entra:</strong> ' + esc(expSel.nome) + ' · ' + esc(dt.data) + ' ' + esc(dt.horario) + '</p>' +
               (qty > 1 ? '<p>👥 ' + qty + ' vagas</p>' : '') + '</div>' +
               (dif > 0 ? '<div class="troca-pagar">Diferença a pagar: <b>' + esc(brl(dif)) + '</b><br><small>No Pix ou no cartão. A troca é confirmada assim que o pagamento aprovar.</small></div>' : '') +
-              (maisBarata ? '<p class="troca-aviso">Essa opção custa menos que a sua. A troca é feita sem devolução da diferença — se preferir reembolso, fale com a Elarah antes de confirmar.</p>' : '') +
+              blocoSobra +
               '<p class="troca-aviso">Depois de confirmar, essa reserva não pode ser remarcada de novo pela conta.</p>' +
               '<button type="button" class="troca-btn" data-confirmar>' + (dif > 0 ? 'Continuar para o pagamento' : 'Confirmar remarcação') + '</button>'
             : '') +
@@ -478,10 +517,25 @@
             if (b) try { b.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {}
           });
         }
+        var dv = box.querySelectorAll('[data-devolucao]');
+        for (var k = 0; k < dv.length; k++) {
+          dv[k].addEventListener('click', function () { devolucao = this.getAttribute('data-devolucao'); desenhar(); });
+        }
+        var cp = box.querySelector('#tr-chavepix');
+        if (cp) cp.addEventListener('input', function () { chavePix = cp.value; });
         var conf = box.querySelector('[data-confirmar]');
         if (conf) conf.addEventListener('click', function () {
-          if (dif > 0) passoPagamento(expSel, dt, dif, function () { desenhar(); });
-          else confirmar(expSel, dt, conf, desenhar);
+          if (dif > 0) return passoPagamento(expSel, dt, dif, function () { desenhar(); });
+          var extra = null;
+          if (sobra > 0) {
+            if (devolucao === 'pix') {
+              if (String(chavePix).trim().length < 5) return desenhar('Informe a sua chave Pix pra receber a diferença.');
+              extra = { devolucao: { tipo: 'pix', chave_pix: String(chavePix).trim() } };
+            } else {
+              extra = { devolucao: { tipo: 'credito' } };
+            }
+          }
+          confirmar(expSel, dt, conf, desenhar, extra);
         });
       }
       desenhar();
@@ -515,11 +569,11 @@
       };
     }
 
-    async function confirmar(exp, dt, btn, redesenhar) {
+    async function confirmar(exp, dt, btn, redesenhar, extra) {
       ocupado = true;
       btn.disabled = true;
       btn.textContent = 'Remarcando…';
-      var data = await chamar(corpoTroca(exp, dt));
+      var data = await chamar(Object.assign(corpoTroca(exp, dt), extra || {}));
       ocupado = false;
       if (!data.ok) {
         redesenhar(data.message || 'Não conseguimos fazer a troca agora. Tente de novo ou fale com a Elarah.');
@@ -536,10 +590,23 @@
         (pago ? '<p class="troca-sub" style="margin-top:8px;">Pagamento da diferença aprovado ✓</p>' : '') +
         '<p class="troca-sub" style="margin-top:8px;">Agora é <strong>' + esc(exp.nome) + '</strong><br>' +
         esc(dt.data) + ' · ' + esc(dt.horario) + '</p>' +
+        (data && data.credito && data.credito.codigo
+          ? '<p class="troca-sub" style="margin-top:12px;">🎟 Seu crédito de <strong>' + esc(brl(data.credito.valor_centavos)) + '</strong>:</p>' +
+            '<div class="troca-codigo">' + esc(data.credito.codigo) + '</div>' +
+            '<p class="troca-sub">Use no campo de cupom ao reservar. Vale até ' + esc(dataCurta(data.credito.valido_ate)) + '. Também mandamos por e-mail.</p>'
+          : '') +
+        (data && data.reembolso
+          ? '<p class="troca-sub" style="margin-top:12px;">💸 A Elarah devolve <strong>' + esc(brl(data.reembolso.valor_centavos)) + '</strong> na sua chave Pix em até 72h.</p>'
+          : '') +
         '<p class="troca-sub">A confirmação nova chega no seu WhatsApp e e-mail, e a Elarah avisa o parceiro.</p>' +
         '<button type="button" class="troca-btn" data-troca-fechar style="margin-top:14px;">Fechar</button></div>'
       );
       if (typeof opts.onDone === 'function') opts.onDone(data);
+    }
+
+    function dataCurta(iso) {
+      var d = new Date(iso);
+      return isNaN(d.getTime()) ? '' : pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear();
     }
 
     // Pagou, mas a troca não pôde ser aplicada (data esgotou no meio do
@@ -563,7 +630,7 @@
       render(
         topo('Pagar a diferença', '<strong>' + esc(exp.nome) + '</strong> · ' + esc(dt.data) + ' ' + esc(dt.horario)) +
         '<button type="button" class="troca-voltar" data-voltar>← Voltar</button>' +
-        '<div class="troca-pagar">Diferença a pagar: <b>' + esc(brl(dif)) + '</b></div>' +
+        '<div class="troca-pagar">Diferença a pagar: <b data-dif>' + esc(brl(dif)) + '</b></div>' +
         '<div class="troca-metodos">' +
           '<button type="button" class="troca-metodo troca-metodo--on" data-metodo="pix">Pix</button>' +
           '<button type="button" class="troca-metodo" data-metodo="cartao">Cartão de crédito</button>' +
@@ -598,11 +665,23 @@
       }
       $('[data-voltar]').addEventListener('click', voltar);
 
+      // Cotação do SERVIDOR (quem cobra): corrige o valor da tela se a conta
+      // do navegador (promoção, preço pago) divergir.
+      var cotacao = chamar(Object.assign(corpoTroca(exp, dt), { acao: 'cotar' })).then(function (c) {
+        if (c && c.ok && Number(c.diferenca_centavos) > 0 && c.diferenca_centavos !== dif) {
+          dif = c.diferenca_centavos;
+          var el = $('[data-dif]');
+          if (el) el.textContent = brl(dif);
+          atualizarBotao();
+        }
+        return c || { ok: false };
+      });
+
       var parcelasCarregadas = false;
       async function carregarParcelas() {
         if (parcelasCarregadas) return;
         var sel = $('#tr-parcelas');
-        var cot = await chamar(Object.assign(corpoTroca(exp, dt), { acao: 'cotar' }));
+        var cot = await cotacao;
         if (!cot.ok || !Array.isArray(cot.parcelas) || !cot.parcelas.length) {
           sel.innerHTML = '<option value="">Indisponível</option>';
           erro(cot.message || 'Não conseguimos carregar as parcelas. Tente o Pix.');
