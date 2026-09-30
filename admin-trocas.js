@@ -149,7 +149,16 @@
   function aplicada(t) { return !t.status || t.status === 'aplicada'; }
   // Pagou a diferença mas a troca não entrou (data esgotou / reserva mudou):
   // a Elarah precisa resolver com a cliente.
-  function pagoComProblema(t) { return t.status === 'pago_sem_vaga' || t.status === 'pago_sem_aplicar'; }
+  // 'processando' há mais de 5 min = a função caiu depois de o pagamento
+  // aprovar: a cliente pagou e a troca não entrou.
+  function processandoTravado(t) {
+    return t.status === 'processando' && t.pago_at && Date.now() - new Date(t.pago_at).getTime() > 5 * 60000;
+  }
+  function pagoComProblema(t) {
+    return t.status === 'pago_sem_vaga' || t.status === 'pago_sem_aplicar' || processandoTravado(t);
+  }
+  // Diferença paga e depois estornada/contestada no gateway.
+  function estornado(t) { return t.pagamento_status === 'reembolsado'; }
   // Tentativa que não virou troca (Pix não pago, cartão recusado…): só
   // aparece em "Todas".
   function tentativa(t) { return t.tipo === 'troca' && !aplicada(t) && !pagoComProblema(t); }
@@ -164,8 +173,11 @@
   function creditoFalhou(t) { return t.devolucao_tipo === 'credito' && !t.credito_codigo; }
 
   function pendente(t) {
+    // Dinheiro devido à cliente fica pendente mesmo que alguém clique em
+    // "Concluir": só some quando o Pix for marcado como devolvido.
+    if (pixADevolver(t) || creditoFalhou(t)) return true;
     if (t.resolvido_at) return false;
-    if (pagoComProblema(t) || pixADevolver(t) || creditoFalhou(t)) return true;
+    if (pagoComProblema(t) || estornado(t)) return true;
     if (t._teste || tentativa(t)) return false;
     if (t.tipo === 'reembolso') return true;
     if (t.modalidade === 'outro_parceiro') return !t.aviso_de_at || !t.aviso_para_at;
@@ -175,25 +187,27 @@
   async function carregar() {
     var s = sb();
     if (!s) throw new Error('Supabase indisponível. Recarregue a página.');
+    // Compra de TESTE (bookings.metadata.teste) vem junto pela chave
+    // estrangeira — uma consulta só, sem lista gigante de ids na URL.
     var res = await Promise.all([
-      s.from('trocas_reserva').select('*').order('created_at', { ascending: false }).limit(300),
+      s.from('trocas_reserva').select('*, bookings(metadata)').order('created_at', { ascending: false }).limit(300),
       s.from('fornecedores_metadata').select('fornecedor_key, fornecedor_nome, whatsapp'),
     ]);
-    if (res[0].error) throw res[0].error;
-    // Compras de TESTE (bookings.metadata.teste = true): a aba mostra a troca,
-    // mas sem os botões que abrem o WhatsApp da parceira.
-    var ids = (res[0].data || []).map(function (t) { return t.booking_id; }).filter(Boolean);
-    var testes = new Set();
-    if (ids.length) {
-      var rb = await s.from('bookings').select('id, metadata').in('id', ids);
-      (rb.data || []).forEach(function (b) { if (b.metadata && b.metadata.teste === true) testes.add(b.id); });
+    if (res[0].error) {
+      // Sem o embed (relação não reconhecida): consulta simples, sem marcar teste.
+      console.warn('[Elarah Trocas] embed bookings falhou, lendo sem ele', res[0].error);
+      res[0] = await s.from('trocas_reserva').select('*').order('created_at', { ascending: false }).limit(300);
+      if (res[0].error) throw res[0].error;
     }
     var wa = new Map();
     (res[1].data || []).forEach(function (f) {
       var k = f.fornecedor_key || fornecedorKey(f.fornecedor_nome);
       if (k && f.whatsapp) wa.set(k, String(f.whatsapp).trim());
     });
-    (res[0].data || []).forEach(function (t) { t._teste = testes.has(t.booking_id); });
+    (res[0].data || []).forEach(function (t) {
+      var bm = t.bookings && t.bookings.metadata;
+      t._teste = !!(bm && bm.teste === true);
+    });
     dados = { linhas: res[0].data || [], waPorFornecedor: wa };
   }
 
@@ -202,7 +216,11 @@
     var patch = {};
     patch[campo] = new Date().toISOString();
     var r = await s.from('trocas_reserva').update(patch).eq('id', id);
-    if (r.error) { console.error('[Elarah Trocas] erro marcando', campo, r.error); return false; }
+    if (r.error) {
+      console.error('[Elarah Trocas] erro marcando', campo, r.error);
+      alert('Não consegui salvar. Tente de novo.\n' + (r.error.message || ''));
+      return false;
+    }
     // Aviso da parceira da reserva atual → "Avisar" da aba Compras fica verde.
     if (campo === 'aviso_para_at' && bookingId) {
       var r2 = await s.from('bookings').update({ fornecedor_avisado_at: patch[campo] }).eq('id', bookingId);
@@ -218,7 +236,16 @@
     var patch = {};
     patch[campo] = null;
     var r = await s.from('trocas_reserva').update(patch).eq('id', id);
-    if (r.error) { console.error('[Elarah Trocas] erro desmarcando', campo, r.error); return; }
+    if (r.error) {
+      console.error('[Elarah Trocas] erro desmarcando', campo, r.error);
+      alert('Não consegui salvar. Tente de novo.\n' + (r.error.message || ''));
+      return;
+    }
+    var l0 = dados && dados.linhas.find(function (t) { return t.id === id; });
+    // Aviso desfeito → o "Avisar" da aba Compras volta a vermelho também.
+    if (campo === 'aviso_para_at' && l0 && l0.booking_id) {
+      await s.from('bookings').update({ fornecedor_avisado_at: null }).eq('id', l0.booking_id);
+    }
     var linha = dados && dados.linhas.find(function (t) { return t.id === id; });
     if (linha) linha[campo] = null;
   }
@@ -295,6 +322,10 @@
         (t.status === 'pago_sem_vaga' ? ' — a data esgotou durante o pagamento.' : '.') +
         (t.observacao ? ' (' + esc(t.observacao) + ')' : '') +
         ' A reserva continua na data antiga. Combine outra data com ela ou devolva a diferença.</p>';
+    } else if (estornado(t)) {
+      alerta = '<p style="margin:8px 0 0;padding:8px 10px;border-radius:8px;background:#fdeaea;color:#b3261e;font-size:.8rem;font-weight:600;">' +
+        '⚠ O pagamento da diferença (' + esc(brl(t.pagamento_valor_centavos)) + ') foi ESTORNADO ou contestado no ' +
+        (t.pagamento_metodo === 'cartao' ? 'cartão' : 'Pix') + ', mas a troca já tinha sido feita. Revise a reserva com a cliente.</p>';
     } else if (tentativa(t)) {
       var rot = {
         aguardando_pagamento: '⏳ Aguardando pagamento da diferença',
@@ -320,7 +351,8 @@
           ? '✓ Pix de ' + esc(brl(t.devolucao_centavos)) + ' devolvido em ' + esc(quando(t.reembolso_feito_at))
           : '💸 <strong>Devolver ' + esc(brl(t.devolucao_centavos)) + ' por Pix</strong>' +
             (prazo ? ' até ' + esc(quando(t.reembolso_prazo)) + (atrasado ? ' — <strong>ATRASADO</strong>' : '') : '') +
-            '<br>Chave: <strong style="user-select:all;">' + esc(t.reembolso_pix_chave || '—') + '</strong>') +
+            '<br>Chave: <strong style="user-select:all;">' + esc(t.reembolso_pix_chave || '—') + '</strong>' +
+            (t.reembolso_pix_titular ? '<br>Titular: <strong>' + esc(t.reembolso_pix_titular) + '</strong> — confira no app do banco antes de enviar.' : '')) +
         '</p>';
       if (!t.reembolso_feito_at) {
         acoes.push('<button type="button" class="trc-btn trc-btn--wa" data-trc-pixfeito="' + esc(t.id) + '">✓ Pix devolvido</button>');
@@ -384,7 +416,7 @@
       if (filtro === 'pendentes' && !pendente(t)) return false;
       if (filtro !== 'todas' && filtro !== 'pendentes' && tentativa(t)) return false;
       if (filtro === 'trocas' && t.tipo !== 'troca') return false;
-      if (filtro === 'reembolsos' && t.tipo !== 'reembolso') return false;
+      if (filtro === 'reembolsos' && t.tipo !== 'reembolso' && t.devolucao_tipo !== 'pix' && !estornado(t)) return false;
       if (!q) return true;
       return [t.cliente_nome, t.cliente_email, t.cliente_telefone, t.de_experiencia_nome, t.para_experiencia_nome,
         t.de_fornecedor_nome, t.para_fornecedor_nome].join(' ').toLowerCase().indexOf(q) !== -1;

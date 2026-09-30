@@ -577,7 +577,16 @@ renderFavoritos();
 
     const meta = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
     const horasRaw = Number(meta.politica_remarcacao_horas);
-    const prazoHoras = (isFinite(horasRaw) && horasRaw > 0) ? horasRaw : 48;
+    // Reserva antiga sem o prazo congelado: o da categoria (nunca menos de
+    // 48h) — mesma regra do servidor (validarTroca).
+    let prazoCategoria = 48;
+    try {
+      const cat = booking.experiences && booking.experiences.categoria;
+      if (cat && window.ElarahData && window.ElarahData.prazoRemarcacaoDe) {
+        prazoCategoria = Math.max(48, Number(window.ElarahData.prazoRemarcacaoDe({ categoria: cat }).horas) || 48);
+      }
+    } catch (_) { /* mantém 48h */ }
+    const prazoHoras = (isFinite(horasRaw) && horasRaw > 0) ? horasRaw : prazoCategoria;
     const limite = inicio - prazoHoras * 3600000;
     const restante = limite - agora;
 
@@ -598,7 +607,8 @@ renderFavoritos();
       // A remarcação pela conta vale UMA vez: depois, e em reserva
       // "aguardando experiência", continua pelo WhatsApp.
       const jaTrocou = !!meta.troca_cliente_feita_at;
-      const podeTrocar = !jaTrocou && booking.aguardando_experiencia !== true && !!window.ElarahTrocas && !!refCurta;
+      const podeTrocar = !jaTrocou && booking.aguardando_experiencia !== true &&
+        meta.aguardando_experiencia_vaga_liberada !== true && !!window.ElarahTrocas && !!refCurta;
       const acao = podeTrocar
         ? ' <button type="button" class="purchase-card__prazo-link purchase-card__troca-btn" data-troca-booking="' + escapeHtmlLocal(booking.id) + '" data-troca-prazo="' + escapeHtmlLocal(quando) + '">Remarcar</button>'
         : (jaTrocou ? ' · você já usou sua remarcação' : '') +
@@ -867,10 +877,19 @@ renderFavoritos();
       // gift cards onde o usuário é comprador OU destinatário
       // (RLS: gift_cards_owner_read cobre ambos via e-mail).
       const [bookingsRes, giftCardsRes, manualSalesRes] = await Promise.all([
+        // Campos da troca (cupom usado, categoria pro prazo). Se a consulta
+        // completa falhar por qualquer motivo, repete a básica — a lista de
+        // compras nunca pode sumir por causa da remarcação.
         sb.from('bookings')
-          .select('id, experiencia_id, experiencia_nome, data, horario, quantidade, slot_id, aguardando_experiencia, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
+          .select('id, experiencia_id, experiencia_nome, data, horario, quantidade, slot_id, aguardando_experiencia, preco_label, amount_total, status, created_at, stripe_session_id, metadata, coupon_id, gift_card_id, coupon_discount_centavos, gift_card_centavos, experiences(categoria)')
           .order('created_at', { ascending: false })
-          .limit(200),
+          .limit(200)
+          .then(r => (r && r.error)
+            ? sb.from('bookings')
+                .select('id, experiencia_id, experiencia_nome, data, horario, quantidade, slot_id, aguardando_experiencia, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
+                .order('created_at', { ascending: false })
+                .limit(200)
+            : r),
         sb.from('gift_cards')
           .select('id, code, valor_inicial_centavos, saldo_centavos, status, comprador_email, comprador_nome, destinatario_email, destinatario_nome, created_at, expires_at')
           .order('created_at', { ascending: false })

@@ -12,8 +12,12 @@ Antes, pra trocar a data a cliente chamava a Elarah no WhatsApp. Agora ela faz s
   (Pagar.me, com a taxa da parcela, igual ao checkout). Se for **mais barata**, a sobra vira
   **crédito** (cupom de valor fixo, uso único, 90 dias — opção em destaque) ou, num link discreto,
   **reembolso por Pix** na chave que ela informar (a Elarah tem 72h; fica pendente na aba).
+  - "O que ela pagou" = o que pagou **de verdade** por pessoa: já com promoção, cupom e crédito
+    descontados, sem a taxa do cartão (`pagoPorPessoa`).
   - **A pagar** = preço de hoje da nova (com promoção) − o que ela pagou por pessoa.
-  - **A receber** = o que ela pagou − o preço **cheio** da nova. **Promoção nunca vira crédito
+  - **A receber** = o que ela pagou − o preço **cheio** da nova (nunca mais do que pagou).
+    Compra feita com cupom/crédito: a sobra só volta como crédito, nunca como Pix.
+  - Reembolso por Pix pede o **nome completo do titular** e a **chave digitada duas vezes**. **Promoção nunca vira crédito
     nem Pix**: trocar pra algo que só está mais barato por causa da campanha é troca sem diferença.
   - **Mesma experiência** (mesma ficha ou ficha com o mesmo nome e parceiro) nunca tem diferença.
   - Só entram experiências **com data marcada**. Agendamento livre (ex.: Charutaria), opções pra
@@ -44,6 +48,16 @@ de vagas de 10 em 10 min desfaria qualquer "segurar" fora de uma reserva). Se a 
 nesse meio-tempo, a troca aparece na aba do painel em vermelho: **"pagou, mas a data esgotou"**,
 pra Elarah combinar outra data ou devolver a diferença.
 
+## Segurança do pagamento
+
+- Uma tentativa de pagamento em aberto por reserva (índice único): dois cliques não cobram duas vezes.
+- Cartão em análise impede abrir outra tentativa; Pix antigo é cancelado no Mercado Pago.
+- A tela manda o valor que mostrou; se mudou (ex.: promoção acabou), o servidor não cobra e devolve o novo valor.
+- Na aprovação, a troca usa o preço gravado na hora da cobrança (não o do catálogo depois).
+- Conflito bobo na hora de aplicar (reserva tocada por outro processo) tenta de novo até 3 vezes.
+- Pagamento aprovado que não pôde virar troca, estorno/contestação e Pix a devolver ficam
+  **pendentes** no painel — "Concluir" não esconde dinheiro devido.
+
 ## Painel: aba "Trocas e reembolsos"
 
 Cada troca aparece com o **antes → depois** e os botões de WhatsApp com a mensagem pronta:
@@ -61,7 +75,8 @@ menu mostra quantas estão pendentes.
 
 1. No SQL Editor do Supabase, rode `sql/elarah_trocas_reserva.sql` e depois
    `sql/elarah_trocas_reserva_pagamento.sql` (colunas do pagamento da diferença) e
-   `sql/elarah_trocas_reserva_devolucao.sql` (crédito / reembolso Pix da sobra).
+   `sql/elarah_trocas_reserva_devolucao.sql` (crédito / reembolso Pix da sobra) e
+   `sql/elarah_trocas_reserva_seguranca.sql` (trava contra cobrança dupla + titular do Pix).
 2. Publique as Edge Functions: GitHub → Actions → **Deploy Supabase Edge Functions** →
    **Run workflow**. Entra a função nova `cliente-trocar-reserva` e a `admin-reagendar-reserva`
    atualizada (agora divide o código de remarcação com a função nova, em
