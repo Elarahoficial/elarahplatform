@@ -92,7 +92,8 @@
   }
 
   function msgRemarcacao(t) {
-    var mesmaExp = t.de_experiencia_id === t.para_experiencia_id;
+    var mesmaExp = t.de_experiencia_id === t.para_experiencia_id ||
+      String(t.de_experiencia_nome || '').trim().toLowerCase() === String(t.para_experiencia_nome || '').trim().toLowerCase();
     var l = [];
     l.push('Oi! Tudo bem? Passando para te avisar de uma *REMARCAÇÃO* 🔄');
     l.push('');
@@ -144,7 +145,7 @@
 
   // ===== Estado =====
   function pendente(t) {
-    if (t.resolvido_at) return false;
+    if (t.resolvido_at || t._teste) return false;
     if (t.tipo === 'reembolso') return true;
     if (t.modalidade === 'outro_parceiro') return !t.aviso_de_at || !t.aviso_para_at;
     return !t.aviso_para_at;
@@ -158,11 +159,20 @@
       s.from('fornecedores_metadata').select('fornecedor_key, fornecedor_nome, whatsapp'),
     ]);
     if (res[0].error) throw res[0].error;
+    // Compras de TESTE (bookings.metadata.teste = true): a aba mostra a troca,
+    // mas sem os botões que abrem o WhatsApp da parceira.
+    var ids = (res[0].data || []).map(function (t) { return t.booking_id; }).filter(Boolean);
+    var testes = new Set();
+    if (ids.length) {
+      var rb = await s.from('bookings').select('id, metadata').in('id', ids);
+      (rb.data || []).forEach(function (b) { if (b.metadata && b.metadata.teste === true) testes.add(b.id); });
+    }
     var wa = new Map();
     (res[1].data || []).forEach(function (f) {
       var k = f.fornecedor_key || fornecedorKey(f.fornecedor_nome);
       if (k && f.whatsapp) wa.set(k, String(f.whatsapp).trim());
     });
+    (res[0].data || []).forEach(function (t) { t._teste = testes.has(t.booking_id); });
     dados = { linhas: res[0].data || [], waPorFornecedor: wa };
   }
 
@@ -257,7 +267,9 @@
     var reemb = t.tipo === 'reembolso';
     var pend = pendente(t);
     var acoes = [];
-    if (!reemb) {
+    if (t._teste) {
+      acoes.push('<span class="trc-btn trc-btn--ghost" style="cursor:default;color:#8a6a2a;" title="Compra de teste — nada é enviado pra parceira">🧪 Compra de teste · aviso ao parceiro desligado</span>');
+    } else if (!reemb) {
       if (t.modalidade === 'outro_parceiro') {
         acoes.push(botaoAviso(t, 'aviso_de_at', 'Cancelamento', t.de_fornecedor_nome, msgCancelamentoParceiraAntiga(t)));
         acoes.push(botaoAviso(t, 'aviso_para_at', 'Nova reserva', t.para_fornecedor_nome, msgNovaReserva(t)));

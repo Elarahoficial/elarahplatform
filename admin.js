@@ -4997,6 +4997,10 @@
 
     function renderWhatsappCell(b, nomeResolved, telefone) {
       if (b.status !== 'pago') return '<td></td>';
+      // Compra de teste (metadata.teste = true): sem aviso pra parceira.
+      if (b.metadata && b.metadata.teste === true) {
+        return '<td><span style="font-size:.72rem;color:#8a6a2a;" title="Compra de teste — o aviso pra parceira fica desligado">🧪 Teste</span></td>';
+      }
       const link = buildSupplierWhatsappLink(b, nomeResolved, telefone);
       if (!link) {
         return '<td><span style="font-size:.7rem;color:#bbb;" title="Cadastre o WhatsApp do fornecedor na experiência">— sem WhatsApp</span></td>';
