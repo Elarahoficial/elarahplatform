@@ -29,6 +29,32 @@ extra = '''
   .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
   .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
   .ic p b{color:var(--navy);font-weight:700}
+  /* investimento visual (foto + valores) */
+  .invsplit{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:18px;align-items:stretch}
+  .invphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:400px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .invphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .invphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:30px 18px 15px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .invbd{display:flex;flex-direction:column;justify-content:center}
+  .invbig{font-family:'DM Serif Display',serif;font-size:66px;color:var(--navy);line-height:1}
+  .invper{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:5px}
+  .invrows{display:grid;gap:16px;margin-top:24px}
+  .invrow{border-left:3px solid var(--orange);padding-left:15px}
+  .invrow .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .invrow .t{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:3px}
+  .invrow .t b{color:var(--navy);font-weight:700}
+  /* proximos passos visual (foto + passos) */
+  .nxsplit{display:grid;grid-template-columns:1fr 1.05fr;gap:30px;margin-top:16px;align-items:stretch}
+  .nxphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:430px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .nxphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .nxphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 16px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.9),transparent)}
+  .nxbd{display:flex;flex-direction:column;justify-content:center}
+  .nxsteps{display:grid;gap:15px;margin-top:20px}
+  .nxstep{display:flex;gap:14px;align-items:flex-start}
+  .nxstep .num{flex:none;width:36px;height:36px;border-radius:999px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .nxstep h3{font-size:14.5px;font-weight:700;color:var(--navy);margin:3px 0 3px}
+  .nxstep p{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .nxcontact{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--navy-soft)}
+  .nxcontact b{color:var(--navy)}
 </style>'''
 head = head.replace("</head>", extra + "</head>", 1)
 
@@ -195,13 +221,19 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Simples de <em>fechar</em></h2>
-    <div class="pbig"><div class="n">R$ 249</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
-    <div class="icards">
-      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b>, o <b>espaço</b> e o número final de convidados.</p></div>
-      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 249</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
-      <div class="ic"><div class="k">Opcionais</div><div class="v">Comidinhas, bebidas, brindes &amp; fotos</div><p>Registro fotográfico a partir de <b>R$ 450</b>. Demais itens sob confirmação.</p></div>
+    <div class="invsplit">
+      <figure class="invphoto">{img("bfa-grupo2.webp", "Grupo comemorando e criando junto", "center 40%")}<figcaption>Uma comemoração para viver junto 🧡</figcaption></figure>
+      <div class="invbd">
+        <div class="invbig">R$ 249</div>
+        <div class="invper">experiências a partir de · por pessoa</div>
+        <div class="invrows">
+          <div class="invrow"><div class="k">No espaço parceiro</div><div class="t">Valores variam conforme <b>experiência</b>, <b>espaço</b> e número final de convidados.</div></div>
+          <div class="invrow"><div class="k">Elarah até você</div><div class="t">Mesma experiência, a partir de <b>R$ 249</b> por pessoa.</div></div>
+          <div class="invrow"><div class="k">Opcionais</div><div class="t">Comidinhas, bebidas, brindes e registro fotográfico (a partir de <b>R$ 450</b>).</div></div>
+        </div>
+      </div>
     </div>
-    <p class="fineprint">Valores por pessoa, conforme experiência, espaço e número final de convidados. Algumas experiências possuem capacidade específica. Opcionais (comidinhas, bebidas, brindes e registro) e data <b>sujeitos a confirmação</b>.</p>
+    <p class="fineprint">Valores por pessoa, conforme experiência, espaço e número final de convidados. Algumas experiências possuem capacidade específica. Opcionais e data <b>sujeitos a confirmação</b>.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -209,18 +241,19 @@ investimento = f'''
 proximos = f'''
   <section class="slide">
 {head_simple("Próximos passos")}
-    <span class="eyebrow orange">◆ Bora fechar?</span>
-    <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Adriana, conta pra gente qual <b>experiência e formato</b> vocês mais gostaram. A partir disso, confirmamos <b>disponibilidade</b> e seguimos com a reserva.</p>
-    <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolhem</h3><p><b>Experiência + espaço</b>.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>Confirmamos</h3><p>Agenda e número final de convidados.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>A Elarah cuida do resto</h3><p>Produção, materiais e organização.</p></div>
-    </div>
-    <div class="quote" style="margin-top:20px">
-      Vocês escolhem a favorita. <b>A Elarah cuida do resto.</b> 🧡<br>
-      <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
+    <span class="eyebrow orange">◆ Bora escolher? ✨</span>
+    <h2>É só <em>apontar</em> a favorita</h2>
+    <div class="nxsplit">
+      <figure class="nxphoto">{img("aniversario-mesa-real.jpg", "Grupo comemorando à mesa de aniversário", "center 45%")}<figcaption>Um aniversário para criar, celebrar e lembrar 🧡</figcaption></figure>
+      <div class="nxbd">
+        <p class="lead">Adriana, conta pra gente qual <b>experiência e formato</b> vocês mais gostaram — a partir disso, confirmamos <b>disponibilidade</b> e seguimos com a reserva.</p>
+        <div class="nxsteps">
+          <div class="nxstep"><div class="num">1</div><div><h3>Escolham</h3><p>A(s) experiência(s) que mais combinam com a festa.</p></div></div>
+          <div class="nxstep"><div class="num">2</div><div><h3>Montamos o orçamento</h3><p>Espaço, materiais e organização sob medida.</p></div></div>
+          <div class="nxstep"><div class="num">3</div><div><h3>É só curtir</h3><p>No dia, chega tudo pronto — vocês só aproveitam.</p></div></div>
+        </div>
+        <div class="nxcontact"><i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <b>+55 (11) 91445-5930</b> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br</div>
+      </div>
     </div>
     {foot("Próximos passos")}
   </section>'''
