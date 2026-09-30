@@ -1369,6 +1369,9 @@ export async function sendSupplierBookingNoticeGated(
       .eq("id", bookingId)
       .maybeSingle();
     if (error || !data) return null;
+    // Compra de TESTE (metadata.teste = true, criada à mão no SQL pra testar
+    // remarcação etc.): nunca avisa a parceira de verdade.
+    if ((data.metadata as Record<string, unknown> | null)?.teste === true) return null;
     fresh = data;
     statusAllowed = data.status === "pago";
     suppressed = data.aguardando_experiencia === true;
