@@ -511,9 +511,17 @@ export async function aplicarTroca(
     linha.pago_at = agoraIso;
     linha.pagamento_status = "aprovado";
   }
-  const { error: logErr } = opts.trocaId
-    ? await sb.from("trocas_reserva").update(linha).eq("id", opts.trocaId)
-    : await sb.from("trocas_reserva").insert(linha);
+  const gravar = (l: Record<string, unknown>) => opts.trocaId
+    ? sb.from("trocas_reserva").update(l).eq("id", opts.trocaId)
+    : sb.from("trocas_reserva").insert(l);
+  let { error: logErr } = await gravar(linha);
+  if (logErr && /column|schema cache/i.test(String(logErr.message ?? ""))) {
+    // Banco ainda sem sql/elarah_trocas_reserva_pagamento.sql: grava sem as
+    // colunas novas, pra troca não sumir da aba do painel.
+    console.warn("[" + opts.logTag + "] trocas_reserva sem colunas de pagamento — gravando sem elas", logErr.message);
+    const { status: _s, pago_at: _p, pagamento_status: _ps, ...basica } = linha;
+    ({ error: logErr } = await gravar(basica));
+  }
   if (logErr) {
     // A troca já valeu; sem o registro ela não aparece na aba, mas a aba
     // Compras mostra o "Avisar" em vermelho do mesmo jeito.
