@@ -125,7 +125,8 @@ function isKit(exp: Row): boolean {
 //   2. amount_before_grossup_centavos (cartão Pagar.me, antes da taxa)
 //   3. amount_total − taxa do cartão   (Stripe / demais)
 // E nunca acima do preço unitário gravado na compra (quando existe).
-export function pagoPorPessoa(bk: Row, meta: Record<string, unknown>, qty: number): number {
+// null = não dá pra saber (reserva sem nenhum valor gravado); 0 = pagou nada.
+export function pagoPorPessoa(bk: Row, meta: Record<string, unknown>, qty: number): number | null {
   const q = Math.max(1, qty || 1);
   // 0 é válido (compra paga inteira com cupom/crédito: não pagou nada).
   const n = (v: unknown) => {
@@ -141,7 +142,7 @@ export function pagoPorPessoa(bk: Row, meta: Record<string, unknown>, qty: numbe
   // Teto só com o preço unitário GRAVADO na compra (o rótulo pode ser o
   // preço base de uma variação mais cara, tipo "Dupla").
   const unit = n(meta.unit_price_centavos);
-  if (total == null) return unit ?? parsePrecoToCents(bk.preco_label) ?? 0;
+  if (total == null) return unit ?? parsePrecoToCents(bk.preco_label) ?? null;
   const porPessoa = Math.round(total / q);
   return unit != null && unit > 0 ? Math.min(unit, porPessoa) : porPessoa;
 }
@@ -275,6 +276,9 @@ export async function validarTroca(
     ? await sb.from("experiences").select("*").eq("id", bk.experiencia_id).maybeSingle()
     : { data: null };
   const expAtual = expAtualRow as Row | null;
+  if (expAtual && isKit(expAtual)) {
+    return falha("kit", "Kits não entram na troca. Fale com a gente no WhatsApp.");
+  }
 
   // Prazo da reserva atual.
   if (!opts.pagamentoConfirmado) {
@@ -349,7 +353,8 @@ export async function validarTroca(
       : null;
     const precoAntigo = pagoPorPessoa(bk, meta, qty);
     precoNovoUnit = precoNovo;
-    if (!precoNovo || !tabelaNova || !precoAntigo) {
+    // precoAntigo = 0 é válido (compra paga inteira com cupom/crédito).
+    if (!precoNovo || !tabelaNova || precoAntigo == null) {
       return falha("preco_invalido", "Não conseguimos calcular o valor dessa troca. Fale com a gente no WhatsApp.");
     }
     if (precoNovo > precoAntigo) diferencaCentavos = (precoNovo - precoAntigo) * qty;
@@ -549,7 +554,7 @@ export async function aplicarTroca(
     update.preco_label = novaExp.preco ?? bk.preco_label;
     update.amount_total = Math.max(0, (Number(bk.amount_total) || 0) - sobra);
     // Passa a valer o que ficou pago: o de antes menos a sobra devolvida.
-    const pagoAntes = pagoPorPessoa(bk, meta, qty);
+    const pagoAntes = pagoPorPessoa(bk, meta, qty) ?? 0;
     if (pagoAntes) meta.unit_price_centavos = Math.max(0, pagoAntes - Math.round(sobra / qty));
     meta.troca_devolucao = {
       tipo: devolucao.tipo,
@@ -696,15 +701,33 @@ export async function aplicarTroca(
     ? sb.from("trocas_reserva").update(l).eq("id", opts.trocaId)
     : sb.from("trocas_reserva").insert(l);
   let { error: logErr } = await gravar(linha);
-  if (logErr && /column|schema cache/i.test(String(logErr.message ?? ""))) {
-    // Banco ainda sem sql/elarah_trocas_reserva_pagamento.sql: grava sem as
-    // colunas novas, pra troca não sumir da aba do painel.
-    console.warn("[" + opts.logTag + "] trocas_reserva sem colunas de pagamento — gravando sem elas", logErr.message);
-    const {
-      status: _s, pago_at: _p, pagamento_status: _ps, devolucao_tipo: _dt, devolucao_centavos: _dc,
-      reembolso_pix_chave: _rk, reembolso_pix_titular: _rt, reembolso_prazo: _rp, credito_codigo: _cc, credito_expira_em: _ce, ...basica
-    } = linha;
-    ({ error: logErr } = await gravar(basica));
+  const erroDeColuna = (e: unknown) => /column|schema cache/i.test(String((e as { message?: string })?.message ?? ""));
+  // Banco sem alguma coluna nova: tira SÓ as mais recentes primeiro, pra não
+  // perder o registro do dinheiro devido (devolução, status) por causa de um
+  // campo opcional.
+  if (logErr && erroDeColuna(logErr)) {
+    console.warn("[" + opts.logTag + "] trocas_reserva sem coluna nova — gravando sem o titular", logErr.message);
+    const { reembolso_pix_titular: _rt, ...semTitular } = linha;
+    if (_rt) semTitular.observacao = [semTitular.observacao, "Titular do Pix: " + _rt].filter(Boolean).join(" · ");
+    ({ error: logErr } = await gravar(semTitular));
+    if (logErr && erroDeColuna(logErr)) {
+      console.warn("[" + opts.logTag + "] trocas_reserva sem colunas de pagamento — gravando o básico", logErr.message);
+      const {
+        status: _s, pago_at: _p, pagamento_status: _ps, devolucao_tipo: _dt, devolucao_centavos: _dc,
+        reembolso_pix_chave: _rk, reembolso_prazo: _rp, credito_codigo: _cc, credito_expira_em: _ce, ...basica
+      } = semTitular;
+      if (_dt) {
+        basica.observacao = [basica.observacao, "DEVOLUÇÃO: " + _dt + " " + (_dc ?? "") + " centavos" + (_rk ? " · chave " + _rk : "") + (_cc ? " · cupom " + _cc : "")]
+          .filter(Boolean).join(" · ");
+      }
+      ({ error: logErr } = await gravar(basica));
+    }
+  }
+  // Caminho do pagamento: a reserva JÁ foi trocada — tenta de novo antes de
+  // desistir, senão a linha ficaria "processando" (falso "não entrou").
+  for (let i = 0; logErr && opts.trocaId && i < 2; i++) {
+    await new Promise((res) => setTimeout(res, 500));
+    ({ error: logErr } = await gravar({ status: "aplicada", pago_at: linha.pago_at ?? agoraIso, pagamento_status: "aprovado" }));
   }
   if (logErr) {
     // A troca já valeu; sem o registro ela não aparece na aba, mas a aba
@@ -758,11 +781,13 @@ export async function processarPagamentoTroca(
   if (resultado === "reembolsado") {
     // Estorno/contestação da diferença JÁ PAGA: a troca pode ter sido
     // aplicada. Não desfaz sozinho — sinaliza pra Elarah revisar.
-    await sb.from("trocas_reserva").update({
-      pagamento_status: "reembolsado",
-      observacao: "Pagamento da diferença foi estornado/contestado — revisar a reserva.",
-      resolvido_at: null,
-    }).eq("id", trocaId);
+    if (linha.pagamento_status !== "reembolsado") {
+      await sb.from("trocas_reserva").update({
+        pagamento_status: "reembolsado",
+        observacao: "Pagamento da diferença foi estornado/contestado — revisar a reserva.",
+        resolvido_at: null,
+      }).eq("id", trocaId);
+    }
     return { status: String(linha.status ?? "") };
   }
 
@@ -817,6 +842,13 @@ export async function processarPagamentoTroca(
     const { data: bkRow } = await sb.from("bookings").select("*, experiences(imagem)").eq("id", linha.booking_id).maybeSingle();
     const bk = bkRow as Row;
     if (!bk) return await marcar("pago_sem_aplicar", "Reserva não encontrada.");
+    // A troca DESTE pagamento já foi aplicada (a gravação da linha falhou
+    // depois): só acerta a linha — nunca a marca como "não entrou".
+    const td = (bk.metadata && typeof bk.metadata === "object") ? (bk.metadata as Row).troca_diferenca : null;
+    if (td && td.troca_id === trocaId) {
+      await sb.from("trocas_reserva").update({ status: "aplicada" }).eq("id", trocaId);
+      return { status: "aplicada" };
+    }
     const v = await validarTroca(sb, bk, pedido, {
       pagamentoConfirmado: true,
       diferencaPaga: Number(linha.diferenca_centavos) || 0,

@@ -56,7 +56,20 @@ pra Elarah combinar outra data ou devolver a diferença.
 - Na aprovação, a troca usa o preço gravado na hora da cobrança (não o do catálogo depois).
 - Conflito bobo na hora de aplicar (reserva tocada por outro processo) tenta de novo até 3 vezes.
 - Pagamento aprovado que não pôde virar troca, estorno/contestação e Pix a devolver ficam
-  **pendentes** no painel — "Concluir" não esconde dinheiro devido.
+  **pendentes** no painel — "Concluir" não esconde dinheiro devido: esses casos só saem com o
+  botão **"Resolver (dizer como)"**, que grava a resolução.
+- Crédito de troca (cupom `CREDITO-…`) só pode estar em **uma compra por vez** (trigger
+  `trg_trava_credito_troca` em bookings): dois checkouts com o mesmo crédito não passam.
+- Cartão em análise só é liberado quando o Pagar.me diz que falhou/cancelou.
+
+## Como foi verificado
+
+- Simulação ponta a ponta do código real (Deno) com banco, Mercado Pago e Pagar.me simulados:
+  48 cenários (Pix aprovado/expirado/duplo clique/valor mudou/webhook repetido, cartão
+  aprovado/recusado/em análise, Pix antigo pago depois, esgotou no pagamento, crédito, Pix de
+  devolução, cupom na compra original, gêmeas, promoção, limite de 1 troca, kit, reserva alheia).
+- SQL rodado num PostgreSQL de verdade (PGlite): arquivos idempotentes, trava do crédito e
+  índice de tentativa única.
 
 ## Painel: aba "Trocas e reembolsos"
 

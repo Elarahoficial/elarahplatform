@@ -532,6 +532,15 @@
       var chavePix = '';
       var chavePix2 = '';
       var titular = '';
+      // Valor calculado pelo SERVIDOR (quem cobra) pra uma data escolhida —
+      // quando chega, vale mais que a conta do navegador.
+      var cotServ = null;
+      var chaveCot = function (e, d) { return (e && e.id) + '|' + (d && d.slotId) + '|' + (d && d.horario); };
+      var guardarCot = function (e, d, c) {
+        if (c && (c.ok || c.error === 'valor_mudou')) {
+          cotServ = { k: chaveCot(e, d), dif: Number(c.diferenca_centavos) || 0, sobra: Number(c.sobra_centavos) || 0 };
+        }
+      };
       var titulo = mesma ? 'Escolha a nova data' : (exp ? exp.nome : 'Experiência');
       var sub = mesma
         ? 'Datas de <strong>' + esc(exp ? exp.nome : booking.experiencia_nome) + '</strong> disponíveis no site' + (qty > 1 ? ' para ' + qty + ' pessoas' : '') + '.'
@@ -548,6 +557,7 @@
         var expSel = dt ? (dt.exp || exp) : null;
         var dif = dt ? diferencaDe(expSel, booking) : 0;
         var sobra = dt ? sobraDe(expSel, booking) : 0;
+        if (dt && cotServ && cotServ.k === chaveCot(expSel, dt)) { dif = cotServ.dif; sobra = cotServ.sobra; }
         var blocoSobra = '';
         if (sobra > 0) {
           blocoSobra = '<div class="troca-sobra"><p>Essa opção custa <strong>' + esc(brl(sobra)) + ' a menos</strong>. A diferença vira:</p>' +
@@ -611,7 +621,7 @@
         var conf = box.querySelector('[data-confirmar]');
         if (conf) conf.addEventListener('click', function () {
           if (ocupado) return;
-          if (dif > 0) return passoPagamento(expSel, dt, dif, function () { desenhar(); });
+          if (dif > 0) return passoPagamento(expSel, dt, dif, function (c) { guardarCot(expSel, dt, c); desenhar(); });
           var extra = null;
           if (sobra > 0) {
             if (devolucao === 'pix') {
@@ -624,8 +634,8 @@
               extra = { devolucao: { tipo: 'credito' } };
             }
           }
-          extra = Object.assign(extra || {}, { diferenca_centavos_esperada: 0 });
-          confirmar(expSel, dt, conf, desenhar, extra);
+          extra = Object.assign(extra || {}, { diferenca_centavos_esperada: 0, sobra_centavos_esperada: sobra });
+          confirmar(expSel, dt, conf, desenhar, extra, function (c) { guardarCot(expSel, dt, c); });
         });
       }
       desenhar();
@@ -659,7 +669,7 @@
       };
     }
 
-    async function confirmar(exp, dt, btn, redesenhar, extra) {
+    async function confirmar(exp, dt, btn, redesenhar, extra, aoMudarValor) {
       if (ocupado || encerrado) return;
       ocupado = true;
       btn.disabled = true;
@@ -670,7 +680,15 @@
       // O servidor calculou diferença a pagar (ex.: promoção acabou com a
       // janela aberta) → segue pro pagamento em vez de parar num aviso.
       if (!data.ok && (data.error === 'pagar_diferenca' || data.error === 'valor_mudou') && Number(data.diferenca_centavos) > 0) {
-        return passoPagamento(exp, dt, Number(data.diferenca_centavos), function () { redesenhar(); });
+        return passoPagamento(exp, dt, Number(data.diferenca_centavos), function (c) {
+          if (typeof aoMudarValor === 'function') aoMudarValor(c);
+          redesenhar();
+        });
+      }
+      if (!data.ok && data.error === 'valor_mudou') {
+        // Mudou só a sobra (crédito/Pix): mostra o valor novo antes de confirmar.
+        if (typeof aoMudarValor === 'function') aoMudarValor(data);
+        return redesenhar(data.message || 'O valor da troca mudou. Confira antes de confirmar.');
       }
       if (!data.ok) {
         redesenhar(data.message || 'Não conseguimos fazer a troca agora. Tente de novo ou fale com a Elarah.');
@@ -687,8 +705,10 @@
         '<div class="troca-ok"><div class="troca-emoji">🎉</div>' +
         '<h2 class="troca-title">Reserva remarcada!</h2>' +
         (pago ? '<p class="troca-sub" style="margin-top:8px;">Pagamento da diferença aprovado ✓</p>' : '') +
-        '<p class="troca-sub" style="margin-top:8px;">Agora é <strong>' + esc(exp.nome) + '</strong><br>' +
-        esc(dt.data) + ' · ' + esc(dt.horario) + '</p>' +
+        '<p class="troca-sub" style="margin-top:8px;">Agora é <strong>' +
+        esc((data && data.reserva && data.reserva.experiencia_nome) || exp.nome) + '</strong><br>' +
+        esc((data && data.reserva && data.reserva.data) || dt.data) + ' · ' +
+        esc((data && data.reserva && data.reserva.horario) || dt.horario) + '</p>' +
         (data && data.credito && data.credito.codigo
           ? '<p class="troca-sub" style="margin-top:12px;">🎟 Seu crédito de <strong>' + esc(brl(data.credito.valor_centavos)) + '</strong>:</p>' +
             '<div class="troca-codigo">' + esc(data.credito.codigo) + '</div>' +
@@ -781,8 +801,8 @@
         }
         if (!(Number(c.diferenca_centavos) > 0)) {
           // Sem diferença pelo servidor: volta pra confirmação (com a opção
-          // de crédito/Pix da sobra, se houver).
-          voltar();
+          // de crédito/Pix da sobra, se houver) já com o valor do servidor.
+          voltar(c);
           return c;
         }
         if (c.diferenca_centavos !== dif) {
@@ -908,7 +928,7 @@
             cotacao = chamar(Object.assign(corpoTroca(exp, dt), { acao: 'cotar' }));
             if (metodo === 'cartao') carregarParcelas();
           } else {
-            return voltar();
+            return voltar({ ok: true, diferenca_centavos: 0, sobra_centavos: Number(r.sobra_centavos) || 0 });
           }
           btn.disabled = false; atualizarBotao();
           return erro(r.message || 'O valor mudou. Confira antes de pagar.');
