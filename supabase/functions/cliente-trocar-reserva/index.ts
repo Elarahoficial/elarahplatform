@@ -79,6 +79,65 @@ function splitNome(nome: unknown): { first: string; last: string } {
   return { first: partes[0], last: partes.slice(1).join(" ") || partes[0] };
 }
 
+// Cancela um Pix do Mercado Pago que não deve mais ser pago (tentativa
+// substituída ou troca feita por outro caminho). Sem isso o QR antigo
+// continua pagável por 30 min e o dinheiro cairia sem troca pra aplicar.
+async function cancelarPixMP(paymentId: unknown): Promise<void> {
+  const id = String(paymentId ?? "").trim();
+  if (!id || !MP_ACCESS_TOKEN) return;
+  try {
+    const r = await fetch("https://api.mercadopago.com/v1/payments/" + encodeURIComponent(id), {
+      method: "PUT",
+      headers: { "Authorization": "Bearer " + MP_ACCESS_TOKEN, "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "cancelled" }),
+    });
+    if (!r.ok) console.warn("[cliente-trocar] não cancelei o Pix " + id + " no MP (http " + r.status + ")");
+  } catch (e) {
+    console.warn("[cliente-trocar] erro cancelando Pix " + id, String(e));
+  }
+}
+
+// Tentativas de pagamento em aberto desta reserva.
+//   * Cartão ainda em análise → NÃO abre outra tentativa (poderia cobrar
+//     duas vezes): devolve a situação dele.
+//   * Pix em aberto → cancela no Mercado Pago e marca 'cancelada'.
+// `manter` = Pix que vai ser reaproveitado (mesmo pedido, ainda válido).
+async function limparPendentes(
+  bookingId: string,
+  manter: string | null = null,
+): Promise<{ cartaoEmAnalise: Row | null }> {
+  const { data } = await admin!.from("trocas_reserva").select("*")
+    .eq("booking_id", bookingId).eq("tipo", "troca").in("status", ["aguardando_pagamento", "processando"]);
+  const linhas = (Array.isArray(data) ? data : []) as Row[];
+  const cartao = linhas.find((l) =>
+    l.status === "processando" ||
+    (l.pagamento_metodo === "cartao" && Date.now() - new Date(l.created_at).getTime() < 15 * 60_000)
+  );
+  if (cartao) return { cartaoEmAnalise: cartao };
+  for (const l of linhas) {
+    if (l.id === manter) continue;
+    const { data: upd } = await admin!.from("trocas_reserva").update({ status: "cancelada" })
+      .eq("id", l.id).eq("status", "aguardando_pagamento").select("id");
+    if (Array.isArray(upd) && upd.length && l.pagamento_metodo === "pix") await cancelarPixMP(l.pagamento_id);
+  }
+  return { cartaoEmAnalise: null };
+}
+
+// Insert da tentativa falhou. 23505 = já existe uma tentativa em aberto pra
+// esta reserva (índice único trocas_reserva_uma_pendente — dois cliques ou
+// duas abas ao mesmo tempo): devolve a que já existe, sem cobrar de novo.
+// deno-lint-ignore no-explicit-any
+async function falhaAoCriarPendente(bookingId: string, err: any): Promise<Response> {
+  if (err && String(err.code) === "23505") {
+    const { data } = await admin!.from("trocas_reserva").select("*")
+      .eq("booking_id", bookingId).eq("tipo", "troca").in("status", ["aguardando_pagamento", "processando"])
+      .order("created_at", { ascending: false }).limit(1);
+    if (Array.isArray(data) && data.length) return json(situacao(data[0]));
+  }
+  console.error("[cliente-trocar] erro criando troca pendente", bookingId, err?.message);
+  return json({ ok: false, error: "insert_failed", message: "Não conseguimos iniciar o pagamento. Tente de novo." }, 500);
+}
+
 function pedidoDe(payload: Record<string, unknown>): Pedido {
   return {
     experiencia_id: String(payload.experiencia_id ?? "").trim(),
@@ -236,6 +295,18 @@ serve(async (req) => {
     });
   }
 
+  // A tela mostra um valor; se mudou até o clique (ex.: promoção acabou à
+  // meia-noite), NÃO cobra outro valor em silêncio — devolve o novo.
+  const esperado = payload.diferenca_centavos_esperada;
+  if (esperado != null && esperado !== "" && Number(esperado) !== dif) {
+    return json({
+      ok: false, error: "valor_mudou", diferenca_centavos: dif,
+      message: dif > 0
+        ? "O valor da diferença mudou para " + ("R$ " + (dif / 100).toFixed(2).replace(".", ",")) + ". Confira antes de pagar."
+        : "O valor da troca mudou. Confira antes de confirmar.",
+    }, 409);
+  }
+
   // ===== Sem diferença: troca na hora =====
   if (dif <= 0) {
     // Nova mais barata: crédito (padrão) ou reembolso da sobra por Pix.
@@ -243,12 +314,29 @@ serve(async (req) => {
     if (ctx.sobraCentavos > 0) {
       const dv = (payload.devolucao && typeof payload.devolucao === "object") ? payload.devolucao as Record<string, unknown> : {};
       if (dv.tipo === "pix") {
+        // Compra paga com cupom/crédito/gift card: a sobra só volta como
+        // crédito — senão um crédito viraria dinheiro em conta.
+        if (bk.coupon_id || bk.gift_card_id || Number(bk.coupon_discount_centavos) > 0 || Number(bk.gift_card_centavos) > 0) {
+          return falha("pix_indisponivel", "Como essa compra usou cupom ou crédito, a diferença volta como crédito na Elarah.", 400);
+        }
         const chave = String(dv.chave_pix ?? "").trim();
+        const confirmacao = String(dv.chave_pix_confirmacao ?? "").trim();
+        const titular = String(dv.titular ?? "").trim().replace(/\s+/g, " ");
         if (chave.length < 5 || chave.length > 140) return falha("chave_pix_invalida", "Confira a sua chave Pix.", 400);
-        devolucao = { tipo: "pix", chavePix: chave };
+        if (confirmacao && confirmacao !== chave) return falha("chave_pix_diferente", "As duas chaves Pix não são iguais. Confira.", 400);
+        if (titular.length < 5 || !/\s/.test(titular) || titular.length > 120) {
+          return falha("titular_invalido", "Informe o nome completo do titular da chave Pix.", 400);
+        }
+        devolucao = { tipo: "pix", chavePix: chave, titular };
       } else {
         devolucao = { tipo: "credito" };
       }
+    }
+    // Tentativa de pagamento em aberto (troca mais cara que ela desistiu):
+    // cancela o Pix; cartão em análise impede trocar por outro caminho.
+    const lp = await limparPendentes(bookingId);
+    if (lp.cartaoEmAnalise) {
+      return falha("pagamento_em_analise", "Você tem um pagamento de troca em análise. Aguarde a confirmação antes de mudar.", 409);
     }
     const r = await aplicarTroca(admin, ctx, {
       callerId: caller.id, callerEmail: caller.email ?? null, logTag: "cliente-trocar", devolucao,
@@ -277,21 +365,24 @@ serve(async (req) => {
   const agora = Date.now();
   const { data: pendentes } = await admin.from("trocas_reserva").select("*")
     .eq("booking_id", bookingId).eq("tipo", "troca").eq("status", "aguardando_pagamento");
+  let reaproveitar: Row | null = null;
   for (const p of (Array.isArray(pendentes) ? pendentes : []) as Row[]) {
     const valido = p.pagamento_expira_em && new Date(p.pagamento_expira_em).getTime() > agora + 60_000;
-    if (metodo === "pix" && p.pagamento_metodo === "pix" && valido && mesmoPedido(p.pedido, pedido)) {
-      return json(situacao(p));
+    if (metodo === "pix" && p.pagamento_metodo === "pix" && valido && mesmoPedido(p.pedido, pedido) &&
+      Number(p.diferenca_centavos) === dif) {
+      reaproveitar = p;
     }
   }
-  // Outras tentativas em aberto saem da frente (se alguma for paga mesmo
-  // assim, o webhook ainda processa — e, se a reserva já tiver sido trocada,
-  // a linha vira 'pago_sem_aplicar' pra Elarah devolver).
-  if (Array.isArray(pendentes) && pendentes.length) {
-    await admin.from("trocas_reserva").update({ status: "cancelada" })
-      .in("id", (pendentes as Row[]).map((p) => p.id)).eq("status", "aguardando_pagamento");
-  }
+  // Outras tentativas em aberto saem da frente: Pix é cancelado no Mercado
+  // Pago; cartão ainda em análise impede uma segunda cobrança.
+  const lp = await limparPendentes(bookingId, reaproveitar?.id ?? null);
+  if (lp.cartaoEmAnalise) return json(situacao(lp.cartaoEmAnalise));
+  if (reaproveitar) return json(situacao(reaproveitar));
 
   const snap = snapshotTroca(ctx);
+  // O pedido guarda o preço por pessoa cobrado AGORA: na aprovação a troca
+  // usa este valor, não o do catálogo naquele momento.
+  const pedidoGravado = { ...pedido, preco_unit: ctx.precoNovoUnit };
   const nome = splitNome(bk.nome);
   const descricao = ("Diferença de troca · " + (ctx.novaExp.nome ?? "Experiência")).slice(0, 64);
 
@@ -299,13 +390,10 @@ serve(async (req) => {
     if (!MP_ACCESS_TOKEN) return json({ ok: false, error: "pix_indisponivel", message: "Pix indisponível agora. Tente o cartão." }, 503);
     const { data: ins, error: insErr } = await admin.from("trocas_reserva").insert({
       tipo: "troca", status: "aguardando_pagamento", booking_id: bookingId, user_id: caller.id,
-      ...snap, pedido, diferenca_centavos: dif, pagamento_metodo: "pix", pagamento_valor_centavos: dif,
+      ...snap, pedido: pedidoGravado, diferenca_centavos: dif, pagamento_metodo: "pix", pagamento_valor_centavos: dif,
       pagamento_status: "pendente",
     }).select("*").single();
-    if (insErr || !ins) {
-      console.error("[cliente-trocar] erro criando troca pendente", bookingId, insErr?.message);
-      return json({ ok: false, error: "insert_failed", message: "Não conseguimos iniciar o pagamento. Tente de novo." }, 500);
-    }
+    if (insErr || !ins) return await falhaAoCriarPendente(bookingId, insErr);
     const r = await createPixPayment(MP_ACCESS_TOKEN, {
       transactionAmountCents: dif,
       description: descricao,
@@ -356,13 +444,10 @@ serve(async (req) => {
 
   const { data: ins, error: insErr } = await admin.from("trocas_reserva").insert({
     tipo: "troca", status: "aguardando_pagamento", booking_id: bookingId, user_id: caller.id,
-    ...snap, pedido, diferenca_centavos: dif, pagamento_metodo: "cartao",
+    ...snap, pedido: pedidoGravado, diferenca_centavos: dif, pagamento_metodo: "cartao",
     pagamento_valor_centavos: opcao.total, pagamento_parcelas: parcelas, pagamento_status: "pendente",
   }).select("*").single();
-  if (insErr || !ins) {
-    console.error("[cliente-trocar] erro criando troca pendente", bookingId, insErr?.message);
-    return json({ ok: false, error: "insert_failed", message: "Não conseguimos iniciar o pagamento. Tente de novo." }, 500);
-  }
+  if (insErr || !ins) return await falhaAoCriarPendente(bookingId, insErr);
   const card = await createCardOrder(PAGARME_SECRET_KEY, {
     amountCents: opcao.total,
     installments: parcelas,

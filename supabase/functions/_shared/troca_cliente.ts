@@ -23,7 +23,7 @@
 // =============================================================
 
 import { effectiveCutoffHours } from "./booking_guard.ts";
-import { carregarDescontoGeral, precoFinalCentavos } from "./promo.ts";
+import { carregarDescontoGeral, precoFinalCentavos, precoLabelBR } from "./promo.ts";
 import { prazoRemarcacaoPorCategoria, PRAZO_REMARCACAO_PADRAO } from "./booking_policy.ts";
 import { sendEmail } from "./email.ts";
 import {
@@ -127,19 +127,23 @@ function isKit(exp: Row): boolean {
 // E nunca acima do preço unitário gravado na compra (quando existe).
 export function pagoPorPessoa(bk: Row, meta: Record<string, unknown>, qty: number): number {
   const q = Math.max(1, qty || 1);
+  // 0 é válido (compra paga inteira com cupom/crédito: não pagou nada).
   const n = (v: unknown) => {
+    if (v == null || v === "") return null;
     const x = Number(v);
-    return Number.isFinite(x) && x > 0 ? x : null;
+    return Number.isFinite(x) && x >= 0 ? x : null;
   };
   let total = n(meta.total_after_discount_centavos) ?? n(meta.amount_before_grossup_centavos);
   if (total == null) {
     const bruto = n(bk.amount_total);
     if (bruto != null) total = Math.max(0, bruto - (n(meta.card_fee_total_centavos) ?? 0));
   }
-  const unit = n(meta.unit_price_centavos) ?? parsePrecoToCents(bk.preco_label) ?? null;
-  if (total == null) return unit ?? 0;
+  // Teto só com o preço unitário GRAVADO na compra (o rótulo pode ser o
+  // preço base de uma variação mais cara, tipo "Dupla").
+  const unit = n(meta.unit_price_centavos);
+  if (total == null) return unit ?? parsePrecoToCents(bk.preco_label) ?? 0;
   const porPessoa = Math.round(total / q);
-  return unit != null ? Math.min(unit, porPessoa) : porPessoa;
+  return unit != null && unit > 0 ? Math.min(unit, porPessoa) : porPessoa;
 }
 
 function chaveTexto(v: unknown): string {
@@ -184,6 +188,9 @@ export interface Pedido {
   experiencia_id: string;
   slot_id: string | null;
   horario: string | null;
+  // Preço por pessoa cobrado na hora do pagamento da diferença (fica
+  // gravado no pedido; a aprovação usa este, não o do catálogo depois).
+  preco_unit?: number | null;
 }
 
 export interface TrocaCtx {
@@ -211,6 +218,7 @@ export interface TrocaCtx {
 export interface Devolucao {
   tipo: "credito" | "pix";
   chavePix?: string | null;
+  titular?: string | null; // nome do titular da conta que recebe o Pix
 }
 export const CREDITO_DIAS = 90;
 export const REEMBOLSO_PIX_HORAS = 72;
@@ -248,7 +256,7 @@ export async function validarTroca(
   sb: SB,
   bk: Row,
   pedido: Pedido,
-  opts: { pagamentoConfirmado?: boolean } = {},
+  opts: { pagamentoConfirmado?: boolean; diferencaPaga?: number } = {},
 ): Promise<Resultado<{ ctx: TrocaCtx }>> {
   const now = Date.now();
   if (bk.status !== "pago") return falha("booking_not_paid", "Só dá pra alterar reservas confirmadas.");
@@ -320,7 +328,12 @@ export async function validarTroca(
       return falha("tem_variacoes", "Essa experiência tem opções pra escolher. Fale com a gente no WhatsApp pra trocar por ela.");
     }
   }
-  if (!mesmaExp && !gemea) {
+  if (opts.pagamentoConfirmado) {
+    // Diferença JÁ PAGA: nada de recalcular preço (o catálogo pode ter
+    // mudado desde a cobrança) — nem cobrar de novo, nem gerar sobra.
+    diferencaCentavos = opts.diferencaPaga ?? 0;
+    precoNovoUnit = Number(pedido.preco_unit) || null;
+  } else if (!mesmaExp && !gemea) {
     // A PAGAR  = o que o site cobra HOJE pela nova (com a promoção no ar,
     //            igual ao checkout) − o que a cliente PAGOU por pessoa.
     // A RECEBER = o que ela PAGOU − o preço CHEIO da nova (sem promoção).
@@ -500,6 +513,9 @@ export async function aplicarTroca(
     update.fornecedor_nome = snap.para_fornecedor_nome;
     update.fornecedor_id = novaExp.created_by ?? null;
     const fin = financeiro(novaExp, qty);
+    // Experiência nova sem valor cheio cadastrado: o repasse não é
+    // recalculado — marca pra Elarah conferir o repasse da parceira nova.
+    if (!fin) meta.troca_repasse_revisar = true;
     if (fin) {
       update.valor_cheio_centavos = fin.cheio;
       update.valor_repasse_centavos = fin.repasse;
@@ -539,6 +555,7 @@ export async function aplicarTroca(
       tipo: devolucao.tipo,
       valor_centavos: sobra,
       chave_pix: devolucao.tipo === "pix" ? (devolucao.chavePix ?? null) : null,
+      titular: devolucao.tipo === "pix" ? (devolucao.titular ?? null) : null,
       troca_id: opts.trocaId ?? null,
     };
   }
@@ -546,7 +563,7 @@ export async function aplicarTroca(
     // Pagou a diferença: a reserva passa a valer a experiência nova. O
     // valor pago entra no total da reserva (a contabilidade soma daqui) e
     // o detalhe fica no metadata.
-    update.preco_label = novaExp.preco ?? bk.preco_label;
+    update.preco_label = ctx.precoNovoUnit ? precoLabelBR(ctx.precoNovoUnit) : (novaExp.preco ?? bk.preco_label);
     // Próximas comparações (e o e-mail) partem do que ela passou a pagar.
     if (ctx.precoNovoUnit) meta.unit_price_centavos = ctx.precoNovoUnit;
     update.amount_total = (Number(bk.amount_total) || 0) + opts.pagamento.valorCentavos;
@@ -624,6 +641,7 @@ export async function aplicarTroca(
     linha.devolucao_centavos = sobra;
     if (devolucao.tipo === "pix") {
       linha.reembolso_pix_chave = devolucao.chavePix ?? null;
+      linha.reembolso_pix_titular = devolucao.titular ?? null;
       linha.reembolso_prazo = new Date(Date.now() + REEMBOLSO_PIX_HORAS * 3600_000).toISOString();
     } else {
       const validade = new Date(Date.now() + CREDITO_DIAS * 86400_000).toISOString();
@@ -684,7 +702,7 @@ export async function aplicarTroca(
     console.warn("[" + opts.logTag + "] trocas_reserva sem colunas de pagamento — gravando sem elas", logErr.message);
     const {
       status: _s, pago_at: _p, pagamento_status: _ps, devolucao_tipo: _dt, devolucao_centavos: _dc,
-      reembolso_pix_chave: _rk, reembolso_prazo: _rp, credito_codigo: _cc, credito_expira_em: _ce, ...basica
+      reembolso_pix_chave: _rk, reembolso_pix_titular: _rt, reembolso_prazo: _rp, credito_codigo: _cc, credito_expira_em: _ce, ...basica
     } = linha;
     ({ error: logErr } = await gravar(basica));
   }
@@ -738,7 +756,13 @@ export async function processarPagamentoTroca(
   }
 
   if (resultado === "reembolsado") {
-    await sb.from("trocas_reserva").update({ pagamento_status: "reembolsado" }).eq("id", trocaId);
+    // Estorno/contestação da diferença JÁ PAGA: a troca pode ter sido
+    // aplicada. Não desfaz sozinho — sinaliza pra Elarah revisar.
+    await sb.from("trocas_reserva").update({
+      pagamento_status: "reembolsado",
+      observacao: "Pagamento da diferença foi estornado/contestado — revisar a reserva.",
+      resolvido_at: null,
+    }).eq("id", trocaId);
     return { status: String(linha.status ?? "") };
   }
 
@@ -750,45 +774,75 @@ export async function processarPagamentoTroca(
   }
 
   // Aprovado → trava a linha.
-  const { data: trava } = await sb.from("trocas_reserva")
-    .update({ status: "processando", pagamento_status: "aprovado", pago_at: new Date().toISOString() })
+  const agoraIso = new Date().toISOString();
+  let { data: trava, error: travaErr } = await sb.from("trocas_reserva")
+    .update({ status: "processando", pagamento_status: "aprovado", pago_at: agoraIso })
     // 'cancelada' entra: a cliente pode pagar um Pix antigo depois de abrir
     // outra tentativa. O dinheiro caiu, então processa (e, se a reserva já
     // tiver sido trocada pela outra, a linha fica 'pago_sem_aplicar').
     .eq("id", trocaId).in("status", ["aguardando_pagamento", "pagamento_recusado", "cancelada", "erro_pagamento"]).select("id");
+  if (travaErr && String(travaErr.code) === "23505") {
+    // Pagou uma tentativa antiga enquanto OUTRA está em aberto (índice
+    // trocas_reserva_uma_pendente): o dinheiro caiu — nunca some; vai pro
+    // painel como "pagou, troca não entrou" pra Elarah resolver.
+    await sb.from("trocas_reserva").update({
+      status: "pago_sem_aplicar", pagamento_status: "aprovado", pago_at: agoraIso,
+      observacao: "Pagou uma tentativa antiga enquanto outra estava aberta — conferir e devolver se preciso.",
+    }).eq("id", trocaId);
+    console.error("[" + info.logTag + "] pagamento de tentativa antiga com outra em aberto", trocaId);
+    return { status: "pago_sem_aplicar" };
+  }
+  if ((!Array.isArray(trava) || !trava.length) && linha.status === "processando" && linha.pago_at &&
+    Date.now() - new Date(linha.pago_at).getTime() > 5 * 60_000) {
+    // Travada há mais de 5 min (a função caiu no meio): retoma.
+    ({ data: trava } = await sb.from("trocas_reserva")
+      .update({ pago_at: agoraIso })
+      .eq("id", trocaId).eq("status", "processando").eq("pago_at", linha.pago_at).select("id"));
+  }
   if (!Array.isArray(trava) || !trava.length) return { status: String(linha.status ?? "") };
 
   const pedido = (linha.pedido && typeof linha.pedido === "object") ? linha.pedido as Pedido : null;
-  const { data: bkRow } = linha.booking_id
-    ? await sb.from("bookings").select("*, experiences(imagem)").eq("id", linha.booking_id).maybeSingle()
-    : { data: null };
-  const bk = bkRow as Row;
-
   const marcar = async (status: string, motivo: string) => {
     console.error("[" + info.logTag + "] diferença paga mas troca NÃO aplicada", trocaId, status, motivo);
     await sb.from("trocas_reserva").update({ status, observacao: motivo }).eq("id", trocaId);
     return { status };
   };
-  if (!pedido || !bk) return await marcar("pago_sem_aplicar", "Reserva ou pedido não encontrado.");
+  if (!pedido || !linha.booking_id) return await marcar("pago_sem_aplicar", "Reserva ou pedido não encontrado.");
 
-  const v = await validarTroca(sb, bk, pedido, { pagamentoConfirmado: true });
-  if (!v.ok) {
-    return await marcar(v.error === "sem_vaga" ? "pago_sem_vaga" : "pago_sem_aplicar", v.message);
-  }
   const pago = Number(info.valorCentavos ?? linha.pagamento_valor_centavos) || 0;
-  const r = await aplicarTroca(sb, v.ctx, {
-    callerId: linha.user_id ?? null,
-    callerEmail: linha.cliente_email ?? null,
-    trocaId,
-    logTag: info.logTag,
-    pagamento: {
-      valorCentavos: pago,
-      diferencaCentavos: Number(linha.diferenca_centavos) || 0,
-      metodo: linha.pagamento_metodo === "cartao" ? "cartao" : "pix",
-      pagamentoId: info.pagamentoId ?? linha.pagamento_id ?? null,
-      parcelas: linha.pagamento_parcelas ?? null,
-    },
-  });
-  if (!r.ok) return await marcar(r.error === "sem_vaga" ? "pago_sem_vaga" : "pago_sem_aplicar", r.message);
-  return { status: "aplicada" };
+  // Um "conflito" (a reserva foi tocada entre a leitura e a gravação —
+  // lembrete automático, edição no painel) não pode virar falha definitiva
+  // de uma troca JÁ PAGA: relê e tenta de novo.
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    const { data: bkRow } = await sb.from("bookings").select("*, experiences(imagem)").eq("id", linha.booking_id).maybeSingle();
+    const bk = bkRow as Row;
+    if (!bk) return await marcar("pago_sem_aplicar", "Reserva não encontrada.");
+    const v = await validarTroca(sb, bk, pedido, {
+      pagamentoConfirmado: true,
+      diferencaPaga: Number(linha.diferenca_centavos) || 0,
+    });
+    if (!v.ok) {
+      return await marcar(v.error === "sem_vaga" ? "pago_sem_vaga" : "pago_sem_aplicar", v.message);
+    }
+    const r = await aplicarTroca(sb, v.ctx, {
+      callerId: linha.user_id ?? null,
+      callerEmail: linha.cliente_email ?? null,
+      trocaId,
+      logTag: info.logTag,
+      pagamento: {
+        valorCentavos: pago,
+        diferencaCentavos: Number(linha.diferenca_centavos) || 0,
+        metodo: linha.pagamento_metodo === "cartao" ? "cartao" : "pix",
+        pagamentoId: info.pagamentoId ?? linha.pagamento_id ?? null,
+        parcelas: linha.pagamento_parcelas ?? null,
+      },
+    });
+    if (r.ok) return { status: "aplicada" };
+    if (r.error === "conflito" && tentativa < 3) {
+      await new Promise((res) => setTimeout(res, 400 * tentativa));
+      continue;
+    }
+    return await marcar(r.error === "sem_vaga" ? "pago_sem_vaga" : "pago_sem_aplicar", r.message);
+  }
+  return await marcar("pago_sem_aplicar", "Não foi possível aplicar a troca.");
 }
