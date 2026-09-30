@@ -29,6 +29,17 @@ extra = '''
   .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
   .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
   .ic p b{color:var(--navy);font-weight:700}
+  /* espaco em destaque (Agora Intu) */
+  .agf{display:grid;grid-template-columns:1.15fr 1fr;margin-top:16px;border-radius:18px;overflow:hidden;border:1.5px solid var(--orange);box-shadow:0 18px 44px -28px rgba(0,0,0,.38)}
+  .agf .ph{position:relative;min-height:244px}
+  .agf .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .agf .bd{background:#FBF1EE;padding:22px 28px;display:flex;flex-direction:column;justify-content:center}
+  .agf .tag{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .agf h3{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);margin:5px 0 2px;line-height:1.05}
+  .agf .bairro{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .agf ul{list-style:none;margin:13px 0 0;padding:0;display:grid;gap:8px}
+  .agf ul li{position:relative;padding-left:22px;font-size:12.5px;color:var(--ink);line-height:1.4}
+  .agf ul li .st{position:absolute;left:0;top:0;color:var(--orange);font-weight:700}
   /* investimento visual (foto + valores) */
   .invsplit{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:18px;align-items:stretch}
   .invphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:400px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
@@ -103,8 +114,8 @@ cover = f'''
     <div class="cover">
       <div>
         <span class="eyebrow">✦ Um aniversário criativo</span>
-        <h1>Um aniversário para <em>criar juntos</em></h1>
-        <p class="lead">Um aniversário para <strong>reunir os amigos</strong>, <strong>colocar a mão na massa</strong>, brindar, rir e <strong>criar algo juntos</strong> — uma comemoração diferente para guardar na memória. ✨</p>
+        <h1>Um aniversário para <em>criar &amp; celebrar</em></h1>
+        <p class="lead">Um aniversário para <strong>reunir os amigos</strong>, <strong>colocar a mão na massa</strong>, brindar e rir muito — um dia diferente para <strong>guardar na memória</strong>. ✨</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>Até 20</b> pessoas</span>
@@ -112,7 +123,7 @@ cover = f'''
           <span class="chip"><b>07/11</b></span>
         </div>
       </div>
-      <div class="cover-photo">{img("bfa-grupo1.webp", "Homens e mulheres criando juntos numa experiência de mão na massa", "center 45%")}</div>
+      <div class="cover-photo">{img("aniversario-ceramica-capa.jpg", "Amigas rindo e mostrando as peças que pintaram", "center 30%")}</div>
     </div>
     {foot("Aniversário · Adriana")}
   </section>'''
@@ -125,16 +136,16 @@ conceito = f'''
     <h2>Criar, conversar e <em>comemorar</em></h2>
     <p class="lead">Trocar a comemoração tradicional por uma experiência leve e cheia de troca — daquelas em que todo mundo <strong>cria</strong>, <strong>conversa</strong>, <strong>ri</strong>, <strong>brinda</strong> e ainda <strong>leva uma lembrança feita por vocês</strong>.</p>
     <div class="pil3">
-      <div class="p"><div class="pt">Criar juntos</div><div class="pd">Experiências feitas para colocar a mão na massa. Da argila aos aromas, cada convidado participa e cria algo único.</div></div>
-      <div class="p"><div class="pt">Celebrar juntos</div><div class="pd">Uma comemoração leve, com tempo para conversar, brindar e aproveitar o momento.</div></div>
+      <div class="p"><div class="pt">Criar</div><div class="pd">Experiências feitas para colocar a mão na massa. Da argila aos aromas, cada convidado participa e cria algo único.</div></div>
+      <div class="p"><div class="pt">Celebrar</div><div class="pd">Uma comemoração leve, com tempo para conversar, brindar e aproveitar o momento.</div></div>
       <div class="p"><div class="pt">Levar uma lembrança</div><div class="pd">No final, cada pessoa leva uma criação feita por ela.</div></div>
     </div>
     <div class="gstrip" style="margin-top:16px">
-      <figure>{img("bfa-grupo2.webp", "Homens e mulheres criando e rindo juntos", "center 40%")}<figcaption>Todos juntos</figcaption></figure>
+      <figure>{img("bfa-grupo2.webp", "Homens e mulheres criando e rindo", "center 40%")}<figcaption>A turma toda</figcaption></figure>
       <figure>{img("agora-hero.jpg", "Grupo modelando argila na bancada do Agora Intu", "center 55%")}<figcaption>Mãos na argila</figcaption></figure>
       <figure>{img("agora-pintura.jpg", "Grupo pintando cerâmica no Agora Intu", "center 40%")}<figcaption>Cerâmica &amp; cor</figcaption></figure>
       <figure>{img("agora-selfie.jpg", "Grupo rindo durante a experiência", "center 35%")}<figcaption>Muita risada</figcaption></figure>
-      <figure>{img("agora-grupo.jpg", "Grupo criando junto à mesa do Agora Intu", "center 50%")}<figcaption>Criar junto</figcaption></figure>
+      <figure>{img("agora-grupo.jpg", "Grupo criando à mesa do Agora Intu", "center 50%")}<figcaption>Criando</figcaption></figure>
       <figure>{img("agora-aquarela.jpg", "Peça sendo feita no ateliê", "center 40%")}<figcaption>Peças sendo feitas</figcaption></figure>
     </div>
     {foot("O conceito")}
@@ -161,17 +172,28 @@ cardapio = f'''
 # ===== 4 · ESPAÇOS PARCEIROS =====
 espacos = f'''
   <section class="slide">
-{head_simple("Espaços parceiros")}
+{head_simple("Espaços")}
     <span class="eyebrow orange">◆ Onde pode acontecer</span>
-    <h2>Quatro espaços, <em>quatro vibes</em></h2>
-    <div class="vg" style="grid-template-columns:1fr 1fr">
-      {vc("agora-grupo.jpg", "Agora Intu", "Agora Intu", "Pinheiros · Ateliê criativo", "Nossa recomendação: ateliê criativo e acolhedor, ótimo para cerâmica, pintura e velas.", "center 50%")}
-      {vc("yucafe-real.jpg", "Café & Eventos", "Café &amp; Eventos", "Café · Eventos", "Espaço acolhedor para reunir o grupo e comemorar com conforto. <b>Até 20 · ~3h · R$ 100/pessoa</b> — inclui bolo, água, café e pão de queijo.", "center 50%")}
+    <h2>O espaço da <em>festa</em></h2>
+    <div class="agf">
+      <div class="ph">{img("agora-hero.jpg", "Grupo criando no Agora Intu", "center 55%")}</div>
+      <div class="bd">
+        <span class="tag">✦ Nossa recomendação</span>
+        <h3>Agora Intu</h3>
+        <span class="bairro">Pinheiros · Ateliê criativo</span>
+        <ul>
+          <li><span class="st">✦</span>Ateliê criativo e acolhedor, feito pra celebrar</li>
+          <li><span class="st">✦</span>Ótimo para cerâmica, pintura e velas</li>
+          <li><span class="st">✦</span>O clima certo pra imaginar o aniversário acontecendo</li>
+        </ul>
+      </div>
+    </div>
+    <div class="vg" style="grid-template-columns:1fr 1fr;margin-top:16px">
       {vc("shoyu-atelie.jpg", "Shoyu Crafts", "Shoyu Crafts", "Pinheiros · Ateliê de cerâmica", "Ateliê de cerâmica cheio de charme. Perfeito para modelar e pintar peças.", "center 55%")}
-      {vc("em-casa-hero-2.jpg", "Elarah até você", "Elarah até você", "No espaço do grupo", "Levamos a experiência até casa, salão, condomínio ou outro espaço — <b>mesma experiência, mesmo valor</b>.", "center 40%")}
+      {vc("em-casa-hero-2.jpg", "Elarah até você", "Elarah até você", "No espaço do grupo", "Levamos a experiência até casa, salão ou condomínio — <b>mesma experiência, mesmo valor</b>.", "center 40%")}
     </div>
     <p class="fineprint">Também trabalhamos com o <b>Espaço Cardeal</b> (Pinheiros · privativo), disponível <b>sob locação</b>. Disponibilidade, alimentação e eventuais valores de locação estão sujeitos a confirmação.</p>
-    {foot("Espaços parceiros")}
+    {foot("Espaços")}
   </section>'''
 
 # ===== 5 · ELARAH ATÉ VOCÊ =====
@@ -221,17 +243,11 @@ investimento = f'''
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Simples de <em>fechar</em></h2>
-    <div class="invsplit">
-      <figure class="invphoto">{img("bfa-grupo2.webp", "Grupo comemorando e criando junto", "center 40%")}<figcaption>Uma comemoração para viver junto 🧡</figcaption></figure>
-      <div class="invbd">
-        <div class="invbig">R$ 249</div>
-        <div class="invper">experiências a partir de · por pessoa</div>
-        <div class="invrows">
-          <div class="invrow"><div class="k">No espaço parceiro</div><div class="t">Valores variam conforme <b>experiência</b>, <b>espaço</b> e número final de convidados.</div></div>
-          <div class="invrow"><div class="k">Elarah até você</div><div class="t">Mesma experiência, a partir de <b>R$ 249</b> por pessoa.</div></div>
-          <div class="invrow"><div class="k">Opcionais</div><div class="t">Comidinhas, bebidas, brindes e registro fotográfico (a partir de <b>R$ 450</b>).</div></div>
-        </div>
-      </div>
+    <div class="pbig"><div class="n">R$ 249</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
+    <div class="icards">
+      <div class="ic"><div class="k">No espaço parceiro</div><div class="v">Sob o formato escolhido</div><p>Valores variam conforme a <b>experiência</b>, o <b>espaço</b> e o número final de convidados.</p></div>
+      <div class="ic"><div class="k">Elarah até você</div><div class="v">A partir de R$ 249</div><p>Experiências no <b>espaço do grupo</b>, por pessoa.</p></div>
+      <div class="ic"><div class="k">Opcionais</div><div class="v">Comidinhas, bebidas, brindes &amp; fotos</div><p>Registro fotográfico a partir de <b>R$ 450</b>. Demais itens sob confirmação.</p></div>
     </div>
     <p class="fineprint">Valores por pessoa, conforme experiência, espaço e número final de convidados. Algumas experiências possuem capacidade específica. Opcionais e data <b>sujeitos a confirmação</b>.</p>
     {foot("Investimento")}
@@ -243,17 +259,16 @@ proximos = f'''
 {head_simple("Próximos passos")}
     <span class="eyebrow orange">◆ Bora escolher? ✨</span>
     <h2>É só <em>apontar</em> a favorita</h2>
-    <div class="nxsplit">
-      <figure class="nxphoto">{img("aniversario-mesa-real.jpg", "Grupo comemorando à mesa de aniversário", "center 45%")}<figcaption>Um aniversário para criar, celebrar e lembrar 🧡</figcaption></figure>
-      <div class="nxbd">
-        <p class="lead">Adriana, conta pra gente qual <b>experiência e formato</b> vocês mais gostaram — a partir disso, confirmamos <b>disponibilidade</b> e seguimos com a reserva.</p>
-        <div class="nxsteps">
-          <div class="nxstep"><div class="num">1</div><div><h3>Escolham</h3><p>A(s) experiência(s) que mais combinam com a festa.</p></div></div>
-          <div class="nxstep"><div class="num">2</div><div><h3>Montamos o orçamento</h3><p>Espaço, materiais e organização sob medida.</p></div></div>
-          <div class="nxstep"><div class="num">3</div><div><h3>É só curtir</h3><p>No dia, chega tudo pronto — vocês só aproveitam.</p></div></div>
-        </div>
-        <div class="nxcontact"><i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <b>+55 (11) 91445-5930</b> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br</div>
-      </div>
+    <p class="lead">Adriana, conta pra gente qual <b>experiência e formato</b> vocês mais gostaram — a partir disso, confirmamos <b>disponibilidade</b> e seguimos com a reserva. 🧡</p>
+    <div class="rule"></div>
+    <div class="grid3">
+      <div class="infocard"><div class="num">1</div><h3>Escolham</h3><p>A(s) experiência(s) que mais combinam com a festa.</p></div>
+      <div class="infocard"><div class="num">2</div><h3>Montamos o orçamento</h3><p>Espaço, materiais e organização sob medida.</p></div>
+      <div class="infocard"><div class="num">3</div><h3>É só curtir</h3><p>No dia, chega tudo pronto — vocês só aproveitam.</p></div>
+    </div>
+    <div class="quote" style="margin-top:20px">
+      Um aniversário para criar, celebrar e guardar na memória. 🧡<br>
+      <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
     {foot("Próximos passos")}
   </section>'''
