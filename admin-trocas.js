@@ -144,8 +144,24 @@
   }
 
   // ===== Estado =====
+  // Situação da troca (sql/elarah_trocas_reserva_pagamento.sql). Vazio =
+  // linha de antes da diferença a pagar = aplicada.
+  function aplicada(t) { return !t.status || t.status === 'aplicada'; }
+  // Pagou a diferença mas a troca não entrou (data esgotou / reserva mudou):
+  // a Elarah precisa resolver com a cliente.
+  function pagoComProblema(t) { return t.status === 'pago_sem_vaga' || t.status === 'pago_sem_aplicar'; }
+  // Tentativa que não virou troca (Pix não pago, cartão recusado…): só
+  // aparece em "Todas".
+  function tentativa(t) { return t.tipo === 'troca' && !aplicada(t) && !pagoComProblema(t); }
+
+  function brl(c) {
+    return 'R$ ' + (Number(c || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   function pendente(t) {
-    if (t.resolvido_at || t._teste) return false;
+    if (t.resolvido_at) return false;
+    if (pagoComProblema(t)) return true;
+    if (t._teste || tentativa(t)) return false;
     if (t.tipo === 'reembolso') return true;
     if (t.modalidade === 'outro_parceiro') return !t.aviso_de_at || !t.aviso_para_at;
     return !t.aviso_para_at;
@@ -267,7 +283,32 @@
     var reemb = t.tipo === 'reembolso';
     var pend = pendente(t);
     var acoes = [];
-    if (t._teste) {
+    var alerta = '';
+    if (pagoComProblema(t)) {
+      alerta = '<p style="margin:8px 0 0;padding:8px 10px;border-radius:8px;background:#fdeaea;color:#b3261e;font-size:.8rem;font-weight:600;">' +
+        '⚠ A cliente PAGOU ' + esc(brl(t.pagamento_valor_centavos)) + ' de diferença, mas a troca não entrou' +
+        (t.status === 'pago_sem_vaga' ? ' — a data esgotou durante o pagamento.' : '.') +
+        (t.observacao ? ' (' + esc(t.observacao) + ')' : '') +
+        ' A reserva continua na data antiga. Combine outra data com ela ou devolva a diferença.</p>';
+    } else if (tentativa(t)) {
+      var rot = {
+        aguardando_pagamento: '⏳ Aguardando pagamento da diferença',
+        processando: '⏳ Pagamento aprovado — aplicando a troca',
+        pagamento_recusado: '✕ Pagamento não concluído (Pix expirou ou cartão recusado)',
+        cancelada: '✕ Tentativa substituída por outra',
+        erro_pagamento: '✕ Erro ao gerar a cobrança',
+      }[t.status] || t.status;
+      alerta = '<p style="margin:8px 0 0;font-size:.78rem;color:#8a6a2a;">' + esc(rot) +
+        (t.diferenca_centavos ? ' · ' + esc(brl(t.diferenca_centavos)) : '') + '. A reserva continua como estava.</p>';
+    } else if (t.pago_at && t.pagamento_valor_centavos) {
+      alerta = '<p style="margin:8px 0 0;font-size:.78rem;color:#1a8a4a;font-weight:600;">💳 Diferença paga: ' +
+        esc(brl(t.pagamento_valor_centavos)) + ' no ' + (t.pagamento_metodo === 'cartao'
+          ? 'cartão' + (t.pagamento_parcelas > 1 ? ' (' + t.pagamento_parcelas + 'x)' : '')
+          : 'Pix') + ' · ' + esc(quando(t.pago_at)) + '</p>';
+    }
+    if (!aplicada(t)) {
+      // Troca que não entrou: nada pra avisar à parceira.
+    } else if (t._teste) {
       acoes.push('<span class="trc-btn trc-btn--ghost" style="cursor:default;color:#8a6a2a;" title="Compra de teste — nada é enviado pra parceira">🧪 Compra de teste · aviso ao parceiro desligado</span>');
     } else if (!reemb) {
       if (t.modalidade === 'outro_parceiro') {
@@ -291,7 +332,7 @@
     var para = reemb
       ? '<div class="trc-box"><small>Pedido</small>Reembolso — combinar com a cliente no WhatsApp.' +
         (t.motivo ? '<br><em>' + esc(t.motivo) + '</em>' : '') + '</div>'
-      : '<div class="trc-box"><small>Ficou</small><strong>' + esc(t.para_experiencia_nome || '—') + '</strong><br>' +
+      : '<div class="trc-box"><small>' + (aplicada(t) ? 'Ficou' : 'Pediu') + '</small><strong>' + esc(t.para_experiencia_nome || '—') + '</strong><br>' +
         esc(t.para_data || '') + (t.para_horario ? ' · ' + esc(t.para_horario) : '') +
         (t.para_fornecedor_nome ? '<br><span style="color:#888;">' + esc(t.para_fornecedor_nome) + '</span>' : '') + '</div>';
 
@@ -299,7 +340,7 @@
       '<div class="trc-head"><div><span class="trc-nome">' + esc(t.cliente_nome || t.cliente_email || 'Cliente') + '</span>' +
         tagModalidade(t) + (pend ? '<span class="trc-tag trc-tag--pend">Pendente</span>' : '') + '</div>' +
         '<span class="trc-quando">' + esc(quando(t.created_at)) + (t.resolvido_at ? ' · concluído ' + esc(quando(t.resolvido_at)) : '') + '</span></div>' +
-      '<div class="trc-fluxo">' + de + '<span class="trc-seta">→</span>' + para + '</div>' +
+      '<div class="trc-fluxo">' + de + '<span class="trc-seta">→</span>' + para + '</div>' + alerta +
       '<p class="trc-contato">' +
         (t.cliente_telefone ? '📱 ' + esc(telBR(t.cliente_telefone)) + ' ' : '') +
         (t.cliente_email ? '✉️ ' + esc(t.cliente_email) : '') +
@@ -315,6 +356,7 @@
     var q = busca.toLowerCase().trim();
     var vis = linhas.filter(function (t) {
       if (filtro === 'pendentes' && !pendente(t)) return false;
+      if (filtro !== 'todas' && filtro !== 'pendentes' && tentativa(t)) return false;
       if (filtro === 'trocas' && t.tipo !== 'troca') return false;
       if (filtro === 'reembolsos' && t.tipo !== 'reembolso') return false;
       if (!q) return true;

@@ -92,10 +92,24 @@
   }
 
   // Pode ser DESTINO de troca pra outra ficha: o servidor recusa as demais.
-  function podeSerDestino(exp, precoMax) {
+  // Mais cara pode — a cliente paga a diferença.
+  function podeSerDestino(exp) {
     if (!exp || exp.arquivada || exp.isActive === false || exp.horarioFuncionamento || isKit(exp) || temVariacoes(exp)) return false;
-    var p = precoCentavos(exp.preco);
-    return !!(p && precoMax && p <= precoMax);
+    return !!precoCentavos(exp.preco);
+  }
+
+  // Diferença a pagar (total da reserva, centavos) — mesma conta do
+  // servidor: preço de tabela novo − o da compra, por pessoa, × quantidade.
+  function diferencaDe(exp, booking) {
+    if (!exp || exp.id === booking.experiencia_id) return 0;
+    var novo = precoCentavos(exp.preco) || 0;
+    var antigo = precoMaxDe(booking);
+    var q = Math.max(1, Number(booking.quantidade) || 1);
+    return novo > antigo && antigo > 0 ? (novo - antigo) * q : 0;
+  }
+
+  function brl(cents) {
+    return 'R$ ' + (Number(cents || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function precoMaxDe(booking) {
@@ -145,6 +159,43 @@
     return out.slice(0, MAX_DATAS);
   }
 
+  // ===== Cartão (Pagar.me) — mesma tokenização do checkout (script.js) =====
+  // O cartão vai DIRETO do navegador pro Pagar.me; o servidor só recebe o
+  // token. A chave pública vem da função get-pagarme-public-key.
+  var _pk;
+  function chavePagarme() {
+    if (typeof _pk !== 'undefined') return Promise.resolve(_pk);
+    var sb = window.supabaseClient;
+    if (!sb || !sb.functions) return Promise.resolve(null);
+    return sb.functions.invoke('get-pagarme-public-key', { body: {} }).then(function (r) {
+      var d = r && r.data;
+      _pk = (d && d.public_key) ? { key: String(d.public_key), isTest: !!d.is_test } : null;
+      return _pk;
+    }, function () { _pk = null; return null; });
+  }
+
+  function tokenizarCartao(pk, card) {
+    var hosts = pk.isTest
+      ? ['https://api.pagar.me/core/v5', 'https://sdx-api.pagar.me/core/v5']
+      : ['https://api.pagar.me/core/v5'];
+    var payload = JSON.stringify({ type: 'card', card: card });
+    function tentar(i) {
+      if (i >= hosts.length) return Promise.resolve({ ok: false, status: 0, body: null });
+      return fetch(hosts[i] + '/tokens?appId=' + encodeURIComponent(pk.key), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: payload,
+      }).then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (j) {
+          if (r.ok && j && j.id) return { ok: true, status: r.status, body: j };
+          if ((r.status === 404 || r.status === 401 || r.status === 403) && i + 1 < hosts.length) return tentar(i + 1);
+          return { ok: false, status: r.status, body: j };
+        });
+      }).catch(function () { return tentar(i + 1); });
+    }
+    return tentar(0);
+  }
+
   // ===== CSS =====
   function injetarCss() {
     if (document.getElementById('troca-css')) return;
@@ -188,7 +239,21 @@
       '.troca-ok .troca-emoji{font-size:2.2rem;}',
       '.troca-carregando{font-size:.84rem;color:#7a6f68;padding:16px 0;text-align:center;}',
       '.troca-rodape{font-size:.74rem;color:#7a6f68;margin-top:14px;line-height:1.5;}',
-      '.troca-rodape a{color:inherit;font-weight:600;}'
+      '.troca-rodape a{color:inherit;font-weight:600;}',
+      '.troca-dif{display:inline-block;margin-left:4px;font-size:.7rem;font-weight:700;color:#8a4b12;background:#fff1e3;border-radius:999px;padding:1px 7px;}',
+      '.troca-pagar{background:#fff6ee;border:1px solid #f3d9c2;border-radius:12px;padding:10px 14px;margin:0 0 12px;font-size:.86rem;}',
+      '.troca-pagar b{font-size:1rem;}',
+      '.troca-metodos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 12px;}',
+      '.troca-metodo{border:1.5px solid #eadfd6;background:#fff;border-radius:10px;padding:10px;font:inherit;font-weight:700;font-size:.86rem;cursor:pointer;color:inherit;}',
+      '.troca-metodo--on{border-color:#e07b39;background:#fff3ea;}',
+      '.troca-campos{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}',
+      '.troca-campos label{display:flex;flex-direction:column;gap:3px;font-size:.72rem;color:#7a6f68;font-weight:600;}',
+      '.troca-campos .troca-full{grid-column:1 / -1;}',
+      '.troca-campos input,.troca-campos select{padding:9px 10px;border:1px solid #ddd;border-radius:9px;font:inherit;font-size:.88rem;color:#2b2420;background:#fff;min-width:0;}',
+      '.troca-qr{display:block;width:210px;height:210px;margin:6px auto 10px;image-rendering:pixelated;}',
+      '.troca-copia{width:100%;box-sizing:border-box;font:inherit;font-size:.72rem;padding:8px;border:1px solid #ddd;border-radius:9px;resize:none;height:62px;color:#555;}',
+      '.troca-btn--sec{background:#fff;color:#e07b39;border:1.5px solid #e07b39;margin-top:8px;}',
+      '.troca-status{font-size:.8rem;color:#7a6f68;text-align:center;margin:10px 0 0;}'
     ].join('\n');
     var st = document.createElement('style');
     st.id = 'troca-css';
@@ -210,8 +275,11 @@
     document.body.style.overflow = 'hidden';
 
     var ocupado = false;
+    var timerPix = null;
+    function pararPix() { if (timerPix) { clearTimeout(timerPix); timerPix = null; } }
     function fechar() {
       if (ocupado) return;
+      pararPix();
       ov.remove();
       document.body.style.overflow = prevOverflow;
       document.removeEventListener('keydown', onKey);
@@ -248,7 +316,7 @@
           '<br><strong>Atenção:</strong> dá pra remarcar pela conta só 1 vez.') +
         '<div class="troca-opcoes">' +
           '<button type="button" class="troca-opcao" data-op="mesma"><strong>📅 Mesma experiência, outra data</strong><span>Escolha outro dia ou horário que esteja disponível.</span></button>' +
-          '<button type="button" class="troca-opcao" data-op="outra"><strong>🔁 Outra experiência</strong><span>Se preferir, troque por outra experiência de valor igual ou menor.</span></button>' +
+          '<button type="button" class="troca-opcao" data-op="outra"><strong>🔁 Outra experiência</strong><span>Se preferir, troque por outra experiência. Se ela custar mais, você paga só a diferença.</span></button>' +
         '</div>' + rodape
       );
       box.querySelector('[data-op="mesma"]').addEventListener('click', function () { passoMesma(); });
@@ -270,9 +338,8 @@
         // Datas das fichas "gêmeas" (mesmo nome + mesma parceira).
         var todas = await d.getVisibleExperiences();
         var slotsMap = await d.loadAllSlots();
-        var precoMax = precoMaxDe(booking);
         todas.forEach(function (g) {
-          if (!ehGemea(g, booking, exp) || !podeSerDestino(g, precoMax)) return;
+          if (!ehGemea(g, booking, exp) || !podeSerDestino(g)) return;
           datas = datas.concat(datasAVenda(g, (slotsMap && slotsMap.get(g.id)) || [], qty, booking));
         });
         datas.sort(function (a, b) { return a.ts - b.ts; });
@@ -301,7 +368,7 @@
           for (var i = 0; i < todas.length; i++) {
             var e = todas[i];
             if (!e || e.id === booking.experiencia_id || ehGemea(e, booking, atual)) continue;
-            if (!podeSerDestino(e, precoMax)) continue;
+            if (!podeSerDestino(e)) continue;
             var p = precoCentavos(e.preco);
             var datas = datasAVenda(e, (slotsMap && slotsMap.get(e.id)) || [], qty, booking);
             if (!datas.length) continue;
@@ -329,16 +396,16 @@
           (e.imagem ? '<img src="' + esc(e.imagem) + '" alt="" loading="lazy">' : '<img alt="">') +
           '<span><b>' + esc(e.nome) + '</b><small>' + esc(precoLabel(e)) +
           (e.bairro ? ' · ' + esc(e.bairro) : '') + ' · ' + it.datas.length + (it.datas.length === 1 ? ' data' : ' datas') +
+          (diferencaDe(e, booking) > 0 ? '<span class="troca-dif">+ ' + esc(brl(diferencaDe(e, booking))) + '</span>' : '') +
           '</small></span></button>';
       }).join('');
       render(
-        topo('Escolha a nova experiência', 'Mostrando as experiências à venda no site com valor igual ou menor que o da sua reserva.') +
+        topo('Escolha a nova experiência', 'Experiências à venda no site. Nas que custam mais, aparece a diferença a pagar.') +
         '<button type="button" class="troca-voltar" data-voltar>← Voltar</button>' +
         (lista.length ? '<input type="search" class="troca-busca" placeholder="Buscar experiência ou bairro" value="' + esc(filtro) + '">' : '') +
         (lista.length
           ? (vis.length ? '<div class="troca-lista">' + itens + '</div>' : '<p class="troca-vazio">Nada encontrado com essa busca.</p>')
-          : '<p class="troca-vazio">No momento não há outra experiência disponível com valor igual ou menor que o da sua. ' +
-            'Se quiser trocar por uma mais cara, fale com a Elarah no WhatsApp pra pagar a diferença.</p>') +
+          : '<p class="troca-vazio">No momento não há outra experiência disponível pra troca. Fale com a Elarah no WhatsApp.</p>') +
         rodape
       );
       box.querySelector('[data-voltar]').addEventListener('click', passoInicio);
@@ -361,23 +428,26 @@
       }
     }
 
-    // Passo 3 — escolher a data e confirmar.
-    function passoDatas(exp, datas, voltar, mesma, precoNovo) {
+    // Passo 3 — escolher a data e confirmar (ou seguir pro pagamento).
+    function passoDatas(exp, datas, voltar, mesma) {
       var escolhida = null;
       var titulo = mesma ? 'Escolha a nova data' : (exp ? exp.nome : 'Experiência');
       var sub = mesma
         ? 'Datas de <strong>' + esc(exp ? exp.nome : booking.experiencia_nome) + '</strong> disponíveis no site' + (qty > 1 ? ' para ' + qty + ' pessoas' : '') + '.'
         : esc(precoLabel(exp)) + (exp.bairro ? ' · ' + esc(exp.bairro) : '') + (exp.duracao ? ' · ' + esc(exp.duracao) : '');
-      var precoMax = cacheElegiveis ? cacheElegiveis.precoMax : 0;
-      var avisoPreco = (!mesma && precoNovo && precoMax && precoNovo < precoMax)
-        ? '<p class="troca-aviso">Essa experiência custa menos que a sua. A troca é feita sem devolução da diferença — se preferir reembolso, fale com a Elarah antes de confirmar.</p>'
-        : '';
       function desenhar(erro) {
         var chips = datas.map(function (dt, i) {
+          var dif = diferencaDe(dt.exp || exp, booking);
           return '<button type="button" class="troca-data' + (escolhida === i ? ' troca-data--on' : '') + '" data-i="' + i + '">' +
-            '<b>' + esc(diaSemana(dt.ts)) + ', ' + esc(dt.data) + '</b><small>' + esc(dt.horario) + '</small></button>';
+            '<b>' + esc(diaSemana(dt.ts)) + ', ' + esc(dt.data) + '</b><small>' + esc(dt.horario) + '</small>' +
+            (dif > 0 ? '<br><span class="troca-dif" style="margin:3px 0 0;">+ ' + esc(brl(dif)) + '</span>' : '') +
+            '</button>';
         }).join('');
         var dt = escolhida != null ? datas[escolhida] : null;
+        var expSel = dt ? (dt.exp || exp) : null;
+        var dif = dt ? diferencaDe(expSel, booking) : 0;
+        var maisBarata = dt && expSel.id !== booking.experiencia_id &&
+          (precoCentavos(expSel.preco) || 0) < precoMaxDe(booking);
         render(
           topo(titulo, sub) +
           '<button type="button" class="troca-voltar" data-voltar>← Voltar</button>' +
@@ -388,10 +458,12 @@
               : 'Essa experiência não tem data disponível agora.') + '</p>') +
           (dt
             ? '<div class="troca-resumo"><p>❌ <strong>Sai:</strong> ' + esc(booking.experiencia_nome) + ' · ' + esc(booking.data) + ' ' + esc(booking.horario) + '</p>' +
-              '<p>✅ <strong>Entra:</strong> ' + esc((dt.exp || exp).nome) + ' · ' + esc(dt.data) + ' ' + esc(dt.horario) + '</p>' +
-              (qty > 1 ? '<p>👥 ' + qty + ' vagas</p>' : '') + '</div>' + avisoPreco +
+              '<p>✅ <strong>Entra:</strong> ' + esc(expSel.nome) + ' · ' + esc(dt.data) + ' ' + esc(dt.horario) + '</p>' +
+              (qty > 1 ? '<p>👥 ' + qty + ' vagas</p>' : '') + '</div>' +
+              (dif > 0 ? '<div class="troca-pagar">Diferença a pagar: <b>' + esc(brl(dif)) + '</b><br><small>No Pix ou no cartão. A troca é confirmada assim que o pagamento aprovar.</small></div>' : '') +
+              (maisBarata ? '<p class="troca-aviso">Essa opção custa menos que a sua. A troca é feita sem devolução da diferença — se preferir reembolso, fale com a Elarah antes de confirmar.</p>' : '') +
               '<p class="troca-aviso">Depois de confirmar, essa reserva não pode ser remarcada de novo pela conta.</p>' +
-              '<button type="button" class="troca-btn" data-confirmar>Confirmar remarcação</button>'
+              '<button type="button" class="troca-btn" data-confirmar>' + (dif > 0 ? 'Continuar para o pagamento' : 'Confirmar remarcação') + '</button>'
             : '') +
           (erro ? '<p class="troca-erro">' + esc(erro) + '</p>' : '') +
           rodape
@@ -407,50 +479,291 @@
           });
         }
         var conf = box.querySelector('[data-confirmar]');
-        if (conf) conf.addEventListener('click', function () { confirmar(datas[escolhida].exp || exp, datas[escolhida], conf, desenhar); });
+        if (conf) conf.addEventListener('click', function () {
+          if (dif > 0) passoPagamento(expSel, dt, dif, function () { desenhar(); });
+          else confirmar(expSel, dt, conf, desenhar);
+        });
       }
       desenhar();
     }
 
-    async function confirmar(exp, dt, btn, redesenhar) {
+    // Chamada à Edge Function. Devolve o JSON (inclusive nos erros 4xx).
+    async function chamar(body) {
       var sb = window.supabaseClient;
-      if (!sb || !sb.functions) { redesenhar('Não conseguimos conectar agora. Recarregue a página.'); return; }
-      ocupado = true;
-      btn.disabled = true;
-      btn.textContent = 'Remarcando…';
+      if (!sb || !sb.functions) return { ok: false, message: 'Não conseguimos conectar agora. Recarregue a página.' };
       var res;
       try {
-        res = await sb.functions.invoke('cliente-trocar-reserva', {
-          body: {
-            acao: 'trocar',
-            booking_id: booking.id,
-            experiencia_id: exp.id,
-            slot_id: dt.slotId,
-            data: dt.data,
-            horario: dt.horario,
-          },
-        });
+        res = await sb.functions.invoke('cliente-trocar-reserva', { body: body });
       } catch (e) {
         res = { error: e };
       }
-      ocupado = false;
       var data = res && res.data;
       if (!data && res && res.error && res.error.context && typeof res.error.context.json === 'function') {
         try { data = await res.error.context.json(); } catch (_) {}
       }
-      if (!data || !data.ok) {
-        redesenhar((data && data.message) || 'Não conseguimos fazer a troca agora. Tente de novo ou fale com a Elarah.');
+      return data || { ok: false };
+    }
+
+    function corpoTroca(exp, dt) {
+      return {
+        acao: 'trocar',
+        booking_id: booking.id,
+        experiencia_id: exp.id,
+        slot_id: dt.slotId,
+        data: dt.data,
+        horario: dt.horario,
+      };
+    }
+
+    async function confirmar(exp, dt, btn, redesenhar) {
+      ocupado = true;
+      btn.disabled = true;
+      btn.textContent = 'Remarcando…';
+      var data = await chamar(corpoTroca(exp, dt));
+      ocupado = false;
+      if (!data.ok) {
+        redesenhar(data.message || 'Não conseguimos fazer a troca agora. Tente de novo ou fale com a Elarah.');
         return;
       }
+      sucesso(exp, dt, data);
+    }
+
+    function sucesso(exp, dt, data, pago) {
+      pararPix();
       render(
         '<div class="troca-ok"><div class="troca-emoji">🎉</div>' +
         '<h2 class="troca-title">Reserva remarcada!</h2>' +
+        (pago ? '<p class="troca-sub" style="margin-top:8px;">Pagamento da diferença aprovado ✓</p>' : '') +
         '<p class="troca-sub" style="margin-top:8px;">Agora é <strong>' + esc(exp.nome) + '</strong><br>' +
         esc(dt.data) + ' · ' + esc(dt.horario) + '</p>' +
         '<p class="troca-sub">A confirmação nova chega no seu WhatsApp e e-mail, e a Elarah avisa o parceiro.</p>' +
         '<button type="button" class="troca-btn" data-troca-fechar style="margin-top:14px;">Fechar</button></div>'
       );
       if (typeof opts.onDone === 'function') opts.onDone(data);
+    }
+
+    // Pagou, mas a troca não pôde ser aplicada (data esgotou no meio do
+    // pagamento, reserva mudou): a Elarah resolve — fica na aba do painel.
+    function pagoComPendencia() {
+      pararPix();
+      render(
+        '<div class="troca-ok"><div class="troca-emoji">💛</div>' +
+        '<h2 class="troca-title">Recebemos seu pagamento</h2>' +
+        '<p class="troca-sub" style="margin-top:8px;">Mas a data escolhida esgotou enquanto você pagava. ' +
+        'A Elarah já foi avisada e vai falar com você no WhatsApp pra escolher outra data ou devolver a diferença.</p>' +
+        '<button type="button" class="troca-btn" data-troca-fechar style="margin-top:14px;">Fechar</button></div>'
+      );
+      if (typeof opts.onDone === 'function') opts.onDone({});
+    }
+
+    // Passo 4 — pagar a diferença (Pix ou cartão).
+    function passoPagamento(exp, dt, dif, voltar) {
+      var metodo = 'pix';
+      var cpfIni = String((booking.metadata && booking.metadata.cpf) || '').replace(/\D+/g, '');
+      render(
+        topo('Pagar a diferença', '<strong>' + esc(exp.nome) + '</strong> · ' + esc(dt.data) + ' ' + esc(dt.horario)) +
+        '<button type="button" class="troca-voltar" data-voltar>← Voltar</button>' +
+        '<div class="troca-pagar">Diferença a pagar: <b>' + esc(brl(dif)) + '</b></div>' +
+        '<div class="troca-metodos">' +
+          '<button type="button" class="troca-metodo troca-metodo--on" data-metodo="pix">Pix</button>' +
+          '<button type="button" class="troca-metodo" data-metodo="cartao">Cartão de crédito</button>' +
+        '</div>' +
+        '<div class="troca-campos">' +
+          '<label class="troca-full">CPF<input id="tr-cpf" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" value="' + esc(cpfIni) + '"></label>' +
+        '</div>' +
+        '<div data-painel="cartao" style="display:none;">' +
+          '<div class="troca-campos">' +
+            '<label class="troca-full">Parcelas<select id="tr-parcelas"><option>Carregando…</option></select></label>' +
+            '<label class="troca-full">Número do cartão<input id="tr-num" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000"></label>' +
+            '<label class="troca-full">Nome impresso no cartão<input id="tr-nome" autocomplete="cc-name"></label>' +
+            '<label>Validade<input id="tr-val" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/AA"></label>' +
+            '<label>CVV<input id="tr-cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="123"></label>' +
+            '<label>CEP<input id="tr-cep" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000"></label>' +
+            '<label>Número<input id="tr-numend" autocomplete="off"></label>' +
+            '<label class="troca-full">Rua<input id="tr-rua" autocomplete="address-line1"></label>' +
+            '<label>Cidade<input id="tr-cidade" autocomplete="address-level2"></label>' +
+            '<label>UF<input id="tr-uf" maxlength="2" autocomplete="address-level1"></label>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="troca-btn" data-pagar>Gerar Pix de ' + esc(brl(dif)) + '</button>' +
+        '<p class="troca-erro" data-erro style="display:none;"></p>' +
+        rodape
+      );
+      var $ = function (sel) { return box.querySelector(sel); };
+      var erroEl = $('[data-erro]');
+      var btn = $('[data-pagar]');
+      function erro(msg) {
+        erroEl.textContent = msg || '';
+        erroEl.style.display = msg ? '' : 'none';
+      }
+      $('[data-voltar]').addEventListener('click', voltar);
+
+      var parcelasCarregadas = false;
+      async function carregarParcelas() {
+        if (parcelasCarregadas) return;
+        var sel = $('#tr-parcelas');
+        var cot = await chamar(Object.assign(corpoTroca(exp, dt), { acao: 'cotar' }));
+        if (!cot.ok || !Array.isArray(cot.parcelas) || !cot.parcelas.length) {
+          sel.innerHTML = '<option value="">Indisponível</option>';
+          erro(cot.message || 'Não conseguimos carregar as parcelas. Tente o Pix.');
+          return;
+        }
+        parcelasCarregadas = true;
+        sel.innerHTML = cot.parcelas.map(function (o) {
+          return '<option value="' + o.number + '" data-total="' + o.total + '">' + o.number + 'x de ' +
+            esc(brl(Math.ceil(o.total / o.number))) + (o.number > 1 ? ' (total ' + esc(brl(o.total)) + ')' : ' — ' + esc(brl(o.total))) + '</option>';
+        }).join('');
+        atualizarBotao();
+      }
+      function atualizarBotao() {
+        if (metodo === 'pix') { btn.textContent = 'Gerar Pix de ' + brl(dif); return; }
+        var opt = $('#tr-parcelas').selectedOptions[0];
+        var total = opt && opt.getAttribute('data-total');
+        btn.textContent = total ? 'Pagar ' + brl(Number(total)) + ' no cartão' : 'Pagar no cartão';
+      }
+      $('#tr-parcelas').addEventListener('change', atualizarBotao);
+      var ms = box.querySelectorAll('[data-metodo]');
+      for (var i = 0; i < ms.length; i++) {
+        ms[i].addEventListener('click', function () {
+          metodo = this.getAttribute('data-metodo');
+          for (var j = 0; j < ms.length; j++) ms[j].classList.toggle('troca-metodo--on', ms[j] === this);
+          $('[data-painel="cartao"]').style.display = metodo === 'cartao' ? '' : 'none';
+          erro('');
+          atualizarBotao();
+          if (metodo === 'cartao') carregarParcelas();
+        });
+      }
+      // CEP → rua/cidade/UF (ViaCEP), igual ao checkout.
+      $('#tr-cep').addEventListener('blur', function () {
+        var d = this.value.replace(/\D+/g, '');
+        if (d.length !== 8) return;
+        fetch('https://viacep.com.br/ws/' + d + '/json/').then(function (r) { return r.json(); }).then(function (j) {
+          if (!j || j.erro) return;
+          if (!$('#tr-rua').value) $('#tr-rua').value = [j.logradouro, j.bairro].filter(Boolean).join(', ');
+          if (!$('#tr-cidade').value) $('#tr-cidade').value = j.localidade || '';
+          if (!$('#tr-uf').value) $('#tr-uf').value = j.uf || '';
+        }).catch(function () {});
+      });
+
+      btn.addEventListener('click', async function () {
+        erro('');
+        var cpf = $('#tr-cpf').value.replace(/\D+/g, '');
+        if (cpf.length !== 11) return erro('Confira o CPF (11 dígitos).');
+        var pagamento = { metodo: metodo, cpf: cpf };
+        if (metodo === 'cartao') {
+          var numRaw = $('#tr-num').value.replace(/\D+/g, '');
+          var holder = $('#tr-nome').value.trim();
+          var expRaw = $('#tr-val').value.replace(/\D+/g, '');
+          var cvv = $('#tr-cvv').value.replace(/\D+/g, '');
+          var cep = $('#tr-cep').value.replace(/\D+/g, '');
+          var rua = $('#tr-rua').value.trim();
+          var numEnd = $('#tr-numend').value.trim();
+          var cidade = $('#tr-cidade').value.trim();
+          var uf = $('#tr-uf').value.trim().toUpperCase();
+          var parc = Number($('#tr-parcelas').value) || 0;
+          if (!parc) return erro('Escolha as parcelas.');
+          if (numRaw.length < 13) return erro('Confira o número do cartão.');
+          if (!holder) return erro('Informe o nome impresso no cartão.');
+          if (expRaw.length < 4) return erro('Confira a validade (MM/AA).');
+          if (cvv.length < 3) return erro('Confira o CVV.');
+          if (cep.length !== 8) return erro('Confira o CEP (8 dígitos).');
+          if (!rua) return erro('Informe a rua do endereço de cobrança.');
+          if (!numEnd) return erro('Informe o número do endereço.');
+          if (!cidade) return erro('Informe a cidade.');
+          if (!/^[A-Z]{2}$/.test(uf)) return erro('Informe a UF (2 letras).');
+          var expMonth = parseInt(expRaw.slice(0, 2), 10);
+          var expYear = parseInt(expRaw.slice(2), 10);
+          if (expRaw.length === 4) expYear = 2000 + expYear;
+          if (!(expMonth >= 1 && expMonth <= 12)) return erro('Mês de validade inválido.');
+          btn.disabled = true;
+          btn.textContent = 'Validando cartão…';
+          var pk = await chavePagarme();
+          if (!pk) { btn.disabled = false; atualizarBotao(); return erro('Cartão indisponível agora. Tente o Pix.'); }
+          var tok = await tokenizarCartao(pk, {
+            number: numRaw, holder_name: holder, holder_document: cpf,
+            exp_month: expMonth, exp_year: expYear, cvv: cvv,
+          });
+          if (!tok.ok || !tok.body || !tok.body.id) {
+            btn.disabled = false; atualizarBotao();
+            return erro('Não foi possível validar o cartão. Confira os dados e tente de novo.');
+          }
+          pagamento.card_token = tok.body.id;
+          pagamento.installments = parc;
+          pagamento.address = { zip_code: cep, line_1: numEnd + ', ' + rua, city: cidade, state: uf, country: 'BR' };
+        }
+        btn.disabled = true;
+        btn.textContent = metodo === 'pix' ? 'Gerando Pix…' : 'Processando pagamento…';
+        ocupado = true;
+        var r = await chamar(Object.assign(corpoTroca(exp, dt), { pagamento: pagamento }));
+        ocupado = false;
+        if (!r.ok) {
+          btn.disabled = false; atualizarBotao();
+          return erro(r.message || 'Não conseguimos processar o pagamento. Tente de novo.');
+        }
+        acompanhar(exp, dt, r);
+      });
+    }
+
+    // Acompanha o pagamento até aprovar (Pix: mostra o QR; cartão: aguarda).
+    function acompanhar(exp, dt, sit) {
+      if (sit.status === 'aplicada') return sucesso(exp, dt, sit, true);
+      if (sit.status === 'pago_sem_vaga' || sit.status === 'pago_sem_aplicar') return pagoComPendencia();
+      if (sit.status !== 'aguardando_pagamento' && sit.status !== 'processando') {
+        render(topo('Pagamento não concluído') +
+          '<p class="troca-vazio">' + (sit.metodo === 'pix'
+            ? 'Esse Pix expirou ou foi cancelado. Sua reserva continua como estava — você pode tentar de novo.'
+            : 'O pagamento não foi aprovado. Sua reserva continua como estava — você pode tentar de novo.') + '</p>' +
+          '<button type="button" class="troca-btn" data-denovo>Tentar de novo</button>' + rodape);
+        box.querySelector('[data-denovo]').addEventListener('click', function () { passoPagamento(exp, dt, sit.diferenca_centavos || diferencaDe(exp, booking), passoInicio); });
+        return;
+      }
+      if (sit.metodo === 'pix') {
+        var expira = sit.expira_em ? new Date(sit.expira_em) : null;
+        render(
+          topo('Pague com Pix', 'Diferença da troca: <strong>' + esc(brl(sit.valor_centavos || sit.diferenca_centavos)) + '</strong>') +
+          (sit.qr_code_base64 ? '<img class="troca-qr" alt="QR code do Pix" src="data:image/png;base64,' + esc(sit.qr_code_base64) + '">' : '') +
+          (sit.qr_code
+            ? '<textarea class="troca-copia" readonly>' + esc(sit.qr_code) + '</textarea>' +
+              '<button type="button" class="troca-btn troca-btn--sec" data-copiar>Copiar código Pix</button>'
+            : (sit.ticket_url ? '<a class="troca-btn" style="display:block;text-align:center;text-decoration:none;" href="' + esc(sit.ticket_url) + '" target="_blank" rel="noopener">Abrir Pix</a>' : '')) +
+          '<button type="button" class="troca-btn" data-jaPaguei style="margin-top:8px;">Já paguei</button>' +
+          '<p class="troca-status" data-st>' + (expira && !isNaN(expira.getTime())
+            ? 'O Pix vale até ' + pad(expira.getHours()) + 'h' + pad(expira.getMinutes()) + '. A troca é confirmada sozinha assim que o pagamento cair.'
+            : 'A troca é confirmada sozinha assim que o pagamento cair.') + '</p>' +
+          rodape
+        );
+        var cp = box.querySelector('[data-copiar]');
+        if (cp) cp.addEventListener('click', function () {
+          var ta = box.querySelector('.troca-copia');
+          try { navigator.clipboard.writeText(ta.value); } catch (_) { ta.select(); try { document.execCommand('copy'); } catch (__) {} }
+          cp.textContent = 'Código copiado ✓';
+        });
+        box.querySelector('[data-jaPaguei]').addEventListener('click', function () {
+          var st = box.querySelector('[data-st]');
+          if (st) st.textContent = 'Conferindo o pagamento…';
+          verificar(true);
+        });
+      } else {
+        render(topo('Processando o pagamento') +
+          '<p class="troca-carregando">Aguardando a aprovação do cartão… isso leva alguns segundos.</p>' + rodape);
+      }
+      var tentativas = 0;
+      async function verificar(forcar) {
+        pararPix();
+        tentativas++;
+        var nova = await chamar({ acao: 'status', troca_id: sit.troca_id, verificar: forcar || tentativas % 3 === 0 });
+        if (nova && nova.ok) {
+          if (nova.status !== 'aguardando_pagamento' && nova.status !== 'processando') return acompanhar(exp, dt, nova);
+          if (forcar) {
+            var st = box.querySelector('[data-st]');
+            if (st) st.textContent = 'Ainda não recebemos o pagamento. Se você já pagou, aguarde alguns segundos.';
+          }
+        }
+        // Pix: até 30 min; cartão: até ~3 min.
+        var limite = sit.metodo === 'pix' ? 360 : 40;
+        if (tentativas < limite && box.isConnected) timerPix = setTimeout(function () { verificar(false); }, 5000);
+      }
+      timerPix = setTimeout(function () { verificar(false); }, 5000);
     }
 
     passoInicio();
