@@ -379,6 +379,9 @@ renderFavoritos();
   let purchasesLoaded = false;
   let purchasesLoading = false;
   let activePurchasesTab = 'upcoming';
+  // Reservas carregadas, por id — o botão "Trocar" do card abre a janela
+  // de troca (conta-trocas.js) com a reserva completa.
+  const bookingsById = new Map();
 
   function parseDataDMYtoDate(text) {
     // Aceita "26/04", "26/04/2025", "26 de abril", "Semanal".
@@ -579,26 +582,32 @@ renderFavoritos();
     const restante = limite - agora;
 
     // WhatsApp, não e-mail: a pessoa está no celular olhando a reserva.
-    // É o mesmo canal do rodapé e do header do site inteiro, e é onde ela
-    // responde. A mensagem já vai preenchida com experiência, data e a
-    // referência da reserva — assim a conversa começa com o que a Elarah
-    // precisa pra localizar a compra, sem o vaivém de "qual reserva?".
+    // A mensagem já vai preenchida com experiência, data e a referência
+    // da reserva — assim a conversa começa com o que a Elarah precisa pra
+    // localizar a compra, sem o vaivém de "qual reserva?".
     const refCurta = String(booking.id || '').slice(-8).toUpperCase();
-    const msgWpp = 'Olá! Gostaria de remarcar minha reserva.\n\n' +
-      '*' + (booking.experiencia_nome || 'Experiência') + '*\n' +
-      (booking.data ? booking.data + ' ' : '') + (booking.horario || '') + '\n' +
-      (refCurta ? 'Ref. ' + refCurta : '');
-    const contatoUrl = 'https://wa.me/5511914455930?text=' + encodeURIComponent(msgWpp);
+    const contatoUrl = contatoWhatsappUrl(booking, 'Olá! Gostaria de remarcar minha reserva.');
 
     if (restante > 0) {
       const dl = new Date(limite);
       const quando = doisDigitos(dl.getDate()) + '/' + doisDigitos(dl.getMonth() + 1) +
         ' às ' + doisDigitos(dl.getHours()) + 'h' + doisDigitos(dl.getMinutes());
+      // Dentro do prazo a cliente remarca sozinha — o card mostra só o
+      // prazo e o link "Remarcar"; as opções (outra data / outra
+      // experiência) aparecem depois do clique, na janela de troca.
+      // A remarcação pela conta vale UMA vez: depois, e em reserva
+      // "aguardando experiência", continua pelo WhatsApp.
+      const jaTrocou = !!meta.troca_cliente_feita_at;
+      const podeTrocar = !jaTrocou && booking.aguardando_experiencia !== true && !!window.ElarahTrocas && !!refCurta;
+      const acao = podeTrocar
+        ? ' <button type="button" class="purchase-card__prazo-link purchase-card__troca-btn" data-troca-booking="' + escapeHtmlLocal(booking.id) + '" data-troca-prazo="' + escapeHtmlLocal(quando) + '">Remarcar</button>'
+        : (jaTrocou ? ' · você já usou sua remarcação' : '') +
+          ' <a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Pedir no WhatsApp</a>';
       return '<p class="purchase-card__prazo">' +
         '<span aria-hidden="true">🔄</span> ' +
         'Remarcação sem custo até <strong>' + escapeHtmlLocal(quando) + '</strong> · ' +
         escapeHtmlLocal(tempoRestanteLabel(restante)) +
-        ' <a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Pedir no WhatsApp</a>' +
+        acao +
         '</p>';
     }
     // Passou do prazo de remarcação sem custo. Não trava nada — só
@@ -610,6 +619,43 @@ renderFavoritos();
       '<a class="purchase-card__prazo-link" href="' + contatoUrl + '" target="_blank" rel="noopener">Falar no WhatsApp</a>' +
       '</p>';
   }
+
+  function contatoWhatsappUrl(booking, abertura) {
+    const refCurta = String(booking.id || '').slice(-8).toUpperCase();
+    const msg = abertura + '\n\n' +
+      '*' + (booking.experiencia_nome || 'Experiência') + '*\n' +
+      (booking.data ? booking.data + ' ' : '') + (booking.horario || '') + '\n' +
+      (refCurta ? 'Ref. ' + refCurta : '');
+    return 'https://wa.me/5511914455930?text=' + encodeURIComponent(msg);
+  }
+
+  // Clique no "Remarcar" do card abre a janela de troca (conta-trocas.js).
+  // O "Pedir reembolso" fica dentro dela: segue pro WhatsApp e registra o
+  // pedido pra Elarah ver na aba "Trocas e reembolsos".
+  document.addEventListener('click', function (ev) {
+    const t = ev.target && ev.target.closest ? ev.target : null;
+    if (!t) return;
+    const trocaBtn = t.closest('[data-troca-booking]');
+    if (trocaBtn) {
+      const bk = bookingsById.get(trocaBtn.getAttribute('data-troca-booking'));
+      if (!bk || !window.ElarahTrocas) return;
+      ev.preventDefault();
+      window.ElarahTrocas.abrir(bk, {
+        prazoTexto: trocaBtn.getAttribute('data-troca-prazo') || '',
+        whatsappUrl: contatoWhatsappUrl(bk, 'Olá! Preciso de ajuda com a minha reserva.'),
+        reembolsoUrl: contatoWhatsappUrl(bk, 'Olá! Gostaria de pedir o reembolso da minha reserva.'),
+        onDone: function () {
+          purchasesLoaded = false;
+          loadPurchases();
+        },
+      });
+      return;
+    }
+    const reembolsoLink = t.closest('[data-reembolso-booking]');
+    if (reembolsoLink && window.ElarahTrocas) {
+      window.ElarahTrocas.pedirReembolso(reembolsoLink.getAttribute('data-reembolso-booking'));
+    }
+  });
 
   function renderBookingCard(booking, group) {
     const nome = booking.experiencia_nome || 'Experiência';
@@ -804,7 +850,7 @@ renderFavoritos();
       // (RLS: gift_cards_owner_read cobre ambos via e-mail).
       const [bookingsRes, giftCardsRes, manualSalesRes] = await Promise.all([
         sb.from('bookings')
-          .select('id, experiencia_nome, data, horario, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
+          .select('id, experiencia_id, experiencia_nome, data, horario, quantidade, slot_id, aguardando_experiencia, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
           .order('created_at', { ascending: false })
           .limit(200),
         sb.from('gift_cards')
@@ -833,7 +879,9 @@ renderFavoritos();
       const upcoming = [];
       const past = [];
 
+      bookingsById.clear();
       bookings.forEach(b => {
+        bookingsById.set(String(b.id), b);
         const group = classifyBooking(b);
         const entry = { kind: 'booking', data: b, group, sortKey: b.created_at || '' };
         if (group === 'upcoming') upcoming.push(entry);

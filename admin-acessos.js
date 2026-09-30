@@ -40,6 +40,7 @@
     { key: 'postevent',            label: 'Pós-compra',           grupo: 'Hoje' },
     { key: 'conversas',            label: 'Conversas',            grupo: 'Comunicação' },
     { key: 'purchases',            label: 'Compras',              grupo: 'Vendas' },
+    { key: 'trocas',               label: 'Trocas e reembolsos',  grupo: 'Vendas' },
     { key: 'eventos',              label: 'Eventos',              grupo: 'Vendas' },
     { key: 'eventos-privados',     label: 'Eventos privados',     grupo: 'Vendas' },
     { key: 'giftcards',            label: 'Gift Cards',           grupo: 'Vendas' },

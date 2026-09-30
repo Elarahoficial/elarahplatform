@@ -558,6 +558,13 @@
       case 'interesses':  await renderInteresses(); break;
       case 'partners':    await renderPartners(); break;
       case 'purchases':   invalidateBookings(); await renderBookings(); break;
+      // Aba renderizada por admin-trocas.js (trocas feitas pela cliente +
+      // pedidos de reembolso). Sempre recarrega: é a fila de avisos.
+      case 'trocas':
+        if (window.ElarahTrocasAdmin && window.ElarahTrocasAdmin.run) {
+          await window.ElarahTrocasAdmin.run(true);
+        }
+        break;
       case 'eventos':     await renderEventos(); break;
       case 'fornecedores': await renderFornecedores(); break;
       case 'cotacao':    await renderCotacao(); break;

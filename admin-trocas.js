@@ -1,0 +1,412 @@
+/* =============================================================
+   ELARAH — Aba "Trocas e reembolsos"
+   -------------------------------------------------------------
+   A cliente agora troca a reserva sozinha em "Minhas compras"
+   (conta-trocas.js → Edge Function cliente-trocar-reserva): mesma
+   experiência em outra data, ou outra experiência. Cada troca vira uma
+   linha em public.trocas_reserva (sql/elarah_trocas_reserva.sql).
+
+   Esta aba lista essas trocas e deixa o aviso pra parceira a UM clique —
+   abre o WhatsApp com a mensagem pronta:
+
+     • Mesma experiência / mesma parceira → 1 botão: REMARCAÇÃO
+       ("libera dia X, nova data dia Y").
+     • Parceira diferente → 2 botões: pra antiga, CANCELAMENTO (pode liberar
+       a vaga, sai do repasse); pra nova, a reserva nova (vaga confirmada).
+
+   O clique carimba o aviso na linha (e, no aviso da parceira nova, também
+   bookings.fornecedor_avisado_at — o "Avisar" da aba Compras fica verde).
+
+   Reembolso segue com a Elarah: o "Pedir reembolso" da cliente abre o
+   WhatsApp e registra o pedido aqui (tipo 'reembolso') pra não se perder.
+
+   Autocontido: injeta o próprio CSS. Renderiza dentro de #trocas-root.
+   ============================================================= */
+(function (window, document) {
+  'use strict';
+
+  var ROOT_ID = 'trocas-root';
+  var filtro = 'pendentes';
+  var busca = '';
+  var dados = null; // { linhas, waPorFornecedor }
+
+  function sb() { return window.supabaseClient || null; }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function fornecedorKey(nome) {
+    return String(nome || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  // Mesmo formato do admin.js (waPhoneDigits): E.164 sem "+"; 10/11
+  // dígitos sem DDI = Brasil.
+  function waDigits(raw) {
+    var text = String(raw == null ? '' : raw).trim();
+    var d = text.replace(/\D+/g, '');
+    if (!d) return '';
+    if (text.charAt(0) === '+') return d;
+    if (d.length <= 11) return '55' + d;
+    return d;
+  }
+
+  // api.whatsapp.com/send em vez de wa.me: o wa.me corrompe emoji fora do
+  // BMP (📍 📅) e a parceira recebe "?" no lugar.
+  function waUrl(phone, msg) {
+    var d = waDigits(phone);
+    return 'https://api.whatsapp.com/send/?' + (d ? 'phone=' + d + '&' : '') +
+      'text=' + encodeURIComponent(msg || '');
+  }
+
+  function telBR(raw) {
+    var all = String(raw || '').replace(/\D+/g, '');
+    var d = all.length > 11 && all.indexOf('55') === 0 ? all.slice(2) : all;
+    if (d.length === 11) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7);
+    if (d.length === 10) return '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6);
+    return String(raw || '');
+  }
+
+  function quando(ts) {
+    if (!ts) return '';
+    var d = new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function vagas(q) {
+    q = Math.max(1, Number(q) || 1);
+    return q === 1 ? '1 vaga' : q + ' vagas';
+  }
+
+  // ===== Mensagens =====
+  function linhasCliente(t, comLocal) {
+    var out = [];
+    if (t.cliente_nome) out.push('👤 *Em nome de:* ' + t.cliente_nome);
+    if (t.cliente_telefone) out.push('📱 *WhatsApp:* ' + telBR(t.cliente_telefone));
+    if (t.cliente_email) out.push('✉️ *E-mail:* ' + t.cliente_email);
+    if (comLocal && t.para_endereco) out.push('📍 *Local:* ' + t.para_endereco);
+    return out;
+  }
+
+  function msgRemarcacao(t) {
+    var mesmaExp = t.de_experiencia_id === t.para_experiencia_id;
+    var l = [];
+    l.push('Oi! Tudo bem? Passando para te avisar de uma *REMARCAÇÃO* 🔄');
+    l.push('');
+    l.push('A reserva da experiência *' + (t.de_experiencia_nome || '') + '* (' + vagas(t.quantidade) + ')' +
+      ' que estava para o dia *' + (t.de_data || '') + '*' + (t.de_horario ? ' às *' + t.de_horario + '*' : '') +
+      ' foi remarcada para ' + (mesmaExp ? '' : '*' + (t.para_experiencia_nome || '') + '* ') +
+      'o dia *' + (t.para_data || '') + '* às *' + (t.para_horario || '') + '*.');
+    l.push('');
+    l.push('❌ *Libera:* ' + (t.de_data || '') + (t.de_horario ? ' · ' + t.de_horario : ''));
+    l.push('✅ *Nova data:* ' + (mesmaExp ? '' : (t.para_experiencia_nome || '') + ' · ') + (t.para_data || '') + ' · ' + (t.para_horario || ''));
+    l.push('');
+    l = l.concat(linhasCliente(t, !mesmaExp));
+    l.push('');
+    l.push('Obrigada! 🧡');
+    return l.join('\n');
+  }
+
+  function msgCancelamentoParceiraAntiga(t) {
+    var l = [];
+    l.push('Oi! Tudo bem? Passando para te avisar que a reserva de *' + (t.cliente_nome || 'cliente') + '*' +
+      ' (' + vagas(t.quantidade) + ') para a experiência *' + (t.de_experiencia_nome || '') + '*' +
+      ' no dia *' + (t.de_data || '') + '*' + (t.de_horario ? ' às *' + t.de_horario + '*' : '') +
+      ' foi *cancelada* — a cliente trocou por outra experiência.');
+    l.push('');
+    l.push('❌ *Pode liberar:* ' + (t.de_data || '') + (t.de_horario ? ' · ' + t.de_horario : '') + ' (' + vagas(t.quantidade) + ')');
+    l.push('');
+    l.push('Essa reserva não entra mais no seu repasse. Obrigada! 🧡');
+    return l.join('\n');
+  }
+
+  function msgNovaReserva(t) {
+    var q = Math.max(1, Number(t.quantidade) || 1);
+    var l = [];
+    l.push('Oi! Tudo bem? Passando para te avisar que você tem *' + (q === 1 ? '1 vaga confirmada' : q + ' vagas confirmadas') + '*' +
+      ' para a experiência *' + (t.para_experiencia_nome || '') + '* no dia *' + (t.para_data || '') + '* às *' + (t.para_horario || '') + '*.');
+    l.push('');
+    l = l.concat(linhasCliente(t, true));
+    l.push('');
+    l.push('O repasse será feito até 48h antes do evento.');
+    return l.join('\n');
+  }
+
+  function msgCliente(t) {
+    return 'Oi, ' + (String(t.cliente_nome || '').split(' ')[0] || 'tudo bem') + '! Aqui é da Elarah 🧡 ' +
+      (t.tipo === 'reembolso'
+        ? 'Recebemos seu pedido de reembolso da reserva *' + (t.de_experiencia_nome || '') + '* (' + (t.de_data || '') + ').'
+        : 'Vimos a troca da sua reserva para *' + (t.para_experiencia_nome || '') + '* (' + (t.para_data || '') + ' · ' + (t.para_horario || '') + ').');
+  }
+
+  // ===== Estado =====
+  function pendente(t) {
+    if (t.resolvido_at) return false;
+    if (t.tipo === 'reembolso') return true;
+    if (t.modalidade === 'outro_parceiro') return !t.aviso_de_at || !t.aviso_para_at;
+    return !t.aviso_para_at;
+  }
+
+  async function carregar() {
+    var s = sb();
+    if (!s) throw new Error('Supabase indisponível. Recarregue a página.');
+    var res = await Promise.all([
+      s.from('trocas_reserva').select('*').order('created_at', { ascending: false }).limit(300),
+      s.from('fornecedores_metadata').select('fornecedor_key, fornecedor_nome, whatsapp'),
+    ]);
+    if (res[0].error) throw res[0].error;
+    var wa = new Map();
+    (res[1].data || []).forEach(function (f) {
+      var k = f.fornecedor_key || fornecedorKey(f.fornecedor_nome);
+      if (k && f.whatsapp) wa.set(k, String(f.whatsapp).trim());
+    });
+    dados = { linhas: res[0].data || [], waPorFornecedor: wa };
+  }
+
+  async function marcar(id, campo, bookingId) {
+    var s = sb();
+    var patch = {};
+    patch[campo] = new Date().toISOString();
+    var r = await s.from('trocas_reserva').update(patch).eq('id', id);
+    if (r.error) { console.error('[Elarah Trocas] erro marcando', campo, r.error); return false; }
+    // Aviso da parceira da reserva atual → "Avisar" da aba Compras fica verde.
+    if (campo === 'aviso_para_at' && bookingId) {
+      var r2 = await s.from('bookings').update({ fornecedor_avisado_at: patch[campo] }).eq('id', bookingId);
+      if (r2.error) console.warn('[Elarah Trocas] não marquei fornecedor_avisado_at', r2.error);
+    }
+    var linha = dados && dados.linhas.find(function (t) { return t.id === id; });
+    if (linha) linha[campo] = patch[campo];
+    return true;
+  }
+
+  async function desmarcar(id, campo) {
+    var s = sb();
+    var patch = {};
+    patch[campo] = null;
+    var r = await s.from('trocas_reserva').update(patch).eq('id', id);
+    if (r.error) { console.error('[Elarah Trocas] erro desmarcando', campo, r.error); return; }
+    var linha = dados && dados.linhas.find(function (t) { return t.id === id; });
+    if (linha) linha[campo] = null;
+  }
+
+  // ===== Render =====
+  function injetarCss() {
+    if (document.getElementById('trocas-css')) return;
+    var st = document.createElement('style');
+    st.id = 'trocas-css';
+    st.textContent = [
+      '.trc-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}',
+      '.trc-chip{border:1px solid #ddd;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:.8rem;cursor:pointer;}',
+      '.trc-chip--on{background:#2b2420;color:#fff;border-color:#2b2420;}',
+      '.trc-busca{flex:1;min-width:200px;padding:7px 12px;border:1px solid #ddd;border-radius:999px;font:inherit;font-size:.82rem;}',
+      '.trc-lista{display:grid;gap:12px;}',
+      '.trc-card{background:#fff;border:1px solid #e8e4e0;border-radius:12px;padding:14px 16px;}',
+      '.trc-card--ok{opacity:.72;}',
+      '.trc-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline;margin-bottom:8px;}',
+      '.trc-nome{font-weight:700;font-size:.92rem;}',
+      '.trc-quando{font-size:.74rem;color:#888;}',
+      '.trc-tag{display:inline-block;font-size:.68rem;font-weight:700;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:middle;}',
+      '.trc-tag--data{background:#e8f1fd;color:#1a5fb4;}',
+      '.trc-tag--parc{background:#f1eafd;color:#6b3fb4;}',
+      '.trc-tag--outro{background:#fdf0e6;color:#b45a1a;}',
+      '.trc-tag--reemb{background:#fdeaea;color:#b3261e;}',
+      '.trc-tag--pend{background:#c0392b;color:#fff;}',
+      '.trc-fluxo{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;font-size:.82rem;line-height:1.45;}',
+      '@media(max-width:700px){.trc-fluxo{grid-template-columns:1fr;}.trc-seta{display:none;}}',
+      '.trc-box{background:#faf7f4;border-radius:10px;padding:8px 10px;}',
+      '.trc-box small{display:block;color:#888;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;}',
+      '.trc-seta{font-size:1.2rem;color:#bbb;}',
+      '.trc-contato{font-size:.78rem;color:#555;margin:8px 0 0;}',
+      '.trc-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}',
+      '.trc-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;font:inherit;font-size:.76rem;font-weight:700;text-decoration:none;cursor:pointer;border:1px solid transparent;}',
+      '.trc-btn--wa{background:#c0392b;color:#fff;}',
+      '.trc-btn--wa-ok{background:#e6f4ea;color:#1a8a4a;border-color:#1a8a4a;}',
+      '.trc-btn--ghost{background:#fff;color:#555;border-color:#ddd;}',
+      '.trc-sem{font-size:.7rem;color:#b3261e;margin-left:2px;}',
+      '.trc-vazio{background:#fff;border:1px dashed #ddd;border-radius:12px;padding:22px;text-align:center;color:#888;font-size:.86rem;}'
+    ].join('\n');
+    document.head.appendChild(st);
+  }
+
+  function tagModalidade(t) {
+    if (t.tipo === 'reembolso') return '<span class="trc-tag trc-tag--reemb">Pedido de reembolso</span>';
+    if (t.modalidade === 'mesma_experiencia') return '<span class="trc-tag trc-tag--data">Outra data</span>';
+    if (t.modalidade === 'mesmo_parceiro') return '<span class="trc-tag trc-tag--parc">Outra experiência · mesmo parceiro</span>';
+    return '<span class="trc-tag trc-tag--outro">Outra experiência · outro parceiro</span>';
+  }
+
+  function botaoAviso(t, campo, rotulo, fornecedor, msg) {
+    var wa = dados.waPorFornecedor.get(fornecedorKey(fornecedor)) || '';
+    var feito = t[campo];
+    var sem = wa ? '' : '<span class="trc-sem" title="Cadastre o WhatsApp em Parceiros">(sem WhatsApp cadastrado)</span>';
+    var html = '<a class="trc-btn ' + (feito ? 'trc-btn--wa-ok' : 'trc-btn--wa') + '" href="' + esc(waUrl(wa, msg)) + '" target="_blank" rel="noopener" ' +
+      'data-trc-aviso="' + esc(campo) + '" data-trc-id="' + esc(t.id) + '" data-trc-booking="' + esc(t.booking_id || '') + '" ' +
+      'title="' + (feito ? 'Avisado em ' + esc(quando(feito)) + '. Clique pra reabrir o WhatsApp.' : 'Abre o WhatsApp com a mensagem pronta e marca como avisado.') + '">' +
+      (feito ? '✓ ' : '📲 ') + esc(rotulo) + ' — ' + esc(fornecedor || 'parceiro') +
+      (feito ? ' · ' + esc(quando(feito)) : '') + '</a>' + sem;
+    if (feito) {
+      html += '<button type="button" class="trc-btn trc-btn--ghost" data-trc-desfaz="' + esc(campo) + '" data-trc-id="' + esc(t.id) + '" title="Marcar como não avisado">↺</button>';
+    }
+    return html;
+  }
+
+  function card(t) {
+    var reemb = t.tipo === 'reembolso';
+    var pend = pendente(t);
+    var acoes = [];
+    if (!reemb) {
+      if (t.modalidade === 'outro_parceiro') {
+        acoes.push(botaoAviso(t, 'aviso_de_at', 'Cancelamento', t.de_fornecedor_nome, msgCancelamentoParceiraAntiga(t)));
+        acoes.push(botaoAviso(t, 'aviso_para_at', 'Nova reserva', t.para_fornecedor_nome, msgNovaReserva(t)));
+      } else {
+        acoes.push(botaoAviso(t, 'aviso_para_at', 'Avisar remarcação', t.para_fornecedor_nome || t.de_fornecedor_nome, msgRemarcacao(t)));
+      }
+    }
+    if (t.cliente_telefone) {
+      acoes.push('<a class="trc-btn trc-btn--ghost" href="' + esc(waUrl(t.cliente_telefone, msgCliente(t))) + '" target="_blank" rel="noopener">💬 Falar com a cliente</a>');
+    }
+    acoes.push(t.resolvido_at
+      ? '<button type="button" class="trc-btn trc-btn--ghost" data-trc-reabrir="' + esc(t.id) + '">↺ Reabrir</button>'
+      : '<button type="button" class="trc-btn trc-btn--ghost" data-trc-resolver="' + esc(t.id) + '">✓ ' + (reemb ? 'Reembolso resolvido' : 'Concluir') + '</button>');
+
+    var de = '<div class="trc-box"><small>' + (reemb ? 'Reserva' : 'Era') + '</small>' +
+      '<strong>' + esc(t.de_experiencia_nome || '—') + '</strong><br>' +
+      esc(t.de_data || '') + (t.de_horario ? ' · ' + esc(t.de_horario) : '') + ' · ' + esc(vagas(t.quantidade)) +
+      (t.de_fornecedor_nome ? '<br><span style="color:#888;">' + esc(t.de_fornecedor_nome) + '</span>' : '') + '</div>';
+    var para = reemb
+      ? '<div class="trc-box"><small>Pedido</small>Reembolso — combinar com a cliente no WhatsApp.' +
+        (t.motivo ? '<br><em>' + esc(t.motivo) + '</em>' : '') + '</div>'
+      : '<div class="trc-box"><small>Ficou</small><strong>' + esc(t.para_experiencia_nome || '—') + '</strong><br>' +
+        esc(t.para_data || '') + (t.para_horario ? ' · ' + esc(t.para_horario) : '') +
+        (t.para_fornecedor_nome ? '<br><span style="color:#888;">' + esc(t.para_fornecedor_nome) + '</span>' : '') + '</div>';
+
+    return '<div class="trc-card' + (pend ? '' : ' trc-card--ok') + '">' +
+      '<div class="trc-head"><div><span class="trc-nome">' + esc(t.cliente_nome || t.cliente_email || 'Cliente') + '</span>' +
+        tagModalidade(t) + (pend ? '<span class="trc-tag trc-tag--pend">Pendente</span>' : '') + '</div>' +
+        '<span class="trc-quando">' + esc(quando(t.created_at)) + (t.resolvido_at ? ' · concluído ' + esc(quando(t.resolvido_at)) : '') + '</span></div>' +
+      '<div class="trc-fluxo">' + de + '<span class="trc-seta">→</span>' + para + '</div>' +
+      '<p class="trc-contato">' +
+        (t.cliente_telefone ? '📱 ' + esc(telBR(t.cliente_telefone)) + ' ' : '') +
+        (t.cliente_email ? '✉️ ' + esc(t.cliente_email) : '') +
+        (t.booking_id ? ' · Ref. ' + esc(String(t.booking_id).slice(-8).toUpperCase()) : '') + '</p>' +
+      '<div class="trc-acoes">' + acoes.join('') + '</div>' +
+    '</div>';
+  }
+
+  function render() {
+    var root = document.getElementById(ROOT_ID);
+    if (!root || !dados) return;
+    var linhas = dados.linhas;
+    var q = busca.toLowerCase().trim();
+    var vis = linhas.filter(function (t) {
+      if (filtro === 'pendentes' && !pendente(t)) return false;
+      if (filtro === 'trocas' && t.tipo !== 'troca') return false;
+      if (filtro === 'reembolsos' && t.tipo !== 'reembolso') return false;
+      if (!q) return true;
+      return [t.cliente_nome, t.cliente_email, t.cliente_telefone, t.de_experiencia_nome, t.para_experiencia_nome,
+        t.de_fornecedor_nome, t.para_fornecedor_nome].join(' ').toLowerCase().indexOf(q) !== -1;
+    });
+    var nPend = linhas.filter(pendente).length;
+    var chip = function (k, label) {
+      return '<button type="button" class="trc-chip' + (filtro === k ? ' trc-chip--on' : '') + '" data-trc-filtro="' + k + '">' + label + '</button>';
+    };
+    root.innerHTML =
+      '<div class="trc-bar">' +
+        chip('pendentes', 'Pendentes (' + nPend + ')') + chip('trocas', 'Trocas') + chip('reembolsos', 'Reembolsos') + chip('todas', 'Todas') +
+        '<input type="search" class="trc-busca" placeholder="Buscar cliente, experiência ou parceiro" value="' + esc(busca) + '">' +
+      '</div>' +
+      (vis.length
+        ? '<div class="trc-lista">' + vis.map(card).join('') + '</div>'
+        : '<div class="trc-vazio">' + (filtro === 'pendentes' ? 'Nada pendente por aqui 🎉' : 'Nenhum registro.') + '</div>');
+
+    var inp = root.querySelector('.trc-busca');
+    inp.addEventListener('input', function () {
+      busca = inp.value;
+      var pos = inp.selectionStart;
+      render();
+      var n = document.getElementById(ROOT_ID).querySelector('.trc-busca');
+      if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (_) {} }
+    });
+  }
+
+  function atualizarContador() {
+    var el = document.getElementById('trocas-contador');
+    if (!el || !dados) return;
+    var n = dados.linhas.filter(pendente).length;
+    el.textContent = n ? String(n) : '';
+    el.style.display = n ? '' : 'none';
+  }
+
+  async function run(force) {
+    injetarCss();
+    var root = document.getElementById(ROOT_ID);
+    if (!root) return;
+    if (!dados || force) {
+      root.innerHTML = '<div class="trc-vazio">Carregando…</div>';
+      try {
+        await carregar();
+      } catch (e) {
+        console.error('[Elarah Trocas] erro ao carregar', e);
+        var msg = (e && e.message) || String(e);
+        root.innerHTML = '<div class="trc-vazio">' + (/trocas_reserva/.test(msg)
+          ? 'A tabela de trocas ainda não existe. Rode <code>sql/elarah_trocas_reserva.sql</code> no SQL Editor do Supabase.'
+          : 'Erro ao carregar: ' + esc(msg)) + '</div>';
+        return;
+      }
+    }
+    render();
+    atualizarContador();
+  }
+
+  // Cliques (delegação no root).
+  document.addEventListener('click', async function (ev) {
+    var root = document.getElementById(ROOT_ID);
+    if (!root || !root.contains(ev.target)) return;
+    var el;
+    if ((el = ev.target.closest('[data-trc-filtro]'))) {
+      filtro = el.getAttribute('data-trc-filtro');
+      render();
+      return;
+    }
+    if ((el = ev.target.closest('[data-trc-aviso]'))) {
+      // Deixa o link abrir o WhatsApp; carimba em paralelo.
+      var ok = await marcar(el.getAttribute('data-trc-id'), el.getAttribute('data-trc-aviso'), el.getAttribute('data-trc-booking'));
+      if (ok) { render(); atualizarContador(); }
+      return;
+    }
+    if ((el = ev.target.closest('[data-trc-desfaz]'))) {
+      await desmarcar(el.getAttribute('data-trc-id'), el.getAttribute('data-trc-desfaz'));
+      render(); atualizarContador();
+      return;
+    }
+    if ((el = ev.target.closest('[data-trc-resolver]'))) {
+      el.disabled = true;
+      await marcar(el.getAttribute('data-trc-resolver'), 'resolvido_at');
+      render(); atualizarContador();
+      return;
+    }
+    if ((el = ev.target.closest('[data-trc-reabrir]'))) {
+      await desmarcar(el.getAttribute('data-trc-reabrir'), 'resolvido_at');
+      render(); atualizarContador();
+    }
+  });
+
+  function init() {
+    var btn = document.getElementById('trocas-refresh');
+    if (btn) btn.addEventListener('click', function () { run(true); });
+    // Contador do menu: carrega uma vez em segundo plano quando o painel abre.
+    var tentar = function (n) {
+      if (sb()) { run(true).catch(function () {}); return; }
+      if (n > 0) setTimeout(function () { tentar(n - 1); }, 1500);
+    };
+    setTimeout(function () { tentar(6); }, 2500);
+  }
+
+  window.ElarahTrocasAdmin = { run: run };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})(window, document);

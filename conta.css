@@ -629,6 +629,16 @@
   white-space: nowrap;
 }
 
+/* "Remarcar" do card (conta-trocas.js): mesmo visual do link do
+   WhatsApp, só que é um <button>. */
+.purchase-card__troca-btn {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
 .purchase-card__location-icon {
   flex: 0 0 auto;
   font-size: 0.85rem;

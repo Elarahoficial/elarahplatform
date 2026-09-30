@@ -42,17 +42,12 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { isCustomerMessagingSuppressed } from "../_shared/email.ts";
 import {
-  bookingConfirmationEmailHtml,
-  isCustomerMessagingSuppressed,
-  sendEmail,
-} from "../_shared/email.ts";
-import {
-  bookingConfirmationTemplateParams,
-  bookingConfirmationWhatsAppText,
-  experienceImageUrl,
-  gatedSendWhatsApp,
-} from "../_shared/whatsapp.ts";
+  enviarConfirmacaoReagendamento,
+  liberarVaga as liberar,
+  segurarVaga as segurar,
+} from "../_shared/reagendamento.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -151,31 +146,6 @@ async function matchSlot(
   const porInicio = h ? doDia.filter((s: { horario?: unknown }) => startHour(s.horario) === h) : [];
   if (porInicio.length >= 1) return porInicio[0].id;
   return null;
-}
-
-async function liberar(sb: SB, slotId: string | null, expId: string | null, qty: number) {
-  if (slotId) {
-    const { error } = await sb.rpc("increment_slot_vagas", { p_slot_id: slotId, p_qty: qty });
-    if (error) throw error;
-  } else if (expId) {
-    const { error } = await sb.rpc("increment_experience_vagas", { p_experience_id: expId, p_qty: qty });
-    if (error) throw error;
-  }
-}
-
-// true = segurou; false = não havia vaga (ficou acima da lotação).
-async function segurar(sb: SB, slotId: string | null, expId: string | null, qty: number): Promise<boolean> {
-  let res;
-  if (slotId) {
-    res = await sb.rpc("decrement_slot_vagas", { p_slot_id: slotId, p_qty: qty });
-  } else if (expId) {
-    res = await sb.rpc("decrement_experience_vagas", { p_experience_id: expId, p_qty: qty });
-  } else {
-    return true;
-  }
-  if (res.error) throw res.error;
-  const row = Array.isArray(res.data) ? res.data[0] : res.data;
-  return !row || row.ok !== false;
 }
 
 serve(async (req) => {
@@ -308,63 +278,12 @@ serve(async (req) => {
   const confirmacao: Record<string, unknown> = { whatsapp: null, email: null };
   const suprimida = isCustomerMessagingSuppressed({ ...bk, metadata: meta });
   if (mudouEvento && enviarConfirmacao && bk.status === "pago" && !suprimida) {
-    const dados = {
-      nome: bk.nome,
-      experienciaNome: bk.experiencia_nome ?? "Sua experiência",
-      data: bk.data,
-      horario: bk.horario,
-      endereco: (meta.endereco as string | null) ?? null,
-      bairro: (meta.bairro as string | null) ?? null,
-    };
-    try {
-      const texto = bookingConfirmationWhatsAppText({ ...dados, quantidade: qtyNova });
-      const wa = await gatedSendWhatsApp(admin, {
-        kind: "reagendamento",
-        dedupeKey: "reagendamento:" + bookingId + ":" + meta.reagendamento_seq,
-        identifierOk: !!bookingId,
-        rawPhone: (meta.telefone_digits as string | undefined) ?? bk.telefone,
-        suppressed: false,
-        statusAllowed: true,
-        image: experienceImageUrl(bk.experiences?.imagem),
-        caption: texto,
-        message: texto,
-        template: { params: bookingConfirmationTemplateParams(dados) },
-        bookingId,
-        experienciaId: bk.experiencia_id ?? null,
-        createdBy: caller.id,
-      });
-      confirmacao.whatsapp = wa.sent ? "enviado" : (wa.reason ?? wa.error ?? "nao_enviado");
-    } catch (e) {
-      console.error("[admin-reagendar] WhatsApp falhou", bookingId, String(e));
-      confirmacao.whatsapp = "erro";
-    }
-
-    if (bk.email) {
-      try {
-        const html = bookingConfirmationEmailHtml({
-          ...dados,
-          prazoRemarcacaoHoras: (meta.politica_remarcacao_horas as number | null) ?? null,
-          precoLabel: bk.preco_label,
-          quantidade: qtyNova,
-          amountTotalCentavos: bk.amount_total ?? null,
-          participantes: Array.isArray(meta.participantes) ? meta.participantes : null,
-          bookingId,
-          variantLabel: (meta.variant_label as string | undefined) ?? null,
-          variantSelected: (meta.variant_selected as string | undefined) ?? null,
-        });
-        const r = await sendEmail({
-          to: String(bk.email).trim(),
-          subject: "Sua reserva na Elarah foi atualizada ✨",
-          html,
-        });
-        confirmacao.email = r.ok ? "enviado" : "erro";
-      } catch (e) {
-        console.error("[admin-reagendar] e-mail falhou", bookingId, String(e));
-        confirmacao.email = "erro";
-      }
-    } else {
-      confirmacao.email = "sem_email";
-    }
+    const r = await enviarConfirmacaoReagendamento(admin, { ...bk, quantidade: qtyNova }, meta, {
+      createdBy: caller.id,
+      logTag: "admin-reagendar",
+    });
+    confirmacao.whatsapp = r.whatsapp;
+    confirmacao.email = r.email;
   } else if (mudouEvento && enviarConfirmacao) {
     confirmacao.whatsapp = confirmacao.email = suprimida ? "aguardando_experiencia" : "status_" + bk.status;
   }
