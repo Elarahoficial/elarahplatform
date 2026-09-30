@@ -99,17 +99,17 @@ conceito = f'''
     <h2>Criar, conversar e <em>comemorar</em></h2>
     <p class="lead">Trocar a comemoração tradicional por uma experiência leve e cheia de troca — daquelas em que todo mundo <strong>cria</strong>, <strong>conversa</strong>, <strong>ri</strong>, <strong>brinda</strong> e ainda <strong>leva uma lembrança feita por vocês</strong>.</p>
     <div class="pil3">
-      <div class="p"><div class="pt">Mão na massa</div><div class="pd">Todo mundo participa e cria alguma coisa.</div></div>
-      <div class="p"><div class="pt">Leve &amp; social</div><div class="pd">Pra conversar, brindar e curtir sem pressa.</div></div>
-      <div class="p"><div class="pt">Com a cara do grupo</div><div class="pd">A atividade, o espaço e o formato que mais combinam com vocês.</div></div>
+      <div class="p"><div class="pt">Criar juntos</div><div class="pd">Experiências feitas para colocar a mão na massa. Da argila aos aromas, cada convidado participa e cria algo único.</div></div>
+      <div class="p"><div class="pt">Celebrar juntos</div><div class="pd">Uma comemoração leve, com tempo para conversar, brindar e aproveitar o momento.</div></div>
+      <div class="p"><div class="pt">Levar uma lembrança</div><div class="pd">No final, cada pessoa leva uma criação feita por ela.</div></div>
     </div>
     <div class="gstrip" style="margin-top:16px">
-      <figure>{img("bfa-grupo2.webp", "Homens e mulheres criando juntos", "center 45%")}<figcaption>Todos juntos</figcaption></figure>
-      <figure>{img("ceramicamodelagem.jpg", "Mãos trabalhando a argila", "center 50%")}<figcaption>Mãos na obra</figcaption></figure>
-      <figure>{img("pinturataca.jpg", "Pintura em taça", "center 45%")}<figcaption>Criar &amp; brindar</figcaption></figure>
+      <figure>{img("bfa-grupo2.webp", "Homens e mulheres criando e rindo juntos", "center 40%")}<figcaption>Todos juntos</figcaption></figure>
+      <figure>{img("agora-hero.jpg", "Grupo modelando argila na bancada do Agora Intu", "center 55%")}<figcaption>Mãos na argila</figcaption></figure>
+      <figure>{img("agora-pintura.jpg", "Grupo pintando cerâmica no Agora Intu", "center 40%")}<figcaption>Cerâmica &amp; cor</figcaption></figure>
       <figure>{img("agora-selfie.jpg", "Grupo rindo durante a experiência", "center 35%")}<figcaption>Muita risada</figcaption></figure>
-      <figure>{img("agora-ceramica.jpg", "Materiais e texturas", "center 45%")}<figcaption>Materiais &amp; texturas</figcaption></figure>
-      <figure>{img("agora-grupo.jpg", "Grupo reunido à mesa", "center 45%")}<figcaption>Em volta da mesa</figcaption></figure>
+      <figure>{img("agora-grupo.jpg", "Grupo criando junto à mesa do Agora Intu", "center 50%")}<figcaption>Criar junto</figcaption></figure>
+      <figure>{img("agora-aquarela.jpg", "Peça sendo feita no ateliê", "center 40%")}<figcaption>Peças sendo feitas</figcaption></figure>
     </div>
     {foot("O conceito")}
   </section>'''
