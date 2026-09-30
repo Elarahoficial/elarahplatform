@@ -30,6 +30,7 @@ import {
   sendEmail,
 } from "../_shared/email.ts";
 import { sendBookingConfirmationGated } from "../_shared/whatsapp.ts";
+import { processarPagamentoTroca, REF_TROCA } from "../_shared/troca_cliente.ts";
 import {
   getPayment,
   verifyWebhookSignature,
@@ -859,6 +860,28 @@ serve(async (req) => {
   if (extRef.startsWith("GIFT-")) {
     const giftCardId = extRef.slice(5);
     return await processGiftCardPayment(giftCardId, payment);
+  }
+
+  // "TROCA-<id>": diferença paga pela cliente pra trocar a reserva por uma
+  // opção mais cara (cliente-trocar-reserva). Não é uma reserva nova — a
+  // troca é aplicada na reserva original (_shared/troca_cliente.ts).
+  // Sempre 200: a linha em trocas_reserva guarda o resultado.
+  if (extRef.startsWith(REF_TROCA)) {
+    const st = String(payment.status ?? "");
+    const resultado = st === "approved" || st === "authorized"
+      ? "aprovado"
+      : (st === "rejected" || st === "cancelled")
+      ? "recusado"
+      : (st === "refunded" || st === "charged_back")
+      ? "reembolsado"
+      : null;
+    if (!resultado) return new Response(JSON.stringify({ received: true, troca: "pendente" }), { status: 200 });
+    const r = await processarPagamentoTroca(supabase, extRef.slice(REF_TROCA.length), resultado, {
+      valorCentavos: Math.round(Number(payment.transaction_amount ?? 0) * 100) || null,
+      pagamentoId: String(payment.id),
+      logTag: "mp-webhook/troca",
+    });
+    return new Response(JSON.stringify({ received: true, troca: r.status }), { status: 200 });
   }
 
   // Busca a booking via mp_payment_id primeiro; fallback pra

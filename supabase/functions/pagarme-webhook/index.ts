@@ -38,6 +38,7 @@ import {
   wasInventoryReleased,
 } from "../_shared/booking_guard.ts";
 import { verifyWebhookBasicAuth } from "../_shared/pagarme.ts";
+import { processarPagamentoTroca, REF_TROCA } from "../_shared/troca_cliente.ts";
 
 const WEBHOOK_USER = Deno.env.get("PAGARME_WEBHOOK_USER") ?? "";
 const WEBHOOK_PASS = Deno.env.get("PAGARME_WEBHOOK_PASSWORD") ?? "";
@@ -353,6 +354,20 @@ serve(async (req) => {
   if (!bookingId) {
     console.warn("[Elarah Payment/Pagarme] evento sem order_code", "type=" + type);
     return ok({ received: true, no_order_code: true });
+  }
+
+  // "TROCA-<id>": diferença paga pela cliente pra trocar a reserva por uma
+  // opção mais cara (cliente-trocar-reserva). A troca é aplicada na reserva
+  // original (_shared/troca_cliente.ts) — nada de reserva nova aqui.
+  if (bookingId.startsWith(REF_TROCA)) {
+    const orderId = typeof orderObj?.id === "string" ? orderObj.id as string : null;
+    const r = await processarPagamentoTroca(
+      supabase,
+      bookingId.slice(REF_TROCA.length),
+      isPaid ? "aprovado" : isRefunded ? "reembolsado" : "recusado",
+      { valorCentavos: Number(orderObj?.amount ?? data.amount) || null, pagamentoId: orderId, logTag: "pagarme-webhook/troca" },
+    );
+    return ok({ received: true, troca: r.status });
   }
 
   // Busca a reserva COMPLETA (precisa de todos os campos p/ e-mail/admin/estoque).
