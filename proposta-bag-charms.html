@@ -466,6 +466,7 @@
 
 
 
+
 <style>
   /* fluxo da experiencia */
   .flow4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
@@ -489,31 +490,39 @@
   .twoph img{width:100%;height:100%;object-fit:cover;display:block}
   .twoph figcaption{position:absolute;left:0;right:0;bottom:0;padding:20px 13px 10px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
   .inclist.charm li{font-size:12.5px}
-  /* espacos: O Jardim */
-  .jhero{margin:18px 0 0;border-radius:18px;overflow:hidden;position:relative;height:250px;border:1px solid var(--line);box-shadow:0 18px 44px -28px rgba(0,0,0,.42)}
-  .jhero img{width:100%;height:100%;object-fit:cover;display:block}
-  .jhero figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 18px 14px;color:#fff;font-size:13px;font-weight:600;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
-  .jrow3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
-  .jrow3 figure{margin:0;border-radius:15px;overflow:hidden;position:relative;height:150px;border:1px solid var(--line);box-shadow:0 14px 32px -24px rgba(0,0,0,.36)}
-  .jrow3 img{width:100%;height:100%;object-fit:cover;display:block}
-  .jrow3 figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 10px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  /* espacos: 4 parceiros + Elarah ate voce */
+  .vg4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+  .vg4 figure{margin:0;border-radius:15px;overflow:hidden;position:relative;height:186px;border:1px solid var(--line);box-shadow:0 14px 32px -24px rgba(0,0,0,.36)}
+  .vg4 img{width:100%;height:100%;object-fit:cover;display:block}
+  .vg4 figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 13px 11px;color:#fff;background:linear-gradient(to top,rgba(46,31,42,.92),transparent)}
+  .vg4 figcaption b{display:block;font-size:12.5px;font-weight:700;line-height:1.15}
+  .vg4 figcaption span{font-size:10px;color:rgba(255,255,255,.82);letter-spacing:.04em}
+  .eauc{display:grid;grid-template-columns:.82fr 1.18fr;margin-top:14px;border-radius:16px;overflow:hidden;border:1.5px solid var(--orange);box-shadow:0 16px 40px -26px rgba(0,0,0,.34)}
+  .eauc .ph{position:relative;min-height:132px}
+  .eauc .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .eauc .bd{background:#FBF0F3;padding:16px 22px;display:flex;flex-direction:column;justify-content:center}
+  .eauc .tag{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .eauc h3{font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);margin:5px 0 7px;line-height:1.05}
+  .eauc p{font-size:12.5px;color:var(--navy-soft);line-height:1.5;margin:0}
+  .eauc p b{color:var(--navy);font-weight:700}
   /* momento */
   .mos2{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
   .mos2 figure{margin:0;border-radius:15px;overflow:hidden;position:relative;height:200px;border:1px solid var(--line);box-shadow:0 14px 34px -24px rgba(0,0,0,.36)}
   .mos2 img{width:100%;height:100%;object-fit:cover;display:block}
   .mos2 figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 14px 11px;color:#fff;font-size:11.5px;font-weight:600;letter-spacing:.03em;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
-  /* investimento: 3 opcoes claras */
-  .invtrio{display:grid;grid-template-columns:1fr 1fr 1.14fr;gap:14px;margin-top:22px;align-items:stretch}
-  .iopt{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 20px 18px;box-shadow:0 16px 40px -28px rgba(0,0,0,.3);display:flex;flex-direction:column}
-  .iopt .tag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);line-height:1.25}
-  .iopt .desc{font-size:11px;color:var(--muted);line-height:1.4;margin-top:5px}
-  .iopt .big{font-family:'DM Serif Display',serif;font-size:33px;color:var(--navy);line-height:1.02;margin:12px 0 2px}
-  .iopt .per{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
-  .iopt .grp{margin-top:13px;font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy)}
-  .iopt .grp small{display:block;font-family:'DM Sans',sans-serif;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
+  /* investimento: 2 opcoes claras */
+  .invduo{display:grid;grid-template-columns:1fr 1.16fr;gap:18px;margin-top:22px;align-items:stretch}
+  .iopt{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 26px 22px;box-shadow:0 16px 40px -28px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .iopt .tag{font-size:11px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);line-height:1.25}
+  .iopt .desc{font-size:12px;color:var(--muted);line-height:1.45;margin-top:6px}
+  .iopt .big{font-family:'DM Serif Display',serif;font-size:42px;color:var(--navy);line-height:1.02;margin:14px 0 2px}
+  .iopt .per{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .iopt .note{margin-top:12px;font-size:11px;color:var(--orange-dark);font-weight:700;line-height:1.4}
+  .iopt .grp{margin-top:14px;font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy)}
+  .iopt .grp small{display:block;font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:3px}
   .iopt .spacer{flex:1}
-  .iopt .brk{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:6px}
-  .iopt .brk .row{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--muted)}
+  .iopt .brk{margin-top:14px;border-top:1px solid var(--line);padding-top:12px;display:grid;gap:8px}
+  .iopt .brk .row{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;color:var(--muted)}
   .iopt .brk .row b{font-weight:700;white-space:nowrap;color:var(--navy-soft)}
   /* opcao recomendada */
   .iopt.rec{background:linear-gradient(158deg,var(--navy),#241722);border-color:transparent;color:#fff;position:relative;overflow:hidden}
@@ -628,19 +637,27 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Local & atmosfera</span></div>
+      <div class="head-right"><span class="kicker">Locais</span></div>
     </div>
     <span class="eyebrow orange">◆ Onde acontece</span>
-    <h2>O Jardim — <em>ou o seu espaço</em></h2>
-    <p class="lead">A nossa recomendação é o <strong>O Jardim · Café &amp; Brunch</strong>: um café charmoso com <strong>área externa arborizada</strong>, o cenário natural perfeito pra experiência acontecer entre o verde e render foto o dia inteiro. Também dá pra levar tudo até o <strong>seu espaço</strong>. 🌿</p>
-    <div class="jhero"><img src="assets/ojardim1.jpg" alt="Área externa arborizada do O Jardim" style="object-position:center 55%"><figcaption>Área externa arborizada</figcaption></div>
-    <div class="jrow3">
-      <figure><img src="assets/ojardim4.jpg" alt="Coffee break e brunch servido à mesa" style="object-position:center 55%"><figcaption>Coffee break &amp; brunch</figcaption></figure>
-      <figure><img src="assets/ojardim2.jpg" alt="Jardim e deck do O Jardim" style="object-position:center 50%"><figcaption>Jardim &amp; deck</figcaption></figure>
-      <figure><img src="assets/ojardim3.jpg" alt="Fachada do O Jardim Café & Brunch" style="object-position:center 50%"><figcaption>O Jardim · Café &amp; Brunch</figcaption></figure>
+    <h2>Onde a experiência <em>acontece</em></h2>
+    <p class="lead">A experiência acontece onde fizer mais sentido pra marca. Estas são nossas sugestões de <strong>espaços parceiros</strong> em São Paulo — ou levamos tudo até o <strong>seu espaço</strong>, no formato <strong>Elarah até você</strong>.</p>
+    <div class="vg4">
+      <figure><img src="assets/yucafe-real.jpg" alt="YUCAFÉ Earth Based" style="object-position:center 55%"><figcaption><b>YUCAFÉ Earth Based</b><span>Vila Mariana</span></figcaption></figure>
+      <figure><img src="assets/ojardim1.jpg" alt="O Jardim Café & Brunch" style="object-position:center 55%"><figcaption><b>O Jardim</b><span>Brooklin</span></figcaption></figure>
+      <figure><img src="assets/sterna-painel.webp" alt="Sterna Faria Lima" style="object-position:center 50%"><figcaption><b>Sterna Faria Lima</b><span>Itaim Bibi</span></figcaption></figure>
+      <figure><img src="assets/sowcafe.jpg" alt="Sow Café" style="object-position:center 50%"><figcaption><b>Sow Café</b><span>Vila Mariana</span></figcaption></figure>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ No Jardim: <strong>R$ 600</strong> de locação do espaço + <strong>R$ 99</strong> de brunch por pessoa. Data e disponibilidade a confirmar.</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Local & atmosfera</span></div>
+    <div class="eauc">
+      <div class="ph"><img src="assets/em-casa-hero-1.jpg" alt="Experiência Elarah no espaço do cliente" style="object-position:center 35%"></div>
+      <div class="bd">
+        <span class="tag">✦ No seu espaço · mesmo valor</span>
+        <h3>Elarah até você</h3>
+        <p>Se vocês já tiverem um espaço para o lançamento — marca, escritório, showroom ou outro local —, levamos toda a experiência até vocês, com o <b>mesmo valor da experiência</b>.</p>
+      </div>
+    </div>
+    <p class="fineprint">Espaços parceiros: disponibilidade, alimentação e eventuais valores de locação estão em confirmação.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Locais</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -649,51 +666,37 @@
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Escolham a <em>ativação</em></h2>
-    <div class="invtrio">
+    <div class="invduo">
       <div class="iopt">
-        <span class="tag">Só experiência</span>
-        <p class="desc">A experiência de charms, com curadoria e produção Elarah.</p>
+        <span class="tag">Experiência</span>
+        <p class="desc">A experiência Entre Charms, com curadoria e produção Elarah.</p>
         <div class="big">R$ 179</div>
         <span class="per">por pessoa</span>
+        <div class="note">✦ Mesmo valor no formato Elarah até você.</div>
         <div class="spacer"></div>
         <div class="grp">R$ 3.580<small>20 participantes</small></div>
-      </div>
-      <div class="iopt">
-        <span class="tag">Brunch + espaço + experiência</span>
-        <p class="desc">A experiência no O Jardim, com brunch e espaço privado.</p>
-        <div class="big">R$ 308</div>
-        <span class="per">por pessoa</span>
-        <div class="brk">
-          <div class="row"><span>Experiência</span><b>R$ 179 / pessoa</b></div>
-          <div class="row"><span>Brunch (O Jardim)</span><b>R$ 99 / pessoa</b></div>
-          <div class="row"><span>Locação do espaço</span><b>R$ 600 total</b></div>
-        </div>
-        <div class="spacer"></div>
-        <div class="grp">R$ 6.160<small>20 participantes</small></div>
       </div>
       <div class="iopt rec">
         <span class="badge">✦ Sugestão Elarah</span>
         <div class="htop">
-          <img class="recph" src="assets/garrafa-rosa-personalizada.jpg" alt="Mimo personalizado">
+          <img class="recph" src="assets/garrafa-rosa-personalizada.jpg" alt="Garrafa personalizada">
           <div>
-            <span class="tag">Premium</span>
-            <p class="desc">Tudo + registro fotográfico + mimo personalizado.</p>
+            <span class="tag">Mais Completo</span>
+            <p class="desc">Experiência + registro fotográfico + garrafa personalizada.</p>
           </div>
         </div>
-        <div class="big">R$ 472,35</div>
+        <div class="big">R$ 343,35</div>
         <span class="per">por pessoa</span>
         <div class="brk">
-          <div class="row"><span>Experiência</span><b>R$ 179 / pessoa</b></div>
-          <div class="row"><span>Brunch (O Jardim)</span><b>R$ 99 / pessoa</b></div>
-          <div class="row"><span>Locação do espaço</span><b>R$ 600 total</b></div>
-          <div class="row"><span>Registro fotográfico</span><b>R$ 489 total</b></div>
-          <div class="row"><span>Mimo personalizado</span><b>R$ 139,90 / pessoa</b></div>
+          <div class="row"><span>Experiência Entre Charms</span><b>Incluso</b></div>
+          <div class="row"><span>Registro fotográfico</span><b>Incluso</b></div>
+          <div class="row"><span>Garrafa personalizada</span><b>Incluso</b></div>
         </div>
         <div class="spacer"></div>
-        <div class="grp">R$ 9.447<small>20 participantes</small></div>
+        <div class="grp">R$ 6.867<small>20 participantes</small></div>
       </div>
     </div>
-    <p class="fineprint">Valores por pessoa (locação do espaço e registro fotográfico são valores totais), com base em 20 participantes no <b>O Jardim · Café &amp; Brunch</b>. A opção <b>Premium — Sugestão Elarah</b> é a nossa recomendação para uma ativação de lançamento, com registro profissional e mimo personalizado para cada convidada.</p>
+    <p class="fineprint">Valores por pessoa, base de 20 participantes. No formato <b>Elarah até você</b> o valor da experiência é o mesmo (R$ 179/pessoa) — custos adicionais só existiriam por necessidade específica de deslocamento, estrutura ou produção fora do escopo já previsto. A opção <b>Mais Completo — Sugestão Elarah</b> é a nossa recomendação para uma ativação de lançamento.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
