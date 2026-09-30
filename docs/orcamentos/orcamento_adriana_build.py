@@ -1,7 +1,6 @@
-# Proposta Elarah · Aniversario Adriana · ate 20 pessoas · 07/11 · SP
-# v2: slides 1 e 2 mantidos (slide 2: Flores -> Tufting). A partir do slide 3, vira COTACAO:
-# slide 3 = experiencias + local + valor (6 cards) + outros espacos; slide 4 = como funciona;
-# slide 5 = adicionais; slide 6 = fechamento. Sem "sob consulta". Sem House Cafe.
+# Proposta Elarah · Aniversario Adriana · ate 20 pessoas (grupo misto) · 07/11 · SP
+# v3: 100% MAO NA MASSA (curadoria criativa, nao catalogo). 11 slides.
+# Sem gastronomia/vinho/drinks/passivo. Sem precos (orcamento final depois). Nao inventar.
 import io, re
 
 ROOT = "/home/user/elarahplatform"
@@ -11,31 +10,17 @@ tail = '<div class="toolbar">' + ref.split('<div class="toolbar">', 1)[1]
 
 extra = '''
 <style>
-  /* cotacao — cards experiencia+local+valor */
-  .exg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
-  .exc{background:var(--card);border:1px solid var(--line);border-radius:15px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -24px rgba(0,0,0,.3);position:relative}
-  .exc.prem{border:1.6px solid var(--orange)}
-  .exph{height:116px;overflow:hidden;background:#eee;position:relative}
-  .exph img{width:100%;height:100%;object-fit:cover;display:block}
-  .excap{position:absolute;top:8px;right:8px;background:var(--navy);color:#fff;font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
-  .excap.big{background:var(--orange-dark);font-size:9px;padding:5px 11px}
-  .expremtag{position:absolute;top:8px;left:8px;background:var(--orange);color:#fff;font-size:8px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
-  .exb{padding:11px 15px 14px;display:flex;flex-direction:column;flex:1}
-  .exn{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy);line-height:1.06}
-  .exloc{font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:5px;line-height:1.4}
-  .exval{font-size:11px;color:var(--navy-soft);font-weight:600;margin-top:7px}
-  .exval b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy)}
-  .exd{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:7px}
-  .exinc{font-size:9.5px;color:var(--ink);margin-top:6px;line-height:1.4}
-  .exinc b{color:var(--navy)}
-  .outros{margin-top:15px;background:#FBF1EE;border:1px solid var(--line);border-radius:14px;padding:13px 20px}
-  .outros .ott{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
-  .outros .oll{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px}
-  .outros .oll span{font-size:12px;color:var(--navy);font-weight:600}
-  .outros .oll span small{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:8px;letter-spacing:.06em;margin-left:4px}
-  .outros p{font-size:10px;color:var(--muted);line-height:1.45;margin:8px 0 0}
-  .somar{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
-  .somar span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:12.5px;color:var(--ink);font-weight:600;box-shadow:0 4px 14px -8px rgba(0,0,0,.2)}
+  .conc{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px}
+  .conc .cc{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:22px 14px;text-align:center;box-shadow:0 10px 26px -22px rgba(0,0,0,.3)}
+  .conc .cw{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);line-height:1.08}
+  .conc .ci{font-size:19px;margin-bottom:8px}
+  .cmpg{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:20px}
+  .cmp{width:calc(20% - 13px);min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:15px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -24px rgba(0,0,0,.32)}
+  .cmp .cmph{height:118px;overflow:hidden;background:#eee}
+  .cmp .cmph img{width:100%;height:100%;object-fit:cover;display:block}
+  .cmp .cmpb{padding:12px 13px 15px;text-align:center}
+  .cmp .cmpn{font-family:'DM Serif Display',serif;font-size:15.5px;color:var(--navy);line-height:1.08}
+  .cmp .cmpt{font-size:10px;color:var(--orange-dark);font-weight:700;letter-spacing:.03em;margin-top:6px;line-height:1.4}
 </style>'''
 head = head.replace("</head>", extra + "</head>", 1)
 
@@ -65,177 +50,195 @@ def head_simple(kicker):
     </div>'''
 
 
-def mm(src, alt, name, desc, pos="center 50%"):
-    return (f'<div class="mm"><div class="mmph">{img(src, alt, pos)}</div>'
-            f'<div class="mmb"><div class="mmn">{name}</div><div class="mmd">{desc}</div></div></div>')
+def experiencia(kicker, eyebrow, ta, tb, lead, foto, pos, btag, h3, bullets, foot_r, nota=""):
+    lis = "\n".join(f'          <li><span class="st">✦</span>{b}</li>' for b in bullets)
+    nota_html = f'\n    <div class="bnote" style="margin-top:16px">◆ {nota}</div>' if nota else ''
+    return f'''
+  <section class="slide">
+{head_simple(kicker)}
+    <span class="eyebrow orange">◆ {eyebrow}</span>
+    <h2>{ta} <em>{tb}</em></h2>
+    <p class="lead">{lead}</p>
+    <div class="bfeat">
+      <div class="bphoto">{img(foto, ta + " " + tb, pos)}</div>
+      <div class="bbody">
+        <span class="btag">{btag}</span>
+        <h3>{h3}</h3>
+        <ul class="feat">
+{lis}
+        </ul>
+      </div>
+    </div>{nota_html}
+    {foot(foot_r)}
+  </section>'''
 
 
-def exc(src, pos, nome, local, valor, texto, cap="", capbig=False, inc="", prem=False):
-    cls = "exc prem" if prem else "exc"
-    badges = ""
-    if prem:
-        badges += '<span class="expremtag">Opção premium</span>'
-    if cap:
-        badges += f'<span class="excap{" big" if capbig else ""}">{cap}</span>'
-    inc_html = f'<div class="exinc">{inc}</div>' if inc else ''
-    return (f'<div class="{cls}"><div class="exph">{img(src, nome, pos)}{badges}</div>'
-            f'<div class="exb"><div class="exn">{nome}</div><div class="exloc">{local}</div>'
-            f'<div class="exval">a partir de <b>{valor}</b> / pessoa</div>'
-            f'<div class="exd">{texto}</div>{inc_html}</div></div>')
+def vc(src, alt, name, bairro, desc, pos="center 50%"):
+    return (f'<div class="vc"><div class="vcph">{img(src, alt, pos)}</div>'
+            f'<div class="vcb"><div class="vcn">{name}</div><div class="vcbairro">{bairro}</div>'
+            f'<div class="vcd">{desc}</div></div></div>')
 
 
-# ===== 1 · CAPA (mantida) =====
+def cmp(src, pos, nome, tags):
+    return (f'<div class="cmp"><div class="cmph">{img(src, nome, pos)}</div>'
+            f'<div class="cmpb"><div class="cmpn">{nome}</div><div class="cmpt">{tags}</div></div></div>')
+
+
+# ===== 1 · CAPA =====
 cover = f'''
   <section class="slide">
 {head_block("Aniversário · mão na massa", "Adriana", "", "São Paulo · 07/11")}
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Um aniversário no ateliê</span>
-        <h1>Um aniversário para <em>criar juntos</em></h1>
-        <p class="lead">Uma comemoração para sair do óbvio: colocar a mão na massa, criar alguma coisa juntos, conversar, brindar — e ainda levar pra casa uma lembrança feita por vocês.</p>
+        <span class="eyebrow">✦ Um aniversário criativo</span>
+        <h1>Um aniversário para <em>colocar a mão na massa</em></h1>
+        <p class="lead">Criar, conversar e comemorar juntos. Um encontro em que todo mundo participa — e leva um pouco do dia pra casa.</p>
         <div class="rule"></div>
         <div class="chips">
-          <span class="chip"><b>Até 20</b> pessoas</span>
           <span class="chip"><b>07/11</b></span>
+          <span class="chip"><b>Até 20</b> pessoas</span>
         </div>
         <div class="chips" style="margin-top:10px">
           <span class="chip">São Paulo</span>
         </div>
       </div>
-      <div class="cover-photo">{img("agora-mesa.jpg", "Mesa criativa montada no ateliê, com velas e flores", "center 50%")}</div>
+      <div class="cover-photo">{img("bfa-grupo1.webp", "Grupo misto criando junto numa experiência de mão na massa", "center 45%")}</div>
     </div>
     {foot("Aniversário · Adriana")}
   </section>'''
 
-# ===== 2 · AS EXPERIÊNCIAS (mantida; Flores -> Tufting) =====
-experiencias = f'''
+# ===== 2 · CONCEITO =====
+conceito = f'''
   <section class="slide">
-{head_simple("Mão na massa")}
-    <span class="eyebrow orange">◆ Cinco caminhos</span>
-    <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <div class="mmg">
-      {mm("pinturatacavinho.jpg", "Pintura em taças", "Pintura em taças", "Cada um cria e personaliza a própria taça.", "center 50%")}
-      {mm("ceramicamodelagem.jpg", "Modelagem em cerâmica", "Cerâmica", "Argila na mão para modelar uma peça do zero.", "center 50%")}
-      {mm("lado-b-grupo-pecas.webp", "Tufting", "Tufting", "Fios, texturas e criatividade para desenvolver uma peça autoral.", "center 25%")}
-      {mm("pinturapratoceramica.jpg", "Pintura em cerâmica", "Pintura em cerâmica", "Peças prontas ganham cor e personalidade.", "center 50%")}
-      {mm("vela-aromatica-real.jpg", "Velas aromáticas", "Velas aromáticas", "Cada um escolhe os aromas e cria a própria vela.", "center 50%")}
+{head_simple("O conceito")}
+    <span class="eyebrow orange">◆ A ideia</span>
+    <h2>Mais do que <em>sentar à mesa</em></h2>
+    <p class="lead">Experiências em que todo mundo participa, cria e leva um pouco do encontro consigo. Atividades leves e criativas, gostosas de fazer em grupo — mesmo para quem nunca tentou antes.</p>
+    <div class="conc">
+      <div class="cc"><div class="ci">✍️</div><div class="cw">Criar</div></div>
+      <div class="cc"><div class="ci">🖐️</div><div class="cw">Fazer</div></div>
+      <div class="cc"><div class="ci">💬</div><div class="cw">Conversar</div></div>
+      <div class="cc"><div class="ci">🎁</div><div class="cw">Levar pra casa</div></div>
     </div>
-    {foot("Cinco experiências")}
+    <div class="gstrip" style="margin-top:16px">
+      <figure>{img("ceramicamodelagem.jpg", "Mãos trabalhando a argila", "center 50%")}<figcaption>Mãos criando</figcaption></figure>
+      <figure>{img("lado-b-vermelho.webp", "Materiais e texturas", "center 30%")}<figcaption>Materiais &amp; texturas</figcaption></figure>
+      <figure>{img("agora-grupo.jpg", "Grupo criando junto à mesa", "center 45%")}<figcaption>Junto, à mesa</figcaption></figure>
+    </div>
+    {foot("O conceito")}
   </section>'''
 
-# ===== 3 · EXPERIÊNCIAS + LOCAL + VALOR (cotação) =====
-cards = "\n      ".join([
-    exc("pinturataca.jpg", "center 45%", "Pintura em taças",
-        "Elarah até você · casa, salão ou espaço do grupo", "R$ 249",
-        "Cada pessoa personaliza a própria taça enquanto o grupo cria, conversa e brinda.", "Até 20 pessoas"),
-    exc("agora-hero.jpg", "center 45%", "Cerâmica",
-        "Agora Intu · Pinheiros", "R$ 281,25",
-        "Modelagem à mão para cada participante criar uma peça do zero.",
-        "Até 16 pessoas", capbig=True, inc="Inclui <b>materiais</b>, <b>condução</b> e <b>queima</b> da peça."),
-    exc("agora-pintando.jpg", "center 30%", "Pintura em cerâmica",
-        "Agora Intu · Pinheiros", "R$ 281,25",
-        "Cada participante escolhe e personaliza uma peça com cores e desenhos próprios.",
-        "Até 16 pessoas", capbig=True, inc="Inclui <b>peça</b>, <b>materiais</b>, <b>condução</b> e <b>queima</b>."),
-    exc("vela-grupo-oficina.jpg", "center 35%", "Velas aromáticas",
-        "Espaço parceiro ou Elarah até você", "R$ 309",
-        "Cada participante escolhe aromas e cria sua própria vela para levar para casa.", "Até 20 pessoas"),
-    exc("tufting-cereja.jpg", "center 45%", "Tufting",
-        "Lado B Studio · Perdizes", "R$ 799",
-        "Experiência criativa com fios e texturas para desenvolver uma peça têxtil autoral.", prem=True),
-    exc("em-casa-hero-1.jpg", "center 40%", "No espaço de vocês",
-        "Casa · salão · condomínio · espaço do grupo", "R$ 249",
-        "Se já têm um lugar em mente, a Elarah leva a experiência até lá — profissional, materiais e estrutura conforme a atividade.", "Até 20 pessoas"),
-])
+# ===== 3-7 · EXPERIÊNCIAS =====
+taca = experiencia(
+    "Pintura em taças", "Leve & social", "Pintura em", "taças",
+    "Cada convidado personaliza a própria taça enquanto o grupo conversa, cria e brinda. Leve, descontraída e ótima para aniversário.",
+    "pinturataca.jpg", "center 45%", "Mão na massa", "Uma peça única, feita por cada um",
+    ["Cada pessoa cria uma <b>peça única</b>", "Não exige <b>habilidade prévia</b>", "Funciona bem para <b>grupos mistos</b>", "A taça vai <b>pra casa</b>"],
+    "Pintura em taças")
 
-cotacao = f'''
+ceramica = experiencia(
+    "Cerâmica", "Tátil & autoral", "Cerâmica à", "mão",
+    "Modelagem à mão em que cada pessoa cria a própria peça do zero. Dependendo do formato, as peças podem ser finalizadas, queimadas e entregues prontas.",
+    "ceramicamodelagem.jpg", "center 50%", "Mão na massa", "Da argila à peça de cada um",
+    ["Muito <b>participativa</b> e tátil", "Cada pessoa faz <b>algo diferente</b>", "Criativa e <b>imersiva</b>", "Ótima pra <b>conversar enquanto cria</b>"],
+    "Cerâmica")
+
+tufting = experiencia(
+    "Tufting", "Criativo & contemporâneo", "Tufting", "têxtil",
+    "Uma experiência têxtil criativa em que cada participante desenvolve a própria peça com fios, texturas e diferentes composições. Pode seguir uma proposta mais experimental, combinando técnicas manuais.",
+    "tufting1.jpg", "center 30%", "Mão na massa", "Fios, cor e composição",
+    ["<b>Visual</b> e contemporânea", "Divertida e <b>diferente do óbvio</b>", "Ótima pra quem gosta de <b>design e criação</b>", "Cada um leva a <b>própria peça</b>"],
+    "Tufting")
+
+pintceramica = experiencia(
+    "Pintura em cerâmica", "Livre & acessível", "Pintura em", "cerâmica",
+    "Cada convidado escolhe uma peça e cria a própria composição com cores, desenhos e referências pessoais. Fácil, social e descontraída para um grupo grande.",
+    "agora-pintando.jpg", "center 30%", "Mão na massa", "Cor e desenho, do jeito de cada um",
+    ["Mais <b>simples</b> que a modelagem", "<b>Todo mundo consegue</b> participar", "Bastante <b>liberdade criativa</b>", "Cada pessoa <b>leva a sua peça</b>"],
+    "Pintura em cerâmica")
+
+velas = experiencia(
+    "Velas aromáticas", "Manual & sensorial", "Crie sua", "vela",
+    "Uma experiência manual e sensorial: cada pessoa escolhe fragrâncias, combina aromas e monta a própria vela. Além da atividade, cada convidado leva a criação pra casa.",
+    "vela-grupo-oficina.jpg", "center 35%", "Mão na massa", "Aromas que viram lembrança",
+    ["<b>Mão na massa</b> e sensorial", "<b>Personalizável</b> — aroma de cada um", "Funciona bem para <b>perfis diferentes</b>", "Gera uma <b>lembrança do encontro</b>"],
+    "Velas aromáticas")
+
+# ===== 8 · ONDE PODE ACONTECER =====
+espacos = f'''
   <section class="slide">
-{head_simple("Experiências · local · valor")}
-    <span class="eyebrow orange">◆ A cotação</span>
-    <h2>Onde vocês querem <em>criar?</em></h2>
-    <p class="lead">Experiências em ateliês parceiros ou levadas até o espaço de vocês.</p>
-    <div class="exg">
-      {cards}
+{head_simple("Onde pode acontecer")}
+    <span class="eyebrow orange">◆ Os espaços parceiros</span>
+    <h2>Escolhemos o espaço conforme <em>a experiência</em></h2>
+    <div class="vg" style="grid-template-columns:1fr 1fr">
+      {vc("yucafe-real.jpg", "Raüs Café", "Raüs Café", "Pinheiros", "Ambiente intimista e descontraído, ótimo para experiências criativas e sensoriais.", "center 50%")}
+      {vc("betchavas.jpg", "Sala Bar", "Sala Bar", "Pinheiros", "Mais social e descontraído — recebe bem atividades criativas acompanhadas de bebidas.", "center 50%")}
+      {vc("betchavas2.jpg", "Espaço Cardeal", "Espaço Cardeal", "Pinheiros", "Mais reservado e estruturado, com liberdade para montar diferentes formatos.", "center 50%")}
+      {vc("sterna-painel.webp", "Sterna Faria Lima", "Sterna Faria Lima", "Itaim Bibi", "Alternativa próxima ao eixo pedido, para experiências mais leves e workshops.", "center 50%")}
     </div>
-    <div class="outros">
-      <div class="ott">Outros espaços parceiros</div>
-      <div class="oll">
-        <span>Raüs Café <small>Pinheiros</small></span>
-        <span>Sala Bar <small>Pinheiros</small></span>
-        <span>Espaço Cardeal <small>Pinheiros</small></span>
-        <span>Sterna Faria Lima <small>Itaim Bibi</small></span>
-      </div>
-      <p>Também podemos montar a experiência em outros espaços parceiros próximos à região escolhida. Valores e condições variam conforme atividade, número de convidados e disponibilidade.</p>
-    </div>
-    {foot("Experiências · local · valor")}
+    {foot("Onde pode acontecer")}
   </section>'''
 
-# ===== 4 · COMO FUNCIONA =====
-comofunciona = f'''
+# ===== 9 · TAMBÉM PODEMOS IR ATÉ VOCÊS =====
+atevoces = f'''
   <section class="slide">
-{head_simple("Como funciona")}
-    <span class="eyebrow orange">◆ Simples do começo ao fim</span>
-    <h2>Vocês escolhem. <em>A gente monta.</em></h2>
-    <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolham</h3><p>A experiência e o espaço que mais combinam com o grupo.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>Confirmamos</h3><p>Validamos a disponibilidade para 07/11 e o número final de convidados.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>A Elarah cuida do resto</h3><p>Profissional, materiais, produção e organização da experiência.</p></div>
-    </div>
-    <div class="datecall">
-      <span class="di">✦</span>
-      <p>Se preferirem, <b>levamos tudo até o espaço de vocês</b>. Experiências <b>a partir de R$ 249 por pessoa</b>.</p>
-    </div>
-    {foot("Como funciona")}
-  </section>'''
-
-# ===== 5 · ADICIONAIS =====
-adicionais = f'''
-  <section class="slide">
-{head_simple("Adicionais")}
-    <span class="eyebrow orange">◆ Pra deixar completo</span>
-    <h2>Adicionais <em>opcionais</em></h2>
+{head_simple("Elarah até vocês")}
+    <span class="eyebrow orange">◆ No espaço de vocês</span>
+    <h2>Já têm um <em>espaço em mente?</em></h2>
+    <p class="lead">Se preferirem comemorar em casa, no salão de festas, no espaço do condomínio ou em outro local escolhido pelo grupo, a gente também leva a experiência até vocês.</p>
     <div class="bfeat">
-      <div class="bphoto">{img("bfa-grupo2.webp", "Grupo comemorando junto, registro espontâneo", "center 45%")}</div>
+      <div class="bphoto">{img("em-casa-hero-1.jpg", "Grupo criando junto em casa", "center 40%")}</div>
       <div class="bbody">
-        <span class="btag">Registro fotográfico</span>
-        <h3>As memórias do dia</h3>
-        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-top:12px">Um fotógrafo acompanha a experiência e registra o grupo, as criações e a comemoração. Vocês recebem um álbum digital pronto pra compartilhar.</p>
-        <div class="avalpill">R$ 450 <small>valor total</small></div>
+        <span class="btag">Elarah vai até você</span>
+        <h3>A experiência no seu espaço</h3>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-top:12px">A Elarah coordena a atividade, os materiais e a estrutura necessária de acordo com o formato escolhido. Vocês só recebem o grupo e aproveitam.</p>
       </div>
     </div>
-    <p class="subh" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin:20px 0 0">Podemos somar</p>
-    <div class="somar">
-      <span>Vinho</span><span>Drinks</span><span>Bolo</span><span>Comidinhas</span>
-      <span>Flores</span><span>Fotografia</span><span>Pequenos mimos</span><span>Ambientação</span>
-    </div>
-    {foot("Adicionais")}
+    {foot("Elarah até vocês")}
   </section>'''
 
-# ===== 6 · FECHAMENTO =====
-fechamento = f'''
+# ===== 10 · COMO ESCOLHER =====
+comoescolher = f'''
+  <section class="slide">
+{head_simple("Como escolher")}
+    <span class="eyebrow orange">◆ Comparação rápida</span>
+    <h2>Qual delas combina com <em>o grupo?</em></h2>
+    <div class="cmpg">
+      {cmp("pintura-taca-brinde.jpg", "center 40%", "Pintura em taça", "leve · social · fácil")}
+      {cmp("agora-hero.jpg", "center 45%", "Cerâmica", "tátil · autoral · imersiva")}
+      {cmp("tufting6.jpg", "center 25%", "Tufting", "criativo · contemporâneo · diferente")}
+      {cmp("pinturapratoceramica.jpg", "center 50%", "Pintura em cerâmica", "livre · descontraída · acessível")}
+      {cmp("vela-aromatica-real.jpg", "center 45%", "Velas", "manual · sensorial · personalizada")}
+    </div>
+    <p class="fineprint" style="text-align:center">✦ Todas mão na massa, para grupos mistos de até 20 pessoas — cada uma com uma vibe. É só escolher a que mais tem a cara de vocês.</p>
+    {foot("Como escolher")}
+  </section>'''
+
+# ===== 11 · PRÓXIMOS PASSOS =====
+proximos = f'''
   <section class="slide">
 {head_simple("Próximos passos")}
-    <span class="eyebrow orange">◆ Bora reservar?</span>
-    <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Adriana, conta pra gente qual opção vocês mais gostaram. A partir dela, confirmamos a disponibilidade para <b>07/11</b> e seguimos com a reserva.</p>
+    <span class="eyebrow orange">◆ Bora montar?</span>
+    <h2>A partir da favorita, <em>montamos tudo</em></h2>
+    <p class="lead">Depois que vocês escolherem as experiências que mais gostaram, seguimos com a disponibilidade para <b>07/11</b>, o local e o orçamento final.</p>
     <div class="rule"></div>
     <div class="grid3">
-      <div class="infocard"><div class="num">01</div><h3>Escolhem</h3><p>Experiência + espaço.</p></div>
-      <div class="infocard"><div class="num">02</div><h3>Confirmamos</h3><p>Agenda e número final de convidados.</p></div>
-      <div class="infocard"><div class="num">03</div><h3>A gente cuida do resto</h3><p>Produção, materiais e organização.</p></div>
+      <div class="infocard"><div class="num">01</div><h3>Escolhem</h3><p>As experiências que mais têm a cara do grupo.</p></div>
+      <div class="infocard"><div class="num">02</div><h3>Confirmamos</h3><p>Disponibilidade para 07/11 e o espaço (ou o local de vocês).</p></div>
+      <div class="infocard"><div class="num">03</div><h3>Montamos tudo</h3><p>Local, materiais, condução e o orçamento final.</p></div>
     </div>
-    <div class="quote" style="margin-top:18px">
-      Vocês escolhem a favorita. A Elarah cuida do resto. 🧡<br>
+    <div class="quote" style="margin-top:20px">
+      Adriana, conta pra gente quais opções mais têm a cara de vocês. 🧡<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
     {foot("Próximos passos")}
   </section>'''
 
-deck = ('<div class="deck">\n'
-        + cover + experiencias + cotacao + comofunciona + adicionais + fechamento + '\n\n</div>\n\n')
+deck = ('<div class="deck">\n' + cover + conceito + taca + ceramica + tufting + pintceramica
+        + velas + espacos + atevoces + comoescolher + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/orcamento-adriana.html"
 io.open(out, "w", encoding="utf-8").write(html)
-for bad in ["Sob consulta", "sob consulta", "a confirmar", "House Café", "House Cafe", "Flores &amp; arranjos", "Flores & arranjos"]:
+for bad in ["Sob consulta", "sob consulta", "gastronomia", "degustação", "R$"]:
     assert bad not in deck, f"PROIBIDO presente: {bad}"
 print("wrote", out, "| slides:", html.count('<section class="slide">'), "| ok")
