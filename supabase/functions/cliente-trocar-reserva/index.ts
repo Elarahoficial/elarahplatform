@@ -36,7 +36,9 @@ import { createPixPayment, getPayment, isValidCpf } from "../_shared/mercadopago
 import { buildInstallmentOptions, createCardOrder, getOrder } from "../_shared/pagarme.ts";
 import {
   aplicarTroca,
+  type Devolucao,
   localDe,
+  REEMBOLSO_PIX_HORAS,
   type Pedido,
   processarPagamentoTroca,
   REF_TROCA,
@@ -228,6 +230,7 @@ serve(async (req) => {
   if (acao === "cotar") {
     return json({
       ok: true,
+      sobra_centavos: ctx.sobraCentavos,
       diferenca_centavos: dif,
       parcelas: dif > 0 ? buildInstallmentOptions(dif, MAX_INSTALLMENTS) : [],
     });
@@ -235,11 +238,27 @@ serve(async (req) => {
 
   // ===== Sem diferença: troca na hora =====
   if (dif <= 0) {
+    // Nova mais barata: crédito (padrão) ou reembolso da sobra por Pix.
+    let devolucao: Devolucao | null = null;
+    if (ctx.sobraCentavos > 0) {
+      const dv = (payload.devolucao && typeof payload.devolucao === "object") ? payload.devolucao as Record<string, unknown> : {};
+      if (dv.tipo === "pix") {
+        const chave = String(dv.chave_pix ?? "").trim();
+        if (chave.length < 5 || chave.length > 140) return falha("chave_pix_invalida", "Confira a sua chave Pix.", 400);
+        devolucao = { tipo: "pix", chavePix: chave };
+      } else {
+        devolucao = { tipo: "credito" };
+      }
+    }
     const r = await aplicarTroca(admin, ctx, {
-      callerId: caller.id, callerEmail: caller.email ?? null, logTag: "cliente-trocar",
+      callerId: caller.id, callerEmail: caller.email ?? null, logTag: "cliente-trocar", devolucao,
     });
     if (!r.ok) return json({ ok: false, error: r.error, message: r.message }, r.status);
-    return json({ ok: true, status: "aplicada", modalidade: r.modalidade, reserva: r.reserva, confirmacao: r.confirmacao });
+    return json({
+      ok: true, status: "aplicada", modalidade: r.modalidade, reserva: r.reserva, confirmacao: r.confirmacao,
+      credito: r.credito ?? null,
+      reembolso: devolucao?.tipo === "pix" ? { valor_centavos: ctx.sobraCentavos, prazo_horas: REEMBOLSO_PIX_HORAS } : null,
+    });
   }
 
   // ===== Com diferença: cobra primeiro =====

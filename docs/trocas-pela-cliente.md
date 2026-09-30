@@ -9,8 +9,10 @@ Antes, pra trocar a data a cliente chamava a Elarah no WhatsApp. Agora ela faz s
   antes do encerramento de vendas e com vaga pra quantidade da reserva).
 - **Outra experiência**: qualquer experiência à venda no site. Se for **mais cara**, a cliente
   paga a diferença do preço de tabela (× quantidade) no **Pix** (Mercado Pago) ou no **cartão**
-  (Pagar.me, com a taxa da parcela, igual ao checkout). Se for mais barata, a tela avisa que a
-  diferença não é devolvida. Experiência com opções pra escolher (Individual/Dupla, modelo de
+  (Pagar.me, com a taxa da parcela, igual ao checkout). Se for **mais barata**, a sobra vira
+  **crédito** (cupom de valor fixo, uso único, 90 dias — opção em destaque) ou, num link discreto,
+  **reembolso por Pix** na chave que ela informar (a Elarah tem 72h; fica pendente na aba).
+  A diferença é sempre: preço de hoje da nova (com promoção) − o que ela pagou por pessoa. Experiência com opções pra escolher (Individual/Dupla, modelo de
   pintura…), agendamento livre ou kit não aparece: nesses casos a cliente fala com a Elarah.
 - **Mesma experiência em fichas separadas**: fichas com o mesmo nome e o mesmo parceiro (a mesma
   aula cadastrada várias vezes, uma data em cada) aparecem juntas em "Mesma experiência, outra
@@ -53,7 +55,8 @@ menu mostra quantas estão pendentes.
 ## Pra ativar (uma vez)
 
 1. No SQL Editor do Supabase, rode `sql/elarah_trocas_reserva.sql` e depois
-   `sql/elarah_trocas_reserva_pagamento.sql` (colunas do pagamento da diferença).
+   `sql/elarah_trocas_reserva_pagamento.sql` (colunas do pagamento da diferença) e
+   `sql/elarah_trocas_reserva_devolucao.sql` (crédito / reembolso Pix da sobra).
 2. Publique as Edge Functions: GitHub → Actions → **Deploy Supabase Edge Functions** →
    **Run workflow**. Entra a função nova `cliente-trocar-reserva` e a `admin-reagendar-reserva`
    atualizada (agora divide o código de remarcação com a função nova, em

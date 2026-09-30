@@ -25,6 +25,7 @@
 import { effectiveCutoffHours } from "./booking_guard.ts";
 import { carregarDescontoGeral, precoFinalCentavos } from "./promo.ts";
 import { prazoRemarcacaoPorCategoria, PRAZO_REMARCACAO_PADRAO } from "./booking_policy.ts";
+import { sendEmail } from "./email.ts";
 import {
   enviarConfirmacaoReagendamento,
   liberarVaga,
@@ -170,6 +171,37 @@ export interface TrocaCtx {
   diferencaCentavos: number;
   // Preço por pessoa cobrado hoje pela experiência nova (com promoção).
   precoNovoUnit: number | null;
+  // Nova mais BARATA: quanto sobra pra cliente (crédito ou reembolso Pix).
+  sobraCentavos: number;
+}
+
+// O que fazer com a sobra quando a nova é mais barata.
+//   credito → cupom de valor fixo, uso único, 90 dias (tabela coupons — não
+//             entra como receita nova na contabilidade, vira desconto).
+//   pix     → a Elarah devolve por Pix em até 72h (fica pendente na aba).
+export interface Devolucao {
+  tipo: "credito" | "pix";
+  chavePix?: string | null;
+}
+export const CREDITO_DIAS = 90;
+export const REEMBOLSO_PIX_HORAS = 72;
+
+function gerarCodigoCredito(): string {
+  const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) out += alfabeto[bytes[i] % alfabeto.length];
+  return "CREDITO-" + out;
+}
+
+function brl(c: number): string {
+  return "R$ " + (c / 100).toFixed(2).replace(".", ",");
+}
+
+function dataBR(iso: string): string {
+  const d = new Date(new Date(iso).getTime() - 3 * 3600_000);
+  return String(d.getUTCDate()).padStart(2, "0") + "/" + String(d.getUTCMonth() + 1).padStart(2, "0") + "/" + d.getUTCFullYear();
 }
 
 export type Falha = { ok: false; error: string; message: string; status: number };
@@ -243,6 +275,7 @@ export async function validarTroca(
     return falha("agendamento_livre", "Essa experiência tem agendamento direto com o parceiro. Fale com a gente no WhatsApp.");
   }
   let diferencaCentavos = 0;
+  let sobraCentavos = 0;
   let precoNovoUnit: number | null = null;
   if (!mesmaExp) {
     if (isKit(novaExp)) return falha("kit", "Kits não entram na troca. Fale com a gente no WhatsApp.");
@@ -264,6 +297,7 @@ export async function validarTroca(
       return falha("preco_invalido", "Não conseguimos calcular o valor dessa troca. Fale com a gente no WhatsApp.");
     }
     if (precoNovo > precoAntigo) diferencaCentavos = (precoNovo - precoAntigo) * qty;
+    else if (precoNovo < precoAntigo) sobraCentavos = (precoAntigo - precoNovo) * qty;
   }
 
   // Turma nova: ativa, à venda e com vaga.
@@ -323,7 +357,7 @@ export async function validarTroca(
 
   return {
     ok: true,
-    ctx: { bk, meta, qty, expAtual, novaExp, mesmaExp, slotIdNovo, novaData, novoHorario, diferencaCentavos, precoNovoUnit },
+    ctx: { bk, meta, qty, expAtual, novaExp, mesmaExp, slotIdNovo, novaData, novoHorario, diferencaCentavos, sobraCentavos, precoNovoUnit },
   };
 }
 
@@ -379,9 +413,10 @@ export async function aplicarTroca(
     callerEmail: string | null;
     trocaId?: string | null;
     pagamento?: PagamentoDiferenca | null;
+    devolucao?: Devolucao | null;
     logTag: string;
   },
-): Promise<Resultado<{ modalidade: string; confirmacao: unknown; reserva: Record<string, unknown> }>> {
+): Promise<Resultado<{ modalidade: string; confirmacao: unknown; reserva: Record<string, unknown>; credito?: Record<string, unknown> | null }>> {
   const { bk, meta, qty, novaExp, mesmaExp, slotIdNovo } = ctx;
   const bookingId = String(bk.id);
   const snap = snapshotTroca(ctx);
@@ -446,6 +481,21 @@ export async function aplicarTroca(
     meta.bairro = novaExp.bairro != null && String(novaExp.bairro).trim() ? String(novaExp.bairro).trim() : null;
     // O prazo de remarcação passa a ser o da experiência nova.
     meta.politica_remarcacao_horas = prazoRemarcacaoPorCategoria(novaExp.categoria).horas;
+  }
+  const sobra = ctx.sobraCentavos > 0 ? ctx.sobraCentavos : 0;
+  const devolucao: Devolucao | null = sobra > 0 ? (opts.devolucao ?? { tipo: "credito" }) : null;
+  if (devolucao) {
+    // Nova mais barata: a sobra sai da reserva (vira crédito ou volta por
+    // Pix), então o total da reserva cai junto.
+    update.preco_label = novaExp.preco ?? bk.preco_label;
+    update.amount_total = Math.max(0, (Number(bk.amount_total) || 0) - sobra);
+    if (ctx.precoNovoUnit) meta.unit_price_centavos = ctx.precoNovoUnit;
+    meta.troca_devolucao = {
+      tipo: devolucao.tipo,
+      valor_centavos: sobra,
+      chave_pix: devolucao.tipo === "pix" ? (devolucao.chavePix ?? null) : null,
+      troca_id: opts.trocaId ?? null,
+    };
   }
   if (opts.pagamento) {
     // Pagou a diferença: a reserva passa a valer a experiência nova. O
@@ -521,6 +571,64 @@ export async function aplicarTroca(
     linha.pago_at = agoraIso;
     linha.pagamento_status = "aprovado";
   }
+
+  // Sobra: gera o cupom de crédito (ou registra o reembolso Pix pendente).
+  let credito: Record<string, unknown> | null = null;
+  if (devolucao) {
+    linha.devolucao_tipo = devolucao.tipo;
+    linha.devolucao_centavos = sobra;
+    if (devolucao.tipo === "pix") {
+      linha.reembolso_pix_chave = devolucao.chavePix ?? null;
+      linha.reembolso_prazo = new Date(Date.now() + REEMBOLSO_PIX_HORAS * 3600_000).toISOString();
+    } else {
+      const validade = new Date(Date.now() + CREDITO_DIAS * 86400_000).toISOString();
+      let codigo = "";
+      let couponId: string | null = null;
+      for (let tentativa = 0; tentativa < 3 && !couponId; tentativa++) {
+        codigo = gerarCodigoCredito();
+        const { data: cup, error: cupErr } = await sb.from("coupons").insert({
+          code: codigo,
+          nome: "Crédito de troca",
+          descricao: "Crédito da troca da reserva " + bookingId.slice(-8).toUpperCase() + " (" + (bk.email ?? "") + ")",
+          discount_type: "value",
+          discount_value: sobra,
+          valid_until: validade,
+          max_uses: 1,
+          is_active: true,
+          metadata: { origem: "troca_cliente", booking_id: bookingId, email: bk.email ?? null, troca_id: opts.trocaId ?? null },
+        }).select("id").single();
+        if (!cupErr && cup) couponId = cup.id;
+        else console.error("[" + opts.logTag + "] erro criando cupom de crédito", bookingId, cupErr?.message);
+      }
+      if (couponId) {
+        credito = { codigo, valor_centavos: sobra, valido_ate: validade };
+        linha.credito_codigo = codigo;
+        linha.credito_expira_em = validade;
+        meta.troca_devolucao = { ...(meta.troca_devolucao as Record<string, unknown>), codigo, valido_ate: validade };
+        await sb.from("bookings").update({ metadata: meta }).eq("id", bookingId);
+        if (bk.email) {
+          try {
+            await sendEmail({
+              to: String(bk.email).trim(),
+              subject: "Seu crédito Elarah de " + brl(sobra) + " 🎟",
+              html: '<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;color:#2b2420;">' +
+                "<h2>Seu crédito na Elarah 🧡</h2>" +
+                "<p>Oi" + (bk.nome ? ", " + String(bk.nome).split(" ")[0] : "") + "! Como a experiência nova custa menos, " +
+                "a diferença virou crédito pra você usar no site.</p>" +
+                '<p style="font-size:22px;font-weight:bold;letter-spacing:1px;background:#fff3ea;border-radius:10px;padding:14px;text-align:center;">' + codigo + "</p>" +
+                "<p><strong>Valor:</strong> " + brl(sobra) + "<br><strong>Válido até:</strong> " + dataBR(validade) + "</p>" +
+                "<p>É só colar o código no campo de cupom na hora de reservar. Vale pra uma compra.</p>" +
+                "</div>",
+            });
+          } catch (e) {
+            console.error("[" + opts.logTag + "] e-mail do crédito falhou", bookingId, String(e));
+          }
+        }
+      } else {
+        linha.observacao = "Crédito não foi gerado — criar o cupom à mão.";
+      }
+    }
+  }
   const gravar = (l: Record<string, unknown>) => opts.trocaId
     ? sb.from("trocas_reserva").update(l).eq("id", opts.trocaId)
     : sb.from("trocas_reserva").insert(l);
@@ -529,7 +637,10 @@ export async function aplicarTroca(
     // Banco ainda sem sql/elarah_trocas_reserva_pagamento.sql: grava sem as
     // colunas novas, pra troca não sumir da aba do painel.
     console.warn("[" + opts.logTag + "] trocas_reserva sem colunas de pagamento — gravando sem elas", logErr.message);
-    const { status: _s, pago_at: _p, pagamento_status: _ps, ...basica } = linha;
+    const {
+      status: _s, pago_at: _p, pagamento_status: _ps, devolucao_tipo: _dt, devolucao_centavos: _dc,
+      reembolso_pix_chave: _rk, reembolso_prazo: _rp, credito_codigo: _cc, credito_expira_em: _ce, ...basica
+    } = linha;
     ({ error: logErr } = await gravar(basica));
   }
   if (logErr) {
@@ -558,6 +669,7 @@ export async function aplicarTroca(
     modalidade: snap.modalidade,
     confirmacao,
     reserva: { experiencia_nome: snap.para_experiencia_nome, data: snap.para_data, horario: snap.para_horario },
+    credito,
   };
 }
 
