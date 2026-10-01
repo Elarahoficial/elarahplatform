@@ -55,11 +55,26 @@ extra = '''
   .mos img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
   .mos figcaption{position:absolute;left:0;right:0;bottom:0;padding:16px 15px 11px;font-size:12px;font-weight:700;color:#fff;letter-spacing:.01em;background:linear-gradient(0deg,rgba(28,16,20,.82),rgba(28,16,20,0))}
   /* ===== cards (o que voce leva) ===== */
-  .leva{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:22px}
-  .levac{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 20px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
-  .levac .em{font-size:24px;line-height:1}
-  .levac h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);margin:11px 0 6px;line-height:1.08}
-  .levac p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+  .leva{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:26px}
+  .levac{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 16px 38px -26px rgba(0,0,0,.34)}
+  .levac .lph{height:218px;position:relative;overflow:hidden}
+  .levac .lph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .levac .lbd{padding:20px 22px 24px}
+  .levac h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);margin:0 0 7px;line-height:1.08}
+  .levac p{font-size:12.5px;color:var(--muted);line-height:1.55;margin:0}
+  /* ===== proximos passos ===== */
+  .pxs{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px}
+  .pxc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 22px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
+  .pxc .num{width:38px;height:38px;border-radius:999px;background:var(--orange);color:#fff;font-family:'DM Serif Display',serif;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .pxc h4{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);margin:14px 0 7px;line-height:1.1}
+  .pxc p{font-size:12.5px;color:var(--muted);line-height:1.55;margin:0}
+  .pxc p b{color:var(--navy);font-weight:700}
+  .pxcta{margin-top:26px;background:linear-gradient(158deg,var(--navy),#241722);border-radius:20px;padding:26px 30px;display:flex;justify-content:space-between;align-items:center;gap:22px;flex-wrap:wrap;box-shadow:0 22px 50px -28px rgba(0,0,0,.5)}
+  .pxcta .t{font-family:'DM Serif Display',serif;font-size:23px;color:#fff;line-height:1.12;margin:0}
+  .pxcta .t em{font-style:italic;color:var(--orange)}
+  .pxcta .btn{background:var(--orange);color:#fff;font-weight:700;font-size:14px;padding:14px 26px;border-radius:999px;white-space:nowrap}
+  .pxcontact{margin-top:16px;font-size:12px;color:var(--navy-soft);line-height:1.6;text-align:center}
+  .pxcontact b{color:var(--navy)}
   /* ===== tudo incluso ===== */
   .incsplit{display:grid;grid-template-columns:1fr 1.18fr;gap:34px;margin-top:20px;align-items:center}
   .incsplit .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 48px -28px rgba(0,0,0,.45);height:390px;position:relative}
@@ -134,7 +149,7 @@ cover = f'''
           <span class="chip">≈ <b>5h</b> de experiência</span>
         </div>
       </div>
-      <div class="cover-photo">{img("croche-bolsa.jpg", "Bolsa autoral usada como peça de moda", "center 40%")}</div>
+      <div class="cover-photo">{img("bag-grupo-rosa.jpg", "Grupo de amigas reunido no encontro de moda", "center 42%")}</div>
     </div>
     {foot("Bucket Bag · Turma privada")}
   </section>'''
@@ -180,7 +195,7 @@ prof = f'''
     <span class="eyebrow orange">◆ A profissional</span>
     <h2>Moda de perto, com <em>quem vive esse universo</em></h2>
     <div class="prof">
-      <div class="pph">{img("bag-couro-mesa.jpg", "Orientação próxima durante a confecção, com materiais e ferramentas", "center 50%")}</div>
+      <div class="pph">{img("ursula-cadeira.jpg", "Úrsula Kaercher com uma Bucket Bag", "center 22%")}</div>
       <div>
         <p class="name">Úrsula Kaercher</p>
         <div class="role">Estilista · ≈ 20 anos de moda</div>
@@ -219,11 +234,9 @@ leva = f'''
     <span class="eyebrow orange">◆ O que você leva</span>
     <h2>Muito mais do que <em>uma bolsa</em></h2>
     <div class="leva">
-      <div class="levac"><div class="em">👜</div><h4>Sua Bucket Bag</h4><p>Uma peça criada e finalizada por você, pronta para usar.</p></div>
-      <div class="levac"><div class="em">🧵</div><h4>Uma nova habilidade</h4><p>Técnicas de estruturação, montagem e acabamento.</p></div>
-      <div class="levac"><div class="em">🛍️</div><h4>Eco Bag exclusiva</h4><p>Um mimo do projeto “Eu Que Fiz”.</p></div>
-      <div class="levac"><div class="em">🎁</div><h4>Brindes especiais</h4><p>Detalhes preparados para marcar o encontro.</p></div>
-      <div class="levac"><div class="em">🧡</div><h4>A memória do dia</h4><p>Cinco horas vivendo algo novo, juntas.</p></div>
+      <div class="levac"><div class="lph">{img("bucket-bag-vermelha.jpg", "Bucket Bag finalizada", "center 55%")}</div><div class="lbd"><h4>Sua Bucket Bag</h4><p>Uma peça criada e finalizada por você, pronta para usar.</p></div></div>
+      <div class="levac"><div class="lph">{img("bag-couro-mesa.jpg", "Técnicas reais de confecção", "center 50%")}</div><div class="lbd"><h4>Uma nova habilidade</h4><p>Técnicas de estruturação, montagem e acabamento.</p></div></div>
+      <div class="levac"><div class="lph">{img("bag-amigas-jantar.jpg", "Amigas rindo durante o encontro", "center 30%")}</div><div class="lbd"><h4>A memória do dia</h4><p>Horas vivendo algo novo, entre amigas.</p></div></div>
     </div>
     {foot("O que você leva")}
   </section>'''
@@ -287,13 +300,31 @@ final = f'''
       <div class="ftx">
         <p class="lead">Mais do que aprender uma técnica, é reservar algumas horas para <strong>criar juntas, desacelerar</strong> e sair com <strong>algo feito pelas próprias mãos</strong>.</p>
         <div class="fincta">Vamos criar esse dia juntas? 🧡</div>
-        <p class="fincontact"><i>Elarah · Experiências</i><br>WhatsApp <b>+55 (11) 91445-5930</b> · @elarah.oficial · elarah.com.br</p>
       </div>
     </div>
     {foot("Vamos criar?")}
   </section>'''
 
-deck = ('<div class="deck">\n' + cover + nao + jornada + prof + leva + incluso + investimento + final + '\n\n</div>\n\n')
+# ===== 9 · PRÓXIMOS PASSOS =====
+proximos = f'''
+  <section class="slide">
+{head_simple("Próximos passos")}
+    <span class="eyebrow orange">◆ Próximos passos</span>
+    <h2>É só dar o <em>primeiro passo</em></h2>
+    <div class="pxs">
+      <div class="pxc"><div class="num">1</div><h4>Escolham a data</h4><p>Vocês confirmam o melhor dia para o grupo — a data prevista é <b>17/10</b>.</p></div>
+      <div class="pxc"><div class="num">2</div><h4>Fechamos a turma</h4><p>Reservamos a experiência privativa para as <b>6 participantes</b>.</p></div>
+      <div class="pxc"><div class="num">3</div><h4>A gente prepara tudo</h4><p>Materiais, profissional, coffee break e brindes. Vocês só chegam e criam.</p></div>
+    </div>
+    <div class="pxcta">
+      <p class="t">Vamos reservar <em>o dia de vocês?</em> 🧡</p>
+      <span class="btn">💬 WhatsApp +55 (11) 91445-5930</span>
+    </div>
+    <p class="pxcontact"><i>Elarah · Experiências</i> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br</p>
+    {foot("Próximos passos")}
+  </section>'''
+
+deck = ('<div class="deck">\n' + cover + nao + jornada + prof + leva + incluso + investimento + final + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-bucket-bag-ursula.html"
 io.open(out, "w", encoding="utf-8").write(html)
