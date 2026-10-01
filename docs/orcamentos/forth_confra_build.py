@@ -29,6 +29,15 @@ extra = '''
   .band .t{font-family:'DM Serif Display',serif;font-size:21px;color:#fff;margin:0 0 6px}
   .band .t em{font-style:italic;color:var(--orange)}
   .band p{font-size:12.5px;color:rgba(255,255,255,.82);line-height:1.55;margin:0;max-width:92ch}
+  /* slide 2 · por que funciona (3 cards) */
+  .s2g{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px}
+  .s2c{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);display:flex;flex-direction:column}
+  .s2c .s2ph{height:190px;position:relative;overflow:hidden}
+  .s2c .s2ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .s2c .s2bd{padding:18px 20px 20px}
+  .s2c h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);margin:0 0 7px;line-height:1.14}
+  .s2c p{font-size:12px;color:var(--muted);line-height:1.55;margin:0}
+  .s2c p b{color:var(--navy);font-weight:700}
   /* cards de experiencia */
   .xg{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:24px}
   .xc{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);display:flex;flex-direction:column}
@@ -136,21 +145,16 @@ cover = f'''
 # ===== 2 · TEAM BUILDING DO NOSSO JEITO =====
 tb = f'''
   <section class="slide">
-{head_simple("O nosso jeito")}
-    <span class="eyebrow orange">◆ Confraternização do nosso jeito</span>
-    <h2>Confraternização sem cara de <em>evento corporativo</em></h2>
-    <div class="tbsplit">
-      <div>
-        <p class="lead2">Uma pausa para o time <strong>sair da rotina, experimentar algo novo e celebrar junto</strong> — sem dinâmica forçada e sem programação engessada.</p>
-        <div class="kw"><span>Criar</span><span>Experimentar</span><span>Compartilhar</span><span>Celebrar</span></div>
-      </div>
-      <div class="ph">{img("corp-conexao.jpg", "Time misto interagindo de forma natural", "center 35%")}</div>
+{head_simple("Por que funciona")}
+    <span class="eyebrow orange">◆ O que o time leva junto</span>
+    <h2>Team building que <em>ninguém finge gostar</em></h2>
+    <p class="lead">A gente não faz dinâmica de quebra-gelo. A conexão acontece sozinha quando o time senta na mesma mesa pra criar algo com as próprias mãos — <strong>sem hierarquia, sem quem sabe mais e quem sabe menos.</strong> 🧡</p>
+    <div class="s2g">
+      <div class="s2c"><div class="s2ph">{img("pintura-corp-class.jpg", "Grupo corporativo misto criando junto", "center 45%")}</div><div class="s2bd"><h3>Conversa que não rola no escritório</h3><p>Duas horas e meia lado a lado fazem o time falar de coisas que a reunião nunca puxa. <b>Áreas diferentes se misturam sozinhas.</b></p></div></div>
+      <div class="s2c"><div class="s2ph">{img("natura-criando.jpg", "Diretoria e time começando do zero juntos", "center 45%")}</div><div class="s2bd"><h3>Todo mundo no mesmo pé</h3><p>Ninguém precisa ter experiência. <b>Diretoria e time começam do zero juntos</b> — e é justamente aí que a hierarquia cai.</p></div></div>
+      <div class="s2c"><div class="s2ph">{img("ceramica2.jpg", "Peças criadas que ficam depois do encontro", "center 50%")}</div><div class="s2bd"><h3>Fica depois do dia</h3><p>O que foi criado continua depois do encontro — <b>seja como peça individual ou como memória coletiva</b> do time.</p></div></div>
     </div>
-    <div class="band">
-      <p class="t">No espaço <em>de vocês</em>.</p>
-      <p>Nós levamos <b style="color:#fff">profissional, materiais e toda a estrutura necessária</b>. Antes do grupo chegar, deixamos tudo pronto para a experiência acontecer.</p>
-    </div>
-    {foot("O nosso jeito")}
+    {foot("Por que funciona")}
   </section>'''
 
 # ===== 3 · EXPERIÊNCIAS CRIATIVAS =====
