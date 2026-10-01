@@ -148,6 +148,14 @@ section{padding:96px 0}
 .sim__lista{list-style:none;display:grid;gap:10px;margin-bottom:auto;padding-bottom:22px}
 .sim__lista li{font-size:.9rem;color:rgba(255,255,255,.9);padding-left:18px;position:relative}
 .sim__lista li::before{content:'';position:absolute;left:0;top:.62em;width:8px;height:1px;background:#f3b38f}
+.sim-cal{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:2px 0 14px}
+.sim-cal__m{border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:9px 10px;min-height:58px;transition:background .25s,border-color .25s,transform .25s}
+.sim-cal__m b{display:block;font-size:.68rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45)}
+.sim-cal__m span{display:block;font-size:.74rem;line-height:1.25;color:rgba(255,255,255,.4);margin-top:3px}
+.sim-cal__m.on{background:#f3b38f;border-color:#f3b38f;transform:translateY(-2px)}
+.sim-cal__m.on b{color:#1f4d3f}
+.sim-cal__m.on span{color:#16302a;font-weight:600}
+.sim-cal__res{font-size:.88rem;color:rgba(255,255,255,.9);margin-bottom:auto;padding-bottom:18px}
 .sim__nota{font-size:.78rem;color:rgba(255,255,255,.6);margin-bottom:12px}
 .sim__previa .btn{align-self:flex-start}
 
@@ -778,7 +786,8 @@ body.lm-open{overflow:hidden}
         <span class="sim__tag">Sua seleção</span>
         <p class="sim__selecao" id="sim-selecao"></p>
         <h4 id="sim-titulo">Uma experiência pensada para sua equipe.</h4>
-        <ul class="sim__lista" id="sim-lista"></ul>
+        <div class="sim-cal" id="sim-cal" aria-label="Meses do seu cronograma"></div>
+        <p class="sim-cal__res" id="sim-cal-res"></p>
         <p class="sim__nota" id="sim-nota">Proposta personalizada em até 1 dia útil, sem compromisso.</p>
         <button type="button" class="btn btn--terra" id="sim-cta">Receber minha proposta</button>
       </aside>
@@ -843,34 +852,6 @@ body.lm-open{overflow:hidden}
 <!-- Os meses "acendem" conforme a quantidade de encontros. Nenhuma opção
      vem marcada: a empresa escolhe. A escolha entra na mesma jornada do
      simulador e do orçamento (estado EXP). -->
-<section class="soft" id="monte">
-  <span id="calendario"></span>
-  <div class="wrap">
-    <div class="sec-head center reveal" style="text-align:center">
-      <span class="eyebrow">Monte o seu cronograma</span>
-      <h2>Você escolhe quantos encontros quer. <em>A gente monta o cronograma.</em></h2>
-      <p>Escolha de 1 a 12 encontros e combine diferentes experiências da Elarah ao longo do ano. Temos mais de 20 opções para criar um calendário que faça sentido para a sua equipe.</p>
-    </div>
-    <div class="picker reveal" role="group" aria-label="Quantos encontros por ano">
-      <span>Quantos encontros por ano?</span>
-      <button type="button" data-enc="1"><b>1</b><small>Pontual</small><em>uma vez no ano</em></button>
-      <button type="button" data-enc="2"><b>2</b><small>Semestral</small><em>1 por semestre</em></button>
-      <button type="button" data-enc="4"><b>4</b><small>Trimestral</small><em>1 a cada 3 meses</em></button>
-      <button type="button" data-enc="6"><b>6</b><small>Bimestral</small><em>1 a cada 2 meses</em></button>
-      <button type="button" data-enc="12"><b>12</b><small>Mensal</small><em>1 por mês</em></button>
-    </div>
-    <div class="cal is-vazio" id="cal"></div>
-    <div class="picker__cta reveal">
-      <div><span class="picker__tit">Seu cronograma de cuidado</span><p id="cal-resumo"></p></div>
-      <a class="btn btn--terra" href="#contato" data-lead="cronograma" id="cal-cta">Quero esse cronograma</a>
-    </div>
-    <div class="mais20 reveal">
-      <div><b>Mais de 20 experiências para escolher</b><p>Cerâmica, velas, pintura, gastronomia, kintsugi, perfumaria e muito mais. Os temas do calendário são uma sugestão: a empresa escolhe o que faz mais sentido para o momento e o perfil da equipe.</p></div>
-      <a href="experiencias-empresas.html">Ver as experiências →</a>
-    </div>
-  </div>
-</section>
-
 <!-- ===== EXPERIÊNCIAS ===== -->
 <section id="experiencias">
   <div class="wrap">
@@ -930,21 +911,6 @@ body.lm-open{overflow:hidden}
       <li><em>03</em><b>Vive quando quiser</b><p>Escolhe a experiência, o dia e o horário que fizerem sentido para sua rotina.</p></li>
     </ol>
 
-    <div class="gdif reveal">
-      <p class="gdif__frase">Mais de 20 experiências. <em>Uma escolha para cada pessoa.</em></p>
-      <p class="gdif__txt">Cada colaborador tem gostos e rotinas diferentes. Por isso, em vez de escolher um único presente para todo mundo, sua empresa oferece liberdade para cada pessoa escolher sua própria experiência na Elarah.</p>
-      <a class="btn btn--ghost" href="https://elarah.com.br/" target="_blank" rel="noopener">Ver experiências disponíveis →</a>
-    </div>
-
-    <div class="gquando reveal">
-      <div>
-        <span class="eyebrow">Quando presentear?</span>
-        <p>Datas comemorativas, aniversários, reconhecimento, integração, campanhas internas — ou simplesmente porque seu time merece.</p>
-      </div>
-      <div class="chips gquando__chips">
-        <span class="chip">Dia da Secretária</span><span class="chip">Dia do Professor</span><span class="chip">Dia do Médico</span><span class="chip">Dia do Profissional de TI</span><span class="chip">Confraternização de fim de ano</span><span class="chip">Aniversários</span><span class="chip">Reconhecimento de equipes</span><span class="chip">Boas-vindas e onboarding</span><span class="chip">Campanhas internas</span>
-      </div>
-    </div>
 
   </div>
 </section>
@@ -1029,13 +995,6 @@ body.lm-open{overflow:hidden}
       </div>
     </div>
 
-    <div class="origem__fecho reveal">
-      <p>Da experiência que conecta, <em>nasce o cuidado que permanece.</em></p>
-      <div class="origem__ctas">
-        <a class="btn btn--terra" href="https://elarah.com.br/#experiencias" target="_blank" rel="noopener">Conheça as experiências da Elarah →</a>
-        <a class="origem__link" href="https://elarah.com.br/" target="_blank" rel="noopener">Conheça a Elarah</a>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -1057,39 +1016,6 @@ body.lm-open{overflow:hidden}
   </div>
 </section>
 
-<!-- ===== FORM ===== -->
-<section id="contato">
-  <div class="wrap">
-    <div class="cta reveal">
-      <div style="position:relative;z-index:1">
-        <span class="eyebrow">Proposta personalizada</span>
-        <h2>Receba o cronograma da <em>sua empresa</em> em 1 dia útil.</h2>
-        <p>Conta pra gente o tamanho do time e o que você procura. Voltamos com um calendário sob medida e 3 opções de investimento — sem compromisso.</p>
-        <ul>
-          <li>Pontual, semestral ou anual</li>
-          <li>Baseado nas datas que importam para o seu setor</li>
-          <li>Com gift cards nas datas de presentear — e a opção de trocar encontros por gift cards</li>
-          <li>Lista de presença e fotos de cada evento</li>
-        </ul>
-      </div>
-      <form class="form" id="lead-form" novalidate>
-        <label>Seu nome<input name="nome" required autocomplete="name"></label>
-        <label>Empresa<input name="empresa" required autocomplete="organization"></label>
-        <label>Cargo<input name="cargo" placeholder="RH, Gente & Cultura, Diretoria…" autocomplete="organization-title"></label>
-        <label>E-mail corporativo<input name="email" type="email" required autocomplete="email"></label>
-        <label>WhatsApp<input name="whatsapp" type="tel" required placeholder="(11) 9…" autocomplete="tel"></label>
-        <label>Pessoas na equipe<select name="colaboradores"><option value="">Selecione</option><option>Até 20</option><option>21–50</option><option>51–100</option><option>Mais de 100</option></select></label>
-        <label class="full">Com que frequência?<select name="encontros"><option value="">Selecione</option><option value="1">1 encontro — Pontual</option><option value="2">2 encontros — Semestral</option><option value="4">4 encontros — Trimestral</option><option value="6">6 encontros — Bimestral</option><option value="12">12 encontros — Mensal</option><option value="ajuda">Ainda não sei — Quero ajuda</option></select></label>
-        <input type="hidden" name="plano" value="">
-        <label class="full">Algo que devemos saber? (opcional)<textarea name="mensagem" placeholder="Ex.: queremos algo pro Dia Mundial da Saúde Mental; time 100% remoto; temos 3 turnos…"></textarea></label>
-        <input class="hp" name="site_url" tabindex="-1" autocomplete="off" aria-hidden="true">
-        <label class="full lm__cons"><input type="checkbox" name="consentimento" required> <span>Concordo em ser contatada(o) pela Elarah sobre esta proposta, conforme a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span></label>
-        <button class="btn btn--terra" type="submit">Receber minha proposta →</button>
-        <p class="fine">Respondemos em até 1 dia útil. Seus dados são usados só para este contato.</p>
-      </form>
-    </div>
-  </div>
-</section>
 
 <footer>
   <div class="wrap in">
@@ -1143,33 +1069,29 @@ body.lm-open{overflow:hidden}
   // A empresa escolhe quantos encontros; os meses acendem na ordem de
   // força das datas (mesma regra do painel da equipe).
   var encSel = 0; // nada marcado até a empresa escolher
+  // Datas principais (só as fortes aparecem com nome, pra não pesar).
+  var MES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var MES_TEMA = { 1: 'Janeiro Branco', 3: 'Mês da mulher', 4: 'Abril Verde', 9: 'Setembro Amarelo', 10: 'Saúde mental', 12: 'Fim de ano' };
+  // Encontros espalhados pelo ano, passando pelas datas fortes.
+  var DIST = { 1: [10], 2: [4, 10], 4: [1, 4, 7, 10], 6: [1, 3, 5, 7, 9, 11], 12: [1,2,3,4,5,6,7,8,9,10,11,12] };
   function desenharCal() {
-    var cal = document.getElementById('cal');
-    if (!cal || !D) return;
-    // Encontros espalhados pelo ano, sem concentrar (e passando pelas
-    // datas fortes: Janeiro Branco, Abril Verde, Setembro Amarelo, 10/10).
-    var DIST = { 1: [10], 2: [4, 10], 4: [1, 4, 7, 10], 6: [1, 3, 5, 7, 9, 11], 12: [1,2,3,4,5,6,7,8,9,10,11,12] };
-    var ativos = encSel ? (DIST[encSel] || D.PRIORIDADE_MESES.slice(0, encSel)) : [];
-    cal.classList.toggle('is-vazio', !encSel);
-    cal.innerHTML = D.PROGRAMA.map(function (p) {
-      var a = D.atividade(p.atividade), on = ativos.indexOf(p.mes) >= 0;
-      return '<div class="mon in' + (on ? ' mon--key' : ' mon--off') + '"><div class="m">' + MESES[p.mes - 1] + '</div>' +
-        '<b>' + esc(p.tema) + '</b><div class="a">' + esc(a.nome) + '</div></div>';
-    }).join('');
-    var res = document.getElementById('cal-resumo');
-    if (res) {
-      var nomesM = ativos.slice().sort(function (a, b) { return a - b; }).map(function (m) { return MESES[m - 1].toLowerCase(); });
-      res.innerHTML = !encSel ? 'Escolha quantos encontros por ano e veja seu cronograma ganhar forma.'
-        : '<b>' + encSel + ' encontro' + (encSel > 1 ? 's' : '') + ' — ' + (encSel === 12 ? 'um por mês' : 'em ' + nomesM.join(', ').replace(/, ([^,]*)$/, ' e $1')) + '.</b> ' +
-          'Cada experiência pode ser escolhida ou trocada entre as mais de 20 da Elarah. A gente cuida de facilitadores, materiais, local (quando aplicável), fotos e lista de presença.';
+    var cal = document.getElementById('sim-cal');
+    if (!cal) return;
+    var ativos = encSel ? (DIST[encSel] || []) : [];
+    var html = '';
+    for (var m = 1; m <= 12; m++) {
+      html += '<div class="sim-cal__m' + (ativos.indexOf(m) >= 0 ? ' on' : '') + '"><b>' + MES_CURTO[m - 1] + '</b>' +
+        (MES_TEMA[m] ? '<span>' + MES_TEMA[m] + '</span>' : '') + '</div>';
     }
-    var cta = document.getElementById('cal-cta'); if (cta) { if (encSel) cta.setAttribute('data-encontros', String(encSel)); else cta.removeAttribute('data-encontros'); }
-    document.querySelectorAll('[data-enc]').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-enc') === encSel); });
+    cal.innerHTML = html;
+    var res = document.getElementById('sim-cal-res');
+    if (res) {
+      var nomes = ativos.map(function (x) { return MES_CURTO[x - 1].toLowerCase(); });
+      res.innerHTML = EXP.freq === 'ajuda' ? 'A gente monta o melhor calendário com você.'
+        : !encSel ? 'Escolha a frequência e veja o seu ano ganhar forma.'
+        : '<b>' + encSel + ' encontro' + (encSel > 1 ? 's' : '') + '</b> — ' + (encSel === 12 ? 'um por mês.' : 'em ' + nomes.join(', ').replace(/, ([^,]*)$/, ' e $1') + '.');
+    }
   }
-  document.querySelectorAll('[data-enc]').forEach(function (b) {
-    b.addEventListener('click', function () { encSel = +b.getAttribute('data-enc'); desenharCal(); });
-  });
-  desenharCal();
 
   // Quem somos: no celular a bio abre em "Ler mais".
   document.addEventListener('click', function (e) {
@@ -1277,20 +1199,14 @@ body.lm-open{overflow:hidden}
         [freqTxt(), 'frequência'], [EXP.objetivo, 'objetivo'], [EXP.local, 'local']
       ].map(function (x) { return x[0] ? '<span>' + esc(x[0]) + '</span>' : '<span class="vazio">' + x[1] + '</span>'; }).join('');
       document.getElementById('sim-titulo').textContent = TITULO[EXP.freq] || 'Uma experiência pensada para sua equipe.';
-      var itens = [];
-      if (EXP.objetivo) itens.push(OBJ_EXP[EXP.objetivo]);
-      if (EXP.local) itens.push(LOCAL_TXT[EXP.local]);
-      itens = itens.concat(EXTRA[EXP.freq] || []);
-      itens.push('Condução por arteterapeutas', 'Lista de presença e fotos do evento');
-      document.getElementById('sim-lista').innerHTML = itens.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('');
       var falta = ['pessoas', 'freq', 'objetivo', 'local'].filter(function (k) { return !EXP[k]; }).length;
       document.getElementById('sim-nota').textContent = falta
         ? 'Escolha ' + (falta === 1 ? 'mais 1 opção' : 'mais ' + falta + ' opções') + ' para completar sua experiência — ou peça a proposta agora.'
         : 'Sua experiência está montada. Proposta personalizada em até 1 dia útil, sem compromisso.';
     }
     // "Monte o seu" (calendário) acompanha a frequência
-    var n = FREQ[EXP.freq] && FREQ[EXP.freq].n;
-    if (n && n !== encSel) { encSel = n; desenharCal(); }
+    encSel = (FREQ[EXP.freq] && FREQ[EXP.freq].n) || 0;
+    desenharCal();
     // Formulários
     [formModal, formFinal].forEach(preencherForm);
   }
@@ -1477,7 +1393,7 @@ body.lm-open{overflow:hidden}
 
   sincronizar();
   tratar(formModal, null);
-  tratar(formFinal, 'formulario');
+  if (formFinal) tratar(formFinal, 'formulario');
 })();
 </script>
 
