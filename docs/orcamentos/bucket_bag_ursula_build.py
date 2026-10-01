@@ -179,7 +179,7 @@ jornada = f'''
     <span class="eyebrow orange">◆ Como a experiência acontece</span>
     <h2>Cinco horas, <em>cinco momentos</em></h2>
     <div class="jrn">
-      {jstep("01 · Boas-vindas & inspiração", "grupo-oficina-atelie.webp", "Boas-vindas & inspiração", "Apresentação da experiência, dos materiais e das possibilidades.", "center 40%")}
+      {jstep("01 · Boas-vindas & inspiração", "bag-boasvindas-grupo.jpg", "Boas-vindas & inspiração", "Apresentação da experiência, dos materiais e das possibilidades.", "center 25%")}
       {jstep("02 · Escolhas & composição", "bag-couro-mesa.jpg", "Escolhas & composição", "Tecidos, ferragens, detalhes e acabamentos começam a ganhar personalidade.", "center 50%")}
       {jstep("03 · Mão na massa", "costura-costurando.jpg", "Mão na massa", "Estruturação e montagem da bolsa com orientação da profissional.", "center 45%")}
       {jstep("04 · Acabamentos", "charm-bolsa-suede.jpg", "Acabamentos", "Os detalhes finais transformam o projeto em uma peça pronta.", "center 50%")}
