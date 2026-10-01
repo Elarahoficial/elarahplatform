@@ -82,6 +82,14 @@
     if (d.length <= 11) d = '55' + d;
     return 'https://wa.me/' + d + (texto ? '?text=' + encodeURIComponent(texto) : '');
   }
+  // Abre direto no WhatsApp Web — onde o número da Elarah (11) 92521-9081
+  // já está conectado. Sempre a mesma aba, pra não abrir uma nova a cada envio.
+  var WA_ELARAH = '(11) 92521-9081';
+  function waWebLink(tel, texto) {
+    var d = digits(tel); if (!d) return null;
+    if (d.length <= 11) d = '55' + d;
+    return 'https://web.whatsapp.com/send?phone=' + d + (texto ? '&text=' + encodeURIComponent(texto) : '');
+  }
   // Celular BR tem 9 depois do DDD (11 dígitos). Fixo não tem WhatsApp (em regra).
   function ehCelular(tel) { var d = digits(tel).replace(/^55/, ''); return d.length === 11 && d[2] === '9'; }
   function dominio(site) {
@@ -1265,20 +1273,23 @@
     return '<p style="margin:0 0 10px;font-size:.84rem">✨ Mensagens personalizadas para <b>' + esc(seg.label) + '</b> — dor do setor, experiência e data que mais conversam com essa empresa. Confira o nome do contato antes de enviar.</p>' +
       '<div class="mh-channels">' +
       (tel ? '<a class="mh-btn mh-btn--ghost mh-btn--sm" href="tel:' + digits(tel) + '">📞 ' + esc(tel) + '</a>' : '') +
-      (tel && ehCelular(tel) ? '<a class="mh-btn mh-btn--ghost mh-btn--sm" href="' + waLink(tel) + '" target="_blank" rel="noopener">💬 WhatsApp</a>' : '') +
+      (tel ? '<a class="mh-btn mh-btn--ghost mh-btn--sm" href="' + waWebLink(tel) + '" target="elarah_whatsapp" rel="noopener">💬 WhatsApp</a>' : '') +
       emails.map(function (e, i) { return '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-copy-txt="' + esc(e) + '" title="' + (i === 0 && p.contato_email ? 'e-mail cadastrado' : 'sugestão pelo domínio — confirme antes') + '">✉️ ' + esc(e) + (i === 0 && p.contato_email ? '' : ' ?') + '</button>'; }).join('') +
       (p.contato_linkedin ? '<a class="mh-btn mh-btn--ghost mh-btn--sm" href="' + esc(p.contato_linkedin) + '" target="_blank" rel="noopener">in Perfil</a>' : '') +
       '<a class="mh-btn mh-btn--ghost mh-btn--sm" href="' + liRH + '" target="_blank" rel="noopener">in Achar o RH</a>' +
       '<a class="mh-btn mh-btn--ghost mh-btn--sm" href="' + liEmp + '" target="_blank" rel="noopener">in Página da empresa</a>' +
       '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-p-edit="' + p.id + '">✏️ Dados</button>' +
       '</div>' +
+      (canal === 'whatsapp' ? '<p style="margin:0 0 10px;font-size:.8rem;opacity:.8">💬 Abre no WhatsApp Web da Elarah · ' + WA_ELARAH + ' · com a mensagem pronta — é só conferir e apertar enviar.' + (tel && !ehCelular(tel) ? ' Esse número parece fixo: só funciona se a empresa usar WhatsApp Business nele.' : '') + '</p>' : '') +
       '<div class="mh-tabs">' + Object.keys(nomes).map(function (k) { return '<button class="mh-tab' + (canal === k ? ' mh-tab--on' : '') + '" data-canal="' + k + '">' + nomes[k] + '</button>'; }).join('') + '</div>' +
       msgs.map(function (m) {
         var corpo = preencher(m.corpo, p);
         var assunto = m.assunto ? preencher(m.assunto, p) : '';
         var extra = '';
         if (canal === 'email') extra = '<a class="mh-btn mh-btn--sm" href="' + gmailLink(emails[0], assunto, corpo) + '" target="_blank" rel="noopener" data-p-enviado="' + p.id + '" data-canal-tipo="e-mail">Abrir no Gmail</a>';
-        if (canal === 'whatsapp' && tel && ehCelular(tel)) extra = '<a class="mh-btn mh-btn--sm" href="' + waLink(tel, corpo) + '" target="_blank" rel="noopener" data-p-enviado="' + p.id + '" data-canal-tipo="WhatsApp">Enviar no WhatsApp</a>';
+        if (canal === 'whatsapp') extra = tel
+          ? '<a class="mh-btn mh-btn--sm" href="' + waWebLink(tel, corpo) + '" target="elarah_whatsapp" rel="noopener" data-p-enviado="' + p.id + '" data-canal-tipo="WhatsApp">Abrir no WhatsApp</a>'
+          : '<button class="mh-btn mh-btn--sm" data-p-wa="' + p.id + '" data-wa-txt="' + esc(corpo) + '">Abrir no WhatsApp</button>';
         return '<div class="mh-msg"><div class="hd"><b>' + esc(m.angulo) + (canal === 'linkedin' && m.id === 'li-convite' ? ' · ' + corpo.length + '/300' : '') + '</b><div style="display:flex;gap:6px;flex-wrap:wrap">' +
           '<button class="mh-btn mh-btn--ghost mh-btn--sm" data-copy-txt="' + esc((assunto ? 'Assunto: ' + assunto + '\n\n' : '') + corpo) + '">Copiar</button>' + extra + '</div></div>' +
           (assunto ? '<pre style="font-weight:700;margin-bottom:6px">' + esc(assunto) + '</pre>' : '') + '<pre>' + esc(corpo) + '</pre></div>';
@@ -1565,6 +1576,15 @@
       if (ds.canal) { S.ui.canal = ds.canal; return render(); }
       if (ds.pEdit) return abrirProspect(S.prospects.filter(function (x) { return x.id === ds.pEdit; })[0]);
       if (ds.pMarcar) return registrarAbordagem(ds.pMarcar, '');
+      if (ds.pWa) {
+        var num = prompt('WhatsApp do contato (com DDD):', '');
+        if (!num || digits(num).length < 10) return;
+        window.open(waWebLink(num, ds.waTxt), 'elarah_whatsapp');
+        var pw = S.prospects.filter(function (x) { return x.id === ds.pWa; })[0];
+        if (pw && !pw.contato_whatsapp) { pw.contato_whatsapp = num; dbSave('b2b_prospects', { id: pw.id, contato_whatsapp: num }).catch(function () {}); }
+        setTimeout(function () { registrarAbordagem(ds.pWa, 'WhatsApp'); }, 300);
+        return;
+      }
       if (ds.pEnviado) { setTimeout(function () { registrarAbordagem(ds.pEnviado, ds.canalTipo); }, 300); return; }
       if (ds.pEvento) {
         var pp = S.prospects.filter(function (x) { return x.id === ds.pEvento; })[0];
