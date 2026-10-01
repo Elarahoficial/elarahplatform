@@ -349,7 +349,7 @@ export async function validarTroca(
     // já com promoção); reserva antiga sem o campo cai no rótulo.
     const tabelaNova = parsePrecoToCents(novaExp.preco);
     const precoNovo = tabelaNova
-      ? precoFinalCentavos(tabelaNova, await carregarDescontoGeral(sb), qty).cents
+      ? precoFinalCentavos(tabelaNova, await carregarDescontoGeral(sb), qty, new Date(), novaExp.categoria ?? null).cents
       : null;
     const precoAntigo = pagoPorPessoa(bk, meta, qty);
     precoNovoUnit = precoNovo;

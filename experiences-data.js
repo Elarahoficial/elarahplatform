@@ -2329,9 +2329,9 @@
   function precoVigenteCentavos(exp) {
     var praticado = precoPraticadoDe(exp);
     var promo = window.ElarahPromo;
-    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa()) return praticado;
+    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa(exp)) return praticado;
     if (!praticado) return praticado;
-    var comDesconto = promo.centavos(praticado);
+    var comDesconto = promo.centavos(praticado, exp);
     return comDesconto || praticado;
   }
 
@@ -2342,7 +2342,7 @@
   function precoVigente(exp) {
     if (!exp || typeof exp !== 'object') return '';
     var promo = window.ElarahPromo;
-    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa()) return exp.preco || '';
+    if (!promo || typeof promo.ativa !== 'function' || !promo.ativa(exp)) return exp.preco || '';
     var c = precoVigenteCentavos(exp);
     if (!c) return exp.preco || '';
     return promo.formatar(c);
