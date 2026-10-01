@@ -128,11 +128,11 @@ investimento = f'''
     <div class="invwrap">
       <div class="invmain">
         <div class="tag">Por pessoa</div>
-        <div class="big">R$ 329</div>
+        <div class="big">R$ 319</div>
         <div class="per">experiência completa</div>
       </div>
       <div class="invside">
-        <div class="invtot"><div class="k">Grupo · 10 participantes</div><div class="v">R$ 3.290 <small>turma fechada</small></div></div>
+        <div class="invtot"><div class="k">Grupo · 10 participantes</div><div class="v">R$ 3.190 <small>turma fechada</small></div></div>
         <div class="invnote">✓ <b>Deslocamento já incluso.</b><br>✓ Experiência guiada, materiais e a peça que cada um leva pra casa.</div>
       </div>
     </div>
