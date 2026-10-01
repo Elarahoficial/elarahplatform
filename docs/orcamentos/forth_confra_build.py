@@ -58,10 +58,11 @@ extra = '''
   .mrow .mbd{padding:10px 16px 10px 0}
   .mrow .mq{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy);line-height:1.1}
   .mrow .me{font-size:12px;color:var(--orange-dark);font-weight:700;margin-top:3px}
-  .matchfoot{margin-top:16px;display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap}
-  .matchfoot .big{font-size:13px;font-weight:700;color:var(--navy)}
-  .matchfoot .big b{font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--orange-dark)}
-  .matchfoot .fp{font-size:10.5px;color:var(--muted);max-width:52ch;line-height:1.45}
+  .matchfoot{margin-top:18px}
+  .matchfoot .big{font-size:14px;font-weight:700;color:var(--navy)}
+  .matchfoot .big b{font-family:'DM Serif Display',serif;font-weight:400;font-size:24px;color:var(--orange-dark)}
+  .matchfoot .fp{margin-top:11px;background:#FBF1EE;border-radius:12px;padding:13px 18px;font-size:12px;color:var(--navy-soft);line-height:1.55}
+  .matchfoot .fp b{color:var(--navy);font-weight:700}
   /* fluxo */
   .flow{display:grid;gap:10px;margin-top:20px}
   .fstep{display:flex;align-items:center;gap:18px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 22px;box-shadow:0 10px 26px -24px rgba(0,0,0,.3)}
@@ -118,8 +119,8 @@ cover = f'''
     <div class="cover">
       <div>
         <span class="eyebrow">✦ A Elarah vai até vocês</span>
-        <h1>Um jeito diferente de <em>estar junto</em></h1>
-        <p class="lead">Experiências para <strong>criar, experimentar e celebrar</strong> — no espaço de vocês, do começo ao fim.</p>
+        <h1>Um encontro para fazer mais do que <em>brindar</em></h1>
+        <p class="lead"><strong>Criar, experimentar, conversar e celebrar</strong> juntos.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip">Confraternização <b>Forth</b></span>
@@ -127,7 +128,7 @@ cover = f'''
           <span class="chip"><b>26</b> pessoas</span>
         </div>
       </div>
-      <div class="cover-photo">{img("eventocorporativo.jpg", "Grupo corporativo misto brindando junto", "center 32%")}</div>
+      <div class="cover-photo">{img("bfa-grupo2.webp", "Grupo misto rindo e criando junto em uma experiência", "center 50%")}</div>
     </div>
     {foot("Confraternização Forth")}
   </section>'''
@@ -136,19 +137,18 @@ cover = f'''
 tb = f'''
   <section class="slide">
 {head_simple("O nosso jeito")}
-    <span class="eyebrow orange">◆ Team building do nosso jeito</span>
-    <h2>Team building sem cara de <em>team building</em></h2>
+    <span class="eyebrow orange">◆ Confraternização do nosso jeito</span>
+    <h2>Confraternização sem cara de <em>evento corporativo</em></h2>
     <div class="tbsplit">
       <div>
-        <p class="lead2">Uma pausa na rotina para o time <strong>experimentar algo novo, conversar, criar e celebrar junto</strong>.</p>
-        <div class="sems"><span>Sem dinâmica forçada</span><span>Sem precisar saber fazer</span><span>Sem hierarquia</span></div>
+        <p class="lead2">Uma pausa para o time <strong>sair da rotina, experimentar algo novo e celebrar junto</strong> — sem dinâmica forçada e sem programação engessada.</p>
         <div class="kw"><span>Criar</span><span>Experimentar</span><span>Compartilhar</span><span>Celebrar</span></div>
       </div>
-      <div class="ph">{img("corp-conexao.jpg", "Time corporativo misto interagindo de forma natural", "center 35%")}</div>
+      <div class="ph">{img("corp-conexao.jpg", "Time misto interagindo de forma natural", "center 35%")}</div>
     </div>
     <div class="band">
       <p class="t">No espaço <em>de vocês</em>.</p>
-      <p>A Elarah leva os <b style="color:#fff">materiais, profissionais e toda a estrutura</b> da experiência. Montamos tudo antes do grupo chegar e cuidamos da operação do começo ao fim.</p>
+      <p>Nós levamos <b style="color:#fff">profissional, materiais e toda a estrutura necessária</b>. Antes do grupo chegar, deixamos tudo pronto para a experiência acontecer.</p>
     </div>
     {foot("O nosso jeito")}
   </section>'''
@@ -160,7 +160,7 @@ criativas = f'''
     <span class="eyebrow orange">◆ Experiências criativas</span>
     <h2>Colocar a mão na massa, <em>junto</em></h2>
     <div class="xg">
-      {xcard("pintura-taca-experiencia.jpg", "Pintura em Taça", "Experiência leve, social e descontraída. Cada participante personaliza sua própria taça e leva a peça como lembrança.", "R$ 239", "center 45%")}
+      {xcard("pintura-taca-experiencia.jpg", "Pintura em Taça", "Experiência leve, social e descontraída. Cada participante personaliza sua própria taça e leva a peça como lembrança.", "R$ 259", "center 45%")}
       {xcard("ceramicamodelagem.jpg", "Cerâmica", "Para colocar a mão na massa, criar uma peça própria e desacelerar enquanto o grupo conversa.", "R$ 529", "center 50%")}
       {xcard("tufting3.jpg", "Tufting &amp; Punch", "Uma experiência visual e contemporânea envolvendo cores, texturas e a criação de uma peça autoral.", "R$ 799", "center 50%")}
     </div>
@@ -213,8 +213,8 @@ combina = f'''
       {mrow("vela-aromatica-real.jpg", "Queremos desacelerar", "Vela Aromática", "center 50%")}
     </div>
     <div class="matchfoot">
-      <div class="big">A partir de <b>R$ 239</b> por pessoa</div>
-      <div class="fp">Valores podem variar conforme formato, duração, personalizações e estrutura do local.</div>
+      <div class="big">A partir de <b>R$ 259</b> por pessoa</div>
+      <div class="fp"><b>Valores a partir de.</b> O investimento final é definido de acordo com a experiência escolhida, endereço do evento, estrutura disponível no espaço, duração, logística e possíveis personalizações.</div>
     </div>
     {foot("Qual combina mais?")}
   </section>'''
