@@ -259,9 +259,6 @@ incluso = f'''
           <li><span class="ck">✓</span><b>Orientação profissional</b></li>
           <li><span class="ck">✓</span>Acompanhamento individual</li>
           <li><span class="ck">✓</span><b>Mini Bucket Bag</b> de cada uma</li>
-          <li><span class="ck">✓</span>Eco Bag exclusiva</li>
-          <li><span class="ck">✓</span>Brindes selecionados</li>
-          <li><span class="ck">✓</span>Coffee break com comidinhas</li>
         </ul>
         <div class="incnote">O padrão Elarah: <b>cuidamos da experiência do início ao fim</b> para o grupo simplesmente chegar e aproveitar.</div>
       </div>
@@ -283,7 +280,7 @@ investimento = f'''
       </div>
       <div class="invside">
         <div class="invtot"><div class="k">Grupo · 6 participantes</div><div class="v">R$ 4.734 <small>turma privativa</small></div></div>
-        <div class="invinc">Experiência privativa · 5 horas · todos os materiais · <b>acompanhamento profissional</b> · Bucket Bag individual · coffee break · Eco Bag + brindes.</div>
+        <div class="invinc">Experiência privativa · 5 horas · todos os materiais · <b>acompanhamento profissional</b> · Bucket Bag individual.</div>
       </div>
     </div>
     {foot("Investimento")}
@@ -314,7 +311,7 @@ proximos = f'''
     <div class="pxs">
       <div class="pxc"><div class="num">1</div><h4>Escolham a data</h4><p>Vocês confirmam o melhor dia para o grupo — a data prevista é <b>17/10</b>.</p></div>
       <div class="pxc"><div class="num">2</div><h4>Fechamos a turma</h4><p>Reservamos a experiência privativa para as <b>6 participantes</b>.</p></div>
-      <div class="pxc"><div class="num">3</div><h4>A gente prepara tudo</h4><p>Materiais, profissional, coffee break e brindes. Vocês só chegam e criam.</p></div>
+      <div class="pxc"><div class="num">3</div><h4>A gente prepara tudo</h4><p>Materiais, estrutura e orientação profissional. Vocês só chegam e criam.</p></div>
     </div>
     <div class="pxcta">
       <p class="t">Vamos reservar <em>o dia de vocês?</em> 🧡</p>
@@ -328,6 +325,6 @@ deck = ('<div class="deck">\n' + cover + nao + jornada + prof + leva + incluso +
 html = head + deck + tail
 out = ROOT + "/proposta-bucket-bag-ursula.html"
 io.open(out, "w", encoding="utf-8").write(html)
-for bad in ["fornecedor", "repasse", "comiss", "margem", "betc", "havas"]:
+for bad in ["fornecedor", "repasse", "comiss", "margem", "betc", "havas", "coffee", "brinde", "eco bag"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
