@@ -1018,7 +1018,7 @@
       '<table>' + rows + '</table>' +
       '<div class="box"><b>O que está incluso:</b> planejamento, arteterapeutas, materiais, fotos e lista de presença de cada encontro. Qualquer encontro pode ser trocado por gift cards Elarah.' +
       (dr.colaboradores ? '<br><br><b>Investimento de referência:</b> ' + brlN(est.lo) + ' a ' + brlN(est.hi) + ' — proposta final sob medida.' : '') + '</div>' +
-      '<p style="margin-top:28px;font-size:.84rem;color:#6b716d">contato.elarah@gmail.com · +55 11 91445-5930 · elarah.com.br</p>' +
+      '<p style="margin-top:28px;font-size:.84rem;color:#6b716d">contato.elarah@gmail.com · +55 11 92521-9081 · elarah.com.br</p>' +
       '<script>setTimeout(function(){window.print()},600)<\/script></body></html>');
     w.document.close();
   }
@@ -1121,7 +1121,7 @@
     proposta_enviada: 'Proposta enviada', negociacao: 'Negociação', fechado: 'Fechou', cliente_ativo: 'Cliente ativo', pausado: 'Pausado', recusou: 'Recusou'
   };
   // Assinatura padrão: Larissa Setzer. Dá pra trocar no botão "Minha assinatura".
-  var ASSINATURA_PADRAO = 'Um abraço,\nLarissa Setzer\nArteterapeuta · Elarah Mental Health\n+55 11 91445-5930\nelarah.com.br/saude-mental-empresas.html';
+  var ASSINATURA_PADRAO = 'Um abraço,\nLarissa Setzer\nArteterapeuta · Elarah Mental Health\n+55 11 92521-9081\nelarah.com.br/saude-mental-empresas.html';
   function assinatura() {
     var v = lsGet('elarah_mh_assinatura', null);
     // Quem salvou a assinatura antiga com "[Seu nome]" passa a ver a da Larissa.

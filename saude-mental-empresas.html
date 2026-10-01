@@ -1140,11 +1140,11 @@ body.lm-open{overflow:hidden}
 <footer>
   <div class="wrap in">
     <img src="assets/logo.png" alt="Elarah">
-    <p>Elarah Mental Health · <a href="https://wa.me/5511914455930" target="_blank" rel="noopener">+55 11 91445-5930</a> · <a href="mailto:contato.elarah@gmail.com">contato.elarah@gmail.com</a> · <a href="privacidade.html">Privacidade</a></p>
+    <p>Elarah Mental Health · <a href="https://wa.me/5511925219081?text=Oi.%20Gostaria%20de%20levar%20um%20evento%20corporativo%20Elarah%20para%20minha%20empresa." target="_blank" rel="noopener">+55 11 92521-9081</a> · <a href="mailto:contato.elarah@gmail.com">contato.elarah@gmail.com</a> · <a href="privacidade.html">Privacidade</a></p>
   </div>
 </footer>
 
-<a class="wa-float" href="#contato" data-lead="whatsapp_flutuante" aria-label="Falar no WhatsApp">
+<a class="wa-float" href="https://wa.me/5511925219081?text=Oi.%20Gostaria%20de%20levar%20um%20evento%20corporativo%20Elarah%20para%20minha%20empresa." target="_blank" rel="noopener" aria-label="Falar no WhatsApp">
   <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 0 0 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.03c-.25.69-1.44 1.32-1.99 1.37-.51.05-1.15.07-1.85-.12-.43-.13-.97-.31-1.67-.61-2.94-1.27-4.86-4.23-5.01-4.43-.15-.2-1.2-1.6-1.2-3.05s.76-2.16 1.03-2.46c.27-.3.59-.37.79-.37h.57c.18 0 .43-.07.67.51.25.59.84 2.05.91 2.2.07.15.12.32.02.52-.1.2-.15.32-.3.49-.15.17-.31.39-.45.52-.15.15-.3.31-.13.61.17.3.77 1.27 1.65 2.06 1.14 1.01 2.1 1.33 2.4 1.48.3.15.47.12.64-.07.17-.2.74-.86.94-1.16.2-.3.39-.25.66-.15.27.1 1.72.81 2.02.96.3.15.49.22.57.34.07.12.07.69-.18 1.38z"/></svg>
 </a>
 
@@ -1181,7 +1181,7 @@ body.lm-open{overflow:hidden}
 (function () {
   'use strict';
   var D = window.ElarahMHData;
-  var WA = '5511914455930';
+  var WA = '5511925219081';
   var MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
@@ -1501,8 +1501,18 @@ body.lm-open{overflow:hidden}
       var ok = false;
       try { ok = await salvar(d); } catch (err) { console.warn('[MH lead]', err); }
       try { if (window.ElarahAnalytics && ElarahAnalytics.track) ElarahAnalytics.track('mh_lead', { origem: d.origem, encontros: d.encontros }); } catch (_) {}
-      var msg = 'Olá! Sou ' + d.nome + (d.cargo ? ' (' + d.cargo + ')' : '') + ' da ' + d.empresa + '. Quero receber a proposta da Elarah Mental Health' +
-        (temEscolha() ? ' para: ' + resumoEXP() : (d.encontros ? ' para ' + d.encontros + ' encontro(s)' : '')) + (INTERESSE ? ' (experiência: ' + INTERESSE + ')' : '') + '. E-mail: ' + d.email + (livre ? '. ' + livre : '');
+      // Mensagem montada com tudo que a pessoa preencheu, uma info por linha.
+      var linhas = ['Oi! Gostaria de levar um evento corporativo Elarah para minha empresa.', ''];
+      linhas.push('*Nome:* ' + d.nome + (d.cargo ? ' (' + d.cargo + ')' : ''));
+      linhas.push('*Empresa:* ' + d.empresa);
+      if (d.colaboradores && !EXP.pessoas) linhas.push('*Pessoas na equipe:* ' + d.colaboradores);
+      if (temEscolha()) linhas.push('*O que escolhi:* ' + resumoEXP());
+      else if (d.plano) linhas.push('*Frequência:* ' + d.plano + (d.encontros ? ' (' + d.encontros + ' encontro' + (d.encontros > 1 ? 's' : '') + ')' : ''));
+      if (INTERESSE) linhas.push('*Experiência:* ' + INTERESSE);
+      if (livre) linhas.push('*Observação:* ' + livre);
+      linhas.push('*E-mail:* ' + d.email);
+      linhas.push('*WhatsApp:* ' + d.whatsapp);
+      var msg = linhas.join('\n');
       var wa = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
       form.innerHTML = '<div class="ok"><h3>Recebido!</h3><p style="color:var(--muted);margin-bottom:18px">' +
         (ok ? 'Sua experiência já está com a gente. Abrindo o WhatsApp pra continuar a conversa…' : 'Abrindo o WhatsApp com a mensagem pronta…') +
