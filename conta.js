@@ -435,6 +435,9 @@ renderFavoritos();
     if (status === 'cancelado' || status === 'expirado' || status === 'reembolsado') {
       return 'past';
     }
+    // Guardando experiência: virou crédito — fica em Próximas mesmo que a
+    // data original já tenha passado, até a Elarah remarcar.
+    if (isGuardandoExperiencia(booking)) return 'upcoming';
     // 2) status='pago' ou 'pending' → olha a data pra decidir.
     const parsed = parseDataDMYtoDate(booking.data);
     if (!parsed) {
@@ -471,6 +474,42 @@ renderFavoritos();
   function formatBrlCents(cents) {
     if (cents == null) return '';
     return 'R$ ' + (Number(cents) / 100).toFixed(2).replace('.', ',');
+  }
+
+  // Reserva paga que a Elarah marcou como "guardando experiência" (a
+  // cliente desmarcou sem reembolso pra escolher outra depois).
+  function isGuardandoExperiencia(booking) {
+    return !!booking && booking.aguardando_experiencia === true && (booking.status || '') === 'pago';
+  }
+
+  // Crédito da reserva guardada (centavos, total da reserva): o que a
+  // cliente PAGOU DE VERDADE — com promoção e cupom descontados, SEM a
+  // taxa do cartão. Mesma regra de pagoPorPessoa (_shared/troca_cliente.ts):
+  //   1. total_after_discount_centavos  (Pix / cartão Mercado Pago)
+  //   2. amount_before_grossup_centavos (cartão Pagar.me, antes da taxa)
+  //   3. amount_total − taxa do cartão   (Stripe / demais)
+  // Nunca acima do preço unitário gravado na compra. null = sem valor.
+  function creditoGuardadoCentavos(booking) {
+    const m = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
+    const q = Math.max(1, Number(booking.quantidade) || 1);
+    const num = function (v) {
+      if (v == null || v === '') return null;
+      const x = Number(v);
+      return isFinite(x) && x >= 0 ? x : null;
+    };
+    let total = num(m.total_after_discount_centavos);
+    if (total == null) total = num(m.amount_before_grossup_centavos);
+    if (total == null && num(booking.amount_total) != null) {
+      total = Math.max(0, num(booking.amount_total) - (num(m.card_fee_total_centavos) || 0));
+    }
+    const unit = num(m.unit_price_centavos);
+    if (total == null) {
+      if (unit != null) return unit * q;
+      const rotulo = String(booking.preco_label || '').replace(/[^\d,.]/g, '').replace(/\./g, '').replace(',', '.');
+      const v = Math.round(Number(rotulo) * 100);
+      return isFinite(v) && v > 0 ? v * q : null;
+    }
+    return unit != null && unit > 0 ? Math.min(unit * q, total) : total;
   }
 
   function formatCreatedAt(iso) {
@@ -684,7 +723,66 @@ renderFavoritos();
     return '';
   }
 
+  // Card da reserva guardada: em vez de "Confirmada" + data, mostra o
+  // crédito em reais que a cliente tem pra escolher outra experiência.
+  function renderGuardandoCard(booking) {
+    const nome = booking.experiencia_nome || 'Experiência';
+    const credito = creditoGuardadoCentavos(booking);
+    const valor = credito != null ? formatBrlCents(credito) : '';
+    const desde = formatCreatedAt(booking.aguardando_experiencia_at);
+    const escolherUrl = contatoWhatsappUrl(booking, 'Olá! Quero usar meu crédito da Elarah pra escolher uma nova experiência.');
+    return (
+      '<article class="purchase-card purchase-card--experience purchase-card--credito">' +
+        '<div class="purchase-card__icon" aria-hidden="true">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="22" height="22">' +
+            '<rect x="2" y="6" width="20" height="13" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/>' +
+          '</svg>' +
+        '</div>' +
+        '<div class="purchase-card__body">' +
+          '<div class="purchase-card__head">' +
+            '<span class="purchase-card__type">Crédito Elarah</span>' +
+            '<span class="purchase-card__status purchase-card__status--credito">Guardando experiência</span>' +
+          '</div>' +
+          '<h3 class="purchase-card__title">' + (valor ? escapeHtmlLocal(valor) + ' de crédito' : 'Crédito na Elarah') + '</h3>' +
+          '<p class="purchase-card__credito-texto">' +
+            (valor
+              ? 'Você tem <strong>' + escapeHtmlLocal(valor) + '</strong> pra escolher qualquer outra experiência da Elarah.'
+              : 'Você tem crédito pra escolher qualquer outra experiência da Elarah.') +
+          '</p>' +
+          '<div class="purchase-card__meta">' +
+            '<span class="purchase-card__meta-item">Era: ' + escapeHtmlLocal(nome) + '</span>' +
+            (desde ? '<span class="purchase-card__meta-item">Guardado em ' + escapeHtmlLocal(desde) + '</span>' : '') +
+          '</div>' +
+          '<p class="purchase-card__prazo">' +
+            '<a class="purchase-card__prazo-link" href="/">Ver experiências</a> · ' +
+            '<a class="purchase-card__prazo-link" href="' + escolherUrl + '" target="_blank" rel="noopener">Escolher pelo WhatsApp</a>' +
+          '</p>' +
+        '</div>' +
+      '</article>'
+    );
+  }
+
+  // Resumo no topo de "Minhas compras": soma o crédito das reservas
+  // guardadas. Some quando não há nenhuma.
+  function renderCreditoResumo(bookings) {
+    const el = document.getElementById('purchases-credito');
+    if (!el) return;
+    const guardadas = bookings.filter(isGuardandoExperiencia);
+    if (!guardadas.length) {
+      el.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+    const total = guardadas.reduce((acc, b) => acc + (creditoGuardadoCentavos(b) || 0), 0);
+    el.innerHTML =
+      '<span class="purchases__credito-label">Seu crédito na Elarah</span>' +
+      '<strong class="purchases__credito-valor">' + escapeHtmlLocal(formatBrlCents(total)) + '</strong>' +
+      '<span class="purchases__credito-sub">pra escolher qualquer outra experiência</span>';
+    el.style.display = 'block';
+  }
+
   function renderBookingCard(booking, group) {
+    if (isGuardandoExperiencia(booking)) return renderGuardandoCard(booking);
     const nome = booking.experiencia_nome || 'Experiência';
     const data = booking.data || '';
     const horario = booking.horario || '';
@@ -881,12 +979,12 @@ renderFavoritos();
         // completa falhar por qualquer motivo, repete a básica — a lista de
         // compras nunca pode sumir por causa da remarcação.
         sb.from('bookings')
-          .select('id, experiencia_id, experiencia_nome, data, horario, quantidade, slot_id, aguardando_experiencia, preco_label, amount_total, status, created_at, stripe_session_id, metadata, coupon_id, gift_card_id, coupon_discount_centavos, gift_card_centavos, experiences(categoria)')
+          .select('id, experiencia_id, experiencia_nome, data, horario, quantidade, slot_id, aguardando_experiencia, aguardando_experiencia_at, preco_label, amount_total, status, created_at, stripe_session_id, metadata, coupon_id, gift_card_id, coupon_discount_centavos, gift_card_centavos, experiences(categoria)')
           .order('created_at', { ascending: false })
           .limit(200)
           .then(r => (r && r.error)
             ? sb.from('bookings')
-                .select('id, experiencia_id, experiencia_nome, data, horario, quantidade, slot_id, aguardando_experiencia, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
+                .select('id, experiencia_id, experiencia_nome, data, horario, quantidade, slot_id, aguardando_experiencia, aguardando_experiencia_at, preco_label, amount_total, status, created_at, stripe_session_id, metadata')
                 .order('created_at', { ascending: false })
                 .limit(200)
             : r),
@@ -962,6 +1060,7 @@ renderFavoritos();
         }).join('');
       }
 
+      renderCreditoResumo(bookings);
       renderGroup(upcomingList, upcoming, 'purchases-upcoming-empty', 'purchases-upcoming-count');
       renderGroup(pastList, past, 'purchases-past-empty', 'purchases-past-count');
 

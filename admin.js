@@ -6021,6 +6021,26 @@
       // Tipo da remarcação já registrado (mesmo/outro), pra pré-selecionar
       // no select de "aguardando experiência".
       var aguardandoTipoAtual = (booking.metadata && booking.metadata.aguardando_experiencia_tipo) || '';
+      // Crédito que aparece na conta da cliente quando a reserva fica
+      // "aguardando experiência": o que ela pagou de verdade (com
+      // promoção/cupom, SEM a taxa do cartão) — mesma conta do conta.js.
+      var creditoGuardadoCents = (function () {
+        var m = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
+        var q = Math.max(1, Number(booking.quantidade) || 1);
+        var num = function (v) {
+          if (v == null || v === '') return null;
+          var x = Number(v);
+          return isFinite(x) && x >= 0 ? x : null;
+        };
+        var total = num(m.total_after_discount_centavos);
+        if (total == null) total = num(m.amount_before_grossup_centavos);
+        if (total == null && num(booking.amount_total) != null) {
+          total = Math.max(0, num(booking.amount_total) - (num(m.card_fee_total_centavos) || 0));
+        }
+        var unit = num(m.unit_price_centavos);
+        if (total == null) return unit != null ? unit * q : null;
+        return unit != null && unit > 0 ? Math.min(unit * q, total) : total;
+      })();
 
       function horasUntilEvent() {
         var ts = booking._eventTsResolvido;
@@ -6140,6 +6160,9 @@
                 '<span>' +
                   '<span style="display:block;font-size:.84rem;font-weight:700;color:#1a1a1a;">⏳ Aguardando experiência (sem reembolso)</span>' +
                   '<span style="display:block;font-size:.74rem;color:#7a6a52;margin-top:3px;line-height:1.45;">Cliente desmarcou e vai escolher outra experiência depois. Enquanto marcado, <b>nenhuma mensagem automática</b> é enviada pro cliente e a <b>vaga volta pro estoque</b>. O valor continua com a Elarah (sem reembolso).</span>' +
+                  (creditoGuardadoCents != null
+                    ? '<span style="display:block;font-size:.78rem;color:#1a7a4a;margin-top:6px;line-height:1.45;">💰 A cliente vê na conta dela <b>R$ ' + (creditoGuardadoCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' de crédito</b> pra escolher outra experiência (valor pago, sem a taxa do cartão).</span>'
+                    : '') +
                 '</span>' +
               '</label>' +
               // Tipo da remarcação — só informativo, pra saber se a nova
