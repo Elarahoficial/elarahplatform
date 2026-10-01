@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Folding Book · Taissa · Elarah</title>
-<meta name="description" content="Proposta Elarah para uma turma privada de Folding Book — 10 pessoas, 28/10/2026.">
+<title>Folding Book · Turma privada · Elarah</title>
+<meta name="description" content="Proposta Elarah para uma turma privada de Folding Book: transformar livros em peças únicas, feitas à mão.">
 <meta name="robots" content="noindex, nofollow">
 <style>
 /* latin-ext */
@@ -135,45 +135,110 @@
 }
 
 
-  /* feature (folding) */
-  .bfeat{display:grid;grid-template-columns:47% 1fr;margin-top:16px;background:var(--card);border:1.6px solid var(--orange);border-radius:18px;overflow:hidden;box-shadow:0 18px 42px -24px rgba(0,0,0,.32)}
-  .bfeat .bphoto{overflow:hidden;background:#eee;position:relative;min-height:360px}
+  /* feature (foto + texto) */
+  .bfeat{display:grid;grid-template-columns:48% 1fr;margin-top:16px;background:var(--card);border:1.6px solid var(--orange);border-radius:18px;overflow:hidden;box-shadow:0 18px 42px -24px rgba(0,0,0,.3)}
+  .bfeat .bphoto{overflow:hidden;background:#eee;position:relative;min-height:330px}
   .bfeat .bphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
   .bfeat .bbody{padding:24px 30px 26px;display:flex;flex-direction:column;justify-content:center}
   .bfeat .btag{align-self:flex-start;background:var(--navy);color:#fff;font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:6px 13px;border-radius:999px;margin-bottom:12px}
-  .bfeat h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:26px;color:var(--navy);line-height:1.05}
-  .bfeat p{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.5}
-  .bfeat ul.feat{list-style:none;display:flex;flex-direction:column;gap:9px;margin-top:14px}
-  .bfeat ul.feat li{position:relative;padding-left:22px;font-size:13px;color:var(--ink)}
-  .bfeat ul.feat li b{font-weight:700}
-  .bfeat ul.feat li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:12px}
-  /* galeria vibe */
+  .bfeat h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:25px;color:var(--navy);line-height:1.05}
+  .bfeat ul.feat{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .bfeat ul.feat li{position:relative;padding-left:26px;font-size:13px;color:var(--ink);line-height:1.35}
+  .bfeat ul.feat li b{font-weight:700;color:var(--navy)}
+  .bfeat ul.feat li .st{position:absolute;left:0;top:-1px;width:18px;height:18px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  /* vibe */
   .vibe{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
   .vibe figure{margin:0;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:3/4;box-shadow:0 16px 36px -24px rgba(0,0,0,.34)}
   .vibe img{width:100%;height:100%;object-fit:cover;display:block}
-  .vibe figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 13px;color:#fff;font-size:12.5px;font-weight:600;background:linear-gradient(to top,rgba(22,26,30,.82),transparent)}
-  /* planos (3 tiers) */
-  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px;align-items:stretch}
-  .tier{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 20px;display:flex;flex-direction:column;position:relative}
-  .tier.hl{border:2px solid var(--navy);background:#EEF2F5}
-  .tier .tt{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-bottom:7px}
-  .tier h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);line-height:1.06}
-  .tier .tp{font-family:'DM Serif Display',serif;font-size:33px;color:var(--ink);line-height:1;margin:11px 0 1px}
-  .tier .tu{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
-  .tier ul{list-style:none;margin-top:14px;display:flex;flex-direction:column;gap:8px;flex:1}
-  .tier ul li{position:relative;padding-left:19px;font-size:12px;color:var(--ink);line-height:1.34}
-  .tier ul li::before{content:"✦";position:absolute;left:0;top:1px;color:var(--orange);font-size:10px}
-  .tier ul li b{font-weight:700}
-  .ttag{position:absolute;top:-11px;left:18px;background:var(--orange);color:#fff;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 12px;border-radius:999px;white-space:nowrap}
+  .vibe figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 13px;color:#fff;font-size:12.5px;font-weight:600;background:linear-gradient(to top,rgba(32,16,22,.85),transparent)}
+  /* cards de item / preco */
+  .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px}
+  .vcard{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 36px -24px rgba(0,0,0,.3);position:relative}
+  .vcard.hl{border:2px solid var(--navy)}
+  .vph{height:196px;overflow:hidden;position:relative;background:#eee}
+  .vph img{width:100%;height:100%;object-fit:cover}
+  .vpr{position:absolute;top:12px;right:12px;background:var(--navy);color:#fff;border-radius:14px;padding:7px 14px;text-align:center}
+  .vpr b{font-family:'DM Serif Display',serif;font-size:22px;font-weight:400;line-height:1;display:block}
+  .vpr small{font-size:8px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;opacity:.85}
+  .vb{padding:18px 22px 20px;flex:1;display:flex;flex-direction:column}
+  .vt{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-bottom:5px}
+  .vcard h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:21px;color:var(--navy);line-height:1.05}
+  .vaddr{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+  .vcard ul{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .vcard ul li{position:relative;padding-left:18px;font-size:11.5px;color:var(--ink);line-height:1.3}
+  .vcard ul li::before{content:"\2726";position:absolute;left:0;top:1px;color:var(--orange);font-size:10px}
+  /* placeholder de foto */
+  .pslot{width:100%;height:100%;min-height:100%;border:2px dashed var(--orange);background:rgba(184,115,81,.10);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;box-sizing:border-box;padding:16px}
+  .pslot .pi{font-size:26px}
+  .pslot .pl{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy)}
+  .pslot .ps{font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+  .invbox{display:flex;gap:22px;margin-top:16px;flex-wrap:wrap;align-items:stretch}
+  .incl{flex:1;min-width:300px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px}
+  .incl ul{list-style:none;margin-top:10px;display:flex;flex-direction:column;gap:9px}
+  .incl ul li{position:relative;padding-left:20px;font-size:13px;color:var(--ink);line-height:1.4}
+  .incl ul li span{position:absolute;left:0;top:1px;color:var(--orange)}
+  .pricebox{background:var(--navy);color:#fff;border-radius:18px;padding:26px 34px;display:flex;flex-direction:column;justify-content:center;text-align:center;min-width:230px}
+  .pricebox .pl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);font-weight:700}
+  .pricebox .pv{font-family:'DM Serif Display',serif;font-size:52px;line-height:1;margin:8px 0 2px}
+  .pricebox .ps{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.78);font-weight:600}
+  .bnote{margin-top:16px;background:#FBF1EE;border-left:4px solid var(--orange);border-radius:0 12px 12px 0;padding:12px 18px;font-size:12px;color:var(--navy-soft);line-height:1.5}
+  .bnote b{color:var(--navy)}
   .fineprint{font-size:10px;color:var(--muted);line-height:1.5;margin-top:16px}
+
+  /* galeria compacta (várias fotos por experiência) */
+  .gstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+  .gstrip figure{margin:0;border-radius:14px;overflow:hidden;position:relative;height:158px;box-shadow:0 12px 30px -20px rgba(0,0,0,.4)}
+  .gstrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .gstrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 12px 9px;color:#fff;font-size:11px;font-weight:600;background:linear-gradient(to top,rgba(32,16,22,.86),transparent)}
+  .gstrip .pslot{min-height:158px}
+
+  /* 5 experiencias (3 + 2 centralizados) */
+  .mmg{display:flex;flex-wrap:wrap;justify-content:center;gap:18px;margin-top:20px}
+  .mm{width:calc(33.333% - 12px);background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 36px -26px rgba(0,0,0,.34)}
+  .mm .mmph{height:196px;overflow:hidden;background:#eee}
+  .mm .mmph img{width:100%;height:100%;object-fit:cover;display:block}
+  .mm .mmb{padding:14px 17px 16px}
+  .mm .mmn{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.05}
+  .mm .mmd{font-size:11.5px;color:var(--muted);line-height:1.45;margin-top:6px}
+  /* espacos (3 cards) */
+  .vg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px}
+  .vc{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -26px rgba(0,0,0,.3)}
+  .vc .vcph{height:168px;overflow:hidden;background:#eee}
+  .vc .vcph img{width:100%;height:100%;object-fit:cover;display:block}
+  .vc .vcb{padding:14px 17px 16px}
+  .vc .vcn{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);line-height:1.05}
+  .vc .vcbairro{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:4px}
+  .vc .vcd{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px}
+  /* investimento padrao Elarah */
+  .phero{display:grid;grid-template-columns:.95fr 1.05fr;gap:38px;margin-top:20px;align-items:stretch}
+  .pheroph{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 42px -26px rgba(0,0,0,.42);height:410px}
+  .pheroph img{width:100%;height:100%;object-fit:cover;display:block}
+  .pval{display:flex;flex-direction:column;justify-content:center}
+  .pval .pct{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .pval .pcons{font-family:'DM Serif Display',serif;font-size:40px;color:var(--navy);line-height:1.02;margin:8px 0 4px}
+  .fld{display:flex;gap:26px;margin-top:16px;flex-wrap:wrap}
+  .fld .f{border-left:2px solid var(--orange);padding-left:14px}
+  .fld .f .fl{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .fld .f .fv{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);margin-top:3px}
+  .pval .pnote{font-size:12px;color:var(--muted);margin-top:16px;line-height:1.55;max-width:44ch}
+  /* adicional (bfeat foto) valor */
+  .avalpill{align-self:flex-start;margin-top:14px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:22px;padding:8px 18px;border-radius:12px}
+  .avalpill small{font-family:-apple-system,sans-serif;font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:rgba(255,255,255,.8);margin-left:6px}
+  /* callout de data */
+  .datecall{display:flex;gap:13px;align-items:flex-start;margin-top:16px;background:rgba(184,115,81,.12);border:1px solid rgba(184,115,81,.32);border-radius:14px;padding:14px 20px}
+  .datecall .di{font-size:17px;line-height:1.2}
+  .datecall p{font-size:12.5px;color:var(--navy);line-height:1.5;margin:0}
+  .datecall p b{color:var(--orange-dark)}
+  /* proximos */
+  .num{font-family:'DM Serif Display',serif;color:var(--orange);font-size:24px;line-height:1}
 </style>
 <style>
   :root{
-    --orange:#6E8CA0;
-    --orange-dark:#516B7D;
-    --navy:#26303A;
-    --navy-soft:#5A6A76;
-    --blue-accent:#6E8CA0;
+    --orange:#B87351;
+    --orange-dark:#8E5236;
+    --navy:#3C1F28;
+    --navy-soft:#6B4A52;
+    --blue-accent:#B87351;
     --cream:#F6F2EB;
     --card:#FFFFFF;
     --ink:#1D2430;
@@ -252,7 +317,7 @@
   .infocard p{font-size:13px;color:var(--muted);line-height:1.5}
 
   .quote{
-    margin-top:26px;background:#EEF2F5;border-left:5px solid var(--blue-accent);
+    margin-top:26px;background:#FBF1EE;border-left:5px solid var(--blue-accent);
     border-radius:0 14px 14px 0;padding:22px 26px;color:var(--navy-soft);font-size:14.5px
   }
   .quote i{font-style:italic;color:var(--navy)}
@@ -286,7 +351,7 @@
     font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:6px 13px;
     border-radius:999px;box-shadow:0 6px 16px -4px rgba(212,96,14,.6);z-index:3}
   .proof{display:inline-flex;align-items:center;gap:9px;margin:14px 0 2px;
-    background:#EEF2F5;border:1px solid #DBE5EC;border-radius:999px;padding:9px 17px;font-size:13.5px;color:var(--navy-soft)}
+    background:#FBF1EE;border:1px solid #F0DED6;border-radius:999px;padding:9px 17px;font-size:13.5px;color:var(--navy-soft)}
   .proof .star{color:var(--orange);font-size:13px}
   .proof b{color:var(--navy);font-weight:700}
   .proof--wide{display:flex;width:100%;justify-content:center;white-space:nowrap;margin:6px 0 2px}
@@ -299,7 +364,7 @@
   .addon p{font-size:13px;color:var(--navy-soft)}
   .addon b{color:var(--ink);font-weight:700}
   .allin{align-self:flex-start;margin-top:14px;font-size:11px;font-weight:600;color:var(--navy-soft);
-    background:#EEF2F5;border-radius:999px;padding:6px 13px}
+    background:#FBF1EE;border-radius:999px;padding:6px 13px}
   .allin::before{content:"✓ ";color:#2e7d52;font-weight:800}
 
   /* ---- PIZZADA ---- */
@@ -326,10 +391,10 @@
   .step p{font-size:12.5px;color:var(--muted)}
   .cta{
     margin-top:24px;background:var(--navy);color:#fff;border-radius:18px;padding:30px 34px;
-    background-image:radial-gradient(circle at 88% 20%,rgba(110,140,160,.28),transparent 45%)
+    background-image:radial-gradient(circle at 88% 20%,rgba(184,115,81,.24),transparent 45%)
   }
   .cta h2{color:#fff;font-size:30px}
-  .cta h2 em{color:var(--orange-light,#9BB4C4)}
+  .cta h2 em{color:var(--orange-light,#CFA07E)}
   .cta p{color:#C8D2E1;font-size:14px;margin-top:10px;max-width:60ch}
   .cta-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;align-items:center}
   .btn-wa{display:inline-flex;align-items:center;gap:9px;background:#25D366;color:#0b3d1e;font-weight:700;
@@ -356,8 +421,8 @@
     .cover,.pizza-hero{grid-template-columns:1fr;gap:26px}
     .grid3,.trio,.steps{grid-template-columns:1fr}
     .plans{grid-template-columns:1fr}
-    .tiers{grid-template-columns:1fr}
     .vibe{grid-template-columns:1fr 1fr}
+    .vgrid{grid-template-columns:1fr}
     .bfeat{grid-template-columns:1fr}
     .bfeat .bphoto{min-height:200px}
     .menu-cols{grid-template-columns:1fr}
@@ -398,14 +463,426 @@
     .chips{margin:10px 0 !important}
     .pizza-photo{min-height:180px}
     .slide *{box-shadow:none !important}
-    .cover-photo,.vibe figure,.tier,.bfeat .bphoto{border:1px solid rgba(38,48,58,.14)}
-    .tiers{grid-template-columns:repeat(3,1fr)}
+    .cover-photo,.bfeat .bphoto,.vibe figure,.vcard,.vph{border:1px solid rgba(60,31,40,.16)}
     .vibe{grid-template-columns:repeat(3,1fr)}
-    .bfeat{grid-template-columns:47% 1fr}
+    .vgrid{grid-template-columns:1fr 1fr}
+    .bfeat{grid-template-columns:48% 1fr}
     @page{size:A4 portrait;margin:0}
   }
 </style>
-</head>
+
+<style>
+  /* cotacao — cards experiencia+local+valor */
+  .exg{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+  .exc{background:var(--card);border:1px solid var(--line);border-radius:15px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -24px rgba(0,0,0,.3);position:relative}
+  .exc.prem{border:1.6px solid var(--orange)}
+  .exph{height:116px;overflow:hidden;background:#eee;position:relative}
+  .exph img{width:100%;height:100%;object-fit:cover;display:block}
+  .excap{position:absolute;top:8px;right:8px;background:var(--navy);color:#fff;font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:999px}
+  .excap.big{background:var(--orange-dark);font-size:9px;padding:5px 11px}
+  .expremtag{position:absolute;top:8px;left:8px;background:var(--orange);color:#fff;font-size:8px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+  .exb{padding:11px 15px 14px;display:flex;flex-direction:column;flex:1}
+  .exn{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy);line-height:1.06}
+  .exloc{font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:5px;line-height:1.4}
+  .exval{font-size:11px;color:var(--navy-soft);font-weight:600;margin-top:7px}
+  .exval b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy)}
+  .exd{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:7px}
+  .exinc{font-size:9.5px;color:var(--ink);margin-top:6px;line-height:1.4}
+  .exinc b{color:var(--navy)}
+  .outros{margin-top:15px;background:#FBF1EE;border:1px solid var(--line);border-radius:14px;padding:13px 20px}
+  .outros .ott{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .outros .oll{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:8px}
+  .outros .oll span{font-size:12px;color:var(--navy);font-weight:600}
+  .outros .oll span small{color:var(--muted);font-weight:500;text-transform:uppercase;font-size:8px;letter-spacing:.06em;margin-left:4px}
+  .outros p{font-size:10px;color:var(--muted);line-height:1.45;margin:8px 0 0}
+  .somar{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+  .somar span{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 16px;font-size:12.5px;color:var(--ink);font-weight:600;box-shadow:0 4px 14px -8px rgba(0,0,0,.2)}
+</style>
+<style>
+  .conc{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px}
+  .conc .cc{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:22px 14px;text-align:center;box-shadow:0 10px 26px -22px rgba(0,0,0,.3)}
+  .conc .cw{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);line-height:1.08}
+  .conc .ci{font-size:19px;margin-bottom:8px}
+  .cmpg{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-top:20px}
+  .cmp{width:calc(20% - 13px);min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:15px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 30px -24px rgba(0,0,0,.32)}
+  .cmp .cmph{height:118px;overflow:hidden;background:#eee}
+  .cmp .cmph img{width:100%;height:100%;object-fit:cover;display:block}
+  .cmp .cmpb{padding:12px 13px 15px;text-align:center}
+  .cmp .cmpn{font-family:'DM Serif Display',serif;font-size:15.5px;color:var(--navy);line-height:1.08}
+  .cmp .cmpt{font-size:10px;color:var(--orange-dark);font-weight:700;letter-spacing:.03em;margin-top:6px;line-height:1.4}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  .itbl{width:100%;border-collapse:collapse;margin-top:16px;border-radius:16px;overflow:hidden;box-shadow:0 16px 40px -30px rgba(0,0,0,.3)}
+  .itbl th{background:var(--navy);color:#fff;text-align:left;padding:12px 18px;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700}
+  .itbl th.r{text-align:right}
+  .itbl td{padding:13px 18px;border-bottom:1px solid var(--line);background:var(--card);vertical-align:middle}
+  .itbl tr:last-child td{border-bottom:none}
+  .itbl tr:nth-child(even) td{background:#FBF1EE}
+  .itbl .exp{font-family:'DM Serif Display',serif;font-size:15px;color:var(--navy);line-height:1.1}
+  .itbl .loc{font-size:11px;color:var(--muted);line-height:1.35}
+  .itbl .val{text-align:right;font-family:'DM Serif Display',serif;font-size:16px;color:var(--orange-dark);white-space:nowrap}
+  .itbl .cap{text-align:right;font-size:11.5px;color:var(--navy-soft);font-weight:700;white-space:nowrap}
+  .itbl .todo{font-family:'DM Sans',sans-serif;font-size:12px;font-style:italic;color:var(--muted)}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+  /* investimento visual (foto + valores) */
+  .invsplit{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:18px;align-items:stretch}
+  .invphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:400px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .invphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .invphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:30px 18px 15px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .invbd{display:flex;flex-direction:column;justify-content:center}
+  .invbig{font-family:'DM Serif Display',serif;font-size:66px;color:var(--navy);line-height:1}
+  .invper{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:5px}
+  .invrows{display:grid;gap:16px;margin-top:24px}
+  .invrow{border-left:3px solid var(--orange);padding-left:15px}
+  .invrow .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .invrow .t{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:3px}
+  .invrow .t b{color:var(--navy);font-weight:700}
+  /* proximos passos visual (foto + passos) */
+  .nxsplit{display:grid;grid-template-columns:1fr 1.05fr;gap:30px;margin-top:16px;align-items:stretch}
+  .nxphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:430px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .nxphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .nxphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 16px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.9),transparent)}
+  .nxbd{display:flex;flex-direction:column;justify-content:center}
+  .nxsteps{display:grid;gap:15px;margin-top:20px}
+  .nxstep{display:flex;gap:14px;align-items:flex-start}
+  .nxstep .num{flex:none;width:36px;height:36px;border-radius:999px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .nxstep h3{font-size:14.5px;font-weight:700;color:var(--navy);margin:3px 0 3px}
+  .nxstep p{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .nxcontact{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--navy-soft)}
+  .nxcontact b{color:var(--navy)}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+  /* espaco em destaque (Agora Intu) */
+  .agf{display:grid;grid-template-columns:1.15fr 1fr;margin-top:16px;border-radius:18px;overflow:hidden;border:1.5px solid var(--orange);box-shadow:0 18px 44px -28px rgba(0,0,0,.38)}
+  .agf .ph{position:relative;min-height:244px}
+  .agf .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .agf .bd{background:#FBF1EE;padding:22px 28px;display:flex;flex-direction:column;justify-content:center}
+  .agf .tag{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .agf h3{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);margin:5px 0 2px;line-height:1.05}
+  .agf .bairro{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .agf ul{list-style:none;margin:13px 0 0;padding:0;display:grid;gap:8px}
+  .agf ul li{position:relative;padding-left:22px;font-size:12.5px;color:var(--ink);line-height:1.4}
+  .agf ul li .st{position:absolute;left:0;top:0;color:var(--orange);font-weight:700}
+  /* investimento visual (foto + valores) */
+  .invsplit{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:18px;align-items:stretch}
+  .invphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:400px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .invphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .invphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:30px 18px 15px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .invbd{display:flex;flex-direction:column;justify-content:center}
+  .invbig{font-family:'DM Serif Display',serif;font-size:66px;color:var(--navy);line-height:1}
+  .invper{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:5px}
+  .invrows{display:grid;gap:16px;margin-top:24px}
+  .invrow{border-left:3px solid var(--orange);padding-left:15px}
+  .invrow .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .invrow .t{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:3px}
+  .invrow .t b{color:var(--navy);font-weight:700}
+  /* proximos passos visual (foto + passos) */
+  .nxsplit{display:grid;grid-template-columns:1fr 1.05fr;gap:30px;margin-top:16px;align-items:stretch}
+  .nxphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:430px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .nxphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .nxphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 16px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.9),transparent)}
+  .nxbd{display:flex;flex-direction:column;justify-content:center}
+  .nxsteps{display:grid;gap:15px;margin-top:20px}
+  .nxstep{display:flex;gap:14px;align-items:flex-start}
+  .nxstep .num{flex:none;width:36px;height:36px;border-radius:999px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .nxstep h3{font-size:14.5px;font-weight:700;color:var(--navy);margin:3px 0 3px}
+  .nxstep p{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .nxcontact{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--navy-soft)}
+  .nxcontact b{color:var(--navy)}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+  /* espaco em destaque (Agora Intu) */
+  .agf{display:grid;grid-template-columns:1.15fr 1fr;margin-top:16px;border-radius:18px;overflow:hidden;border:1.5px solid var(--orange);box-shadow:0 18px 44px -28px rgba(0,0,0,.38)}
+  .agf .ph{position:relative;min-height:244px}
+  .agf .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .agf .bd{background:#FBF1EE;padding:22px 28px;display:flex;flex-direction:column;justify-content:center}
+  .agf .tag{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .agf h3{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);margin:5px 0 2px;line-height:1.05}
+  .agf .bairro{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .agf ul{list-style:none;margin:13px 0 0;padding:0;display:grid;gap:8px}
+  .agf ul li{position:relative;padding-left:22px;font-size:12.5px;color:var(--ink);line-height:1.4}
+  .agf ul li .st{position:absolute;left:0;top:0;color:var(--orange);font-weight:700}
+  /* investimento visual (foto + valores) */
+  .invsplit{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:18px;align-items:stretch}
+  .invphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:400px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .invphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .invphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:30px 18px 15px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .invbd{display:flex;flex-direction:column;justify-content:center}
+  .invbig{font-family:'DM Serif Display',serif;font-size:66px;color:var(--navy);line-height:1}
+  .invper{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:5px}
+  .invrows{display:grid;gap:16px;margin-top:24px}
+  .invrow{border-left:3px solid var(--orange);padding-left:15px}
+  .invrow .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .invrow .t{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:3px}
+  .invrow .t b{color:var(--navy);font-weight:700}
+  /* proximos passos visual (foto + passos) */
+  .nxsplit{display:grid;grid-template-columns:1fr 1.05fr;gap:30px;margin-top:16px;align-items:stretch}
+  .nxphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:430px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .nxphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .nxphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 16px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.9),transparent)}
+  .nxbd{display:flex;flex-direction:column;justify-content:center}
+  .nxsteps{display:grid;gap:15px;margin-top:20px}
+  .nxstep{display:flex;gap:14px;align-items:flex-start}
+  .nxstep .num{flex:none;width:36px;height:36px;border-radius:999px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .nxstep h3{font-size:14.5px;font-weight:700;color:var(--navy);margin:3px 0 3px}
+  .nxstep p{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .nxcontact{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--navy-soft)}
+  .nxcontact b{color:var(--navy)}
+</style>
+<style>
+  .pil3{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-top:18px}
+  .pil3 .p{border-left:2px solid var(--orange);padding-left:15px}
+  .pil3 .pt{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.1}
+  .pil3 .pd{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+  /* cardapio: preco por card */
+  .mm .mmb{display:flex;flex-direction:column}
+  .mm .mmprice{margin-top:auto;padding-top:11px;font-size:10.5px;letter-spacing:.02em;color:var(--navy-soft);font-weight:600}
+  .mm .mmprice b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--orange-dark);letter-spacing:0}
+  /* investimento: resumo comercial */
+  .pbig{display:flex;align-items:baseline;gap:16px;margin-top:14px}
+  .pbig .n{font-family:'DM Serif Display',serif;font-size:54px;color:var(--navy);line-height:1}
+  .pbig .lbl{font-size:12.5px;letter-spacing:.03em;color:var(--navy-soft);font-weight:600;max-width:18ch;line-height:1.35}
+  .pbig .lbl b{color:var(--orange-dark);font-weight:700}
+  .icards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+  .ic{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 20px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column}
+  .ic .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .ic .v{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .ic p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .ic p b{color:var(--navy);font-weight:700}
+  /* espaco em destaque (Agora Intu) */
+  .agf{display:grid;grid-template-columns:1.15fr 1fr;margin-top:16px;border-radius:18px;overflow:hidden;border:1.5px solid var(--orange);box-shadow:0 18px 44px -28px rgba(0,0,0,.38)}
+  .agf .ph{position:relative;min-height:244px}
+  .agf .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .agf .bd{background:#FBF1EE;padding:22px 28px;display:flex;flex-direction:column;justify-content:center}
+  .agf .tag{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .agf h3{font-family:'DM Serif Display',serif;font-size:26px;color:var(--navy);margin:5px 0 2px;line-height:1.05}
+  .agf .bairro{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .agf ul{list-style:none;margin:13px 0 0;padding:0;display:grid;gap:8px}
+  .agf ul li{position:relative;padding-left:22px;font-size:12.5px;color:var(--ink);line-height:1.4}
+  .agf ul li .st{position:absolute;left:0;top:0;color:var(--orange);font-weight:700}
+  /* investimento visual (foto + valores) */
+  .invsplit{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:18px;align-items:stretch}
+  .invphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:400px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .invphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .invphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:30px 18px 15px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  .invbd{display:flex;flex-direction:column;justify-content:center}
+  .invbig{font-family:'DM Serif Display',serif;font-size:66px;color:var(--navy);line-height:1}
+  .invper{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:5px}
+  .invrows{display:grid;gap:16px;margin-top:24px}
+  .invrow{border-left:3px solid var(--orange);padding-left:15px}
+  .invrow .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .invrow .t{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:3px}
+  .invrow .t b{color:var(--navy);font-weight:700}
+  /* proximos passos visual (foto + passos) */
+  .nxsplit{display:grid;grid-template-columns:1fr 1.05fr;gap:30px;margin-top:16px;align-items:stretch}
+  .nxphoto{margin:0;border-radius:20px;overflow:hidden;position:relative;min-height:430px;border:1px solid var(--line);box-shadow:0 20px 46px -28px rgba(0,0,0,.42)}
+  .nxphoto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .nxphoto figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 18px 16px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.9),transparent)}
+  .nxbd{display:flex;flex-direction:column;justify-content:center}
+  .nxsteps{display:grid;gap:15px;margin-top:20px}
+  .nxstep{display:flex;gap:14px;align-items:flex-start}
+  .nxstep .num{flex:none;width:36px;height:36px;border-radius:999px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:18px;display:flex;align-items:center;justify-content:center}
+  .nxstep h3{font-size:14.5px;font-weight:700;color:var(--navy);margin:3px 0 3px}
+  .nxstep p{font-size:11.5px;color:var(--muted);line-height:1.45}
+  .nxcontact{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--navy-soft)}
+  .nxcontact b{color:var(--navy)}
+</style>
+<style>
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:38px;margin-top:22px;align-items:center}
+  .split .sph{border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 18px 44px -26px rgba(0,0,0,.42);height:380px}
+  .split .sph img{width:100%;height:100%;object-fit:cover;display:block}
+  .flist{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+  .flist li{position:relative;padding-left:29px;font-size:14px;color:var(--ink);line-height:1.4}
+  .flist li b{color:var(--navy);font-weight:700}
+  .flist li .ck{position:absolute;left:0;top:1px;width:19px;height:19px;border-radius:999px;background:var(--orange);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  /* informacoes */
+  .info3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+  .infoc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px 22px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
+  .infoc .em{font-size:24px;line-height:1}
+  .infoc .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark);margin-top:10px}
+  .infoc .v{font-family:'DM Serif Display',serif;font-size:21px;color:var(--navy);margin-top:5px;line-height:1.05}
+  .infoc .v small{display:block;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--muted);font-weight:600;margin-top:4px;letter-spacing:0}
+  /* investimento */
+  .invwrap{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;align-items:stretch}
+  .invmain{background:linear-gradient(158deg,var(--navy),#241722);color:#fff;border-radius:22px;padding:38px 36px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 22px 50px -28px rgba(0,0,0,.5)}
+  .invmain .tag{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--orange);font-weight:700}
+  .invmain .big{font-family:'DM Serif Display',serif;font-size:60px;line-height:1;margin:10px 0 2px}
+  .invmain .per{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72);font-weight:700}
+  .invside{display:flex;flex-direction:column;justify-content:center;gap:16px}
+  .invtot{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 26px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
+  .invtot .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .invtot .v{font-family:'DM Serif Display',serif;font-size:34px;color:var(--navy);margin-top:5px;line-height:1}
+  .invtot .v small{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:0}
+  .invnote{background:#FBF1EE;border-radius:14px;padding:14px 18px;font-size:12.5px;color:var(--navy-soft);line-height:1.5}
+  .invnote b{color:var(--navy)}
+</style></head>
 <body>
 
 <div class="deck">
@@ -413,48 +890,43 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right">
-        <span class="kicker">Proposta de experiência · Turma privada</span>
-        <span class="compass">Folding <span>Book</span><small>Turma privada</small></span>
-      </div>
+      <div class="head-right"><span class="kicker">Turma privada · Experiência Elarah</span></div>
     </div>
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Experiência criativa · Folding Book</span>
-        <h1>A arte de <em>dobrar</em></h1>
-        <p class="lead">Um encontro criativo e cheio de charme para o grupo: no <strong>Folding Book</strong>, cada convidado transforma as páginas de um livro em uma escultura — e leva a própria arte pra casa. Relaxante, delicado e diferente. 🌿</p>
+        <span class="eyebrow">✦ Uma experiência criativa em grupo</span>
+        <h1>Folding <em>Book</em></h1>
+        <p class="lead">Uma <strong>pausa criativa</strong> para transformar livros em <strong>peças únicas</strong>, feitas à mão e cheias de significado.</p>
         <div class="rule"></div>
         <div class="chips">
-          <span class="chip"><b>10</b> pessoas</span>
-          <span class="chip"><b>28/10</b></span>
-          <span class="chip">~4 horas</span>
+          <span class="chip"><b>10</b> participantes</span>
+          <span class="chip"><b>27</b> ou <b>29</b> de outubro</span>
+        </div>
+        <div class="chips" style="margin-top:10px">
+          <span class="chip">Turma privada</span>
         </div>
       </div>
-      <div class="cover-photo">
-        <img src="assets/foldingbook2.jpg" alt="Escultura de folding book com detalhe dourado numa decoração zen" style="object-position:center 42%">
-      </div>
+      <div class="cover-photo"><img src="assets/agora-grupo.jpg" alt="Grupo criando junto em um momento criativo" style="object-position:center 50%"></div>
     </div>
-    <div class="proof proof--wide"><span class="star">★</span> Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Turma privada · Folding Book</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Folding Book · Turma privada</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
       <div class="head-right"><span class="kicker">A experiência</span></div>
     </div>
-    <span class="eyebrow orange">◆ O que é o Folding Book</span>
-    <h2>Um livro que vira <em>arte</em></h2>
-    <p class="lead">Cada convidado transforma as páginas de um livro em uma <strong>escultura tridimensional</strong>, usando a técnica de Folding Book. Uma peça delicada pra decorar e guardar — sem precisar de experiência. 🌿</p>
-    <div class="bfeat">
-      <div class="bphoto"><img src="assets/foldingbook3.jpg" alt="Escultura de folding book em suporte dourado" style="object-position:center 42%"></div>
-      <div class="bbody">
-        <span class="btag">Folding Book</span>
-        <h3>A arte de dobrar páginas</h3>
-        <p>Do preparo do livro à construção da forma, cada dobra revela relevos e desenhos. Uma técnica meditativa, detalhista e cheia de significado.</p>
-        <ul class="feat">
-          <li>Um livro que vira <b>escultura</b></li>
-          <li>Técnica <b>meditativa</b> e detalhista</li>
-          <li>Uma peça <b>única</b>, feita por você</li>
+    <span class="eyebrow orange">◆ A experiência</span>
+    <h2>Dobra a dobra, <em>uma peça única</em></h2>
+    <div class="split">
+      <div class="sph"><img src="assets/foldingbook.jpg" alt="Peças de folding book criadas à mão" style="object-position:center 50%"></div>
+      <div>
+        <p class="lead" style="margin-top:0">Cada participante aprende a <strong>técnica de dobradura das páginas</strong> para transformar um livro em uma <strong>peça decorativa única</strong>.</p>
+        <ul class="flist" style="margin-top:18px">
+          <li><span class="ck">✦</span>Experiência <b>guiada por profissional</b></li>
+          <li><span class="ck">✦</span><b>Todos os materiais</b> necessários inclusos</li>
+          <li><span class="ck">✦</span>Cada um <b>cria a própria peça</b></li>
+          <li><span class="ck">✦</span>Momento <b>criativo e descontraído</b> em grupo</li>
+          <li><span class="ck">✦</span><b>Peça final</b> para levar para casa</li>
         </ul>
       </div>
     </div>
@@ -463,33 +935,17 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Como acontece</span></div>
+      <div class="head-right"><span class="kicker">O encontro</span></div>
     </div>
-    <span class="eyebrow orange">◆ Como acontece</span>
-    <h2>Tudo pronto pra <em>vocês criarem</em></h2>
-    <p class="lead">A gente leva o profissional, os livros e todo o material. O grupo é conduzido passo a passo, do preparo do livro à finalização da peça — uma experiência de cerca de <strong>4 horas</strong>. É só chegar e criar.</p>
-    <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><div class="ico">🎨</div><h3>Profissional conduz</h3><p>Passo a passo, do início ao fim — sem precisar de experiência prévia.</p></div>
-      <div class="infocard"><div class="ico">📚</div><h3>Tudo incluso</h3><p>Livros, todos os materiais e a estrutura necessária para a experiência.</p></div>
-      <div class="infocard"><div class="ico">🤍</div><h3>Você leva pra casa</h3><p>Cada participante cria e leva a própria escultura de recordação.</p></div>
+    <span class="eyebrow orange">◆ Informações do encontro</span>
+    <h2>Combinadas do <em>dia</em></h2>
+    <div class="info3">
+      <div class="infoc"><div class="em">👥</div><div class="k">Participantes</div><div class="v">10 pessoas<small>turma fechada</small></div></div>
+      <div class="infoc"><div class="em">🗓️</div><div class="k">Datas disponíveis</div><div class="v">27 ou 29/10<small>vocês escolhem a melhor</small></div></div>
+      <div class="infoc"><div class="em">🤍</div><div class="k">Formato</div><div class="v">Turma privada<small>só para o seu grupo</small></div></div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Como acontece</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">A vibe</span></div>
-    </div>
-    <span class="eyebrow orange">◆ O que fica</span>
-    <h2>Juntos, <em>criando</em></h2>
-    <p class="lead">Mais que uma atividade: uma tarde leve, criativa e cheia de conexão — do tipo que o grupo lembra pra sempre.</p>
-    <div class="vibe">
-      <figure><img src="assets/corp-criativo.jpg" alt="Convidados criando lado a lado" style="object-position:center 35%"><figcaption>Mão na massa, junto</figcaption></figure>
-      <figure><img src="assets/abraco-elegante.jpg" alt="Amigas rindo durante a experiência" style="object-position:center 25%"><figcaption>Conexão de verdade</figcaption></figure>
-      <figure><img src="assets/cover-corp.jpg" alt="Grupo num encontro criativo da Elarah" style="object-position:center 40%"><figcaption>Uma tarde diferente</figcaption></figure>
-    </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>A vibe da experiência</span></div>
+    <div class="bnote" style="margin-top:20px">◆ É só escolher entre <strong>27/10</strong> ou <strong>29/10</strong>, conforme a preferência do grupo, que a gente reserva a data. 🤍</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O encontro</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -497,38 +953,33 @@
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Turma privada de <em>Folding Book</em></h2>
-    <div class="tiers" style="grid-template-columns:1fr;max-width:440px;margin-left:auto;margin-right:auto">
-      <div class="tier hl" style="text-align:center;align-items:center">
-        <span class="tt">Folding Book · Turma Privada</span>
-        <div class="tp">R$ 289</div><div class="tu">por pessoa</div>
-        <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--orange-dark);margin:12px 0 2px">R$ 2.890 <span style="font-family:inherit">total</span></div>
-        <div class="tu">10 pessoas</div>
-        <p style="font-size:12.5px;color:var(--ink);line-height:1.5;margin-top:16px">Inclui experiência, profissional e todos os materiais.</p>
+    <h2>Simples e <em>transparente</em></h2>
+    <div class="invwrap">
+      <div class="invmain">
+        <div class="tag">Por pessoa</div>
+        <div class="big">R$ 329</div>
+        <div class="per">experiência completa</div>
+      </div>
+      <div class="invside">
+        <div class="invtot"><div class="k">Total · 10 participantes</div><div class="v">R$ 3.290 <small>grupo fechado</small></div></div>
+        <div class="invnote">✓ <b>Deslocamento já incluso</b> no valor.<br>✓ Experiência guiada, materiais e a peça que cada um leva pra casa.</div>
       </div>
     </div>
-    <p class="fineprint" style="text-align:center">Data e local sujeitos à confirmação de disponibilidade.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Próximos passos</span></div>
+      <div class="head-right"><span class="kicker">Vamos criar?</span></div>
     </div>
-    <span class="eyebrow orange">◆ Bora reservar?</span>
-    <h2>Vamos deixar tudo <em>pronto</em></h2>
-    <p class="lead">Após a sua confirmação, alinhamos a disponibilidade da profissional, o espaço e os detalhes da experiência. É só me dar o ok. 🌿</p>
-    <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><div class="ico">1️⃣</div><h3>Você confirma</h3><p>A data e o número de convidados — me conta que eu já reservo.</p></div>
-      <div class="infocard"><div class="ico">2️⃣</div><h3>Alinhamos</h3><p>Disponibilidade da profissional, o espaço e cada detalhe.</p></div>
-      <div class="infocard"><div class="ico">3️⃣</div><h3>É só curtir</h3><p>No dia, chega tudo pronto. O grupo só cria e aproveita.</p></div>
+    <span class="eyebrow orange">◆ Para fechar</span>
+    <h2>Um encontro para <em>criar e lembrar</em></h2>
+    <p class="lead">Mais do que uma atividade, um momento para <strong>desacelerar, criar com as próprias mãos</strong> e levar pra casa uma <strong>lembrança especial</strong> desse encontro em grupo.</p>
+    <div class="quote" style="margin-top:22px">
+      Taissa, é só escolher a data que a gente cuida de todo o resto. 🤍<br>
+      <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    <div class="quote">
-      <i>Elarah · Experiências criativas</i><br>
-      contato@elarah.com.br &nbsp;·&nbsp; <strong>elarah.com.br</strong> &nbsp;·&nbsp; @elarah
-    </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Próximos passos</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Vamos criar?</span></div>
   </section>
 
 </div>
