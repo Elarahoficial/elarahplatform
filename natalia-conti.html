@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Natália Conti · Aniversário · Elarah</title>
-<meta name="description" content="Proposta Elarah para o aniversário da Natália Conti: uma comemoração intimista entre amigas, no formato Elarah Até Você.">
+<meta name="description" content="Portfólio de experiências Elarah para o aniversário da Natália Conti: criar, brindar e celebrar entre amigas, no formato Elarah Até Você.">
 <meta name="robots" content="noindex, nofollow">
 <style>
 /* latin-ext */
@@ -855,14 +855,55 @@
   .nxcontact b{color:var(--navy)}
 </style>
 <style>
-  .mmg{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-top:18px}
-  .mm{width:auto}
-  .mm .mmph{height:132px}
-  .mm .mmb{padding:11px 14px 13px}
-  .mm .mmn{font-size:13.5px;line-height:1.12}
-  .mm .mmd{font-size:10px;line-height:1.38;margin-top:5px}
-  .mm .mmprice{padding-top:9px;font-size:10px;white-space:nowrap}
-  .mm .mmprice b{font-size:14px}
+  /* capa portfolio */
+  .pflabel{text-align:right;line-height:1.7}
+  .pflabel b{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);font-weight:700}
+  .pflabel span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .chipcol{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-top:4px}
+  .pfproof{margin-top:16px;display:flex;gap:11px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 16px;max-width:370px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
+  .pfproof .star{color:var(--orange);font-size:14px;line-height:1.3}
+  .pfproof p{font-size:11.5px;color:var(--navy-soft);line-height:1.5;margin:0}
+  .pfproof b{color:var(--navy);font-weight:700}
+  /* grade de icones (o encontro / o jeito elarah) */
+  .ig{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
+  .igc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:19px 20px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
+  .igc .em{font-size:23px;line-height:1}
+  .igc h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .igc p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .igc p b{color:var(--navy);font-weight:700}
+  .qline{margin-top:18px;font-family:'DM Serif Display',serif;font-style:italic;font-size:17px;color:var(--orange-dark)}
+  /* a vibe */
+  .vibestrip{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:20px}
+  .vibestrip figure{margin:0;border-radius:16px;overflow:hidden;position:relative;height:200px;box-shadow:0 14px 34px -24px rgba(0,0,0,.4)}
+  .vibestrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .vibestrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 15px 12px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;background:linear-gradient(to top,rgba(46,31,42,.86),transparent)}
+  /* a vitrine (cards ricos) */
+  .vtg{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-top:18px}
+  .vtc{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 14px 32px -24px rgba(0,0,0,.32)}
+  .vtph{height:122px;position:relative;overflow:hidden;background:#eee}
+  .vtph img{width:100%;height:100%;object-fit:cover;display:block}
+  .vtnum{position:absolute;top:9px;left:9px;width:26px;height:26px;border-radius:999px;background:var(--navy);color:#fff;font-family:'DM Serif Display',serif;font-size:11.5px;display:flex;align-items:center;justify-content:center}
+  .vtb{padding:11px 13px 12px;display:flex;flex-direction:column;flex:1}
+  .vtcat{font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .vtn{font-family:'DM Serif Display',serif;font-size:14px;color:var(--navy);line-height:1.1;margin:4px 0 5px}
+  .vtd{font-size:9.5px;color:var(--muted);line-height:1.42}
+  .vtmeta{margin-top:auto;padding-top:9px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+  .vtdur{font-size:9px;color:var(--navy-soft);font-weight:600;white-space:nowrap}
+  .vtp{font-family:'DM Serif Display',serif;font-size:13px;color:var(--orange-dark);white-space:nowrap}
+  .vtp small{font-family:'DM Sans',sans-serif;font-size:8.5px;color:var(--muted)}
+  /* como acontece */
+  .steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:20px}
+  .steps3 .s .n{font-family:'DM Serif Display',serif;font-size:34px;color:var(--orange);line-height:1}
+  .steps3 .s h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);margin:4px 0 6px}
+  .steps3 .s p{font-size:12px;color:var(--muted);line-height:1.5}
+  /* investimento lista */
+  .invhero{display:flex;align-items:baseline;gap:14px;margin-top:4px}
+  .invhero .n{font-family:'DM Serif Display',serif;font-size:40px;color:var(--navy);line-height:1}
+  .invhero .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;max-width:12ch;line-height:1.3}
+  .invl{display:grid;grid-template-columns:1fr 1fr;gap:0 34px;margin-top:18px}
+  .invl .row{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding:11px 2px}
+  .invl .row .e{font-family:'DM Serif Display',serif;font-size:14.5px;color:var(--navy)}
+  .invl .row .pr{font-family:'DM Serif Display',serif;font-size:14.5px;color:var(--orange-dark);white-space:nowrap}
 </style></head>
 <body>
 
@@ -871,114 +912,112 @@
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right">
-        <span class="kicker">Aniversário · mão na massa</span>
-        <span class="compass">Natália <span>Conti</span><small>Morumbi · 28/11</small></span>
-      </div>
+      <div class="head-right"><div class="pflabel"><b>Portfólio de Experiências</b><span>Elarah · Aniversário</span></div></div>
     </div>
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Um aniversário criativo</span>
-        <h1>Um aniversário para <em>criar &amp; celebrar</em></h1>
-        <p class="lead">Uma comemoração diferente para viver entre amigas: <strong>mão na massa</strong>, boas conversas, taças, flores e uma <strong>criação para levar pra casa</strong>. 🤍</p>
-        <div class="rule"></div>
-        <div class="chips">
-          <span class="chip"><b>6</b> pessoas</span>
-          <span class="chip"><b>28/11</b> · sábado</span>
+        <span class="eyebrow">✦ Um aniversário só de vocês</span>
+        <h1>Criar, <em>brindar</em>, <em>celebrar</em>.</h1>
+        <p class="lead">Uma curadoria de experiências criativas para um grupo de <strong>amigas que gostam de criar, trocar e viver algo diferente</strong> — momentos bonitos e cheios de afeto, com a sofisticação da Elarah e a leveza de uma boa conversa.</p>
+        <div class="chipcol">
+          <span class="chip">Aniversário entre amigas</span>
+          <span class="chip">Criativo &amp; sofisticado</span>
+          <span class="chip">Uma lembrança pra levar</span>
         </div>
-        <div class="chips" style="margin-top:10px">
-          <span class="chip">Morumbi</span>
-          <span class="chip">Elarah até você</span>
-        </div>
+        <div class="pfproof"><span class="star">★</span><p>Experiências já realizadas para grupos como <b>Compass</b> e <b>Hidratei</b> · vistas no <b>Mais Você</b> (Globo)</p></div>
       </div>
-      <div class="cover-photo"><img src="assets/aniversario-ceramica-capa.jpg" alt="Amigas rindo e mostrando as peças que pintaram" style="object-position:center 28%"></div>
+      <div class="cover-photo"><img src="assets/aniversario-ceramica-capa.jpg" alt="Amigas rindo e criando juntas" style="object-position:center 28%"></div>
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Aniversário · Natália</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Preparado para Natália Conti · 6 convidadas · 28/11 · Morumbi</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O conceito</span></div>
+      <div class="head-right"><span class="kicker">O encontro</span></div>
     </div>
-    <span class="eyebrow orange">◆ A proposta</span>
-    <h2>Criar, conversar e <em>comemorar</em></h2>
-    <p class="lead">Trocar a comemoração tradicional por uma experiência <strong>leve e cheia de afeto</strong>, para viver entre amigas.</p>
-    <div class="pil3">
-      <div class="p"><div class="pt">Criar</div><div class="pd">Cada uma cria a própria peça.</div></div>
-      <div class="p"><div class="pt">Celebrar</div><div class="pd">Conversar, brindar e aproveitar.</div></div>
-      <div class="p"><div class="pt">Levar uma lembrança</div><div class="pd">Cada uma leva a sua criação.</div></div>
+    <span class="eyebrow orange">◆ O encontro</span>
+    <h2>Amigas <em>protagonistas</em>, criativas e conectadas</h2>
+    <p class="lead">A ideia é simples e gostosa: um momento para <strong>sair da rotina, criar juntas e celebrar</strong>. Um grupo de amigas que gostam de experimentar, colocar a mão na massa e viver experiências que fogem do óbvio. Mais do que uma atividade, é um espaço de <strong>troca, risada e presença</strong> — onde cada uma cria algo com as próprias mãos e leva pra casa uma lembrança cheia de significado.</p>
+    <div class="qline">"A melhor forma de comemorar é criar algo juntas."</div>
+    <div class="ig">
+      <div class="igc"><div class="em">🎨</div><h3>Protagonismo</h3><p>Cada uma no centro da experiência, criando algo autoral e único.</p></div>
+      <div class="igc"><div class="em">🤝</div><h3>Conexão</h3><p>Conversa, risada e troca — as amigas mais perto, de um jeito leve.</p></div>
+      <div class="igc"><div class="em">✨</div><h3>Celebração</h3><p>Sair do óbvio e viver algo novo, bonito e memorável.</p></div>
     </div>
-    <div class="gstrip" style="margin-top:16px">
-      <figure><img src="assets/agora-selfie.jpg" alt="Amigas rindo à mesa" style="object-position:center 35%"><figcaption>Muita risada</figcaption></figure>
-      <figure><img src="assets/agora-grupo.jpg" alt="Amigas criando juntas à mesa" style="object-position:center 50%"><figcaption>Entre amigas</figcaption></figure>
-      <figure><img src="assets/agora-pintura.jpg" alt="Mãos pintando e criando" style="object-position:center 40%"><figcaption>Mãos criando</figcaption></figure>
-      <figure><img src="assets/shoyu-pintura-amigas.jpg" alt="Amigas pintando juntas" style="object-position:center 45%"><figcaption>Lado a lado</figcaption></figure>
-      <figure><img src="assets/agora-aquarela.jpg" alt="Criando arte" style="object-position:center 40%"><figcaption>Criando arte</figcaption></figure>
-      <figure><img src="assets/agora-hero.jpg" alt="Grupo de amigas na experiência" style="object-position:center 45%"><figcaption>Momento delas</figcaption></figure>
-    </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>O conceito</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O encontro</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">O cardápio</span></div>
+      <div class="head-right"><span class="kicker">A vibe</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Conversa, conexão e criação</span>
+    <h2>A vibe do <em>encontro</em></h2>
+    <p class="lead">Taças, aromas, flores e pequenos detalhes: uma <strong>atmosfera sofisticada e sensorial</strong>, feita pra criar, brindar e viver momentos espontâneos de conversa.</p>
+    <div class="vibestrip">
+      <figure><img src="assets/agora-grupo.jpg" alt="Criar juntas" style="object-position:center 50%"><figcaption>Criar juntas</figcaption></figure>
+      <figure><img src="assets/agora-pintura.jpg" alt="Mãos que criam" style="object-position:center 40%"><figcaption>Mãos que criam</figcaption></figure>
+      <figure><img src="assets/aniv-decor.jpg" alt="Pequenos detalhes" style="object-position:center 40%"><figcaption>Pequenos detalhes</figcaption></figure>
+      <figure><img src="assets/pintura-taca-brinde.jpg" alt="Hora do brinde" style="object-position:center 40%"><figcaption>Hora do brinde</figcaption></figure>
+      <figure><img src="assets/buque.jpg" alt="Flores pra levar" style="object-position:center 45%"><figcaption>Flores pra levar</figcaption></figure>
+      <figure><img src="assets/vela-aromatica-real.jpg" alt="Aromas que ficam" style="object-position:center 50%"><figcaption>Aromas que ficam</figcaption></figure>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A vibe da experiência</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">O jeito Elarah</span></div>
+    </div>
+    <span class="eyebrow orange">◆ O que a Elarah leva</span>
+    <h2>A <em>Elarah cuida de tudo</em></h2>
+    <p class="lead">Vocês escolhem a experiência; o resto é com a gente. Da curadoria à última taça, <strong>tudo chega pronto</strong> pra que o grupo só precise viver o momento.</p>
+    <div class="ig">
+      <div class="igc"><div class="em">🎨</div><h3>Curadoria</h3><p>Experiências selecionadas a dedo pro perfil do grupo — bonitas e desejáveis.</p></div>
+      <div class="igc"><div class="em">🧑‍🎨</div><h3>Profissional &amp; material</h3><p>Artista conduzindo e todos os materiais premium inclusos.</p></div>
+      <div class="igc"><div class="em">📦</div><h3>Operação completa</h3><p>Montagem, estrutura e desmontagem. A gente chega antes e cuida de tudo.</p></div>
+      <div class="igc"><div class="em">📍</div><h3>No espaço de vocês</h3><p><b>Elarah até você</b>: levamos a experiência até casa, condomínio ou onde preferirem.</p></div>
+      <div class="igc"><div class="em">🍶</div><h3>Estações</h3><p>Dá pra combinar mais de uma experiência em estações simultâneas.</p></div>
+      <div class="igc"><div class="em">🎁</div><h3>Lembrança</h3><p>Cada convidada leva pra casa a peça que criou — a memória do dia.</p></div>
+    </div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>O jeito Elarah</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">A vitrine</span></div>
     </div>
     <span class="eyebrow orange">◆ Escolham a favorita</span>
-    <h2>Qual tem <em>mais a cara de vocês?</em></h2>
-    <p class="lead">Um cardápio de experiências para <strong>criar entre amigas</strong> — escolham as que mais têm a cara de vocês.</p>
-    <div class="mmg">
-      <div class="mm"><div class="mmph"><img src="assets/pinturataca.jpg" alt="Pintura em taça" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">Pintura em Taça</div><div class="mmd">Cada uma personaliza a própria taça enquanto o grupo cria e brinda.</div><div class="mmprice"><b>R$ 259</b> / pessoa</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/charm-making-mesa.jpg" alt="Charm bar e berloque de bolsa" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">Charm Bar &amp; Berloque</div><div class="mmd">Correntes, pingentes e charms para montar um acessório único.</div><div class="mmprice"><b>R$ 259</b> / pessoa</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/escova-pintada-flores.webp" alt="Customização de escova & presilha" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Escova &amp; Presilha</div><div class="mmd">Personalize escovas e presilhas com pinturas e detalhes à mão.</div><div class="mmprice"><b>R$ 269</b> / pessoa</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/colagem.jpg" alt="Scrapbook" style="object-position:center 55%"></div><div class="mmb"><div class="mmn">Scrapbook</div><div class="mmd">Recortes, texturas e memórias viram uma composição autoral.</div><div class="mmprice"><b>R$ 279</b> / pessoa</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/vela-grupo-oficina.jpg" alt="Vela aromática" style="object-position:center 35%"></div><div class="mmb"><div class="mmn">Vela Aromática</div><div class="mmd">Escolha fragrâncias e crie a sua própria vela aromática.</div><div class="mmprice"><b>R$ 289</b> / pessoa</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/xicarapintada.jpg" alt="Pintura em caneca de porcelana" style="object-position:center 50%"></div><div class="mmb"><div class="mmn">Pintura em Caneca de Porcelana</div><div class="mmd">Pinte à mão a sua caneca de porcelana para levar pra casa.</div><div class="mmprice"><b>R$ 299</b> / pessoa</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/agora-pintando.jpg" alt="Pintura em cerâmica" style="object-position:center 30%"></div><div class="mmb"><div class="mmn">Pintura em Cerâmica</div><div class="mmd">Peças de cerâmica ganham cores, desenhos e personalidade.</div><div class="mmprice"><b>R$ 299</b> / pessoa</div></div></div>
-      <div class="mm"><div class="mmph"><img src="assets/buque.jpg" alt="Buquê de flores" style="object-position:center 45%"></div><div class="mmb"><div class="mmn">Buquê de Flores</div><div class="mmd">Cada uma monta o próprio arranjo com uma curadoria de flores.</div><div class="mmprice"><b>R$ 319</b> / pessoa</div></div></div>
+    <h2>O <em>menu</em> de experiências</h2>
+    <p class="lead">Experiências pensadas pra esse grupo. Escolham a favorita — ou combinem mais de uma em estações.</p>
+    <div class="vtg">
+      <div class="vtc"><div class="vtph"><img src="assets/pinturataca.jpg" alt="Pintura em Taça" style="object-position:center 45%"><div class="vtnum">01</div></div><div class="vtb"><div class="vtcat">Pintura</div><div class="vtn">Pintura em Taça</div><div class="vtd">Pintam à mão a própria taça e brindam com ela.</div><div class="vtmeta"><span class="vtdur">• 2h</span><span class="vtp">R$ 259<small>/pessoa</small></span></div></div></div>
+      <div class="vtc"><div class="vtph"><img src="assets/charm-making-mesa.jpg" alt="Charm Bar &amp; Berloque" style="object-position:center 45%"><div class="vtnum">02</div></div><div class="vtb"><div class="vtcat">Acessórios</div><div class="vtn">Charm Bar &amp; Berloque</div><div class="vtd">Montam a própria joia e o berloque de bolsa.</div><div class="vtmeta"><span class="vtdur">• 1h30</span><span class="vtp">R$ 259<small>/pessoa</small></span></div></div></div>
+      <div class="vtc"><div class="vtph"><img src="assets/escova-pintada-flores.webp" alt="Escova &amp; Presilha" style="object-position:center 50%"><div class="vtnum">03</div></div><div class="vtb"><div class="vtcat">Customização</div><div class="vtn">Escova &amp; Presilha</div><div class="vtd">Personalizam escovas e presilhas à mão.</div><div class="vtmeta"><span class="vtdur">• 1h30</span><span class="vtp">R$ 269<small>/pessoa</small></span></div></div></div>
+      <div class="vtc"><div class="vtph"><img src="assets/colagem.jpg" alt="Scrapbook" style="object-position:center 55%"><div class="vtnum">04</div></div><div class="vtb"><div class="vtcat">Memórias</div><div class="vtn">Scrapbook</div><div class="vtd">Recortes e texturas viram uma composição autoral.</div><div class="vtmeta"><span class="vtdur">• 2h</span><span class="vtp">R$ 279<small>/pessoa</small></span></div></div></div>
+      <div class="vtc"><div class="vtph"><img src="assets/vela-grupo-oficina.jpg" alt="Vela Aromática" style="object-position:center 35%"><div class="vtnum">05</div></div><div class="vtb"><div class="vtcat">Vela</div><div class="vtn">Vela Aromática</div><div class="vtd">Criam a própria vela e aroma — levam pra casa.</div><div class="vtmeta"><span class="vtdur">• 1h30</span><span class="vtp">R$ 289<small>/pessoa</small></span></div></div></div>
+      <div class="vtc"><div class="vtph"><img src="assets/xicarapintada.jpg" alt="Pintura em Caneca" style="object-position:center 50%"><div class="vtnum">06</div></div><div class="vtb"><div class="vtcat">Porcelana</div><div class="vtn">Pintura em Caneca</div><div class="vtd">Pintam à mão a própria caneca de porcelana.</div><div class="vtmeta"><span class="vtdur">• 2h</span><span class="vtp">R$ 299<small>/pessoa</small></span></div></div></div>
+      <div class="vtc"><div class="vtph"><img src="assets/agora-pintando.jpg" alt="Pintura em Cerâmica" style="object-position:center 30%"><div class="vtnum">07</div></div><div class="vtb"><div class="vtcat">Cerâmica</div><div class="vtn">Pintura em Cerâmica</div><div class="vtd">Peças de cerâmica ganham cor e personalidade.</div><div class="vtmeta"><span class="vtdur">• 2h</span><span class="vtp">R$ 299<small>/pessoa</small></span></div></div></div>
+      <div class="vtc"><div class="vtph"><img src="assets/buque.jpg" alt="Buquê de Flores" style="object-position:center 45%"><div class="vtnum">08</div></div><div class="vtb"><div class="vtcat">Floral</div><div class="vtn">Buquê de Flores</div><div class="vtd">Montam o próprio arranjo com flores da estação.</div><div class="vtmeta"><span class="vtdur">• 1h30</span><span class="vtp">R$ 319<small>/pessoa</small></span></div></div></div>
     </div>
-    <p class="fineprint">Valores <b>a partir de</b>, por pessoa, referentes à experiência. Uma seleção do nosso portfólio — outras experiências sob consulta.</p>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>O cardápio de experiências</span></div>
+    <p class="fineprint">✦ Valores por pessoa, com condução por profissional, materiais e estrutura inclusos. Uma seleção do nosso portfólio — outras experiências sob consulta.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>A vitrine</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Elarah até você</span></div>
+      <div class="head-right"><span class="kicker">Como acontece</span></div>
     </div>
-    <span class="eyebrow orange">◆ No espaço de vocês</span>
-    <h2>A gente leva <em>até você</em></h2>
-    <p class="lead">A experiência acontece <strong>no espaço de vocês</strong> — a gente leva tudo até aí. É só receber as amigas e aproveitar. 🤍</p>
-    <div class="bfeat">
-      <div class="bphoto"><img src="assets/em-casa-hero-1.jpg" alt="Amigas criando juntas no espaço escolhido" style="object-position:center 40%"></div>
-      <div class="bbody">
-        <span class="btag">A gente leva até você</span>
-        <h3>É só receber as amigas</h3>
-        <ul class="feat">
-          <li><span class="st">✦</span><b>Profissionais</b> — condução da experiência por nossa conta</li>
-          <li><span class="st">✦</span><b>Materiais</b> — tudo o que precisa para criar</li>
-          <li><span class="st">✦</span><b>Estrutura</b> — montagem e organização no seu espaço</li>
-        </ul>
-      </div>
+    <span class="eyebrow orange">◆ Como acontece</span>
+    <h2>Simples pra vocês, <em>impecável</em> pro grupo</h2>
+    <p class="lead">Do primeiro alinhamento ao último brinde, a <strong>Elarah cuida de tudo</strong> — vocês só escolhem e aproveitam.</p>
+    <div class="steps3">
+      <div class="s"><div class="n">1</div><h3>Escolham</h3><p>A experiência (ou a combinação) que mais tem a cara do grupo.</p></div>
+      <div class="s"><div class="n">2</div><h3>A gente monta</h3><p>Materiais, profissionais e estrutura — tudo sob medida, no espaço de vocês.</p></div>
+      <div class="s"><div class="n">3</div><h3>É só viver</h3><p>No dia, chega tudo pronto. O grupo só cria, celebra e aproveita.</p></div>
     </div>
-    <div class="bnote" style="margin-top:16px">◆ Vocês escolhem a experiência favorita e a <b>Elarah cuida do resto</b> — da montagem à mesa posta. 🤍</div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Elarah até você</span></div>
-  </section>
-  <section class="slide">
-    <div class="slide__head">
-      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">A mesa posta</span></div>
-    </div>
-    <span class="eyebrow orange">◆ Como fica na prática</span>
-    <h2>A mesa posta, do <em>jeito Elarah</em></h2>
-    <p class="lead">Não é só a atividade: é a <strong>mesa montada com carinho</strong>, a decoração no clima e cada <strong>estação pronta</strong> esperando vocês. A gente chega antes, deixa tudo lindo e desmonta no fim — vocês só curtem. 🎀</p>
-    <div class="gstrip" style="margin-top:16px">
-      <figure><img src="assets/aniversario-mesa-real.jpg" alt="Mesa de aniversário montada" style="object-position:center 45%"><figcaption>Mesa de aniversário</figcaption></figure>
-      <figure><img src="assets/aniv-decor.jpg" alt="Decoração e clima de comemoração" style="object-position:center 40%"><figcaption>Decoração &amp; clima</figcaption></figure>
-      <figure><img src="assets/agora-mesa.jpg" alt="Mesa posta para a turma" style="object-position:center 55%"><figcaption>Mesa posta pra turma</figcaption></figure>
-      <figure><img src="assets/vela-aromatica-real.jpg" alt="Lembrancinha que fica" style="object-position:center 50%"><figcaption>Lembrancinha que fica</figcaption></figure>
-      <figure><img src="assets/mol-estacao.jpg" alt="Estações prontas para a experiência" style="object-position:center 45%"><figcaption>Estações prontas</figcaption></figure>
-      <figure><img src="assets/pintura-taca-brinde.jpg" alt="Peças que elas levam" style="object-position:center 40%"><figcaption>Peças que elas levam</figcaption></figure>
-    </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Como fica na prática</span></div>
+    <div class="qline">"Vocês chegam, criam e levam pra casa. O resto é com a gente."</div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Como acontece</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
@@ -986,14 +1025,20 @@
       <div class="head-right"><span class="kicker">Investimento</span></div>
     </div>
     <span class="eyebrow orange">◆ Investimento</span>
-    <h2>Simples de <em>escolher</em></h2>
-    <div class="pbig"><div class="n">R$ 259</div><div class="lbl">experiências <b>a partir de</b><br>por pessoa</div></div>
-    <div class="icards">
-      <div class="ic"><div class="k">Elarah até você</div><div class="v">No espaço de vocês</div><p>Levamos <b>materiais, profissionais e estrutura</b> até o espaço escolhido.</p></div>
-      <div class="ic"><div class="k">Por experiência</div><div class="v">R$ 259 a R$ 319</div><p>Cada experiência tem seu valor por pessoa, para o <b>grupo de 6</b>.</p></div>
-      <div class="ic"><div class="k">Tudo incluso</div><div class="v">Da preparação à peça</div><p>Materiais, condução e a <b>criação</b> que cada uma leva pra casa.</p></div>
+    <h2>Valor <em>por pessoa</em></h2>
+    <p class="lead">Todas as experiências já incluem condução profissional, materiais, estrutura e a <strong>lembrança pra levar pra casa</strong>.</p>
+    <div class="invhero"><div class="n">R$ 259</div><div class="l">a partir de, por pessoa</div></div>
+    <div class="invl">
+      <div class="row"><span class="e">Pintura em Taça</span><span class="pr">R$ 259</span></div>
+      <div class="row"><span class="e">Charm Bar &amp; Berloque</span><span class="pr">R$ 259</span></div>
+      <div class="row"><span class="e">Escova &amp; Presilha</span><span class="pr">R$ 269</span></div>
+      <div class="row"><span class="e">Scrapbook</span><span class="pr">R$ 279</span></div>
+      <div class="row"><span class="e">Vela Aromática</span><span class="pr">R$ 289</span></div>
+      <div class="row"><span class="e">Pintura em Caneca de Porcelana</span><span class="pr">R$ 299</span></div>
+      <div class="row"><span class="e">Pintura em Cerâmica</span><span class="pr">R$ 299</span></div>
+      <div class="row"><span class="e">Buquê de Flores</span><span class="pr">R$ 319</span></div>
     </div>
-    <p class="fineprint">Valores por pessoa. Algumas experiências podem ter acréscimo de até <b>R$ 120 de deslocamento</b>, conforme a logística do atendimento. Aniversário em <b>28/11/2026</b>, sujeito à disponibilidade.</p>
+    <p class="fineprint">Investimento do grupo calculado pela experiência escolhida × número de participantes (6). Algumas experiências podem ter acréscimo de até <b>R$ 120 de deslocamento</b>, conforme a logística do atendimento. Aniversário em <b>28/11/2026</b>, sujeito à disponibilidade.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
   </section>
   <section class="slide">
@@ -1003,18 +1048,18 @@
     </div>
     <span class="eyebrow orange">◆ Bora escolher? ✨</span>
     <h2>É só <em>apontar</em> a favorita</h2>
-    <p class="lead">Natália, conta pra gente qual experiência (ou quais!) mais combina com a comemoração — a partir disso, confirmamos a data <b>28/11</b> e organizamos tudo. 🤍</p>
+    <p class="lead">Natália, me conta qual (ou quais!) experiência mais combinou com o grupo, que eu monto a <strong>proposta final</strong> — com investimento, estrutura e tudo pronto pro dia. 🤍</p>
     <div class="rule"></div>
-    <div class="grid3">
-      <div class="infocard"><div class="num">1</div><h3>Escolham</h3><p>A(s) experiência(s) favorita(s) do grupo.</p></div>
-      <div class="infocard"><div class="num">2</div><h3>Organizamos</h3><p>Espaço, materiais e toda a estrutura por nossa conta.</p></div>
-      <div class="infocard"><div class="num">3</div><h3>É só curtir</h3><p>No dia, chega tudo pronto — vocês só aproveitam.</p></div>
+    <div class="steps3">
+      <div class="s"><div class="n">1</div><h3>Escolham</h3><p>A(s) experiência(s) favorita(s) do grupo.</p></div>
+      <div class="s"><div class="n">2</div><h3>Organizamos</h3><p>Materiais, profissionais e estrutura por nossa conta.</p></div>
+      <div class="s"><div class="n">3</div><h3>É só curtir</h3><p>No dia, chega tudo pronto — vocês só aproveitam.</p></div>
     </div>
     <div class="quote" style="margin-top:20px">
-      Um aniversário para criar, celebrar e guardar na memória. 🤍<br>
+      Uma tarde pra criar, conectar e levar pra casa muito mais que uma lembrança. 🤍<br>
       <i>Elarah · Experiências</i> &nbsp;·&nbsp; WhatsApp <strong>+55 (11) 91445-5930</strong> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; elarah.com.br
     </div>
-    <div class="slide__foot"><span>Elarah · Experiências</span><span>Próximos passos</span></div>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Preparado para Natália Conti</span></div>
   </section>
 
 </div>
