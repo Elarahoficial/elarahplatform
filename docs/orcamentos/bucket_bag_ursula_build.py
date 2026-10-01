@@ -149,7 +149,7 @@ cover = f'''
           <span class="chip">≈ <b>5h</b> de experiência</span>
         </div>
       </div>
-      <div class="cover-photo">{img("bag-grupo-rosa.jpg", "Grupo de amigas reunido no encontro de moda", "center 42%")}</div>
+      <div class="cover-photo">{img("bag-capa-grupo-bolsas.webp", "Grupo de amigas no encontro, com as Bucket Bags criadas", "center 50%")}</div>
     </div>
     {foot("Bucket Bag · Turma privada")}
   </section>'''
