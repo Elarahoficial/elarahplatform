@@ -164,11 +164,11 @@ jornada = f'''
     <span class="eyebrow orange">◆ Como a experiência acontece</span>
     <h2>Cinco horas, <em>cinco momentos</em></h2>
     <div class="jrn">
-      {jstep("01 · Boas-vindas & inspiração", "charm-making-mesa.jpg", "Boas-vindas & inspiração", "Apresentação da experiência, dos materiais e das possibilidades.", "center 40%")}
-      {jstep("02 · Escolhas & composição", "charm-materials-tray.jpg", "Escolhas & composição", "Tecidos, ferragens, detalhes e acabamentos começam a ganhar personalidade.", "center 50%")}
+      {jstep("01 · Boas-vindas & inspiração", "grupo-oficina-atelie.webp", "Boas-vindas & inspiração", "Apresentação da experiência, dos materiais e das possibilidades.", "center 40%")}
+      {jstep("02 · Escolhas & composição", "bag-couro-mesa.jpg", "Escolhas & composição", "Tecidos, ferragens, detalhes e acabamentos começam a ganhar personalidade.", "center 50%")}
       {jstep("03 · Mão na massa", "costura-costurando.jpg", "Mão na massa", "Estruturação e montagem da bolsa com orientação da profissional.", "center 45%")}
-      {jstep("04 · Acabamentos", "charm-making-maos.jpg", "Acabamentos", "Os detalhes finais transformam o projeto em uma peça pronta.", "center 45%")}
-      {jstep("05 · O momento “eu que fiz”", "croche-bolsa.jpg", "O momento “eu que fiz”", "Cada participante termina e leva para casa a sua própria Bucket Bag.", "center 35%")}
+      {jstep("04 · Acabamentos", "charm-bolsa-suede.jpg", "Acabamentos", "Os detalhes finais transformam o projeto em uma peça pronta.", "center 50%")}
+      {jstep("05 · O momento “eu que fiz”", "bucket-bag-preta.jpg", "O momento “eu que fiz”", "Cada participante termina e leva para casa a sua própria Bucket Bag.", "center 50%")}
     </div>
     {foot("Como acontece")}
   </section>'''
@@ -180,7 +180,7 @@ prof = f'''
     <span class="eyebrow orange">◆ A profissional</span>
     <h2>Moda de perto, com <em>quem vive esse universo</em></h2>
     <div class="prof">
-      <div class="pph">{img("costura-costurando.jpg", "Orientação próxima durante a construção da bolsa", "center 30%")}</div>
+      <div class="pph">{img("bag-couro-mesa.jpg", "Orientação próxima durante a confecção, com materiais e ferramentas", "center 50%")}</div>
       <div>
         <p class="name">Úrsula Kaercher</p>
         <div class="role">Estilista · ≈ 20 anos de moda</div>
@@ -235,7 +235,7 @@ incluso = f'''
     <span class="eyebrow orange">◆ Tudo incluso</span>
     <h2>A gente prepara tudo. <em>Vocês só chegam e criam.</em></h2>
     <div class="incsplit">
-      <div class="ph">{img("charm-making-grupo.jpg", "Grupo de amigas criando junto na experiência", "center 40%")}</div>
+      <div class="ph">{img("bag-grupo-amigas.jpg", "Grupo de amigas criando junto na experiência", "center 30%")}</div>
       <div>
         <ul class="inclist">
           <li><span class="ck">✓</span>Experiência <b>privativa para 6</b></li>
@@ -283,7 +283,7 @@ final = f'''
     <span class="eyebrow orange">◆ Para fechar</span>
     <h2>Imagina terminar o dia e poder dizer: <em>“eu que fiz”</em></h2>
     <div class="finwrap">
-      <div class="ph">{img("escovas-grupo-maos.jpg", "Grupo comemorando as peças feitas à mão", "center 50%")}</div>
+      <div class="ph">{img("bucket-bag-dourada.jpg", "Bucket Bag finalizada, pronta para usar", "center 50%")}</div>
       <div class="ftx">
         <p class="lead">Mais do que aprender uma técnica, é reservar algumas horas para <strong>criar juntas, desacelerar</strong> e sair com <strong>algo feito pelas próprias mãos</strong>.</p>
         <div class="fincta">Vamos criar esse dia juntas? 🧡</div>
@@ -293,7 +293,7 @@ final = f'''
     {foot("Vamos criar?")}
   </section>'''
 
-deck = ('<div class="deck">\n' + cover + nao + jornada + prof + mais + leva + incluso + investimento + final + '\n\n</div>\n\n')
+deck = ('<div class="deck">\n' + cover + nao + jornada + prof + leva + incluso + investimento + final + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-bucket-bag-ursula.html"
 io.open(out, "w", encoding="utf-8").write(html)
