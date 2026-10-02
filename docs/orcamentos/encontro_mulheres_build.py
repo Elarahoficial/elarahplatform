@@ -64,15 +64,15 @@ extra = '''
   .cmpnote{margin-top:16px;text-align:center;font-size:12.5px;color:var(--navy-soft)}
   .cmpnote b{color:var(--navy)}
   /* coffee opcional (3 cards) */
-  .cbg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:16px;width:100%}
-  .cbc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 22px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column;position:relative}
+  .cbg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:14px;width:100%}
+  .cbc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column;position:relative}
   .cbc.hl{border:2px solid var(--orange)}
-  .cbc .sg{display:inline-block;align-self:flex-start;background:var(--orange);color:#fff;font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;padding:5px 11px;border-radius:999px;margin-bottom:9px}
-  .cbc .nm{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy)}
-  .cbc .pr{margin-top:7px;font-size:12px;font-weight:700;color:var(--orange-dark)}
-  .cbc .pr b{font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy)}
+  .cbc .sg{display:inline-block;align-self:flex-start;background:var(--orange);color:#fff;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;padding:4px 10px;border-radius:999px;margin-bottom:8px}
+  .cbc .nm{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy)}
+  .cbc .pr{margin-top:6px;font-size:11px;font-weight:700;color:var(--orange-dark)}
+  .cbc .pr b{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy)}
   .cbc .pr small{color:var(--muted);font-weight:600;display:block;margin-top:2px}
-  .cbc .it{margin-top:12px;font-size:11px;color:var(--muted);line-height:1.5}
+  .cbc .it{margin-top:9px;font-size:10.5px;color:var(--muted);line-height:1.45}
   /* investimento lista (combos) */
   .invhero{display:flex;align-items:baseline;gap:14px;margin-top:4px}
   .invhero .n{font-family:'DM Serif Display',serif;font-size:42px;color:var(--navy);line-height:1}
@@ -80,15 +80,19 @@ extra = '''
   .invhero .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;max-width:14ch;line-height:1.3}
   .invsub{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:4px}
   .invcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:24px;width:100%}
-  .invcard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 32px;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);display:flex;flex-direction:column}
+  .invcard{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);display:flex;flex-direction:column}
   .invcard.hl{border:2px solid var(--orange)}
-  .invcard .sg{align-self:flex-start;background:var(--orange);color:#fff;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:5px 12px;border-radius:999px;margin-bottom:12px}
-  .invcard .nm{font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);line-height:1.05}
-  .invcard .big{font-family:'DM Serif Display',serif;font-size:46px;color:var(--orange-dark);line-height:1;margin:14px 0 2px}
-  .invcard .per{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
-  .invcard .tot{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--navy-soft);font-weight:700}
-  .invcard .tot b{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy)}
-  .invobs{margin-top:18px;font-size:11.5px;color:var(--muted);line-height:1.5}
+  .invcard .sg{align-self:flex-start;background:var(--orange);color:#fff;font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:4px 11px;border-radius:999px;margin-bottom:9px}
+  .invcard .nm{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);line-height:1.05}
+  .invcard .big{font-family:'DM Serif Display',serif;font-size:36px;color:var(--orange-dark);line-height:1;margin:8px 0 2px}
+  .invcard .per{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .invcard .tot{margin-top:11px;padding-top:11px;border-top:1px solid var(--line);font-size:12.5px;color:var(--navy-soft);font-weight:700}
+  .invcard .tot b{font-family:'DM Serif Display',serif;font-weight:400;font-size:16px;color:var(--navy)}
+  .invobs{margin-top:14px;font-size:11px;color:var(--muted);line-height:1.5}
+  .cbhead{margin-top:20px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:15px}
+  .cbhead span{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy)}
+  .cbhead span em{font-style:italic;color:var(--orange)}
+  .cbhead small{font-size:11.5px;color:var(--muted);line-height:1.4}
   .combos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:20px;width:100%}
   .combo{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
   .combo .ct{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);margin:0 0 12px;line-height:1.1}
@@ -264,23 +268,14 @@ investimento = f'''
         <div class="tot">Para 60 participantes · <b>R$ 16.140</b></div>
       </div>
     </div>
-    <p class="invobs">Valores considerando duas turmas de 30 participantes no mesmo dia. Local ainda a definir.</p>
-    {foot("Investimento")}
-  </section>'''
-
-# ===== 5 · COFFEE BREAK OPCIONAL =====
-coffee = f'''
-  <section class="slide">
-{head_simple("Para completar")}
-    <span class="eyebrow orange">◆ Quer deixar o encontro ainda mais completo?</span>
-    <h2>Coffee break <em>opcional</em></h2>
-    <div class="noteband">Também podemos preparar o coffee break para acompanhar esse momento — <b>tudo organizado no mesmo formato</b>, para vocês não precisarem se preocupar com a operação. ☕ Opcional · contratado adicionalmente.</div>
+    <div class="cbhead"><span>☕ Coffee break <em>opcional</em></span><small>Para deixar o encontro ainda mais completo — contratado à parte, nunca somado ao workshop.</small></div>
     <div class="cbg">
-      {cbc("Essencial", "R$ 99", "R$ 5.940", "Mini sanduíches, salgado, doce, fruta ou iogurte, suco, água e café — com serviço de montagem.")}
-      {cbc("Clássico", "R$ 114", "R$ 6.840", "A composição completa e equilibrada para acompanhar a experiência — montagem e utensílios inclusos.", hl=True)}
-      {cbc("Especial", "R$ 142", "R$ 8.520", "Mais opções de salgados e doces, para transformar o coffee em parte importante do encontro.")}
+      {cbc("Essencial", "R$ 99", "R$ 5.940", "Mini sanduíches, salgado, doce, fruta, suco, água e café.")}
+      {cbc("Clássico", "R$ 114", "R$ 6.840", "Composição completa e equilibrada — montagem e utensílios inclusos.", hl=True)}
+      {cbc("Especial", "R$ 142", "R$ 8.520", "Mais opções de salgados e doces para o coffee.")}
     </div>
-    {foot("Coffee break opcional")}
+    <p class="invobs">Valores considerando duas turmas de 30 participantes no mesmo dia. Local ainda a definir. Coffee break opcional, não somado ao workshop.</p>
+    {foot("Investimento & coffee")}
   </section>'''
 
 # ===== 7 · PRÓXIMOS PASSOS =====
@@ -319,7 +314,7 @@ final = f'''
   </section>'''
 
 deck = ('<div class="deck">\n' + cover + vela + atmosfera + duasformas + investimento
-        + coffee + proximos + final + '\n\n</div>\n\n')
+        + proximos + final + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-encontro-mulheres.html"
 io.open(out, "w", encoding="utf-8").write(html)
@@ -333,5 +328,5 @@ assert deck.count("Wax Melts") == 0
 assert "experiência completa" not in deck.lower() and "Como funciona" not in deck
 assert "O investimento para" in deck, "falta slide de investimento"
 assert "Próximos passos" in deck and "Daqui pra frente" in deck, "falta slide de próximos passos"
-assert html.count('<section class="slide">') == 8, "esperado 8 slides"
+assert html.count('<section class="slide">') == 7, "esperado 7 slides"
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
