@@ -4997,7 +4997,11 @@ if (groupForm) {
               console.log('[Elarah checkout] nome pré-preenchido do perfil');
             }
             if (telefoneInput && prof.telefone && !telefoneInput.value) {
-              telefoneInput.value = prof.telefone;
+              // Pelo componente do telefone: o perfil guarda "+55 (11) 9…" e,
+              // jogado cru no campo (que já tem o seletor +55), o 55 virava
+              // dígito do número — "Sobrou dígito" e o checkout travava.
+              if (window.ElarahPhone) window.ElarahPhone.set(telefoneInput, prof.telefone);
+              else telefoneInput.value = prof.telefone;
               console.log('[Elarah checkout] telefone pré-preenchido do perfil');
             }
           } catch (e) {
