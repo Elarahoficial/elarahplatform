@@ -69,21 +69,26 @@
   }
 
   // Nunca entram pela sugestão automática (só se a Elarah marcar).
-  const ADULT_CATEGORIES = ['bartenderia', 'charutaria', 'vinhos', 'vinho', 'cervejaria', 'destilados', 'mixologia'];
-  const ADULT_WORDS = /\b(drinks?|vinhos?|cervejas?|gin|whisky|whiskey|coquetel|coqueteis|coquetelaria|sake|charutos?|destilados?|tequila|cachaca|espumantes?|harmonizacao)\b/;
+  const ADULT_CATEGORIES = ['bartenderia', 'charutaria', 'vinhos', 'vinho', 'cervejaria', 'destilados', 'mixologia',
+    'aromatizador', 'aromatizadores', 'perfumaria', 'confeitaria'];
+  const ADULT_WORDS = /\b(drinks?|vinhos?|cervejas?|gin|whisky|whiskey|coquetel|coqueteis|coquetelaria|sake|charutos?|destilados?|tequila|cachaca|espumantes?|harmonizacao|olfativ[ao]s?|aromatizador(es)?|perfumes?|confeitaria)\b/;
 
-  // Nome/categoria: sinal forte de experiência pra criança/família.
-  const KIDS_TITLE = /\b(kids?|infantil|infantis|criancas?|mirim|mirins|baby|familia|familias|pequenos? chefs?|chefinhos?|pais e filhos|mae e filh[oa]s?|maes e filh[oa]s?)\b/;
-  // Descrição: frases que deixam claro que é pra criança.
-  const KIDS_DESC = /(\bkids\b|para criancas|pra criancas|criancas de \d|criancas a partir|criancas e (adultos|pais|responsaveis)|pais e filhos|mae e filh|em familia|turma infantil|oficina infantil|idade minima|a partir de \d{1,2} anos|de \d{1,2} a \d{1,2} anos)/;
-  const FAMILY = /\b(familia|familias|pais e filhos|mae e filh[oa]s?|maes e filh[oa]s?|em familia)\b/;
+  // Retiradas da aba a pedido da Elarah (trecho do nome, sem acento).
+  // Pra tirar outra, é só acrescentar aqui.
+  const EXCLUIR_NOMES = ['familias olfativas', 'aromatizador'];
 
-  function minAge(text) {
-    const m = text.match(/a partir de (\d{1,2}) anos/) || text.match(/idade minima[^\d]{0,12}(\d{1,2})/);
-    return m ? parseInt(m[1], 10) : null;
-  }
+  // Sugestão automática: SÓ pelo nome/categoria (a descrição cita
+  // "família" e "infância" em aula de adulto o tempo todo). "Famílias"
+  // no plural fica de fora (ex.: "Famílias Olfativas").
+  const KIDS_TITLE = /\b(kids?|infantil|infantis|criancas?|mirim|mirins|baby|pequenos? chefs?|chefinhos?|pais e filh[oa]s|maes? e filh[oa]s?|em familia|com a familia|familia)\b/;
+  const FAMILY = /\b(em familia|com a familia|familia|pais e filh[oa]s|maes? e filh[oa]s?)\b/;
 
   function isTagged(e) { return e && normalize(e.campanha) === CAMPAIGN; }
+
+  function isExcluded(e) {
+    const n = normalize(e && e.nome);
+    return EXCLUIR_NOMES.some(function (x) { return n.indexOf(x) !== -1; });
+  }
 
   function isAdult(e) {
     const cat = normalize(e.categoria).trim();
@@ -93,16 +98,26 @@
 
   function isKidsFriendly(e) {
     if (!e || isAdult(e)) return false;
-    const title = normalize((e.nome || '') + ' ' + (e.categoria || ''));
-    const desc = normalize(e.descricao || '');
-    const age = minAge(desc);
-    // "A partir de 16/18 anos" = não é pra criança, mesmo que cite família.
-    if (age != null && age >= 14) return false;
-    return KIDS_TITLE.test(title) || KIDS_DESC.test(desc);
+    return KIDS_TITLE.test(normalize((e.nome || '') + ' ' + (e.categoria || '')));
   }
 
   function isFamily(e) {
-    return FAMILY.test(normalize((e.nome || '') + ' ' + (e.categoria || '') + ' ' + (e.descricao || '')));
+    return FAMILY.test(normalize((e.nome || '') + ' ' + (e.categoria || '')));
+  }
+
+  // Faixa de idade lida da descrição ("de 4 a 10 anos", "a partir de 6 anos",
+  // "+12") pra mostrar no card. Sem faixa clara → não mostra nada.
+  function ageLabel(e) {
+    const t = normalize((e.nome || '') + ' ' + (e.descricao || ''));
+    let m = t.match(/(?:de|dos)\s*(\d{1,2})\s*(?:a|aos|ate)\s*(\d{1,2})\s*anos/);
+    if (m && +m[1] < +m[2] && +m[2] <= 17) return m[1] + ' a ' + m[2] + ' anos';
+    m = t.match(/a partir (?:de|dos)\s*(\d{1,2})\s*anos/);
+    if (m && +m[1] <= 13) return '+' + m[1] + ' anos';
+    m = t.match(/\(\s*\+\s*(\d{1,2})\s*\)|\+\s*(\d{1,2})\s*anos/);
+    if (m) { const n = +(m[1] || m[2]); if (n <= 13) return '+' + n + ' anos'; }
+    m = t.match(/\(\s*-\s*(\d{1,2})\s*\)|menores de\s*(\d{1,2})/);
+    if (m) return 'até ' + (m[1] || m[2]) + ' anos';
+    return '';
   }
 
   // ---- Ordenação: ordem manual do admin → marcadas → data → nome ----
@@ -180,6 +195,15 @@
           ? '<span class="ddc-card__badge">👨‍👩‍👧 Em família</span>'
           : '<span class="ddc-card__badge">🎈 Para crianças</span>');
 
+    // Faixa de idade + escassez real (vagas restantes do cadastro).
+    const tags = [];
+    const idade = ageLabel(exp);
+    if (idade) tags.push('<span class="ddc-tag ddc-tag--age">👧 ' + escapeHtml(idade) + '</span>');
+    const rest = Number(exp.vagasRestantes);
+    if (Number.isFinite(rest) && rest > 0 && rest <= 5) {
+      tags.push('<span class="ddc-tag ddc-tag--hot">🔥 ' + (rest === 1 ? 'Última vaga' : 'Últimas ' + rest + ' vagas') + '</span>');
+    }
+
     const meta = [];
     const data = String(exp.data || '').trim();
     const horario = String(exp.horario || '').trim();
@@ -197,6 +221,7 @@
       '<div class="ddc-card__body">' +
         '<span class="ddc-card__categoria">' + escapeHtml(catLabel(exp)) + '</span>' +
         '<h3 class="ddc-card__title">' + escapeHtml(exp.nome || 'Experiência') + '</h3>' +
+        (tags.length ? '<div class="ddc-card__tags">' + tags.join('') + '</div>' : '') +
         (meta.length ? '<div class="ddc-card__meta">' + meta.join('') + '</div>' : '') +
         '<div class="ddc-card__footer">' +
           (preco
@@ -216,7 +241,29 @@
     return card;
   }
 
-  /* ---------- 4. Vitrine ---------- */
+  /* ---------- 4. Barra fixa (celular) + cliques em compartilhar ---------- */
+  (function initSticky() {
+    const bar = document.getElementById('ddc-sticky');
+    const vit = document.getElementById('ddc-experiencias');
+    if (!bar || !vit || !('IntersectionObserver' in window)) return;
+    let vitVisible = false;
+    new IntersectionObserver(function (entries) {
+      vitVisible = entries[0].isIntersecting;
+      update();
+    }, { threshold: 0.05 }).observe(vit);
+    function update() { bar.classList.toggle('is-on', window.scrollY > 420 && !vitVisible); }
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  })();
+  document.addEventListener('click', function (ev) {
+    const a = ev.target.closest && ev.target.closest('[data-ddc-share]');
+    if (!a) return;
+    try {
+      if (window.ElarahAnalytics && ElarahAnalytics.track) ElarahAnalytics.track('share_whatsapp', { page: CAMPAIGN });
+    } catch (e) {}
+  });
+
+  /* ---------- 5. Vitrine ---------- */
   (async function initGrid() {
     const grid    = document.getElementById('ddc-grid');
     const empty   = document.getElementById('ddc-empty');
@@ -245,6 +292,7 @@
     const list = [];
     let nTagged = 0, nAuto = 0;
     experiences.forEach(function (e) {
+      if (isExcluded(e)) return;
       const tagged = isTagged(e);
       if (!tagged && !isKidsFriendly(e)) return;
       const k = String(e.id != null ? e.id : e.nome);
@@ -276,6 +324,8 @@
       const ddmm = String(dia).padStart(2, '0') + '/' + String(mes).padStart(2, '0');
       const isDay = mes === 10 && dia === 12;
       return {
+        weekday: DIAS_SEMANA[dt.getDay()],
+        ddmm: ddmm,
         key: ddmm,
         sort: k,
         label: (isDay ? '🎉 ' : '') + DIAS_SEMANA[dt.getDay()] + ', ' + ddmm + (isDay ? ' — Dia das Crianças!' : ''),
@@ -324,9 +374,20 @@
         if (!items.length) return;
         const head = document.createElement('div');
         head.className = 'ddc-day' + (d.isDay ? ' ddc-day--special' : '');
+        const n = items.length + ' experiência' + (items.length !== 1 ? 's' : '');
+        // Celular: título em linha. Computador: "folhinha" de calendário
+        // que ocupa uma célula da grade, junto dos cards (sem buracos).
         head.innerHTML =
           '<span class="ddc-day__label">' + escapeHtml(d.label) + '</span>' +
-          '<span class="ddc-day__count">' + items.length + ' experiência' + (items.length !== 1 ? 's' : '') + '</span>';
+          '<span class="ddc-day__count">' + n + '</span>' +
+          '<span class="ddc-day__tile" aria-hidden="true">' +
+            (d.ddmm
+              ? '<span class="ddc-day__wd">' + escapeHtml(d.weekday) + '</span>' +
+                '<span class="ddc-day__dd">' + escapeHtml(d.ddmm) + '</span>' +
+                (d.isDay ? '<span class="ddc-day__party">🎉 Dia das Crianças!</span>' : '')
+              : '<span class="ddc-day__dd ddc-day__dd--flex">🗓️</span><span class="ddc-day__wd">Datas flexíveis</span>') +
+            '<span class="ddc-day__n">' + n + ' →</span>' +
+          '</span>';
         grid.appendChild(head);
         items.forEach(function (e) { grid.appendChild(createCard(e, idx++)); });
       });
@@ -379,6 +440,14 @@
       }
     }
     render();
+
+    // Prévia no hero: quantas experiências e a partir de quando.
+    const peek = document.getElementById('ddc-peek');
+    if (peek) {
+      const firstDay = days.filter(function (d) { return d.key !== 'flex'; })[0];
+      peek.innerHTML = '🎈 <a href="#ddc-experiencias">' + list.length + ' experiência' + (list.length !== 1 ? 's' : '') +
+        ' pra fazer com os pequenos</a>' + (firstDay ? ' · a partir de ' + escapeHtml(firstDay.key) : '');
+    }
 
     try {
       if (window.ElarahAnalytics && ElarahAnalytics.track) {
