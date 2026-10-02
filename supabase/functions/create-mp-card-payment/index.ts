@@ -223,6 +223,13 @@ async function handleCardRequest(
     if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
     return Math.round(n);
   })();
+  // Prazo de cancelamento com reembolso exibido no checkout (48h na
+  // regra geral, maior em algumas experiências). Congelado na reserva.
+  const politicaCancelamentoHoras = (function () {
+    const n = Number(payload.politica_cancelamento_horas);
+    if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
+    return Math.round(n);
+  })();
   // Preço unitário da variação exibido no front (centavos). Só dica —
   // o banco continua autoritativo. Ver booking_guard §5b.
   const variantExpectedCents = (function () {
@@ -408,6 +415,7 @@ async function handleCardRequest(
         cpf: cpfRaw || null,
         politica_aceita_em: politicaAceitaEm,
         politica_remarcacao_horas: politicaRemarcacaoHoras,
+        politica_cancelamento_horas: politicaCancelamentoHoras,
       },
     });
 
@@ -488,6 +496,7 @@ async function handleCardRequest(
     payment_provider: "mercado_pago",
     politica_aceita_em: politicaAceitaEm,
     politica_remarcacao_horas: politicaRemarcacaoHoras,
+    politica_cancelamento_horas: politicaCancelamentoHoras,
     cpf: cpfRaw || null,
     inventory_skipped: inventorySkipped || undefined,
     variant_label: variantLabel || undefined,

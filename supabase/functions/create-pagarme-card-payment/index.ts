@@ -119,6 +119,13 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
     if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
     return Math.round(n);
   })();
+  // Prazo de cancelamento com reembolso exibido no checkout (48h na
+  // regra geral, maior em algumas experiências). Congelado na reserva.
+  const politicaCancelamentoHoras = (function () {
+    const n = Number(payload.politica_cancelamento_horas);
+    if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
+    return Math.round(n);
+  })();
   const variantExpectedCents = (function () {
     const n = Number(payload.variant_price_expected_centavos);
     return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
@@ -291,6 +298,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
         cpf: cpfRaw, variant_label: variantLabel, variant_selected: variantSelected,
         politica_aceita_em: politicaAceitaEm,
         politica_remarcacao_horas: politicaRemarcacaoHoras,
+        politica_cancelamento_horas: politicaCancelamentoHoras,
       },
     });
     if (directErr) {
@@ -369,6 +377,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       variant_label: variantLabel, variant_selected: variantSelected,
       politica_aceita_em: politicaAceitaEm,
       politica_remarcacao_horas: politicaRemarcacaoHoras,
+      politica_cancelamento_horas: politicaCancelamentoHoras,
       // Auditoria do gross-up: base × total cobrado × parcela.
       amount_before_grossup_centavos: amountToChargeCents,
       grossup_centavos: chargeCents - amountToChargeCents,
@@ -494,6 +503,7 @@ async function handleRequest(payload: Record<string, unknown>): Promise<Response
       variant_label: variantLabel, variant_selected: variantSelected,
       politica_aceita_em: politicaAceitaEm,
       politica_remarcacao_horas: politicaRemarcacaoHoras,
+      politica_cancelamento_horas: politicaCancelamentoHoras,
       pagarme_order_id: cardResult.orderId ?? null,
       amount_before_grossup_centavos: amountToChargeCents,
       grossup_centavos: chargeCents - amountToChargeCents,

@@ -103,6 +103,7 @@ export async function enviarConfirmacaoReagendamento(
       const html = bookingConfirmationEmailHtml({
         ...dados,
         prazoRemarcacaoHoras: (meta.politica_remarcacao_horas as number | null) ?? null,
+        prazoCancelamentoHoras: (meta.politica_cancelamento_horas as number | null) ?? null,
         precoLabel: bk.preco_label,
         quantidade: qty,
         amountTotalCentavos: bk.amount_total ?? null,

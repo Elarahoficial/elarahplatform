@@ -392,6 +392,13 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
     return Math.round(n);
   })();
+  // Prazo de cancelamento com reembolso exibido no checkout (48h na
+  // regra geral, maior em algumas experiências). Congelado na reserva.
+  const politicaCancelamentoHoras = (function () {
+    const n = Number(payload.politica_cancelamento_horas);
+    if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
+    return Math.round(n);
+  })();
   // Preço unitário da variação exibido no front (centavos). Só dica de
   // segurança — o banco continua autoritativo. Ver booking_guard §5b.
   const variantExpectedCents = (function () {
@@ -584,6 +591,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
         cpf: cpfRaw,
         politica_aceita_em: politicaAceitaEm,
         politica_remarcacao_horas: politicaRemarcacaoHoras,
+        politica_cancelamento_horas: politicaCancelamentoHoras,
       },
     });
 
@@ -729,6 +737,7 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
     cpf: cpfRaw,
     politica_aceita_em: politicaAceitaEm,
     politica_remarcacao_horas: politicaRemarcacaoHoras,
+    politica_cancelamento_horas: politicaCancelamentoHoras,
     mp_payment_id: String(payment.id),
     mp_expires_at: payment.date_of_expiration,
     // Flag de auditoria: TRUE se o RPC de vagas falhou e o pagamento
