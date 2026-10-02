@@ -8022,6 +8022,18 @@
       // Vazio = segue o padrão da categoria. Preencher é criar exceção
       // só pra esta experiência.
       if (cutoffEl) cutoffEl.value = exp.cutoffHours != null ? exp.cutoffHours : '';
+      // Prazo de cancelamento com reembolso: mostra em dias quando é
+      // múltiplo de 24h (168 → 7 dias), senão em horas. Vazio = 48h geral.
+      (function () {
+        var vEl = document.getElementById('exp-prazo-cancel-valor');
+        var uEl = document.getElementById('exp-prazo-cancel-unidade');
+        if (!vEl || !uEl) return;
+        var h = exp.prazoCancelamentoHoras;
+        if (h == null || !(Number(h) > 0)) { vEl.value = ''; uEl.value = 'horas'; return; }
+        h = Number(h);
+        if (h % 24 === 0) { vEl.value = h / 24; uEl.value = 'dias'; }
+        else { vEl.value = h; uEl.value = 'horas'; }
+      })();
 
       const isActiveEl = document.getElementById('exp-is-active');
       if (isActiveEl) isActiveEl.checked = exp.isActive !== false;
@@ -8168,6 +8180,10 @@
       if (cor2El) cor2El.value = '#f0a05e';
       const cutoffEl = document.getElementById('exp-cutoff-hours');
       if (cutoffEl) cutoffEl.value = '';
+      const prazoCancelValEl = document.getElementById('exp-prazo-cancel-valor');
+      if (prazoCancelValEl) prazoCancelValEl.value = '';
+      const prazoCancelUniEl = document.getElementById('exp-prazo-cancel-unidade');
+      if (prazoCancelUniEl) prazoCancelUniEl.value = 'horas';
       const vagasRestEl = document.getElementById('exp-vagas-restantes');
       if (vagasRestEl) vagasRestEl.value = '';
       const isActiveEl = document.getElementById('exp-is-active');
@@ -8784,6 +8800,15 @@
         vagasTotal: vagasTotalRaw === '' ? null : Number(vagasTotalRaw),
         eventAt: eventAtIso,
         cutoffHours: cutoffRaw === '' ? null : Number(cutoffRaw),
+        // Cancelar com reembolso até N horas antes (vazio = 48h geral).
+        prazoCancelamentoHoras: (function () {
+          var raw = (document.getElementById('exp-prazo-cancel-valor')?.value || '').trim();
+          if (!raw) return null;
+          var n = Number(raw.replace(',', '.'));
+          if (!Number.isFinite(n) || n <= 0) return null;
+          var uni = document.getElementById('exp-prazo-cancel-unidade')?.value;
+          return Math.round(uni === 'dias' ? n * 24 : n);
+        })(),
         isActive: !!(document.getElementById('exp-is-active')?.checked ?? true),
         fornecedorNome: (document.getElementById('exp-fornecedor-nome')?.value || '').trim() || null,
         valorCheioCentavos: (function () {

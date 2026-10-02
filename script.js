@@ -4518,17 +4518,17 @@ if (groupForm) {
 
       // Prazo de remarcação SEM CUSTO varia por categoria (bartenderia
       // 5 dias, gastronomia 72h, resto 48h). Cancelar com reembolso é
-      // 48h, salvo exceções por experiência. O texto é montado aqui, com o prazo desta
+      // 48h, salvo o prazo cadastrado na experiência. O texto é montado aqui, com o prazo desta
       // experiência, e o número vai junto no payload pra ser congelado
       // na reserva — o e-mail de confirmação exibe o mesmo número.
       var _prazo = (window.ElarahData && ElarahData.prazoRemarcacaoDe)
         ? ElarahData.prazoRemarcacaoDe({ categoria: ctx.categoria })
         : { horas: 48, rotulo: '48 horas' };
       ctx.politicaRemarcacaoHoras = _prazo.horas;
-      // Cancelar com reembolso: 48h na regra geral, mas algumas
-      // experiências têm prazo maior (ver ElarahData.prazoCancelamentoDe).
+      // Cancelar com reembolso: 48h na regra geral, ou o prazo cadastrado
+      // na experiência (ver ElarahData.prazoCancelamentoDe).
       var _prazoCanc = (window.ElarahData && ElarahData.prazoCancelamentoDe)
-        ? ElarahData.prazoCancelamentoDe({ nome: ctx.experienceNome })
+        ? ElarahData.prazoCancelamentoDe({ prazoCancelamentoHoras: ctx.prazoCancelamentoHoras })
         : { horas: 48, rotulo: '48 horas' };
       ctx.politicaCancelamentoHoras = _prazoCanc.horas;
       var _policyTextReset = root.querySelector('#erm-policy-text');
@@ -7339,6 +7339,9 @@ if (groupForm) {
       // Categoria(s) da experiência — define o prazo de remarcação sem
       // custo exibido no checkout (bartenderia 5 dias, gastronomia 72h).
       let expCategoria = null;
+      // Prazo de cancelamento com reembolso cadastrado na experiência
+      // (null = regra geral de 48h).
+      let expPrazoCancelamentoHoras = null;
 
       if (window.ElarahData && typeof ElarahData.getExperienceById === 'function') {
         try {
@@ -7353,6 +7356,7 @@ if (groupForm) {
               ? Number(exp.valorCheioCentavos)
               : null;
             expCategoria = exp.categoria || null;
+            expPrazoCancelamentoHoras = exp.prazoCancelamentoHoras != null ? exp.prazoCancelamentoHoras : null;
             if (!precoLabel || !precoCentavos) {
               // Preço VIGENTE (com a promoção quando ativa) — nunca o de
               // cadastro, senão o resumo cobraria diferente do anunciado.
@@ -7483,6 +7487,7 @@ if (groupForm) {
         precoCentavos: precoCentavos,
         valorCheioCentavos: expValorCheioCentavos,
         categoria: expCategoria,
+        prazoCancelamentoHoras: expPrazoCancelamentoHoras,
         // [PR F] modo guest — modal mostra campo email e cria conta no submit
         isGuest: isGuestMode,
         email: auth.email,

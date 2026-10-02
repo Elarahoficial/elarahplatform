@@ -41,6 +41,9 @@
   //     → sql/elarah_experiences_visibility.sql
   const OPTIONAL_COLUMNS = new Set([
     'vagas_total', 'event_at', 'cutoff_hours', 'is_active',
+    // Prazo de cancelamento com reembolso desta experiência, em horas.
+    // null = regra geral (48h). sql/elarah_experiences_prazo_cancelamento.sql.
+    'politica_cancelamento_horas',
     'fornecedor_nome', 'valor_cheio_centavos', 'percentual_repasse',
     'valor_repasse_fixo_centavos',
     'pacote_datas',
@@ -156,6 +159,8 @@
       // (ver effectiveCutoffHours). Um número aqui é exceção explícita
       // cadastrada no admin pra ESTA experiência.
       cutoffHours: row.cutoff_hours != null ? Number(row.cutoff_hours) : null,
+      // Cancelar com reembolso até N horas antes. null = regra geral (48h).
+      prazoCancelamentoHoras: row.politica_cancelamento_horas != null ? Number(row.politica_cancelamento_horas) : null,
       // Visibilidade (oculta/mostra no site sem excluir).
       // Só `false` explícito esconde. Default true pra retrocompat com
       // bancos antigos sem a coluna ou com null.
@@ -457,6 +462,18 @@
         return list.length ? list : null;
       })()
     };
+    // Prazo de cancelamento com reembolso: só grava quando quem salvou
+    // mandou o campo (form de Experiências). O form de By Elarah e as
+    // atualizações parciais não têm esse campo e não podem apagar o
+    // prazo cadastrado.
+    if ('prazoCancelamentoHoras' in exp || 'politica_cancelamento_horas' in exp) {
+      fullRow.politica_cancelamento_horas = (function () {
+        var raw = exp.prazoCancelamentoHoras != null ? exp.prazoCancelamentoHoras : exp.politica_cancelamento_horas;
+        if (raw == null || raw === '') return null;
+        var n = Math.round(Number(raw));
+        return Number.isFinite(n) && n > 0 ? n : null;
+      })();
+    }
     return filterKnownColumns(fullRow);
   }
 
@@ -2374,8 +2391,8 @@
   //   Gastronomia .......... 72 horas
   //   Todas as demais ...... 48 horas
   //
-  // CANCELAMENTO COM REEMBOLSO é outra coisa: 48h pra todas, salvo as
-  // exceções por experiência de prazoCancelamentoDe (abaixo) — ver
+  // CANCELAMENTO COM REEMBOLSO é outra coisa: 48h pra todas, salvo a
+  // exceção cadastrada na experiência (prazoCancelamentoDe, abaixo) — ver
   // /cancelamento.html. Não misture os dois prazos.
   //
   // ATENÇÃO — esta tabela existe DUAS vezes: aqui (navegador) e em
@@ -2408,40 +2425,32 @@
   }
 
   // =============================================================
-  // PRAZO DE CANCELAMENTO COM REEMBOLSO — exceções por experiência
+  // PRAZO DE CANCELAMENTO COM REEMBOLSO — por experiência
   // -------------------------------------------------------------
-  // A regra geral é 48h pra todas as categorias. Algumas experiências
-  // têm prazo maior porque a parceira compra material/insumo com
-  // antecedência — nelas o reembolso só vale se o cancelamento chegar
-  // antes do prazo listado aqui.
+  // Regra geral: 48h pra todas as categorias. Experiência em que a
+  // parceira compra material antes pode ter prazo maior, cadastrado no
+  // admin (campo "Cancelar com reembolso até", coluna
+  // experiences.politica_cancelamento_horas). Vazio = 48h.
   //
-  //   Crie Sua Joia & Brinde com Vinho - Ingresso 2 Pessoas ... 7 dias
-  //
-  // A chave é o NOME da experiência normalizado (sem acento, minúsculo,
-  // só letras e números) — se o nome for editado no painel, atualize
-  // aqui também.
-  //
-  // ATENÇÃO — esta tabela existe DUAS vezes: aqui (navegador) e em
-  // supabase/functions/_shared/booking_policy.ts (Deno, pro e-mail).
-  // Mudou aqui, muda lá. O prazo é congelado no metadata da reserva
+  // O prazo é congelado no metadata da reserva
   // (politica_cancelamento_horas) no momento da compra.
   // =============================================================
-  var PRAZO_CANCELAMENTO_POR_EXPERIENCIA = {
-    'crie sua joia brinde com vinho ingresso 2 pessoas': { horas: 168, rotulo: '7 dias' },
-  };
   var PRAZO_CANCELAMENTO_PADRAO = { horas: 48, rotulo: '48 horas' };
 
-  function chaveNomeExperiencia(nome) {
-    return String(nome || '')
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim();
+  function rotuloHoras(h) {
+    // Mesma regra de rotuloDoPrazo (booking_policy.ts), pra checkout e
+    // e-mail mostrarem o mesmo texto.
+    if (h % 24 === 0 && h >= 96) return (h / 24) + ' dias';
+    return h + ' horas';
   }
 
   function prazoCancelamentoDe(exp) {
-    var p = PRAZO_CANCELAMENTO_POR_EXPERIENCIA[chaveNomeExperiencia(exp && exp.nome)];
-    return p || PRAZO_CANCELAMENTO_PADRAO;
+    var raw = exp == null ? null
+      : (exp.prazoCancelamentoHoras != null ? exp.prazoCancelamentoHoras : exp.politica_cancelamento_horas);
+    var n = Number(raw);
+    if (raw == null || raw === '' || !Number.isFinite(n) || n <= 0) return PRAZO_CANCELAMENTO_PADRAO;
+    n = Math.round(n);
+    return { horas: n, rotulo: rotuloHoras(n) };
   }
 
   // Markup do "de" riscado, pra ser colado ANTES do preço dentro do
