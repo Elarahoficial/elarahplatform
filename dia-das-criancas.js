@@ -174,6 +174,16 @@
   const ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
   const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
 
+  // Selo de data no canto da foto. Dia 12/10 ganha destaque.
+  function dateBadge(exp) {
+    const k = dateKey(exp);
+    if (k === Infinity) return '';
+    const mes = Math.floor(k / 100), dia = k % 100;
+    const ddmm = String(dia).padStart(2, '0') + '/' + String(mes).padStart(2, '0');
+    if (mes === 10 && dia === 12) return '<span class="ddc-card__date ddc-card__date--day">🎉 No dia 12!</span>';
+    return '<span class="ddc-card__date">' + ddmm + '</span>';
+  }
+
   function createCard(exp, idx) {
     const card = document.createElement('article');
     card.className = 'ddc-card ddc-card--c' + ((idx % 6) + 1);
@@ -217,7 +227,7 @@
     const preco = (window.ElarahData && ElarahData.formatPrecoBR) ? ElarahData.formatPrecoBR(precoRaw) : precoRaw;
 
     card.innerHTML =
-      '<div class="ddc-card__media">' + badge + media + '</div>' +
+      '<div class="ddc-card__media">' + badge + dateBadge(exp) + media + '</div>' +
       '<div class="ddc-card__body">' +
         '<span class="ddc-card__categoria">' + escapeHtml(catLabel(exp)) + '</span>' +
         '<h3 class="ddc-card__title">' + escapeHtml(exp.nome || 'Experiência') + '</h3>' +
@@ -341,60 +351,32 @@
     });
     days.sort(function (a, b) { return a.sort - b.sort; });
 
-    // Chips de tipo: "Todas" + "Em família" (se houver) + categorias presentes.
-    const cats = [];
-    const catSeen = new Set();
-    list.forEach(function (e) {
-      const key = normalize(e.categoria).trim() || 'outros';
-      if (!catSeen.has(key)) { catSeen.add(key); cats.push({ key: key, label: catLabel(e) }); }
-    });
-    const hasFamily = list.some(isFamily);
+    // Filtros simples (no máximo 4 botões): Todas · Em família ·
+    // Na cozinha · Arte & criação. Só aparece o grupo que tem experiência.
+    function grupo(e) { return normalize(e.categoria).trim() === 'gastronomia' ? 'cozinha' : 'arte'; }
     const filters = [{ key: '*', label: '🌈 Todas' }];
-    if (hasFamily) filters.push({ key: '@familia', label: '👨‍👩‍👧 Em família' });
-    if (cats.length > 1) cats.forEach(function (c) { filters.push(c); });
-
-    const dayFilters = [{ key: '*', label: '📅 Todos os dias' }].concat(
-      days.map(function (d) { return { key: d.key, label: d.short }; })
-    );
+    if (list.some(isFamily)) filters.push({ key: '@familia', label: '👨‍👩‍👧 Em família' });
+    const temCozinha = list.some(function (e) { return grupo(e) === 'cozinha'; });
+    const temArte = list.some(function (e) { return grupo(e) === 'arte'; });
+    if (temCozinha && temArte) {
+      filters.push({ key: 'cozinha', label: '🍕 Na cozinha' });
+      filters.push({ key: 'arte', label: '🎨 Arte & criação' });
+    }
 
     let active = '*';
-    let activeDay = '*';
     function matches(e) {
-      if (activeDay !== '*' && dayInfo(e).key !== activeDay) return false;
       if (active === '*') return true;
       if (active === '@familia') return isFamily(e);
-      return (normalize(e.categoria).trim() || 'outros') === active;
+      return grupo(e) === active;
     }
     function render() {
       grid.innerHTML = '';
       const shown = list.filter(matches);
-      let idx = 0;
-      days.forEach(function (d) {
-        const items = shown.filter(function (e) { return dayInfo(e).key === d.key; });
-        if (!items.length) return;
-        const head = document.createElement('div');
-        head.className = 'ddc-day' + (d.isDay ? ' ddc-day--special' : '');
-        const n = items.length + ' experiência' + (items.length !== 1 ? 's' : '');
-        // Celular: título em linha. Computador: "folhinha" de calendário
-        // que ocupa uma célula da grade, junto dos cards (sem buracos).
-        head.innerHTML =
-          '<span class="ddc-day__label">' + escapeHtml(d.label) + '</span>' +
-          '<span class="ddc-day__count">' + n + '</span>' +
-          '<span class="ddc-day__tile" aria-hidden="true">' +
-            (d.ddmm
-              ? '<span class="ddc-day__wd">' + escapeHtml(d.weekday) + '</span>' +
-                '<span class="ddc-day__dd">' + escapeHtml(d.ddmm) + '</span>' +
-                (d.isDay ? '<span class="ddc-day__party">🎉 Dia das Crianças!</span>' : '')
-              : '<span class="ddc-day__dd ddc-day__dd--flex">🗓️</span><span class="ddc-day__wd">Datas flexíveis</span>') +
-            '<span class="ddc-day__n">' + n + ' →</span>' +
-          '</span>';
-        grid.appendChild(head);
-        items.forEach(function (e) { grid.appendChild(createCard(e, idx++)); });
-      });
+      shown.forEach(function (e, i) { grid.appendChild(createCard(e, i)); });
       if (!shown.length) {
         const none = document.createElement('p');
         none.className = 'ddc-none';
-        none.textContent = 'Nenhuma experiência com esse filtro. Tente outro dia ou tipo 😉';
+        none.textContent = 'Nenhuma experiência aqui ainda. Toque em “Todas” 😉';
         grid.appendChild(none);
       }
       if (countEl) {
@@ -402,8 +384,7 @@
           ' pra fazer com os pequenos';
       }
       document.querySelectorAll('.ddc-chip').forEach(function (b) {
-        const cur = b.dataset.group === 'day' ? activeDay : active;
-        const on = b.dataset.key === cur;
+        const on = b.dataset.key === active;
         b.classList.toggle('is-active', on);
         b.setAttribute('aria-selected', on ? 'true' : 'false');
       });
@@ -419,19 +400,13 @@
         b.dataset.group = group;
         b.textContent = f.label;
         b.addEventListener('click', function () {
-          if (group === 'day') activeDay = f.key; else active = f.key;
+          active = f.key;
           render();
         });
         container.appendChild(b);
       });
     }
     if (chipsEl) {
-      if (dayFilters.length > 2) {
-        const row = document.createElement('div');
-        row.className = 'ddc-chips__row';
-        addChips(row, dayFilters, 'day');
-        chipsEl.appendChild(row);
-      }
       if (filters.length > 1) {
         const row = document.createElement('div');
         row.className = 'ddc-chips__row';

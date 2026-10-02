@@ -652,3 +652,13 @@
   .ddc-day--special .ddc-day__tile { border-color: var(--ddc-pink); background: var(--ddc-yellow-soft); }
   .ddc-day--special .ddc-day__tile::before { background: var(--ddc-pink); }
 }
+
+/* v4: grade única — data como selo na foto, sem títulos de dia */
+.ddc-card__date {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  background: #fff; color: var(--ddc-ink);
+  font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: .95rem;
+  padding: 5px 11px; border-radius: 12px;
+  box-shadow: 0 3px 0 rgba(0,0,0,.15);
+}
+.ddc-card__date--day { background: var(--ddc-yellow); color: var(--ddc-ink); box-shadow: 0 3px 0 #E0A800; }
