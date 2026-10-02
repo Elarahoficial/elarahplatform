@@ -219,7 +219,7 @@ export async function sendEmail(msg: EmailMessage): Promise<EmailResult> {
 
 // ---------------- TEMPLATES ----------------
 
-import { prazoCancelamentoPorExperiencia, rotuloDoPrazo } from "./booking_policy.ts";
+import { prazoCancelamentoDaExperiencia, rotuloDoPrazo } from "./booking_policy.ts";
 
 function htmlShell(inner: string): string {
   return `<!doctype html>
@@ -310,8 +310,7 @@ export function bookingConfirmationEmailHtml(opts: {
   // que esta cliente aceitou. Ausente (reserva antiga) → 48h.
   prazoRemarcacaoHoras?: number | null;
   // Prazo de cancelamento com reembolso, em horas, congelado na reserva
-  // (metadata.politica_cancelamento_horas). Ausente → tabela de exceções
-  // por experiência, senão 48h.
+  // (metadata.politica_cancelamento_horas). Ausente (reserva antiga) → 48h.
   prazoCancelamentoHoras?: number | null;
 }): string {
   const firstName = (opts.nome || "").trim().split(/\s+/)[0] || "";
@@ -365,8 +364,8 @@ export function bookingConfirmationEmailHtml(opts: {
   //
   // São DOIS prazos diferentes e o texto separa os dois de propósito:
   // remarcar varia por categoria (bartenderia 5 dias, gastronomia 72h,
-  // resto 48h) e cancelar com reembolso é 48h (salvo exceções por
-  // experiência, ex.: 7 dias). Juntar os dois
+  // resto 48h) e cancelar com reembolso é 48h (salvo prazo próprio
+  // cadastrado na experiência, ex.: 7 dias). Juntar os dois
   // numa frase só já causou confusão nos dois sentidos.
   // WhatsApp da Elarah — mesmo número do rodapé do site. É o canal em que
   // a cliente de fato responde; o e-mail continua valendo como alternativa.
@@ -386,9 +385,7 @@ export function bookingConfirmationEmailHtml(opts: {
   // Na maioria das categorias os dois prazos são 48h; listar duas linhas
   // idênticas soaria burocrático e ninguém leria. Só quando a categoria
   // tem prazo de remarcação MAIOR é que vale separar as duas regras.
-  const prazoCancelarRotulo = Number(opts.prazoCancelamentoHoras) > 0
-    ? rotuloDoPrazo(opts.prazoCancelamentoHoras)
-    : prazoCancelamentoPorExperiencia(opts.experienciaNome).rotulo;
+  const prazoCancelarRotulo = prazoCancelamentoDaExperiencia(opts.prazoCancelamentoHoras).rotulo;
   const prazosIguais = prazoRemarcarRotulo === prazoCancelarRotulo;
   const prazosHtml = prazosIguais
     ? `<p style="margin:0 0 9px;font-size:14px;color:#3a3a3a;line-height:1.6;">

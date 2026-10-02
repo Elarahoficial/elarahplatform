@@ -25,7 +25,7 @@
 import { effectiveCutoffHours } from "./booking_guard.ts";
 import { carregarDescontoGeral, precoFinalCentavos, precoLabelBR } from "./promo.ts";
 import {
-  prazoCancelamentoPorExperiencia,
+  prazoCancelamentoDaExperiencia,
   prazoRemarcacaoPorCategoria,
   PRAZO_REMARCACAO_PADRAO,
 } from "./booking_policy.ts";
@@ -549,8 +549,8 @@ export async function aplicarTroca(
     meta.bairro = novaExp.bairro != null && String(novaExp.bairro).trim() ? String(novaExp.bairro).trim() : null;
     // O prazo de remarcação passa a ser o da experiência nova.
     meta.politica_remarcacao_horas = prazoRemarcacaoPorCategoria(novaExp.categoria).horas;
-    // Idem o de cancelamento com reembolso (48h, ou a exceção da nova).
-    meta.politica_cancelamento_horas = prazoCancelamentoPorExperiencia(novaExp.nome as string).horas;
+    // Idem o de cancelamento com reembolso (48h, ou o prazo cadastrado na nova).
+    meta.politica_cancelamento_horas = prazoCancelamentoDaExperiencia(novaExp.politica_cancelamento_horas).horas;
   }
   const sobra = ctx.sobraCentavos > 0 ? ctx.sobraCentavos : 0;
   const devolucao: Devolucao | null = sobra > 0 ? (opts.devolucao ?? { tipo: "credito" }) : null;

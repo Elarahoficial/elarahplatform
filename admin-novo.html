@@ -2616,6 +2616,18 @@
           <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Quantas horas antes a venda é encerrada. <strong>Deixe vazio</strong> pra usar o padrão da categoria: Gastronomia 48h (insumo perecível), demais 24h. Preencha só pra abrir exceção nesta experiência — o valor aqui vale mesmo se for menor que o padrão.</p>
         </div>
 
+        <div class="admin__form-field">
+          <label>Cancelar com reembolso até</label>
+          <div style="display:flex;gap:8px;">
+            <input type="number" id="exp-prazo-cancel-valor" min="1" step="1" placeholder="48" style="flex:1;">
+            <select id="exp-prazo-cancel-unidade" style="width:auto;">
+              <option value="horas">horas antes</option>
+              <option value="dias">dias antes</option>
+            </select>
+          </div>
+          <p class="admin__form-hint" style="margin:4px 0 0;font-size:12px;color:#888;">Prazo pra cliente cancelar e ter o dinheiro de volta. <strong>Deixe vazio</strong> pra usar a regra geral de 48 horas. Preencha (ex.: 7 dias) quando a parceira compra material antes. Aparece no checkout e no e-mail de confirmação.</p>
+        </div>
+
         <div class="admin__form-field admin__form-field--full">
           <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
             <input type="checkbox" id="exp-is-active" checked style="width:auto;margin:0;">
@@ -3197,14 +3209,14 @@
 <script src="phone-input.js?v=1"></script>
 <script src="password-toggle.js?v=1"></script>
 <script src="auth.js?v=15"></script>
-<script src="experiences-data.js?v=44"></script>
+<script src="experiences-data.js?v=45"></script>
 <script src="byelarah-data.js?v=8"></script>
 <script src="analytics.js?v=3"></script>
 <script src="admin-social.js?v=2"></script>
 <!-- Chart.js (somente admin) — usado pelo painel de analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
 <script src="admin-searchable-select.js?v=1"></script>
-<script src="admin.js?v=248"></script>
+<script src="admin.js?v=252"></script>
 
 <!-- ==========================================================
      BY ELARAH — INLINE GROUPING PATCH
