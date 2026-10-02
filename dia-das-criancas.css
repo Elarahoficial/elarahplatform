@@ -662,3 +662,8 @@
   box-shadow: 0 3px 0 rgba(0,0,0,.15);
 }
 .ddc-card__date--day { background: var(--ddc-yellow); color: var(--ddc-ink); box-shadow: 0 3px 0 #E0A800; }
+
+/* Botão "Ver todas" embaixo da vitrine */
+.ddc-more { text-align: center; margin-top: 34px; }
+.ddc-more__btn { font-size: 1.08rem; padding: 17px 34px; background: var(--ddc-yellow); color: var(--ddc-ink); box-shadow: 0 6px 0 #E0A800, 0 14px 26px rgba(255,201,60,.3); }
+.ddc-more__btn:hover { box-shadow: 0 8px 0 #E0A800, 0 18px 30px rgba(255,201,60,.35); }
