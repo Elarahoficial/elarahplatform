@@ -585,6 +585,40 @@
   user-select: all;
 }
 
+.purchase-card__cupom-linha {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 4px;
+}
+
+.purchase-card__cupom-linha .purchase-card__cupom {
+  margin: 0;
+  min-width: 0;
+  padding: 6px 9px;
+  font-size: 0.82rem;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.purchase-card__cupom-copiar {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  background: #b56a15;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.purchase-card__cupom-copiar:hover {
+  background: #9a5810;
+}
+
 .purchase-card__credito-validade {
   margin: 0 0 6px;
   font-size: 0.75rem;

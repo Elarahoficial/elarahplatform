@@ -700,6 +700,36 @@ renderFavoritos();
       });
       return;
     }
+    // Botão "Copiar" ao lado do código do cupom de crédito.
+    const copiarBtn = t.closest('[data-copiar-cupom]');
+    if (copiarBtn) {
+      ev.preventDefault();
+      const codigo = copiarBtn.getAttribute('data-copiar-cupom') || '';
+      const done = () => {
+        copiarBtn.textContent = 'Copiado!';
+        setTimeout(() => { copiarBtn.textContent = 'Copiar'; }, 1800);
+      };
+      const fallback = () => {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = codigo;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        } catch (_) { /* sem cópia: o código continua selecionável */ }
+        done();
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(codigo).then(done).catch(fallback);
+      } else {
+        fallback();
+      }
+      return;
+    }
     const reembolsoLink = t.closest('[data-reembolso-booking]');
     if (reembolsoLink && window.ElarahTrocas) {
       window.ElarahTrocas.pedirReembolso(reembolsoLink.getAttribute('data-reembolso-booking'));
@@ -766,7 +796,10 @@ renderFavoritos();
     } else if (cupom) {
       corpo =
         '<p class="purchase-card__credito-texto">Escolha qualquer experiência da Elarah e use o código no campo de cupom na hora de reservar:</p>' +
-        '<div class="purchase-card__cupom">' + escapeHtmlLocal(cupom.codigo) + '</div>' +
+        '<div class="purchase-card__cupom-linha">' +
+          '<div class="purchase-card__cupom">' + escapeHtmlLocal(cupom.codigo) + '</div>' +
+          '<button type="button" class="purchase-card__cupom-copiar" data-copiar-cupom="' + escapeHtmlLocal(cupom.codigo) + '">Copiar</button>' +
+        '</div>' +
         (cupom.valido_ate ? '<p class="purchase-card__credito-validade">Vale até ' + escapeHtmlLocal(formatCreatedAt(cupom.valido_ate)) + ' · uma compra</p>' : '');
     } else {
       corpo = '<p class="purchase-card__credito-texto">' +
