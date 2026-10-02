@@ -176,7 +176,7 @@ cover = f'''
           <span class="chip">Times de todos os tamanhos</span>
           <span class="chip">Happy hour &amp; confraternização</span>
           <span class="chip">A Elarah vai até vocês</span>
-          <span class="chip">Experiências a partir de <b>R$ 179</b></span>
+          <span class="chip">Experiências a partir de <b>R$ 159</b></span>
         </div>
       </div>
       <div class="cover-photo">{img("pintura-corp-class.jpg", "Time corporativo misto criando e rindo junto", "center 45%")}</div>
@@ -206,12 +206,12 @@ menu1 = f'''
   <section class="slide">
 {head_simple("O menu de experiências")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>Pra <em>começar</em> — a partir de R$ 179</h2>
+    <h2>Pra <em>começar</em> — a partir de R$ 159</h2>
     <p class="lead">Experiências leves e <strong>fáceis de participar</strong>, com ótimo custo pra abrir o encontro e soltar o grupo. Cada pessoa cria algo seu e leva pra casa.</p>
     <div class="menu">
-      {mc("01", "Criativa · Acessórios", "Charm Bar &amp; Charm Bag", "Montam a própria joia e o berloque de bolsa — autoral e interativo.", "R$ 179", "charm-making-grupo.jpg", "center 40%")}
-      {mc("02", "Sensorial · Vela", "Vela Aromática", "Cada participante cria a própria vela, explorando aromas e combinações.", "R$ 199", "vela-grupo-oficina.jpg", "center 35%")}
-      {mc("03", "Criativa · Pintura", "Pintura em Taça", "Leve e social: personalizam a própria taça enquanto o grupo conversa e brinda.", "R$ 219", "pintura-taca-experiencia.jpg", "center 45%", sugg=True)}
+      {mc("01", "Criativa · Acessórios", "Charm Bag Express", "Montam o próprio berloque de bolsa — autoral, rápido e cheio de estilo.", "R$ 159", "charm-making-grupo.jpg", "center 40%")}
+      {mc("02", "Sensorial · Aromas", "Aromatizador de Ambiente", "Criam o próprio aromatizador de ambiente, escolhendo fragrâncias pra levar.", "R$ 169", "aromatizador-spray.jpg", "center 45%")}
+      {mc("03", "Sensorial · Vela", "Vela Aromática", "Cada participante cria a própria vela, explorando aromas e combinações.", "R$ 189", "vela-grupo-oficina.jpg", "center 35%")}
     </div>
     <div class="noteband">◆ Faixa de <b>entrada</b> do portfólio — ideal pra grupos grandes e primeiros encontros. O formato final a gente ajusta conforme o briefing.</div>
     {foot("O menu · pra começar")}
@@ -222,15 +222,15 @@ menu2 = f'''
   <section class="slide">
 {head_simple("O menu de experiências")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>Pra <em>desacelerar</em> e explorar aromas</h2>
-    <p class="lead">Experiências sensoriais e autorais que tiram o time do automático — cada pessoa cria algo seu, do aroma ao acabamento.</p>
+    <h2>Entrada · pra <em>criar e levar</em></h2>
+    <p class="lead">Mais experiências de <strong>entrada acessível</strong>, sensoriais e criativas — cada pessoa cria algo seu, do aroma ao acabamento.</p>
     <div class="menu">
-      {mc("04", "Sensorial · Lip Balm", "Lip Balm", "Cada um prepara o próprio hidratante labial, escolhendo aromas e texturas.", "R$ 229", "lipbalm-making.jpg", "center 45%")}
-      {mc("05", "Sensorial · Perfumaria", "Perfumaria Autoral", "Uma viagem olfativa guiada: cada pessoa cria a própria fragrância.", "", "perfumaria-oficina.jpg", "center 45%")}
-      {mc("06", "Criativa · Porcelana", "Pintura em Porcelana", "Pintam à mão a própria peça de porcelana e levam pra casa.", "", "agora-pintando.jpg", "center 35%")}
+      {mc("04", "Sensorial · Aromas", "Difusor de Ambiente", "Montam o próprio difusor de varetas, escolhendo essências e composição.", "R$ 189", "difusor-reed.jpg", "center 45%")}
+      {mc("05", "Criativa · Pintura", "Pintura em Taça", "Leve e social: personalizam a própria taça enquanto o grupo conversa e brinda.", "R$ 199", "pintura-taca-experiencia.jpg", "center 45%", sugg=True)}
+      {mc("06", "Sensorial · Autocuidado", "Lip Balm Autoral", "Cada um prepara o próprio hidratante labial, escolhendo aromas e texturas.", "R$ 229", "lipbalm-making.jpg", "center 45%")}
     </div>
-    <div class="noteband">◆ Para <b>Perfumaria</b> e <b>Pintura em Porcelana</b>, confirmamos o menor formato real antes de fechar o valor — por isso aparecem como <b>sob consulta</b>.</div>
-    {foot("O menu · sensorial & autoral")}
+    <div class="noteband">◆ Experiências <b>rápidas e desejáveis</b> — rendem lembrança pra cada pessoa levar e funcionam muito bem em grupos grandes.</div>
+    {foot("O menu · entrada")}
   </section>'''
 
 # ===== 5 · VITRINE · PEÇA AUTORAL =====
@@ -241,11 +241,11 @@ menu3 = f'''
     <h2>Pra criar uma <em>peça autoral</em></h2>
     <p class="lead">Experiências mais imersivas, pra quem quer ir além e sair com uma <strong>peça de verdade</strong>.</p>
     <div class="menu">
-      {mc("07", "Criativa · Cerâmica", "Cerâmica", "Modelar, criar e desenvolver uma peça com as próprias mãos.", "R$ 349", "ceramica.jpg", "center 40%")}
-      {mc("08", "Criativa · Têxtil", "Tufting &amp; Punch Needle", "Experiência têxtil e visual: cada um desenvolve a própria peça.", "R$ 599", "lado-b-grupo-pecas.webp", "center 30%")}
-      {mc("09", "Criativa · Memórias", "Scrapbook &amp; Colagem", "Recortes, texturas e uma composição feita a muitas mãos pelo time.", "", "colagem.jpg", "center 50%")}
+      {mc("07", "Criativa · Cerâmica", "Cerâmica", "Modelar, criar e desenvolver uma peça com as próprias mãos.", "", "ceramica.jpg", "center 40%")}
+      {mc("08", "Criativa · Têxtil", "Tufting &amp; Punch Needle", "Experiência têxtil e visual: cada um desenvolve a própria peça.", "", "lado-b-grupo-pecas.webp", "center 30%")}
+      {mc("09", "Criativa · Porcelana", "Pintura em Porcelana", "Pintam à mão a própria peça de porcelana e levam pra casa.", "", "agora-pintando.jpg", "center 35%")}
     </div>
-    <div class="noteband">◆ Dá pra <b>combinar mais de uma experiência em estações simultâneas</b> — ótimo pra grupos grandes com perfis diferentes.</div>
+    <div class="noteband">◆ Experiências mais imersivas: o valor é validado no nosso histórico conforme o formato — por isso aparecem como <b>sob consulta</b>. Dá pra <b>combinar em estações simultâneas</b>.</div>
     {foot("O menu · peça autoral")}
   </section>'''
 
@@ -257,11 +257,11 @@ menu4 = f'''
     <h2>Pra <em>brindar e compartilhar</em></h2>
     <p class="lead">Quando a vibe é happy hour: gastronomia, drinks e aquele clima de <strong>mesa cheia e boa conversa</strong>.</p>
     <div class="menu">
-      {mc("10", "Social · Drinks", "Bartenderia &amp; Coquetelaria", "Com bartender, aprendem técnicas e preparam os próprios drinks autorais.", "R$ 239", "andre-mesa-drinks.jpg", "center 50%")}
+      {mc("10", "Social · Drinks", "Bartenderia &amp; Coquetelaria", "Com bartender, aprendem técnicas e preparam os próprios drinks autorais.", "", "andre-mesa-drinks.jpg", "center 50%")}
       {mc("11", "Gastronômica · Mesa", "Entre Fatias &amp; Taças", "Pizza artesanal e vinhos: uma experiência gastronômica completa pra compartilhar.", "", "bfa-grupo1.webp", "center 50%")}
       {mc("12", "Gastronômica · Mão na massa", "Experiência Gastronômica", "Mão na massa em torno da gastronomia, criada pra aproximar o grupo.", "", "corp-grupo.jpg", "center 50%")}
     </div>
-    <div class="noteband">◆ As experiências <b>gastronômicas completas</b> (pizza &amp; vinhos, menu assinado) têm valor próprio conforme o formato — por isso aparecem como <b>sob consulta</b>.</div>
+    <div class="noteband">◆ Drinks e gastronomia completa têm valor próprio conforme o formato (quantidade, bar, menu assinado) — por isso aparecem como <b>sob consulta</b>.</div>
     {foot("O menu · brindar & compartilhar")}
   </section>'''
 
@@ -324,19 +324,21 @@ investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>A partir de <em>R$ 179</em></h2>
+    <h2>A partir de <em>R$ 159</em></h2>
     <p class="lead">Valores <strong>por pessoa, no formato de entrada</strong> de cada experiência. A composição de cada uma (materiais, estrutura, deslocamento, quantidade mínima) é definida conforme o briefing — o total é fechado pela experiência escolhida × o número de participantes.</p>
     <div class="invl">
-      {invrow("Charm Bar &amp; Charm Bag", "R$ 179")}
-      {invrow("Vela Aromática", "R$ 199")}
-      {invrow("Pintura em Taça", "R$ 219")}
-      {invrow("Lip Balm", "R$ 229")}
-      {invrow("Bartenderia &amp; Coquetelaria", "R$ 239")}
-      {invrow("Cerâmica", "R$ 349")}
-      {invrow("Tufting &amp; Punch Needle", "R$ 599")}
-      {invrow("Sabonete Artesanal", "")}
-      {invrow("Perfumaria Autoral", "")}
+      {invrow("Charm Bag Express", "R$ 159")}
+      {invrow("Aromatizador de Ambiente", "R$ 169")}
+      {invrow("Vela Aromática", "R$ 189")}
+      {invrow("Difusor de Ambiente", "R$ 189")}
+      {invrow("Pintura em Taça", "R$ 199")}
+      {invrow("Lip Balm Autoral", "R$ 229")}
+      {invrow("Bartenderia &amp; Coquetelaria", "")}
+      {invrow("Cerâmica", "")}
+      {invrow("Tufting &amp; Punch Needle", "")}
       {invrow("Pintura em Porcelana", "")}
+      {invrow("Perfumaria Autoral", "")}
+      {invrow("Sabonete Artesanal", "")}
       {invrow("Scrapbook &amp; Colagem", "")}
       {invrow("Entre Fatias &amp; Taças", "")}
       {invrow("Experiência Gastronômica", "")}
@@ -372,14 +374,17 @@ out = ROOT + "/portfolio-corporativo-elarah.html"
 io.open(out, "w", encoding="utf-8").write(html)
 for bad in ["fornecedor", "repasse", "comiss", "margem"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
-PRECOS_OK = ["R$ 179", "R$ 199", "R$ 219", "R$ 229", "R$ 239", "R$ 349", "R$ 599"]
+PRECOS_OK = ["R$ 159", "R$ 169", "R$ 189", "R$ 199", "R$ 229"]
 for preco in PRECOS_OK:
     assert preco in deck, f"FALTA PRECO: {preco}"
-# precos antigos/inflados nao podem reaparecer
-for ruim in ["R$ 169", "R$ 209", "R$ 289", "R$ 299", "R$ 329", "R$ 369", "R$ 399", "R$ 459", "R$ 549", "R$ 789", "R$ 799"]:
-    assert ruim not in deck, f"PRECO ANTIGO/INFLADO AINDA PRESENTE: {ruim}"
-assert "Lip Balm" in deck
-for conf in ["Sabonete Artesanal", "Perfumaria Autoral", "Pintura em Porcelana", "Scrapbook", "Entre Fatias", "Experiência Gastronômica"]:
+# precos antigos nao podem reaparecer (so os 6 da tabela atual tem valor)
+for ruim in ["R$ 179", "R$ 209", "R$ 219", "R$ 239", "R$ 289", "R$ 299", "R$ 329",
+             "R$ 349", "R$ 369", "R$ 399", "R$ 459", "R$ 549", "R$ 599", "R$ 789", "R$ 799"]:
+    assert ruim not in deck, f"PRECO ANTIGO AINDA PRESENTE: {ruim}"
+for nome in ["Charm Bag Express", "Aromatizador de Ambiente", "Difusor de Ambiente", "Lip Balm Autoral"]:
+    assert nome in deck, f"FALTA EXPERIENCIA: {nome}"
+for conf in ["Bartenderia", "Cerâmica", "Tufting", "Pintura em Porcelana", "Perfumaria Autoral",
+             "Sabonete Artesanal", "Scrapbook", "Entre Fatias", "Experiência Gastronômica"]:
     assert conf in deck, f"FALTA (a confirmar): {conf}"
 assert "a confirmar" in deck and "Valor sob consulta" in deck
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
