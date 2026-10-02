@@ -81,6 +81,8 @@ extra = '''
   .incl{display:grid;grid-template-columns:1fr 1fr;gap:11px 22px}
   .incl .i{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:var(--navy-soft);line-height:1.35}
   .incl .i::before{content:"✓";color:var(--orange);font-weight:800;flex:none;margin-top:1px}
+  .incnote{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);line-height:1.5}
+  .incnote b{color:var(--navy);font-weight:700}
   /* slide 6 — outras formas (cards menores) */
   .altg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:22px;width:100%}
   .altc{display:grid;grid-template-columns:104px 1fr;gap:0;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 12px 30px -24px rgba(0,0,0,.28);min-width:0}
@@ -159,7 +161,7 @@ cover = f'''
         <div class="chips">
           <span class="chip"><b>12.07.2027</b></span>
           <span class="chip"><b>30</b> pessoas</span>
-          <span class="chip">Pinheiros · SP</span>
+          <span class="chip">São Paulo · local a definir</span>
         </div>
       </div>
       <div class="cover-photo">{img("andre-brinde.jpg", "Amigos reunidos brindando e rindo juntos", "center 35%")}</div>
@@ -175,7 +177,7 @@ experiencia = f'''
     <h2>Mais do que drinks, uma experiência <em>para viver juntos</em></h2>
     <p class="lead">Todo mundo coloca a mão na massa, prova, descobre e brinda. Um encontro pensado para transformar o aniversário em uma experiência <strong>divertida, gostosa e cheia de boas memórias</strong>.</p>
     <div class="expwrap">
-      <div class="exphero">{img("shoyu-grupo-brinde.jpg", "Amigas preparando drinks e brindando juntas", "center 42%")}
+      <div class="exphero">{img("andre-brinde-drinks.jpg", "Amigas brindando com coquetéis", "center 35%")}
         <div class="cap"><div class="k">Entre amigos</div><div class="t">Preparar, provar<br>e brindar juntos</div></div>
       </div>
       <div class="explist">
@@ -248,6 +250,7 @@ investimento = f'''
       <div class="inccard">
         <p class="h">O valor inclui tudo o que a experiência precisa:</p>
         <div class="incl">{inc_html}</div>
+        <p class="incnote">Valor referente <b>apenas à experiência</b>. A locação do espaço não está incluída.</p>
       </div>
     </div>
     {foot("Investimento · experiência premium")}
@@ -266,7 +269,7 @@ outras = f'''
       {altc("andre-coffee-cocktail.jpg", "Drinks com Café", "Bebidas quentes e geladas à base de café, com e sem álcool, de clássicos a criações.", "R$ 389", "R$ 11.670", "center 50%")}
       {altc("andre-cerveja.jpg", "Cervejas Especiais", "Estilos, ingredientes, produção, história, serviço e degustação guiada.", "R$ 459", "R$ 13.770", "center 55%")}
     </div>
-    <div class="noteband">Valores para <b>30 pessoas</b> · experiência em local externo · <b>petiscos inclusos</b> em cada workshop.</div>
+    <div class="noteband">Valores para <b>30 pessoas</b> · referentes <b>apenas à experiência</b> (locação do espaço não inclusa) · <b>petiscos inclusos</b> em cada workshop.</div>
     {foot("Outras formas de brindar")}
   </section>'''
 
@@ -277,9 +280,9 @@ final = f'''
     <span class="eyebrow orange">◆ Onde acontece</span>
     <h2>A experiência <em>vai até vocês</em></h2>
     <div class="finwrap">
-      <div class="ph">{img("andre-brinde-drinks.jpg", "Amigas brindando com coquetéis", "center 35%")}</div>
+      <div class="ph">{img("andre-mesa-drinks.jpg", "Grupo reunido à mesa com drinks e petiscos", "center 45%")}</div>
       <div>
-        <p class="lead">Realizamos a experiência no espaço escolhido para a comemoração — salão de festas, casa ou outro local na região. A Elarah cuida da experiência, dos profissionais, ingredientes, materiais e operação.</p>
+        <p class="lead">Realizamos a experiência no espaço escolhido para a comemoração — salão de festas, casa ou um espaço parceiro. O <strong>local ainda está a definir</strong>: buscamos e confirmamos as melhores opções com nossos parceiros cerca de 6 meses antes da data. A Elarah cuida da experiência, dos profissionais, ingredientes, materiais e operação.</p>
         <p class="bigquote">"Vocês brindam. <em>A gente cuida do resto.</em>"</p>
       </div>
     </div>
@@ -287,7 +290,7 @@ final = f'''
       <p class="t">Agora é só escolher o <em>primeiro brinde</em> 🧡</p>
       <p class="ct">O resto a gente prepara por aqui.<br>WhatsApp <b>+55 (11) 91445-5930</b> · @elarah.oficial</p>
     </div>
-    <p class="finnote">Valores referentes à experiência para 30 participantes. A locação do espaço não está incluída nesta proposta. Como o evento acontece em julho de 2027, conseguimos buscar e apresentar opções de espaços parceiros com valores mais precisos cerca de 6 meses antes da data. Os valores das experiências podem ser garantidos mediante fechamento e confirmação da reserva.</p>
+    <p class="finnote">Valores referentes apenas à experiência para 30 participantes. O local ainda está a definir e a locação do espaço não está incluída nesta proposta. Como o evento acontece em julho de 2027, confirmamos as opções de espaços parceiros com valores mais precisos cerca de 6 meses antes da data. Os valores das experiências podem ser garantidos mediante fechamento e confirmação da reserva.</p>
     {foot("Aniversário · Lucy Andrade")}
   </section>'''
 
@@ -306,6 +309,7 @@ assert deck.count("inclui workshop + petiscos") == 4, "4 cards alternativos deve
 assert deck.count("Sugestão Elarah") == 2, "selo Sugestão Elarah no premium (slide 3) e investimento (slide 5)"
 assert deck.count("Experiência Premium") == 2, "selo Experiência Premium em 2 slides"
 assert "drinksclassicos" not in deck, "nao usar foto de drink isolado no escuro"
+assert "shoyu-grupo-brinde" not in deck, "foto de ceramica/argila nao faz sentido no deck de drinks"
 assert "5 coquetéis" in deck and "5 harmonizações" in deck, "faltou destaque 5+5"
 assert "Cinco brindes" in deck, "faltou titulo do menu"
 assert "Agora é só escolher o" in deck, "falta frase de fechamento"
