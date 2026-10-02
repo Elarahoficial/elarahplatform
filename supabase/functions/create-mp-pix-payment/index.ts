@@ -429,7 +429,9 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
       400,
     );
   }
-  if (!isValidCpf(cpfRaw)) {
+  // CPF digitado errado barra já. Sem CPF, só barra se houver cobrança:
+  // compra paga inteira com cupom/crédito (total R$ 0) não passa pela MP.
+  if (cpfRaw && !isValidCpf(cpfRaw)) {
     return jsonResponse(
       {
         error: "cpf_required",
@@ -619,6 +621,17 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
   }
 
   // ===== Caso normal: criar pagamento PIX na MP =====
+  // Daqui em diante há cobrança: PIX via MP exige CPF.
+  if (!isValidCpf(cpfRaw)) {
+    await rollback();
+    return jsonResponse(
+      {
+        error: "cpf_required",
+        message: "CPF inválido. Use 11 dígitos — PIX via Mercado Pago exige CPF.",
+      },
+      400,
+    );
+  }
   // Reserva booking_id ANTES de chamar a MP pra poder usar como
   // external_reference — facilita reconciliação.
   const bookingId = crypto.randomUUID();

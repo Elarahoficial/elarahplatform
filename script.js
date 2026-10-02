@@ -4103,6 +4103,12 @@ if (groupForm) {
     // A ordem segue a da tela, pra apontar sempre o primeiro pendente de
     // cima pra baixo. Se um obrigatório novo entrar no formulário, ele
     // precisa entrar aqui também.
+    // Cupom/crédito cobre a compra inteira: total R$ 0, nada a cobrar —
+    // sem cartão, sem PIX e sem CPF.
+    function semCobranca(ctx) {
+      return !!ctx && Number(ctx.cupomCentavos || 0) > 0 && Number(ctx.totalCentavos || 0) <= 0;
+    }
+
     function checkoutMissingField() {
       if (!currentReservationCtx || !modalRoot) return 'carregando';
       const ctx = currentReservationCtx;
@@ -4148,8 +4154,9 @@ if (groupForm) {
         }
       }
 
-      // CPF — PIX sempre exige; no modo Pagar.me o cartão também
-      if (ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST) {
+      // CPF — PIX sempre exige; no modo Pagar.me o cartão também.
+      // Cupom/crédito cobrindo 100%: não há cobrança, CPF não é preciso.
+      if ((ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST) && !semCobranca(ctx)) {
         if (!isValidCpfFront(val('#erm-cpf').replace(/\D+/g, ''))) return 'um CPF válido';
       }
 
@@ -5391,7 +5398,7 @@ if (groupForm) {
       // os 11 dígitos ANTES de validar/enviar (a máscara 000.000.000-00
       // não pode chegar ao isValidCpfFront nem ao backend).
       let cpfDigits = '';
-      const cpfRequired = ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST;
+      const cpfRequired = (ctx.paymentMethod === 'pix' || PAY_PAGARME_TEST) && !semCobranca(ctx);
       if (cpfRequired) {
         const cpfInput = root.querySelector('#erm-cpf');
         const cpfMsg = root.querySelector('#erm-cpf-msg');
@@ -5705,7 +5712,10 @@ if (groupForm) {
         // checkout transparente do Pagar.me. O PIX NÃO entra neste bloco — cai
         // no fluxo Mercado Pago logo abaixo (create-mp-pix-payment), que nunca
         // foi removido. Assim o PIX volta a cobrar o VALOR-BASE via MP.
-        if (PAY_PAGARME_TEST && ctx.paymentMethod !== 'pix') {
+        // Cupom/crédito cobre 100% (total R$ 0): não abre cartão nem gera
+        // PIX — cai no PIX abaixo, que no servidor grava a reserva direto
+        // como paga (sem cobrança) e já confirma.
+        if (PAY_PAGARME_TEST && ctx.paymentMethod !== 'pix' && !semCobranca(ctx)) {
 
           // ----- Cartão transparente Pagar.me (gross-up por parcela) -----
           try {
@@ -5726,7 +5736,7 @@ if (groupForm) {
         }
 
         // ===== Branch: PIX (Mercado Pago) OU Cartão (Stripe) =====
-        if (ctx.paymentMethod === 'pix') {
+        if (ctx.paymentMethod === 'pix' || semCobranca(ctx)) {
           const pixBody = {
             experiencia_id: ctx.experienceId,
             horario: ctx.horario,
