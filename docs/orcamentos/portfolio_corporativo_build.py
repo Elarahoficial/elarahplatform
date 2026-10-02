@@ -1,7 +1,7 @@
-# Portfólio Corporativo de Experiências da Elarah (material institucional/coringa)
-# Vitrine de experiencias corporativas · referencia: deck Amazon. Sem cliente/briefing especifico.
-# Precos "a partir de": Pintura 239 · Vela 269 · Bartenderia 319 · Entre Fatias 349 ·
-# Gastronomica 429 · Ceramica 529 · Tufting 799. Sem fornecedor/margem/comissao. Elarah no plural.
+# Portfólio Corporativo de Experiências da Elarah (institucional/coringa)
+# Estilo do portfolio Amazon aprovado: editorial, storytelling, cards "em detalhe" grandes, fotos reais.
+# SEM graficos. 7 experiencias: Pintura 239 · Vela 269 · Bartenderia 319 · Entre Fatias 349 ·
+# Gastronomica 429 · Ceramica 529 · Tufting 799. Elarah no plural. Sem fornecedor/margem/comissao.
 import io, re
 
 ROOT = "/home/user/elarahplatform"
@@ -11,69 +11,71 @@ tail = '<div class="toolbar">' + ref.split('<div class="toolbar">', 1)[1]
 
 head = re.sub(r'<title>.*?</title>', '<title>Experiências Corporativas · Elarah</title>', head, count=1, flags=re.DOTALL)
 head = re.sub(r'<meta name="description"[^>]*>',
-              '<meta name="description" content="Portfólio de experiências corporativas da Elarah: experiências criativas, sensoriais, sociais e gastronômicas para conectar times fora da rotina.">',
+              '<meta name="description" content="Portfólio de experiências corporativas da Elarah: criar, conectar e celebrar fora da rotina. Experiências criativas, sensoriais, sociais e gastronômicas.">',
               head, count=1)
 
 extra = '''
 <style>
-  .kw3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:18px}
-  .kw3 span{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 10px;text-align:center;font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);box-shadow:0 10px 26px -22px rgba(0,0,0,.3)}
-  .splitc{display:grid;grid-template-columns:1.04fr .96fr;gap:34px;margin-top:20px;align-items:center}
-  .splitc .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 48px -28px rgba(0,0,0,.45);height:320px;position:relative}
-  .splitc .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .splitc p.tx{font-size:14px;color:var(--ink);line-height:1.62;margin:0 0 10px}
-  .splitc p.tx b{color:var(--navy);font-weight:700}
-  .callchips{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
-  .callchips span{background:#FBF1EE;border-radius:999px;padding:10px 16px;font-size:12.5px;font-weight:700;color:var(--navy)}
-  .callchips span b{color:var(--orange-dark)}
-  /* vibe */
-  .vibeg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:20px;width:100%}
-  .vibec{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 14px 34px -26px rgba(0,0,0,.32);display:grid;grid-template-columns:132px 1fr;min-width:0}
-  .vibec .vph{position:relative;min-height:120px;overflow:hidden}
-  .vibec .vph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .vibec .vbd{padding:18px 20px}
-  .vibec .vk{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--orange-dark)}
-  .vibec .vd{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:6px}
-  /* portfolio 3-card */
-  .xg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:22px;width:100%}
-  .xc{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);display:flex;flex-direction:column;min-width:0}
-  .xc .xph{height:188px;position:relative;overflow:hidden}
-  .xc .xph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .xc .xbd{padding:19px 20px 20px;display:flex;flex-direction:column;flex:1}
-  .xc h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:20px;color:var(--navy);margin:0 0 7px;line-height:1.08}
-  .xc p{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 14px}
-  .xc .price{margin-top:auto;font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--orange-dark)}
-  .xc .price b{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy)}
-  /* portfolio 2-card (horizontal grande) */
-  .pg2{display:grid;gap:22px;margin-top:22px}
-  .pc2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);min-height:250px}
-  .pc2 .pph{position:relative;overflow:hidden;min-height:250px}
-  .pc2 .pph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .pc2 .pbd{padding:32px 36px;display:flex;flex-direction:column;justify-content:center}
-  .pc2 .nm{font-family:'DM Serif Display',serif;font-size:27px;color:var(--navy);line-height:1.04}
-  .pc2 .fr{font-size:13.5px;color:var(--muted);line-height:1.6;margin:12px 0 16px}
-  .pc2 .pr{font-size:12.5px;font-weight:700;letter-spacing:.02em;color:var(--orange-dark)}
-  .pc2 .pr b{font-family:'DM Serif Display',serif;font-weight:400;font-size:24px;color:var(--navy)}
-  .pricefoot{margin-top:16px;font-size:10px;color:var(--muted);line-height:1.45;text-align:center}
-  /* pipeline */
-  .pipe{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:22px}
-  .pipe .st{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:13px 20px;font-size:13px;font-weight:700;color:var(--navy);box-shadow:0 10px 24px -20px rgba(0,0,0,.3)}
-  .pipe .ar{color:var(--orange);font-weight:800;font-size:15px}
-  .pipetx{margin-top:22px;background:#FBF1EE;border-radius:16px;padding:20px 26px;font-size:13.5px;color:var(--navy-soft);line-height:1.6;max-width:94ch}
-  .pipetx b{color:var(--navy)}
+  /* capa */
+  .pflabel{text-align:right;line-height:1.7}
+  .pflabel b{display:block;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--navy);font-weight:700}
+  .pflabel span{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .chipcol{display:flex;flex-direction:column;align-items:flex-start;gap:10px;margin-top:4px}
+  .pfproof{margin-top:16px;display:flex;gap:11px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 16px;max-width:380px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
+  .pfproof .star{color:var(--orange);font-size:14px;line-height:1.3}
+  .pfproof p{font-size:11.5px;color:var(--navy-soft);line-height:1.5;margin:0}
+  .pfproof b{color:var(--navy);font-weight:700}
+  /* grade de icones */
+  .ig{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:20px;width:100%}
+  .igc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:19px 20px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
+  .igc .em{font-size:23px;line-height:1}
+  .igc h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);margin:9px 0 6px;line-height:1.08}
+  .igc p{font-size:11.5px;color:var(--muted);line-height:1.5;margin:0}
+  .igc p b{color:var(--navy);font-weight:700}
+  .qline{margin-top:18px;font-family:'DM Serif Display',serif;font-style:italic;font-size:17px;color:var(--orange-dark)}
+  /* vibe mosaico */
+  .vibestrip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:20px;width:100%}
+  .vibestrip figure{margin:0;border-radius:16px;overflow:hidden;position:relative;height:206px;box-shadow:0 14px 34px -24px rgba(0,0,0,.4)}
+  .vibestrip img{width:100%;height:100%;object-fit:cover;display:block}
+  .vibestrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 16px 13px;color:#fff;font-family:'DM Serif Display',serif;font-size:15.5px;background:linear-gradient(to top,rgba(46,31,42,.88),transparent)}
+  /* em detalhe (bandas grandes alternadas) */
+  .detwrap{display:grid;gap:20px;margin-top:20px}
+  .det{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 16px 40px -28px rgba(0,0,0,.4);min-height:212px}
+  .det .dph{position:relative;overflow:hidden;min-height:212px}
+  .det .dph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .det.rev .dph{order:2}
+  .det .dbd{padding:26px 34px;display:flex;flex-direction:column;justify-content:center}
+  .det .cat{font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
+  .det .nm{font-family:'DM Serif Display',serif;font-size:25px;color:var(--navy);line-height:1.04;margin:7px 0 9px}
+  .det .ds{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 16px}
+  .det .ds b{color:var(--navy);font-weight:700}
+  .det .pill{align-self:flex-start;background:#FBF1EE;border-radius:999px;padding:11px 20px;font-size:13px;font-weight:700;color:var(--navy-soft)}
+  .det .pill b{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--orange-dark)}
+  .det .pill small{font-weight:600;color:var(--muted)}
+  .detfoot{margin-top:14px;font-size:10px;color:var(--muted);line-height:1.45;text-align:center}
+  /* como acontece */
+  .steps3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;margin-top:20px;width:100%}
+  .steps3 .s .n{font-family:'DM Serif Display',serif;font-size:34px;color:var(--orange);line-height:1}
+  .steps3 .s h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);margin:4px 0 6px}
+  .steps3 .s p{font-size:12px;color:var(--muted);line-height:1.5}
+  /* investimento lista (sem grafico) */
+  .invhero{display:flex;align-items:baseline;gap:14px;margin-top:4px}
+  .invhero .n{font-family:'DM Serif Display',serif;font-size:42px;color:var(--navy);line-height:1}
+  .invhero .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;max-width:13ch;line-height:1.3}
+  .invl{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;margin-top:20px}
+  .invl .row{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding:12px 2px}
+  .invl .row .e{font-family:'DM Serif Display',serif;font-size:15px;color:var(--navy)}
+  .invl .row .pr{font-family:'DM Serif Display',serif;font-size:15px;color:var(--orange-dark);white-space:nowrap}
   /* fechamento */
-  .finwrap{display:grid;grid-template-columns:1.02fr .98fr;gap:38px;margin-top:20px;align-items:center}
-  .finwrap .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 22px 52px -28px rgba(0,0,0,.45);height:430px;position:relative}
-  .finwrap .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .finwrap .ftx p.lead{margin-top:0}
-  .finsign{margin-top:22px;font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.4}
-  .finsign .el{display:block;margin-top:12px;font-size:15px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;font-family:'DM Sans',sans-serif}
-  .finsign .el small{display:block;font-family:'DM Serif Display',serif;font-style:italic;text-transform:none;letter-spacing:0;font-size:15px;color:var(--navy);font-weight:400;margin-top:4px}
+  .finbox{margin-top:20px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:14px;padding:20px 26px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
+  .finbox .t{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);margin:0 0 5px}
+  .finbox p{font-size:12.5px;color:var(--navy-soft);line-height:1.5;margin:0}
+  .finbox b{color:var(--navy)}
 </style>'''
 head = head.replace("</head>", extra + "</head>", 1)
 
-FOOTNOTE = ("Valores a partir de, sujeitos a ajustes conforme número de participantes, localização, "
-            "duração, personalização, estrutura necessária e formato da experiência.")
+FOOTNOTE = ("Valores a partir de, por pessoa, sujeitos a ajustes conforme número de participantes, "
+            "localização, duração, personalização, estrutura necessária e formato da experiência.")
 
 
 def foot(right):
@@ -91,21 +93,25 @@ def head_simple(kicker):
     </div>'''
 
 
-def xcard(foto, nome, frase, preco, pos="center 50%"):
-    return (f'<div class="xc"><div class="xph">{img(foto, nome, pos)}</div>'
-            f'<div class="xbd"><h3>{nome}</h3><p>{frase}</p>'
-            f'<div class="price">A partir de <b>{preco}</b> por pessoa</div></div></div>')
+def igc(em, titulo, desc):
+    return f'<div class="igc"><div class="em">{em}</div><h3>{titulo}</h3><p>{desc}</p></div>'
 
 
-def pcard2(foto, nome, frase, preco, pos="center 50%"):
-    return (f'<div class="pc2"><div class="pph">{img(foto, nome, pos)}</div>'
-            f'<div class="pbd"><div class="nm">{nome}</div><p class="fr">{frase}</p>'
-            f'<div class="pr">A partir de <b>{preco}</b> por pessoa</div></div></div>')
+def vfig(src, cap, pos="center 50%"):
+    return f'<figure>{img(src, cap, pos)}<figcaption>{cap}</figcaption></figure>'
 
 
-def vibec(foto, cat, desc, pos="center 50%"):
-    return (f'<div class="vibec"><div class="vph">{img(foto, cat, pos)}</div>'
-            f'<div class="vbd"><div class="vk">{cat}</div><div class="vd">{desc}</div></div></div>')
+def det(cat, nome, desc, preco, src, pos="center 50%", rev=False):
+    cls = "det rev" if rev else "det"
+    return (f'<div class="{cls}"><div class="dph">{img(src, nome, pos)}</div>'
+            f'<div class="dbd"><div class="cat">{cat}</div><div class="nm">{nome}</div>'
+            f'<div class="ds">{desc}</div>'
+            f'<div class="pill">A partir de <b>{preco}</b> <small>/ por pessoa</small></div>'
+            f'</div></div>')
+
+
+def invrow(nome, preco):
+    return f'<div class="row"><span class="e">{nome}</span><span class="pr">{preco}</span></div>'
 
 
 # ===== 1 · CAPA =====
@@ -113,160 +119,179 @@ cover = f'''
   <section class="slide">
     <div class="slide__head">
       <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
-      <div class="head-right"><span class="kicker">Experiências Corporativas</span></div>
+      <div class="head-right"><div class="pflabel"><b>Portfólio de Experiências</b><span>Elarah · Corporativo</span></div></div>
     </div>
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Portfólio corporativo</span>
-        <h1>Experiências <em>Corporativas</em> Elarah</h1>
-        <p class="lead">Um jeito diferente de <strong>estar junto</strong> — experiências criativas para conectar pessoas fora da rotina.</p>
-        <div class="rule"></div>
-        <div class="chips">
-          <span class="chip">Criativas</span>
-          <span class="chip">Sensoriais</span>
-          <span class="chip">Sociais</span>
-          <span class="chip">Gastronômicas</span>
+        <span class="eyebrow">✦ Um jeito diferente de estar junto</span>
+        <h1>Sair da rotina,<br><em>criar</em> e <em>conectar</em>.</h1>
+        <p class="lead">Uma curadoria de experiências <strong>criativas, sensoriais e gastronômicas</strong> para transformar encontros de equipe em momentos mais leves e naturais — onde o time cria, conversa e vive algo junto.</p>
+        <div class="chipcol">
+          <span class="chip">Happy hour &amp; confraternização</span>
+          <span class="chip">Sofisticado &amp; criativo</span>
+          <span class="chip">Team building diferente</span>
         </div>
+        <div class="pfproof"><span class="star">★</span><p>Experiências já realizadas para times de empresas como <b>Amazon</b>, <b>Natura</b> e <b>Itaú</b> — e vistas no <b>Mais Você</b> (Globo)</p></div>
       </div>
-      <div class="cover-photo">{img("bfa-grupo2.webp", "Grupo misto participando de uma experiência criativa", "center 45%")}</div>
+      <div class="cover-photo">{img("eventocorporativo.jpg", "Time corporativo misto brindando e celebrando junto", "center 32%")}</div>
     </div>
-    {foot("Experiências Corporativas")}
+    {foot("Portfólio institucional · Elarah")}
   </section>'''
 
-# ===== 2 · TEAM BUILDING, MAS DIFERENTE =====
+# ===== 2 · O CONCEITO =====
 conceito = f'''
   <section class="slide">
 {head_simple("O conceito")}
     <span class="eyebrow orange">◆ Team building, mas diferente</span>
     <h2>Encontros mais <em>leves e naturais</em></h2>
-    <div class="splitc">
-      <div>
-        <p class="tx">Reunimos experiências <b>criativas, gastronômicas e sensoriais</b> para transformar encontros de equipe em momentos mais leves e naturais.</p>
-        <p class="tx">Sem dinâmica forçada. Sem quebra-gelo constrangedor. Só pessoas <b>criando, conversando e vivendo algo juntas</b>.</p>
-        <div class="kw3"><span>Criar</span><span>Conectar</span><span>Compartilhar</span></div>
-      </div>
-      <div class="ph">{img("corp-conexao.jpg", "Time interagindo de forma natural", "center 35%")}</div>
+    <p class="lead">Reunimos experiências criativas, gastronômicas e sensoriais para transformar encontros de equipe em <strong>momentos mais leves e naturais</strong>. Sem dinâmica forçada, sem quebra-gelo constrangedor — só pessoas <strong>criando, conversando e vivendo algo juntas</strong>.</p>
+    <div class="qline">"A melhor forma de conectar um time é criar algo junto."</div>
+    <div class="ig">
+      {igc("🎨", "Criar", "Cada pessoa no centro da experiência, colocando a mão na massa.")}
+      {igc("🤝", "Conectar", "Conversa e troca entre áreas — a hierarquia cai sozinha.")}
+      {igc("✨", "Compartilhar", "Sair do óbvio e viver algo novo, bonito e memorável, junto.")}
     </div>
     {foot("O conceito")}
   </section>'''
 
-# ===== 3 · A ELARAH VAI ATÉ VOCÊS =====
-vaiate = f'''
-  <section class="slide">
-{head_simple("A Elarah vai até vocês")}
-    <span class="eyebrow orange">◆ A Elarah vai até vocês</span>
-    <h2>A experiência acontece <em>onde fizer mais sentido</em></h2>
-    <div class="splitc">
-      <div class="ph">{img("mesa-montada-corp.jpg", "Mesa pronta e materiais organizados para a experiência", "center 50%")}</div>
-      <div>
-        <p class="tx">Podemos levar a Elarah para o <b>escritório, espaço do evento ou venue</b> escolhido pela empresa.</p>
-        <p class="tx">Nós <b>montamos a experiência, organizamos os materiais, acompanhamos a atividade e cuidamos da operação</b>. A empresa não precisa se preocupar com nada da montagem.</p>
-        <div class="callchips"><span><b>✓</b> Mesa pronta</span><span><b>✓</b> Materiais inclusos</span><span><b>✓</b> Profissional especializado</span><span><b>✓</b> Operação Elarah</span></div>
-      </div>
-    </div>
-    {foot("A Elarah vai até vocês")}
-  </section>'''
-
-# ===== 4 · ESCOLHA A VIBE =====
+# ===== 3 · A VIBE =====
 vibe = f'''
   <section class="slide">
-{head_simple("Escolha a vibe")}
-    <span class="eyebrow orange">◆ Escolha a vibe</span>
-    <h2>Qual é a vibe do <em>seu time?</em></h2>
-    <div class="vibeg">
-      {vibec("ceramicamodelagem.jpg", "Criativa", "Para colocar a mão na massa e criar junto.", "center 50%")}
-      {vibec("aroma-meninas-jardim.jpg", "Sensorial", "Para desacelerar e explorar aromas.", "center 45%")}
-      {vibec("shoyu-grupo-brinde.jpg", "Social", "Para conversar, brindar e se conectar.", "center 45%")}
-      {vibec("nbc-gastronomia-pizza.jpg", "Gastronômica", "Para criar enquanto todo mundo come e bebe junto.", "center 50%")}
+{head_simple("A vibe")}
+    <span class="eyebrow orange">◆ Conexão, criatividade e leveza</span>
+    <h2>A vibe do <em>encontro</em></h2>
+    <p class="lead">Mãos criando, taças, boa conversa e aquele clima espontâneo: uma <strong>atmosfera contemporânea e acolhedora</strong>, pensada para o time relaxar e se conectar de verdade.</p>
+    <div class="vibestrip">
+      {vfig("bfa-grupo2.webp", "Criar juntos", "center 45%")}
+      {vfig("ceramicamodelagem.jpg", "Mãos que criam", "center 50%")}
+      {vfig("andre-brinde-drinks.jpg", "Hora do brinde", "center 40%")}
+      {vfig("mesa-cafe-comemoracao.jpg", "Em torno da mesa", "center 45%")}
+      {vfig("vibe-conexao-corp.jpg", "Conversa boa", "center 40%")}
+      {vfig("lado-b-grupo-pecas.webp", "Peça pra levar", "center 30%")}
     </div>
-    {foot("Escolha a vibe")}
+    {foot("A vibe do encontro")}
   </section>'''
 
-# ===== 5 · PORTFÓLIO (entrada) =====
+# ===== 4 · A ELARAH VAI ATÉ VOCÊS =====
+jeito = f'''
+  <section class="slide">
+{head_simple("O jeito Elarah")}
+    <span class="eyebrow orange">◆ A Elarah vai até vocês</span>
+    <h2>Vocês escolhem. <em>Nós cuidamos de tudo.</em></h2>
+    <p class="lead">A experiência acontece <strong>onde fizer mais sentido</strong> — no escritório, no espaço do evento ou no venue da empresa. Levamos tudo e montamos antes do grupo chegar.</p>
+    <div class="ig">
+      {igc("🎨", "Curadoria", "Experiências selecionadas pro perfil do time — bonitas e desejáveis.")}
+      {igc("🧑‍🎨", "Profissional &amp; material", "Profissional especializado conduzindo e todos os materiais inclusos.")}
+      {igc("📦", "Operação completa", "Montagem, estrutura e desmontagem. <b>Nós chegamos antes</b> e cuidamos de tudo.")}
+      {igc("📍", "No espaço de vocês", "Levamos a Elarah até o escritório, rooftop, salão ou venue escolhido.")}
+      {igc("🍶", "Estações", "Dá pra combinar mais de uma experiência em estações simultâneas.")}
+      {igc("🎁", "Lembrança", "Cada pessoa leva pra casa a peça que criou — a memória do encontro.")}
+    </div>
+    {foot("O jeito Elarah")}
+  </section>'''
+
+# ===== 5 · PORTFÓLIO A · criar & brindar =====
 port1 = f'''
   <section class="slide">
 {head_simple("Portfólio de experiências")}
-    <span class="eyebrow orange">◆ Portfólio de experiências</span>
+    <span class="eyebrow orange">◆ O menu de experiências</span>
     <h2>Para <em>criar e brindar</em></h2>
-    <div class="xg">
-      {xcard("pintura-taca-experiencia.jpg", "Pintura em Taça", "Leve e social: cada um personaliza a própria taça enquanto o grupo conversa e brinda.", "R$ 239", "center 45%")}
-      {xcard("vela-grupo-oficina.jpg", "Vela Aromática", "Cada participante cria sua própria vela, explorando fragrâncias e combinações.", "R$ 269", "center 40%")}
-      {xcard("drinksclassicos.jpg", "Bartenderia", "Uma experiência prática de drinks para aprender, preparar e brindar junto.", "R$ 319", "center 50%")}
+    <div class="detwrap">
+      {det("Criativa · Pintura", "Pintura em Taça", "Uma experiência leve e social para <b>personalizar a própria taça</b> enquanto o grupo conversa e brinda.", "R$ 239", "pintura-corp-class.jpg", "center 45%")}
+      {det("Sensorial · Vela", "Vela Aromática", "Cada participante <b>cria a própria vela</b>, explorando fragrâncias e combinações.", "R$ 269", "vela-grupo-oficina.jpg", "center 35%", rev=True)}
+      {det("Social · Drinks", "Bartenderia", "Uma experiência prática de drinks para <b>aprender, preparar e brindar junto</b>.", "R$ 319", "andre-mesa-drinks.jpg", "center 50%")}
     </div>
-    <div class="pricefoot">{FOOTNOTE}</div>
+    <div class="detfoot">{FOOTNOTE}</div>
     {foot("Portfólio · 1 de 3")}
   </section>'''
 
-# ===== 6 · PORTFÓLIO (gastronomia) =====
+# ===== 6 · PORTFÓLIO B · em torno da mesa =====
 port2 = f'''
   <section class="slide">
 {head_simple("Portfólio de experiências")}
-    <span class="eyebrow orange">◆ Portfólio de experiências</span>
+    <span class="eyebrow orange">◆ O menu de experiências</span>
     <h2>Em torno da <em>mesa</em></h2>
-    <div class="pg2">
-      {pcard2("pizzanegroni.jpg", "Entre Fatias &amp; Taças", "Pizza, vinho e uma experiência gastronômica pensada para compartilhar em torno da mesa.", "R$ 349", "center 50%")}
-      {pcard2("corp-grupo.jpg", "Experiência Gastronômica", "Uma experiência mão na massa em torno da gastronomia, criada para aproximar o grupo.", "R$ 429", "center 50%")}
+    <div class="detwrap">
+      {det("Gastronômica · Compartilhar", "Entre Fatias &amp; Taças", "Pizza, vinho e uma experiência gastronômica <b>pensada para compartilhar</b> em torno da mesa.", "R$ 349", "bfa-grupo1.webp", "center 50%")}
+      {det("Gastronômica · Mão na massa", "Experiência Gastronômica", "Uma experiência <b>mão na massa</b> em torno da gastronomia, criada para aproximar o grupo.", "R$ 429", "corp-grupo.jpg", "center 50%", rev=True)}
     </div>
-    <div class="pricefoot">{FOOTNOTE}</div>
+    <div class="detfoot">{FOOTNOTE}</div>
     {foot("Portfólio · 2 de 3")}
   </section>'''
 
-# ===== 7 · PORTFÓLIO (mão na massa premium) =====
+# ===== 7 · PORTFÓLIO C · mão na massa, peça autoral =====
 port3 = f'''
   <section class="slide">
 {head_simple("Portfólio de experiências")}
-    <span class="eyebrow orange">◆ Portfólio de experiências</span>
+    <span class="eyebrow orange">◆ O menu de experiências</span>
     <h2>Mão na massa, <em>peça autoral</em></h2>
-    <div class="pg2">
-      {pcard2("ceramica.jpg", "Cerâmica", "Uma pausa criativa para modelar, criar e desenvolver uma peça com as próprias mãos.", "R$ 529", "center 40%")}
-      {pcard2("lado-b-grupo-pecas.webp", "Tufting &amp; Punch Needle", "Uma experiência têxtil criativa em que cada participante desenvolve sua própria peça.", "R$ 799", "center 35%")}
+    <div class="detwrap">
+      {det("Criativa · Cerâmica", "Cerâmica", "Uma pausa criativa para <b>modelar, criar e desenvolver uma peça</b> com as próprias mãos.", "R$ 529", "ceramica.jpg", "center 40%")}
+      {det("Criativa · Têxtil", "Tufting &amp; Punch Needle", "Uma experiência têxtil criativa em que cada participante <b>desenvolve a própria peça</b>.", "R$ 799", "lado-b-grupo-pecas.webp", "center 30%", rev=True)}
     </div>
-    <div class="pricefoot">{FOOTNOTE}</div>
+    <div class="detfoot">{FOOTNOTE}</div>
     {foot("Portfólio · 3 de 3")}
   </section>'''
 
-# ===== 8 · NÓS CUIDAMOS DO RESTO =====
-cuidamos = f'''
+# ===== 8 · COMO ACONTECE =====
+como = f'''
   <section class="slide">
-{head_simple("Nós cuidamos do resto")}
-    <span class="eyebrow orange">◆ Nós cuidamos do resto</span>
-    <h2>Você escolhe a experiência. <em>Nós montamos o resto.</em></h2>
-    <div class="pipe">
-      <span class="st">Planejamento</span><span class="ar">→</span>
-      <span class="st">Materiais</span><span class="ar">→</span>
-      <span class="st">Montagem</span><span class="ar">→</span>
-      <span class="st">Profissional</span><span class="ar">→</span>
-      <span class="st">Experiência</span><span class="ar">→</span>
-      <span class="st">Desmontagem</span>
+{head_simple("Como acontece")}
+    <span class="eyebrow orange">◆ Como acontece</span>
+    <h2>Simples pra vocês, <em>impecável</em> pro grupo</h2>
+    <p class="lead">Do primeiro alinhamento ao último brinde, a <strong>Elarah cuida de tudo</strong> — o time só escolhe e aproveita.</p>
+    <div class="steps3">
+      <div class="s"><div class="n">1</div><h3>Escolham</h3><p>A experiência (ou a combinação) com mais a cara do time.</p></div>
+      <div class="s"><div class="n">2</div><h3>A gente monta</h3><p>Profissional, materiais e estrutura — tudo sob medida, no espaço de vocês.</p></div>
+      <div class="s"><div class="n">3</div><h3>É só viver</h3><p>No dia, chega tudo pronto. O grupo só cria, conecta e aproveita.</p></div>
     </div>
-    <div class="pipetx">Nós <b>adaptamos cada experiência</b> ao grupo, ao espaço e ao formato do encontro. Quando fizer sentido, também conseguimos incluir elementos complementares — como <b>alimentos, bebidas, registro ou personalização</b> — sempre de acordo com o briefing.</div>
-    {foot("Nós cuidamos do resto")}
+    <div class="qline">"Vocês chegam, criam e levam pra casa. O resto é com a gente."</div>
+    {foot("Como acontece")}
   </section>'''
 
-# ===== 9 · FECHAMENTO =====
-final = f'''
+# ===== 9 · INVESTIMENTO (sem gráfico) =====
+investimento = f'''
   <section class="slide">
-{head_simple("Para fechar")}
-    <span class="eyebrow orange">◆ Para fechar</span>
-    <h2>Agora é só escolher como vocês <em>querem estar juntos</em></h2>
-    <div class="finwrap">
-      <div class="ph">{img("eventocorporativo.jpg", "Grupo celebrando e interagindo junto", "center 32%")}</div>
-      <div class="ftx">
-        <p class="lead">Seja para <strong>celebrar, integrar o time</strong> ou simplesmente sair um pouco da rotina, nós montamos uma experiência pensada para o grupo de vocês.</p>
-        <p class="lead" style="font-size:15px">Conta pra gente a <strong>data</strong>, o <strong>número de pessoas</strong> e a <strong>vibe</strong> do encontro. Nós cuidamos do restante.</p>
-        <div class="finsign"><span class="el">Elarah<small>Experiências para viver junto.</small></span></div>
-      </div>
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ Investimento</span>
+    <h2>Valor <em>por pessoa</em></h2>
+    <p class="lead">Todas as experiências já incluem <strong>condução profissional, materiais, estrutura</strong> e a lembrança pra levar pra casa.</p>
+    <div class="invhero"><div class="n">R$ 239</div><div class="l">a partir de, por pessoa</div></div>
+    <div class="invl">
+      {invrow("Pintura em Taça", "R$ 239")}
+      {invrow("Vela Aromática", "R$ 269")}
+      {invrow("Bartenderia", "R$ 319")}
+      {invrow("Entre Fatias &amp; Taças", "R$ 349")}
+      {invrow("Experiência Gastronômica", "R$ 429")}
+      {invrow("Cerâmica", "R$ 529")}
+      {invrow("Tufting &amp; Punch Needle", "R$ 799")}
     </div>
-    {foot("Para fechar")}
+    <p class="fineprint">{FOOTNOTE} O investimento total é fechado pela experiência escolhida × o número de participantes.</p>
+    {foot("Investimento")}
   </section>'''
 
-deck = ('<div class="deck">\n' + cover + conceito + vaiate + vibe + port1 + port2 + port3 + cuidamos + final + '\n\n</div>\n\n')
+# ===== 10 · PRÓXIMOS PASSOS =====
+proximos = f'''
+  <section class="slide">
+{head_simple("Próximos passos")}
+    <span class="eyebrow orange">◆ Bora escolher? ✨</span>
+    <h2>É só <em>apontar</em> a favorita</h2>
+    <p class="lead">Seja para <strong>celebrar, integrar o time</strong> ou simplesmente sair um pouco da rotina, nós montamos uma experiência pensada para o grupo de vocês.</p>
+    <div class="qline">Conta pra gente a data, o número de pessoas e a vibe do encontro — nós cuidamos do restante.</div>
+    <div class="finbox">
+      <p class="t">Elarah · Experiências para viver junto.</p>
+      <p>contato@elarah.com.br &nbsp;·&nbsp; <b>elarah.com.br</b> &nbsp;·&nbsp; @elarah.oficial &nbsp;·&nbsp; WhatsApp <b>+55 (11) 91445-5930</b></p>
+    </div>
+    {foot("Próximos passos")}
+  </section>'''
+
+deck = ('<div class="deck">\n' + cover + conceito + vibe + jeito + port1 + port2 + port3
+        + como + investimento + proximos + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/portfolio-corporativo-elarah.html"
 io.open(out, "w", encoding="utf-8").write(html)
 for bad in ["fornecedor", "repasse", "comiss", "margem"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
-# precos exatos + todas as experiencias presentes
 PRECOS = {"Pintura em Taça": "R$ 239", "Vela Aromática": "R$ 269", "Bartenderia": "R$ 319",
           "Entre Fatias": "R$ 349", "Experiência Gastronômica": "R$ 429", "Cerâmica": "R$ 529",
           "Tufting": "R$ 799"}
