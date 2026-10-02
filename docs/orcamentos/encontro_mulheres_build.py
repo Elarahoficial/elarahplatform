@@ -245,14 +245,14 @@ duasformas = f'''
     <h2>Escolham o <em>clima do encontro</em></h2>
     <div class="cmp">
       <div class="cmpc">
-        <div class="cph">{img("vela1.jpg", "Vela aromática artesanal em recipiente de vidro", "center 50%")}</div>
+        <div class="cph">{img("vela-lavanda.jpg", "Vela aromática artesanal em recipiente de vidro, com lavanda", "center 60%")}</div>
         <div class="cbd">
           <div class="nm">Vela Aromática</div>
           <p class="ds">Clássica, delicada e sensorial. Cada participante cria a <b>sua própria vela artesanal</b>.</p>
         </div>
       </div>
       <div class="cmpc">
-        <div class="cph">{img("velas2.jpg", "Vela aromática decorada de forma delicada", "center 45%")}</div>
+        <div class="cph">{img("vela-decorada-frutas.jpg", "Velas aromáticas decoradas com detalhes em cera", "center 50%")}</div>
         <div class="cbd">
           <div class="nm">Vela Aromática Decorada</div>
           <p class="ds">Mais visual e personalizada, com <b>detalhes decorativos em cera</b>.</p>
