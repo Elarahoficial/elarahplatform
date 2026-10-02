@@ -52,6 +52,7 @@ extra = '''
   .mc .ds{font-size:11px;color:var(--muted);line-height:1.5;margin:0 0 13px}
   .mc .pr{margin-top:auto;font-size:11.5px;font-weight:700;color:var(--navy-soft)}
   .mc .pr b{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--orange-dark)}
+  .mc .pr.tbd{font-weight:600;color:var(--muted);font-style:italic}
   /* brunch */
   .brunchg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-top:20px;width:100%}
   .brunchg .bc .bph{height:140px;border-radius:14px;overflow:hidden;position:relative;border:1px solid var(--line);box-shadow:0 12px 28px -22px rgba(0,0,0,.4)}
@@ -86,6 +87,7 @@ extra = '''
   .invl .row{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding:9px 2px}
   .invl .row .e{font-family:'DM Serif Display',serif;font-size:14px;color:var(--navy)}
   .invl .row .pr{font-family:'DM Serif Display',serif;font-size:14px;color:var(--orange-dark);white-space:nowrap}
+  .invl .row .pr.tbd{font-family:'DM Sans',sans-serif;font-size:11px;font-style:italic;color:var(--muted);font-weight:600}
   .plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:18px;width:100%}
   .plan{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:17px 19px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
   .plan.hl{border:2px solid var(--orange)}
@@ -107,8 +109,8 @@ extra = '''
 </style>'''
 head = head.replace("</head>", extra + "</head>", 1)
 
-FOOTNOTE = ("Valores a partir de, por pessoa, sujeitos a ajustes conforme número de participantes, "
-            "localização, duração, personalização, estrutura necessária e formato da experiência.")
+FOOTNOTE = ("Valores a partir de, sujeitos a ajustes conforme número de participantes, localização "
+            "e formato escolhido. Montamos cada experiência de acordo com o briefing do evento.")
 
 
 def foot(right):
@@ -134,10 +136,13 @@ def pqc(src, titulo, desc, pos="center 50%"):
 def mc(num, cat, nome, desc, preco, src, pos="center 50%", sugg=False):
     cls = "mc sugg" if sugg else "mc"
     badge = '<div class="badge">★ Sugestão Elarah</div>' if sugg else ''
+    if preco:
+        prc = f'<div class="pr">A partir de <b>{preco}</b> / pessoa</div>'
+    else:
+        prc = '<div class="pr tbd">Valor sob consulta</div>'
     return (f'<div class="{cls}"><div class="mph">{img(src, nome, pos)}{badge}</div>'
             f'<div class="mbd"><div class="cat">{num} · {cat}</div><div class="nm">{nome}</div>'
-            f'<div class="ds">{desc}</div>'
-            f'<div class="pr">A partir de <b>{preco}</b> / pessoa</div></div></div>')
+            f'<div class="ds">{desc}</div>{prc}</div></div>')
 
 
 def brc(src, titulo, itens, pos="center 50%"):
@@ -146,7 +151,9 @@ def brc(src, titulo, itens, pos="center 50%"):
 
 
 def invrow(nome, preco):
-    return f'<div class="row"><span class="e">{nome}</span><span class="pr">{preco}</span></div>'
+    if preco:
+        return f'<div class="row"><span class="e">{nome}</span><span class="pr">{preco}</span></div>'
+    return f'<div class="row"><span class="e">{nome}</span><span class="pr tbd">a confirmar</span></div>'
 
 
 def stc(n, titulo, desc):
@@ -169,7 +176,7 @@ cover = f'''
           <span class="chip">Times de todos os tamanhos</span>
           <span class="chip">Happy hour &amp; confraternização</span>
           <span class="chip">A Elarah vai até vocês</span>
-          <span class="chip">A partir de <b>R$ 289</b></span>
+          <span class="chip">Experiências a partir de <b>R$ 169</b></span>
         </div>
       </div>
       <div class="cover-photo">{img("pintura-corp-class.jpg", "Time corporativo misto criando e rindo junto", "center 45%")}</div>
@@ -194,39 +201,39 @@ porque = f'''
     {foot("Por que funciona")}
   </section>'''
 
-# ===== 3 · VITRINE · SENSORIAL =====
+# ===== 3 · VITRINE · ENTRADA =====
 menu1 = f'''
   <section class="slide">
 {head_simple("O menu de experiências")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>Pra <em>desacelerar</em> e explorar aromas</h2>
-    <p class="lead">Experiências sensoriais que tiram o time do automático — cada pessoa cria algo seu e <strong>leva pra casa</strong>.</p>
+    <h2>Pra <em>começar</em> — a partir de R$ 169</h2>
+    <p class="lead">Experiências leves e <strong>fáceis de participar</strong>, com ótimo custo pra abrir o encontro e soltar o grupo. Cada pessoa cria algo seu e leva pra casa.</p>
     <div class="menu">
-      {mc("01", "Sensorial · Vela", "Vela Aromática", "Cada participante cria a própria vela, explorando aromas e combinações.", "R$ 289", "vela-grupo-oficina.jpg", "center 35%")}
-      {mc("02", "Sensorial · Sabonete", "Sabonete Artesanal", "Aromas, moldes e texturas: cada um faz o próprio sabonete pra levar.", "R$ 289", "sabonete-grupo-oficina.jpg", "center 40%")}
-      {mc("03", "Sensorial · Perfumaria", "Perfumaria Autoral", "Uma viagem olfativa guiada: cada pessoa cria a própria fragrância.", "R$ 329", "perfumaria-oficina.jpg", "center 45%")}
+      {mc("01", "Criativa · Acessórios", "Charm Bar &amp; Charm Bag", "Montam a própria joia e o berloque de bolsa — autoral e interativo.", "R$ 169", "charm-making-grupo.jpg", "center 40%")}
+      {mc("02", "Sensorial · Vela", "Vela Aromática", "Cada participante cria a própria vela, explorando aromas e combinações.", "R$ 179", "vela-grupo-oficina.jpg", "center 35%")}
+      {mc("03", "Criativa · Pintura", "Pintura em Taça", "Leve e social: personalizam a própria taça enquanto o grupo conversa e brinda.", "R$ 209", "pintura-taca-experiencia.jpg", "center 45%", sugg=True)}
     </div>
-    <div class="noteband">◆ Experiências leves e <b>fáceis de participar</b> — perfeitas pra abrir o encontro e soltar o grupo.</div>
-    {foot("O menu · sensorial")}
+    <div class="noteband">◆ Faixa de <b>entrada</b> do portfólio — ideal pra grupos grandes e primeiros encontros. O formato final a gente ajusta conforme o briefing.</div>
+    {foot("O menu · pra começar")}
   </section>'''
 
-# ===== 4 · VITRINE · CRIATIVA =====
+# ===== 4 · VITRINE · SENSORIAL & AUTORAL =====
 menu2 = f'''
   <section class="slide">
 {head_simple("O menu de experiências")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>Pra colocar <em>a mão na massa</em></h2>
-    <p class="lead">Criar com as próprias mãos — <strong>bonito, visual e fácil de participar</strong>, mesmo pra quem nunca fez.</p>
+    <h2>Pra <em>desacelerar</em> e explorar aromas</h2>
+    <p class="lead">Experiências sensoriais e autorais que tiram o time do automático — cada pessoa cria algo seu, do aroma ao acabamento.</p>
     <div class="menu">
-      {mc("04", "Criativa · Pintura", "Pintura em Taça", "Leve e social: personalizam a própria taça enquanto o grupo conversa e brinda.", "R$ 299", "pintura-taca-experiencia.jpg", "center 45%")}
-      {mc("05", "Criativa · Acessórios", "Charm Bar &amp; Berloque", "Montam a própria joia e o berloque de bolsa — autoral e interativo.", "R$ 299", "charm-making-grupo.jpg", "center 40%")}
-      {mc("06", "Criativa · Porcelana", "Pintura em Porcelana", "Pintam à mão a própria peça e levam pra casa. Rende conversa e lembrança.", "R$ 349", "agora-pintando.jpg", "center 35%", sugg=True)}
+      {mc("04", "Sensorial · Lip Balm", "Lip Balm", "Cada um prepara o próprio hidratante labial, escolhendo aromas e texturas.", "R$ 229", "lipbalm-making.jpg", "center 45%")}
+      {mc("05", "Sensorial · Perfumaria", "Perfumaria Autoral", "Uma viagem olfativa guiada: cada pessoa cria a própria fragrância.", "", "perfumaria-oficina.jpg", "center 45%")}
+      {mc("06", "Criativa · Porcelana", "Pintura em Porcelana", "Pintam à mão a própria peça de porcelana e levam pra casa.", "", "agora-pintando.jpg", "center 35%")}
     </div>
-    <div class="noteband">◆ Nossa sugestão pra grupos grandes é a <b>Pintura em Porcelana</b>: todo mundo participa, rende boas conversas e cada um leva a peça que criou.</div>
-    {foot("O menu · criativa")}
+    <div class="noteband">◆ Para <b>Perfumaria</b> e <b>Pintura em Porcelana</b>, confirmamos o menor formato real antes de fechar o valor — por isso aparecem como <b>sob consulta</b>.</div>
+    {foot("O menu · sensorial & autoral")}
   </section>'''
 
-# ===== 5 · VITRINE · MÃO NA MASSA / PEÇA AUTORAL =====
+# ===== 5 · VITRINE · PEÇA AUTORAL =====
 menu3 = f'''
   <section class="slide">
 {head_simple("O menu de experiências")}
@@ -234,9 +241,9 @@ menu3 = f'''
     <h2>Pra criar uma <em>peça autoral</em></h2>
     <p class="lead">Experiências mais imersivas, pra quem quer ir além e sair com uma <strong>peça de verdade</strong>.</p>
     <div class="menu">
-      {mc("07", "Criativa · Memórias", "Scrapbook &amp; Colagem", "Recortes, texturas e uma composição feita a muitas mãos pelo time.", "R$ 369", "colagem.jpg", "center 50%")}
-      {mc("08", "Criativa · Cerâmica", "Cerâmica", "Modelar, criar e desenvolver uma peça com as próprias mãos.", "R$ 549", "ceramica.jpg", "center 40%")}
-      {mc("09", "Criativa · Têxtil", "Tufting &amp; Punch Needle", "Experiência têxtil e visual: cada um desenvolve a própria peça.", "R$ 799", "lado-b-grupo-pecas.webp", "center 30%")}
+      {mc("07", "Criativa · Cerâmica", "Cerâmica", "Modelar, criar e desenvolver uma peça com as próprias mãos.", "R$ 349", "ceramica.jpg", "center 40%")}
+      {mc("08", "Criativa · Têxtil", "Tufting &amp; Punch Needle", "Experiência têxtil e visual: cada um desenvolve a própria peça.", "R$ 599", "lado-b-grupo-pecas.webp", "center 30%")}
+      {mc("09", "Criativa · Memórias", "Scrapbook &amp; Colagem", "Recortes, texturas e uma composição feita a muitas mãos pelo time.", "", "colagem.jpg", "center 50%")}
     </div>
     <div class="noteband">◆ Dá pra <b>combinar mais de uma experiência em estações simultâneas</b> — ótimo pra grupos grandes com perfis diferentes.</div>
     {foot("O menu · peça autoral")}
@@ -250,11 +257,11 @@ menu4 = f'''
     <h2>Pra <em>brindar e compartilhar</em></h2>
     <p class="lead">Quando a vibe é happy hour: gastronomia, drinks e aquele clima de <strong>mesa cheia e boa conversa</strong>.</p>
     <div class="menu">
-      {mc("10", "Social · Drinks", "Bartenderia &amp; Coquetelaria", "Com bartender, aprendem técnicas e preparam os próprios drinks autorais.", "R$ 369", "andre-mesa-drinks.jpg", "center 50%")}
-      {mc("11", "Gastronômica · Mesa", "Entre Fatias &amp; Taças", "Pizza, vinho e gastronomia pensada pra compartilhar em torno da mesa.", "R$ 399", "bfa-grupo1.webp", "center 50%")}
-      {mc("12", "Gastronômica · Mão na massa", "Experiência Gastronômica", "Mão na massa em torno da gastronomia, criada pra aproximar o grupo.", "R$ 459", "corp-grupo.jpg", "center 50%")}
+      {mc("10", "Social · Drinks", "Bartenderia &amp; Coquetelaria", "Com bartender, aprendem técnicas e preparam os próprios drinks autorais.", "R$ 239", "andre-mesa-drinks.jpg", "center 50%")}
+      {mc("11", "Gastronômica · Mesa", "Entre Fatias &amp; Taças", "Pizza artesanal e vinhos: uma experiência gastronômica completa pra compartilhar.", "", "bfa-grupo1.webp", "center 50%")}
+      {mc("12", "Gastronômica · Mão na massa", "Experiência Gastronômica", "Mão na massa em torno da gastronomia, criada pra aproximar o grupo.", "", "corp-grupo.jpg", "center 50%")}
     </div>
-    <div class="noteband">◆ Experiências <b>sociais e descontraídas</b> — perfeitas pra confraternização e fim de ano.</div>
+    <div class="noteband">◆ As experiências <b>gastronômicas completas</b> (pizza &amp; vinhos, menu assinado) têm valor próprio conforme o formato — por isso aparecem como <b>sob consulta</b>.</div>
     {foot("O menu · brindar & compartilhar")}
   </section>'''
 
@@ -273,7 +280,7 @@ brunch = f'''
     </div>
     <div class="priceband">
       <div><div class="k">Brunch corporativo · opcional</div><div class="v">R$ 99 <small>por pessoa</small></div></div>
-      <div class="r">Servido durante a experiência, <b>no espaço de vocês</b>.<br>Já incluso nos planos Premium e Completo.</div>
+      <div class="r">Servido durante a experiência, <b>no espaço de vocês</b>.<br>Opcional, combinado conforme o briefing.</div>
     </div>
     {foot("O brunch")}
   </section>'''
@@ -298,7 +305,7 @@ mimos = f'''
         </div>
       </div>
       <div class="mimoc full">
-        <div class="ph">{img("kitempresa.jpg", "Brinde personalizado com a marca da empresa", "center 50%")}<div class="badge">★ Plano completo</div></div>
+        <div class="ph">{img("kitempresa.jpg", "Brinde personalizado com a marca da empresa", "center 50%")}<div class="badge">★ Opcional</div></div>
         <div class="bd">
           <div class="nm">Brinde personalizado</div>
           <ul>
@@ -316,28 +323,25 @@ mimos = f'''
 investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
-    <span class="eyebrow orange">◆ Escolham a experiência e o plano</span>
-    <h2>A partir de <em>R$ 289</em></h2>
-    <p class="lead">Valores por pessoa, já com <strong>profissional, materiais, estrutura, montagem e desmontagem</strong> inclusos. O total é fechado pela experiência escolhida × o número de participantes.</p>
+    <span class="eyebrow orange">◆ Escolham a experiência</span>
+    <h2>A partir de <em>R$ 169</em></h2>
+    <p class="lead">Valores <strong>por pessoa, no formato de entrada</strong> de cada experiência. A composição de cada uma (materiais, estrutura, deslocamento, quantidade mínima) é definida conforme o briefing — o total é fechado pela experiência escolhida × o número de participantes.</p>
     <div class="invl">
-      {invrow("Vela Aromática", "R$ 289")}
-      {invrow("Sabonete Artesanal", "R$ 289")}
-      {invrow("Pintura em Taça", "R$ 299")}
-      {invrow("Charm Bar &amp; Berloque", "R$ 299")}
-      {invrow("Perfumaria Autoral", "R$ 329")}
-      {invrow("Pintura em Porcelana", "R$ 349")}
-      {invrow("Scrapbook &amp; Colagem", "R$ 369")}
-      {invrow("Bartenderia &amp; Coquetelaria", "R$ 369")}
-      {invrow("Entre Fatias &amp; Taças", "R$ 399")}
-      {invrow("Experiência Gastronômica", "R$ 459")}
-      {invrow("Cerâmica", "R$ 549")}
-      {invrow("Tufting &amp; Punch Needle", "R$ 799")}
+      {invrow("Charm Bar &amp; Charm Bag", "R$ 169")}
+      {invrow("Vela Aromática", "R$ 179")}
+      {invrow("Pintura em Taça", "R$ 209")}
+      {invrow("Lip Balm", "R$ 229")}
+      {invrow("Bartenderia &amp; Coquetelaria", "R$ 239")}
+      {invrow("Cerâmica", "R$ 349")}
+      {invrow("Tufting &amp; Punch Needle", "R$ 599")}
+      {invrow("Sabonete Artesanal", "")}
+      {invrow("Perfumaria Autoral", "")}
+      {invrow("Pintura em Porcelana", "")}
+      {invrow("Scrapbook &amp; Colagem", "")}
+      {invrow("Entre Fatias &amp; Taças", "")}
+      {invrow("Experiência Gastronômica", "")}
     </div>
-    <div class="plans">
-      <div class="plan"><div class="pk">A experiência</div><div class="pt">Base</div><div class="pd">Profissional, materiais e estrutura inclusos.</div></div>
-      <div class="plan"><div class="pk">Premium</div><div class="pt">+ completo</div><div class="pd">Soma <b>registro fotográfico</b> profissional e <b>brunch corporativo</b>.</div></div>
-      <div class="plan hl"><div class="pk">★ Completo</div><div class="pt">+ brinde</div><div class="pd">Tudo do Premium e ainda um <b>brinde personalizado</b> com a marca da empresa.</div></div>
-    </div>
+    <div class="noteband">◆ As experiências marcadas como <b>a confirmar</b> têm o valor validado no nosso histórico antes da versão final da proposta — pra não publicar preço sem base.</div>
     <p class="fineprint">{FOOTNOTE}</p>
     {foot("Investimento")}
   </section>'''
@@ -368,11 +372,14 @@ out = ROOT + "/portfolio-corporativo-elarah.html"
 io.open(out, "w", encoding="utf-8").write(html)
 for bad in ["fornecedor", "repasse", "comiss", "margem"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
-EXPS = {"Vela Aromática": "R$ 289", "Sabonete Artesanal": "R$ 289", "Pintura em Taça": "R$ 299",
-        "Charm Bar": "R$ 299", "Perfumaria Autoral": "R$ 329", "Pintura em Porcelana": "R$ 349",
-        "Scrapbook": "R$ 369", "Bartenderia": "R$ 369", "Entre Fatias": "R$ 399",
-        "Experiência Gastronômica": "R$ 459", "Cerâmica": "R$ 549", "Tufting": "R$ 799"}
-for nome, preco in EXPS.items():
-    assert nome in deck, f"FALTA EXPERIENCIA: {nome}"
+PRECOS_OK = ["R$ 169", "R$ 179", "R$ 209", "R$ 229", "R$ 239", "R$ 349", "R$ 599"]
+for preco in PRECOS_OK:
     assert preco in deck, f"FALTA PRECO: {preco}"
+# precos inflados nao podem reaparecer
+for ruim in ["R$ 289", "R$ 299", "R$ 329", "R$ 369", "R$ 399", "R$ 459", "R$ 549", "R$ 789", "R$ 799"]:
+    assert ruim not in deck, f"PRECO INFLADO AINDA PRESENTE: {ruim}"
+assert "Lip Balm" in deck
+for conf in ["Sabonete Artesanal", "Perfumaria Autoral", "Pintura em Porcelana", "Scrapbook", "Entre Fatias", "Experiência Gastronômica"]:
+    assert conf in deck, f"FALTA (a confirmar): {conf}"
+assert "a confirmar" in deck and "Valor sob consulta" in deck
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
