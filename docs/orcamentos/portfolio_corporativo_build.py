@@ -176,7 +176,7 @@ cover = f'''
           <span class="chip">Times de todos os tamanhos</span>
           <span class="chip">Happy hour &amp; confraternização</span>
           <span class="chip">A Elarah vai até vocês</span>
-          <span class="chip">Experiências a partir de <b>R$ 169</b></span>
+          <span class="chip">Experiências a partir de <b>R$ 179</b></span>
         </div>
       </div>
       <div class="cover-photo">{img("pintura-corp-class.jpg", "Time corporativo misto criando e rindo junto", "center 45%")}</div>
@@ -206,12 +206,12 @@ menu1 = f'''
   <section class="slide">
 {head_simple("O menu de experiências")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>Pra <em>começar</em> — a partir de R$ 169</h2>
+    <h2>Pra <em>começar</em> — a partir de R$ 179</h2>
     <p class="lead">Experiências leves e <strong>fáceis de participar</strong>, com ótimo custo pra abrir o encontro e soltar o grupo. Cada pessoa cria algo seu e leva pra casa.</p>
     <div class="menu">
-      {mc("01", "Criativa · Acessórios", "Charm Bar &amp; Charm Bag", "Montam a própria joia e o berloque de bolsa — autoral e interativo.", "R$ 169", "charm-making-grupo.jpg", "center 40%")}
-      {mc("02", "Sensorial · Vela", "Vela Aromática", "Cada participante cria a própria vela, explorando aromas e combinações.", "R$ 179", "vela-grupo-oficina.jpg", "center 35%")}
-      {mc("03", "Criativa · Pintura", "Pintura em Taça", "Leve e social: personalizam a própria taça enquanto o grupo conversa e brinda.", "R$ 209", "pintura-taca-experiencia.jpg", "center 45%", sugg=True)}
+      {mc("01", "Criativa · Acessórios", "Charm Bar &amp; Charm Bag", "Montam a própria joia e o berloque de bolsa — autoral e interativo.", "R$ 179", "charm-making-grupo.jpg", "center 40%")}
+      {mc("02", "Sensorial · Vela", "Vela Aromática", "Cada participante cria a própria vela, explorando aromas e combinações.", "R$ 199", "vela-grupo-oficina.jpg", "center 35%")}
+      {mc("03", "Criativa · Pintura", "Pintura em Taça", "Leve e social: personalizam a própria taça enquanto o grupo conversa e brinda.", "R$ 219", "pintura-taca-experiencia.jpg", "center 45%", sugg=True)}
     </div>
     <div class="noteband">◆ Faixa de <b>entrada</b> do portfólio — ideal pra grupos grandes e primeiros encontros. O formato final a gente ajusta conforme o briefing.</div>
     {foot("O menu · pra começar")}
@@ -324,12 +324,12 @@ investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Escolham a experiência</span>
-    <h2>A partir de <em>R$ 169</em></h2>
+    <h2>A partir de <em>R$ 179</em></h2>
     <p class="lead">Valores <strong>por pessoa, no formato de entrada</strong> de cada experiência. A composição de cada uma (materiais, estrutura, deslocamento, quantidade mínima) é definida conforme o briefing — o total é fechado pela experiência escolhida × o número de participantes.</p>
     <div class="invl">
-      {invrow("Charm Bar &amp; Charm Bag", "R$ 169")}
-      {invrow("Vela Aromática", "R$ 179")}
-      {invrow("Pintura em Taça", "R$ 209")}
+      {invrow("Charm Bar &amp; Charm Bag", "R$ 179")}
+      {invrow("Vela Aromática", "R$ 199")}
+      {invrow("Pintura em Taça", "R$ 219")}
       {invrow("Lip Balm", "R$ 229")}
       {invrow("Bartenderia &amp; Coquetelaria", "R$ 239")}
       {invrow("Cerâmica", "R$ 349")}
@@ -372,12 +372,12 @@ out = ROOT + "/portfolio-corporativo-elarah.html"
 io.open(out, "w", encoding="utf-8").write(html)
 for bad in ["fornecedor", "repasse", "comiss", "margem"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
-PRECOS_OK = ["R$ 169", "R$ 179", "R$ 209", "R$ 229", "R$ 239", "R$ 349", "R$ 599"]
+PRECOS_OK = ["R$ 179", "R$ 199", "R$ 219", "R$ 229", "R$ 239", "R$ 349", "R$ 599"]
 for preco in PRECOS_OK:
     assert preco in deck, f"FALTA PRECO: {preco}"
-# precos inflados nao podem reaparecer
-for ruim in ["R$ 289", "R$ 299", "R$ 329", "R$ 369", "R$ 399", "R$ 459", "R$ 549", "R$ 789", "R$ 799"]:
-    assert ruim not in deck, f"PRECO INFLADO AINDA PRESENTE: {ruim}"
+# precos antigos/inflados nao podem reaparecer
+for ruim in ["R$ 169", "R$ 209", "R$ 289", "R$ 299", "R$ 329", "R$ 369", "R$ 399", "R$ 459", "R$ 549", "R$ 789", "R$ 799"]:
+    assert ruim not in deck, f"PRECO ANTIGO/INFLADO AINDA PRESENTE: {ruim}"
 assert "Lip Balm" in deck
 for conf in ["Sabonete Artesanal", "Perfumaria Autoral", "Pintura em Porcelana", "Scrapbook", "Entre Fatias", "Experiência Gastronômica"]:
     assert conf in deck, f"FALTA (a confirmar): {conf}"
