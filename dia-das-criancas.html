@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="description" content="Dia das Crianças na Elarah — experiências de mão na massa pra criança viver com você em São Paulo: cozinha, cerâmica, confeitaria e muito mais. O brinquedo ele esquece; o dia com você, nunca.">
+  <meta name="description" content="Dia das Crianças na Elarah — experiências de mão na massa pra criança viver com você em São Paulo: cozinha, cerâmica, arte e muito mais. O brinquedo vai pra gaveta; o dia com você fica pra sempre.">
   <title>Dia das Crianças — Elarah</title>
   <link rel="canonical" href="https://elarah.com.br/dia-das-criancas.html">
   <meta property="og:title" content="Dia das Crianças — Elarah">
@@ -14,7 +14,7 @@
   <link rel="icon" href="assets/logo.png" type="image/png">
   <link rel="stylesheet" href="styles.css?v=23">
   <link rel="stylesheet" href="auth.css">
-  <link rel="stylesheet" href="dia-das-criancas.css?v=2">
+  <link rel="stylesheet" href="dia-das-criancas.css?v=3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
@@ -97,7 +97,7 @@
       <span class="ddc-float ddc-float--a">🎈</span>
       <span class="ddc-float ddc-float--b">⭐</span>
       <span class="ddc-float ddc-float--c">🎨</span>
-      <span class="ddc-float ddc-float--d">🧁</span>
+      <span class="ddc-float ddc-float--d">🍕</span>
     </div>
 
     <div class="ddc-hero__inner">
@@ -105,13 +105,13 @@
         <span class="ddc-hero__kicker">🎉 Dia das Crianças · 12 de outubro</span>
         <h1 class="ddc-hero__title">
           O brinquedo<br>
-          ele esquece.<br>
-          <span class="ddc-rainbow">O dia com você, nunca.</span>
+          vai pra gaveta.<br>
+          <span class="ddc-rainbow">O dia com você fica pra sempre.</span>
         </h1>
         <p class="ddc-hero__sub">
           Mãe, esse ano troque mais um brinquedo por uma <strong>tarde de mão na massa</strong>:
           cozinhar, modelar, pintar, rir junto. Sem tela, sem bagunça em casa —
-          e com uma lembrança feita pelas mãozinhas dele.
+          e com uma lembrança feita pelas próprias mãozinhas.
         </p>
 
         <div class="ddc-countdown" id="ddc-countdown" aria-label="Contagem regressiva para o Dia das Crianças">
@@ -131,6 +131,7 @@
           </a>
           <a href="presentear.html?campaign=dia-das-criancas" class="ddc-btn ddc-btn--ghost">🎁 Dar vale-presente</a>
         </div>
+        <p class="ddc-hero__peek" id="ddc-peek" aria-live="polite"></p>
       </div>
 
       <!-- Colagem de fotos -->
@@ -145,11 +146,53 @@
     <svg class="ddc-wave" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 C 240 90 480 0 720 40 S 1200 90 1440 40 V80 H0 Z" fill="currentColor"/></svg>
   </section>
 
+  <!-- ========== EXPERIÊNCIAS ========== -->
+  <section id="ddc-experiencias" class="ddc-experiences">
+    <div class="ddc-experiences__inner">
+      <header class="ddc-experiences__head">
+        <span class="ddc-kicker ddc-kicker--light">Vitrine Dia das Crianças</span>
+        <h2 class="ddc-h2">Experiências pra fazer com os pequenos</h2>
+        <p class="ddc-lead">
+          Separamos as vivências mais gostosas pra criança fazer — sozinha ou com você do lado.
+          Escolha pelo jeitinho do seu pequeno ou da sua pequena e reserve.
+        </p>
+        <p class="ddc-experiences__count" id="ddc-count" aria-live="polite"></p>
+      </header>
+
+      <div class="ddc-chips" id="ddc-chips" role="tablist" aria-label="Filtrar por tipo de experiência"></div>
+
+      <div class="ddc-grid" id="ddc-grid">
+        <div class="ddc-loading" aria-hidden="true"><span></span><span></span><span></span></div>
+      </div>
+
+      <div class="ddc-empty" id="ddc-empty" style="display:none;">
+        <div class="ddc-empty__emoji" aria-hidden="true">🎈</div>
+        <h3>As experiências estão chegando!</h3>
+        <p>Estamos fechando as turmas do Dia das Crianças. Enquanto isso, você pode
+          <a href="presentear.html?campaign=dia-das-criancas">dar um vale-presente</a> pra criança escolher depois.</p>
+      </div>
+
+      <p class="ddc-tip">
+        💡 <strong>Dica:</strong> cada experiência informa na descrição a idade indicada e se o adulto participa junto.
+        Ficou na dúvida? <a href="https://wa.me/5511914455930?text=Oi!%20Tenho%20uma%20d%C3%BAvida%20sobre%20as%20experi%C3%AAncias%20de%20Dia%20das%20Crian%C3%A7as" target="_blank" rel="noopener">Chama a gente no WhatsApp</a>.
+      </p>
+      <div class="ddc-share">
+        <span class="ddc-share__emoji" aria-hidden="true">💬</span>
+        <div class="ddc-share__text">
+          <strong>Manda pro grupo das mães!</strong>
+          <span>Junta a turminha da escola e vão todos juntos — fica ainda mais divertido.</span>
+        </div>
+        <a href="https://wa.me/?text=M%C3%A3e%2C%20olha%20que%20ideia%20boa%20pro%20Dia%20das%20Crian%C3%A7as%3A%20em%20vez%20de%20mais%20um%20brinquedo%2C%20uma%20tarde%20de%20m%C3%A3o%20na%20massa%20com%20os%20pequenos%20%F0%9F%8E%88%20https%3A//elarah.com.br/dia-das-criancas.html" target="_blank" rel="noopener" class="ddc-btn ddc-btn--whats" data-ddc-share>Compartilhar no WhatsApp</a>
+      </div>
+
+    </div>
+  </section>
+
   <!-- ========== FAIXA ROLANTE ========== -->
   <div class="ddc-marquee" aria-hidden="true">
     <div class="ddc-marquee__track">
-      <span>🍕 pizza</span><span>🧁 confeitaria</span><span>🏺 cerâmica</span><span>🎨 pintura</span><span>🍪 cookies</span><span>🌭 hot dog</span><span>🍣 sushi</span><span>🧼 sabonete</span>
-      <span>🍕 pizza</span><span>🧁 confeitaria</span><span>🏺 cerâmica</span><span>🎨 pintura</span><span>🍪 cookies</span><span>🌭 hot dog</span><span>🍣 sushi</span><span>🧼 sabonete</span>
+      <span>🍕 pizza</span><span>🍝 massinha caseira</span><span>🏺 cerâmica</span><span>🎨 pintura</span><span>👩‍🍳 mini chef</span><span>🌭 hot dog</span><span>🍣 sushi</span><span>🧼 sabonete</span>
+      <span>🍕 pizza</span><span>🍝 massinha caseira</span><span>🏺 cerâmica</span><span>🎨 pintura</span><span>👩‍🍳 mini chef</span><span>🌭 hot dog</span><span>🍣 sushi</span><span>🧼 sabonete</span>
     </div>
   </div>
 
@@ -177,43 +220,10 @@
         </article>
         <article class="ddc-why-card ddc-why-card--green">
           <span class="ddc-why-card__icon" aria-hidden="true">💛</span>
-          <h3>Uma lembrança feita por ele</h3>
-          <p>Ele volta pra casa com algo que fez — e com uma história pra contar na escola na segunda.</p>
+          <h3>Uma lembrança feita pelos pequenos</h3>
+          <p>A criança volta pra casa com algo que fez — e com uma história pra contar na escola na segunda.</p>
         </article>
       </div>
-    </div>
-  </section>
-
-  <!-- ========== EXPERIÊNCIAS ========== -->
-  <section id="ddc-experiencias" class="ddc-experiences">
-    <div class="ddc-experiences__inner">
-      <header class="ddc-experiences__head">
-        <span class="ddc-kicker ddc-kicker--light">Vitrine Dia das Crianças</span>
-        <h2 class="ddc-h2">Experiências pra fazer com os pequenos</h2>
-        <p class="ddc-lead">
-          Separamos as vivências mais gostosas pra criança fazer — sozinha ou com você do lado.
-          Escolha pelo jeitinho dele e reserve.
-        </p>
-        <p class="ddc-experiences__count" id="ddc-count" aria-live="polite"></p>
-      </header>
-
-      <div class="ddc-chips" id="ddc-chips" role="tablist" aria-label="Filtrar por tipo de experiência"></div>
-
-      <div class="ddc-grid" id="ddc-grid">
-        <div class="ddc-loading" aria-hidden="true"><span></span><span></span><span></span></div>
-      </div>
-
-      <div class="ddc-empty" id="ddc-empty" style="display:none;">
-        <div class="ddc-empty__emoji" aria-hidden="true">🎈</div>
-        <h3>As experiências estão chegando!</h3>
-        <p>Estamos fechando as turmas do Dia das Crianças. Enquanto isso, você pode
-          <a href="presentear.html?campaign=dia-das-criancas">dar um vale-presente</a> pra ele escolher depois.</p>
-      </div>
-
-      <p class="ddc-tip">
-        💡 <strong>Dica:</strong> cada experiência informa na descrição a idade indicada e se o adulto participa junto.
-        Ficou na dúvida? <a href="https://wa.me/5511914455930?text=Oi!%20Tenho%20uma%20d%C3%BAvida%20sobre%20as%20experi%C3%AAncias%20de%20Dia%20das%20Crian%C3%A7as" target="_blank" rel="noopener">Chama a gente no WhatsApp</a>.
-      </p>
     </div>
   </section>
 
@@ -226,7 +236,7 @@
         <li class="ddc-step ddc-step--pink">
           <span class="ddc-step__num">1</span>
           <h3>Escolha a experiência</h3>
-          <p>Pizza, cookies, cerâmica… pelo que ele mais ama fazer.</p>
+          <p>Pizza, cerâmica, arte… pelo que a criança mais ama fazer.</p>
         </li>
         <li class="ddc-step ddc-step--yellow">
           <span class="ddc-step__num">2</span>
@@ -252,7 +262,7 @@
       </div>
       <div class="ddc-gift__text">
         <h2 class="ddc-h2">Ainda não sabe a data? Dê um vale-presente.</h2>
-        <p>Entregue no dia 12 um cartão bonito e deixe a escolha da experiência pra depois — ou pra ele mesmo escolher.
+        <p>Entregue no dia 12 um cartão bonito e deixe a escolha da experiência pra depois — ou pra criança escolher.
           Perfeito também pra madrinhas, avós e tias.</p>
         <a href="presentear.html?campaign=dia-das-criancas" class="ddc-btn ddc-btn--primary">🎁 Montar vale-presente</a>
       </div>
@@ -287,14 +297,21 @@
   <section class="ddc-closer">
     <div class="ddc-closer__inner">
       <p class="ddc-closer__quote">“Infância boa<br>se mede em <span class="ddc-rainbow">memórias</span>.”</p>
-      <p class="ddc-closer__lead">Neste 12 de outubro, dê a ele um dia que vale mais que qualquer pacote.</p>
+      <p class="ddc-closer__lead">Neste 12 de outubro, dê aos pequenos um dia que vale mais que qualquer pacote.</p>
       <div class="ddc-hero__ctas ddc-hero__ctas--center">
         <a href="#ddc-experiencias" class="ddc-btn ddc-btn--primary">Escolher experiência</a>
         <a href="presentear.html?campaign=dia-das-criancas" class="ddc-btn ddc-btn--white">Dar vale-presente</a>
+        <a href="https://wa.me/?text=M%C3%A3e%2C%20olha%20que%20ideia%20boa%20pro%20Dia%20das%20Crian%C3%A7as%3A%20em%20vez%20de%20mais%20um%20brinquedo%2C%20uma%20tarde%20de%20m%C3%A3o%20na%20massa%20com%20os%20pequenos%20%F0%9F%8E%88%20https%3A//elarah.com.br/dia-das-criancas.html" target="_blank" rel="noopener" class="ddc-btn ddc-btn--whats" data-ddc-share>💬 Mandar pras amigas</a>
       </div>
       <p class="ddc-closer__fine">Vagas limitadas · Turmas pequenas · Curadoria Elarah</p>
     </div>
   </section>
+
+<!-- Barra fixa (só celular) -->
+<div class="ddc-sticky" id="ddc-sticky">
+  <a href="#ddc-experiencias" class="ddc-sticky__main">🎈 Ver experiências</a>
+  <a href="https://wa.me/?text=M%C3%A3e%2C%20olha%20que%20ideia%20boa%20pro%20Dia%20das%20Crian%C3%A7as%3A%20em%20vez%20de%20mais%20um%20brinquedo%2C%20uma%20tarde%20de%20m%C3%A3o%20na%20massa%20com%20os%20pequenos%20%F0%9F%8E%88%20https%3A//elarah.com.br/dia-das-criancas.html" target="_blank" rel="noopener" class="ddc-sticky__whats" aria-label="Compartilhar no WhatsApp" data-ddc-share>💬</a>
+</div>
 
 <!-- ========== FOOTER ========== -->
 <footer class="footer">
@@ -367,6 +384,6 @@
 <script src="experiences-data.js?v=45"></script>
 <script src="analytics.js?v=3"></script>
 <script src="header-nav.js?v=1" defer></script>
-<script src="dia-das-criancas.js?v=2"></script>
+<script src="dia-das-criancas.js?v=3"></script>
 </body>
 </html>
