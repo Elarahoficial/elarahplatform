@@ -723,14 +723,58 @@ renderFavoritos();
     return '';
   }
 
+  // Cupom de crédito gerado quando a Elarah marca "guardando experiência"
+  // (admin-set-aguardando-experiencia). null = reserva marcada antes do
+  // cupom existir ou cupom desativado.
+  function cupomGuardado(booking) {
+    const m = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
+    const c = m.aguardando_credito;
+    if (!c || typeof c !== 'object' || !c.codigo || c.cancelado_at) return null;
+    return c;
+  }
+
+  // Cupons de crédito que já viraram reserva (outra compra dela, paga,
+  // com o cupom). Preenchido a cada carga de "Minhas compras".
+  const cuponsUsados = new Set();
+
+  function creditoJaUsado(booking) {
+    const c = cupomGuardado(booking);
+    return !!(c && ((c.coupon_id && cuponsUsados.has(String(c.coupon_id))) || c.usado === true));
+  }
+
+  // Valor do crédito: o do cupom (gravado pelo servidor); sem cupom, a
+  // mesma conta feita aqui.
+  function valorGuardadoCentavos(booking) {
+    const c = cupomGuardado(booking);
+    const v = c ? Number(c.valor_centavos) : NaN;
+    return isFinite(v) && v > 0 ? v : creditoGuardadoCentavos(booking);
+  }
+
   // Card da reserva guardada: em vez de "Confirmada" + data, mostra o
-  // crédito em reais que a cliente tem pra escolher outra experiência.
+  // crédito em reais (e o código do cupom) pra escolher outra experiência.
   function renderGuardandoCard(booking) {
     const nome = booking.experiencia_nome || 'Experiência';
-    const credito = creditoGuardadoCentavos(booking);
+    const cupom = cupomGuardado(booking);
+    const usado = creditoJaUsado(booking);
+    const credito = valorGuardadoCentavos(booking);
     const valor = credito != null ? formatBrlCents(credito) : '';
     const desde = formatCreatedAt(booking.aguardando_experiencia_at);
     const escolherUrl = contatoWhatsappUrl(booking, 'Olá! Quero usar meu crédito da Elarah pra escolher uma nova experiência.');
+    let corpo;
+    if (usado) {
+      corpo = '<p class="purchase-card__credito-texto">Você já usou esse crédito numa nova reserva. 🧡</p>';
+    } else if (cupom) {
+      corpo =
+        '<p class="purchase-card__credito-texto">Escolha qualquer experiência da Elarah e use o código no campo de cupom na hora de reservar:</p>' +
+        '<div class="purchase-card__cupom">' + escapeHtmlLocal(cupom.codigo) + '</div>' +
+        (cupom.valido_ate ? '<p class="purchase-card__credito-validade">Vale até ' + escapeHtmlLocal(formatCreatedAt(cupom.valido_ate)) + ' · uma compra</p>' : '');
+    } else {
+      corpo = '<p class="purchase-card__credito-texto">' +
+        (valor
+          ? 'Você tem <strong>' + escapeHtmlLocal(valor) + '</strong> pra escolher qualquer outra experiência da Elarah.'
+          : 'Você tem crédito pra escolher qualquer outra experiência da Elarah.') +
+        '</p>';
+    }
     return (
       '<article class="purchase-card purchase-card--experience purchase-card--credito">' +
         '<div class="purchase-card__icon" aria-hidden="true">' +
@@ -741,43 +785,44 @@ renderFavoritos();
         '<div class="purchase-card__body">' +
           '<div class="purchase-card__head">' +
             '<span class="purchase-card__type">Crédito Elarah</span>' +
-            '<span class="purchase-card__status purchase-card__status--credito">Guardando experiência</span>' +
+            '<span class="purchase-card__status purchase-card__status--' + (usado ? 'used' : 'credito') + '">' +
+              (usado ? 'Crédito usado' : 'Guardando experiência') + '</span>' +
           '</div>' +
           '<h3 class="purchase-card__title">' + (valor ? escapeHtmlLocal(valor) + ' de crédito' : 'Crédito na Elarah') + '</h3>' +
-          '<p class="purchase-card__credito-texto">' +
-            (valor
-              ? 'Você tem <strong>' + escapeHtmlLocal(valor) + '</strong> pra escolher qualquer outra experiência da Elarah.'
-              : 'Você tem crédito pra escolher qualquer outra experiência da Elarah.') +
-          '</p>' +
+          corpo +
           '<div class="purchase-card__meta">' +
             '<span class="purchase-card__meta-item">Era: ' + escapeHtmlLocal(nome) + '</span>' +
             (desde ? '<span class="purchase-card__meta-item">Guardado em ' + escapeHtmlLocal(desde) + '</span>' : '') +
           '</div>' +
-          '<p class="purchase-card__prazo">' +
-            '<a class="purchase-card__prazo-link" href="/">Ver experiências</a> · ' +
-            '<a class="purchase-card__prazo-link" href="' + escolherUrl + '" target="_blank" rel="noopener">Escolher pelo WhatsApp</a>' +
-          '</p>' +
+          (usado ? '' :
+            '<p class="purchase-card__prazo">' +
+              '<a class="purchase-card__prazo-link" href="/">Ver experiências</a> · ' +
+              '<a class="purchase-card__prazo-link" href="' + escolherUrl + '" target="_blank" rel="noopener">Ajuda pelo WhatsApp</a>' +
+            '</p>') +
         '</div>' +
       '</article>'
     );
   }
 
-  // Resumo no topo de "Minhas compras": soma o crédito das reservas
-  // guardadas. Some quando não há nenhuma.
+  // Resumo no topo de "Minhas compras": soma o crédito ainda disponível
+  // das reservas guardadas. Some quando não há nenhum.
   function renderCreditoResumo(bookings) {
     const el = document.getElementById('purchases-credito');
     if (!el) return;
-    const guardadas = bookings.filter(isGuardandoExperiencia);
+    const guardadas = bookings.filter(b => isGuardandoExperiencia(b) && !creditoJaUsado(b));
     if (!guardadas.length) {
       el.style.display = 'none';
       el.innerHTML = '';
       return;
     }
-    const total = guardadas.reduce((acc, b) => acc + (creditoGuardadoCentavos(b) || 0), 0);
+    const total = guardadas.reduce((acc, b) => acc + (valorGuardadoCentavos(b) || 0), 0);
+    const codigos = guardadas.map(cupomGuardado).filter(Boolean).map(c => c.codigo);
     el.innerHTML =
       '<span class="purchases__credito-label">Seu crédito na Elarah</span>' +
       '<strong class="purchases__credito-valor">' + escapeHtmlLocal(formatBrlCents(total)) + '</strong>' +
-      '<span class="purchases__credito-sub">pra escolher qualquer outra experiência</span>';
+      '<span class="purchases__credito-sub">pra escolher qualquer outra experiência' +
+        (codigos.length ? ' · use o código ' + codigos.map(escapeHtmlLocal).join(', ') + ' no campo de cupom' : '') +
+      '</span>';
     el.style.display = 'block';
   }
 
@@ -1015,6 +1060,10 @@ renderFavoritos();
       const past = [];
 
       bookingsById.clear();
+      cuponsUsados.clear();
+      bookings.forEach(b => {
+        if (b.coupon_id && b.status === 'pago') cuponsUsados.add(String(b.coupon_id));
+      });
       bookings.forEach(b => {
         bookingsById.set(String(b.id), b);
         const group = classifyBooking(b);
