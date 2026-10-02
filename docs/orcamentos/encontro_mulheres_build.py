@@ -288,9 +288,9 @@ coffee = f'''
       </div>
     </div>
     <div class="cbg">
-      <div class="cbc"><div class="nm">Básico</div><div class="pr"><b>R$ 34,80</b> /pessoa<small>60 participantes · R$ 2.088</small></div></div>
-      <div class="cbc"><div class="nm">Essencial</div><div class="pr"><b>R$ 86,40</b> /pessoa<small>60 participantes · R$ 5.184</small></div></div>
-      <div class="cbc hl"><span class="sg">Nossa sugestão</span><div class="nm">Clássico</div><div class="pr"><b>R$ 109,20</b> /pessoa<small>60 participantes · R$ 6.552</small></div></div>
+      <div class="cbc"><div class="nm">Básico</div><div class="pr"><b>R$ 49,90</b> /pessoa<small>60 participantes · R$ 2.994</small></div></div>
+      <div class="cbc hl"><span class="sg">Nossa sugestão</span><div class="nm">Essencial</div><div class="pr"><b>R$ 99,90</b> /pessoa<small>60 participantes · R$ 5.994</small></div></div>
+      <div class="cbc"><div class="nm">Clássico</div><div class="pr"><b>R$ 119,90</b> /pessoa<small>60 participantes · R$ 7.194</small></div></div>
     </div>
     <p class="invobs">Todos incluem mini sanduíches, salgado, doce, fruta ou iogurte, suco, Água na Caixa, café e serviço de montagem. ☕ Opcional, não incluído no valor das experiências de vela.</p>
     {foot("Coffee break opcional")}
@@ -324,7 +324,7 @@ out = ROOT + "/proposta-encontro-mulheres.html"
 io.open(out, "w", encoding="utf-8").write(html)
 for bad in ["fornecedor", "repasse", "comiss", "margem", "wax melt", "sob consulta"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
-for val in ["R$ 239", "R$ 14.340", "R$ 269", "R$ 16.140", "R$ 34,80", "R$ 86,40", "R$ 109,20"]:
+for val in ["R$ 239", "R$ 14.340", "R$ 269", "R$ 16.140", "R$ 49,90", "R$ 99,90", "R$ 119,90"]:
     assert val in deck, f"FALTA VALOR: {val}"
 # nao expor custo de fornecedor nem percentual Elarah na versao final
 for proib in ["fornecedor", "20%", "R$ 29", "R$ 72", "R$ 91", "comiss"]:
