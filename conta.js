@@ -786,13 +786,13 @@ renderFavoritos();
           '<div class="purchase-card__head">' +
             '<span class="purchase-card__type">Crédito Elarah</span>' +
             '<span class="purchase-card__status purchase-card__status--' + (usado ? 'used' : 'credito') + '">' +
-              (usado ? 'Crédito usado' : 'Guardando experiência') + '</span>' +
+              (usado ? 'Crédito usado' : 'Aguardando experiência') + '</span>' +
           '</div>' +
           '<h3 class="purchase-card__title">' + (valor ? escapeHtmlLocal(valor) + ' de crédito' : 'Crédito na Elarah') + '</h3>' +
           corpo +
           '<div class="purchase-card__meta">' +
             '<span class="purchase-card__meta-item">Era: ' + escapeHtmlLocal(nome) + '</span>' +
-            (desde ? '<span class="purchase-card__meta-item">Guardado em ' + escapeHtmlLocal(desde) + '</span>' : '') +
+            (desde ? '<span class="purchase-card__meta-item">Desde ' + escapeHtmlLocal(desde) + '</span>' : '') +
           '</div>' +
           (usado ? '' :
             '<p class="purchase-card__prazo">' +
