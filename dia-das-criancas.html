@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="Dia das Crianças na Elarah — experiências de mão na massa pra criança viver com você em São Paulo: cozinha, cerâmica, confeitaria e muito mais. O brinquedo ele esquece; o dia com você, nunca.">
+  <title>Dia das Crianças — Elarah</title>
+  <link rel="canonical" href="https://elarah.com.br/dia-das-criancas.html">
+  <meta property="og:title" content="Dia das Crianças — Elarah">
+  <meta property="og:description" content="Troque mais um brinquedo por uma tarde de mão na massa. Experiências pra criança viver com você neste 12 de outubro.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://elarah.com.br/dia-das-criancas.html">
+  <meta property="og:image" content="https://elarah.com.br/assets/kids1.jpg">
+  <link rel="icon" href="assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="styles.css?v=23">
+  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="dia-das-criancas.css?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>(function(){var t=Date.now();var l=document.createElement("link");l.rel="stylesheet";l.href="assets/app-skin.css?t="+t;document.head.appendChild(l);var s=document.createElement("script");s.src="assets/app-skin.js?t="+t;s.defer=true;document.head.appendChild(s);})();</script>
+</head>
+<body class="ddc-body">
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__inner">
+      <a href="/" class="header__logo" title="Ir para página inicial">
+        <img src="assets/logo.png" alt="Elarah" class="header__logo-img">
+      </a>
+
+      <div class="header__search">
+        <svg class="header__search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="search-input" type="text" placeholder="o que você quer experimentar?" class="header__search-input">
+        <button id="search-btn" class="header__search-btn"></button>
+      </div>
+
+      <nav class="header__nav">
+        <div class="header__nav-item header__nav-dropdown">
+          <button class="header__nav-link" id="explorar-btn">
+            Explorar
+            <svg class="header__nav-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="header__dropdown" id="explorar-dropdown">
+            <a href="categoria.html" class="header__dropdown-item">Todas</a>
+            <a href="categoria.html?cat=Bartenderia" class="header__dropdown-item">Bartenderia</a>
+            <a href="categoria.html?cat=Cer%C3%A2mica" class="header__dropdown-item">Cerâmica</a>
+            <a href="categoria.html?cat=Floral" class="header__dropdown-item">Floral</a>
+            <a href="categoria.html?cat=Gastronomia" class="header__dropdown-item">Gastronomia</a>
+            <a href="categoria.html?cat=Macram%C3%AA" class="header__dropdown-item">Macramê</a>
+            <a href="categoria.html?cat=Pintura" class="header__dropdown-item">Pintura</a>
+            <a href="categoria.html?cat=Sabonete" class="header__dropdown-item">Sabonete</a>
+            <a href="categoria.html?cat=Tufting%20%26%20Punch" class="header__dropdown-item">Tufting &amp; Punch</a>
+            <a href="categoria.html?cat=Vela" class="header__dropdown-item">Vela</a>
+          </div>
+        </div>
+        <a href="dia-das-criancas.html" class="header__nav-link header__nav-link--ddc" aria-current="page">Dia das Crianças</a>
+        <a href="elarah-em-casa.html" class="header__nav-link">Kits Elarah</a>
+        <a href="presentear.html?campaign=dia-das-criancas" class="header__nav-link">Presentear</a>
+        <a href="saude-mental-empresas.html" class="header__nav-link">Corporativo</a>
+        <a href="blog.html" class="header__nav-link">Blog</a>
+        <a href="oferecer.html" class="header__nav-link">Ser Parceiro</a>
+      </nav>
+
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="Favoritos">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+        </button>
+        <button class="header__login-btn" aria-label="Entrar ou criar conta" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Entrar
+        </button>
+      </div>
+
+      <button class="header__mobile-toggle" aria-label="Menu" id="mobile-toggle">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========== HERO ========== -->
+  <section class="ddc-hero">
+    <!-- Confete / bolinhas flutuantes (decorativo) -->
+    <div class="ddc-confetti" aria-hidden="true">
+      <span class="ddc-dot ddc-dot--1"></span><span class="ddc-dot ddc-dot--2"></span>
+      <span class="ddc-dot ddc-dot--3"></span><span class="ddc-dot ddc-dot--4"></span>
+      <span class="ddc-dot ddc-dot--5"></span><span class="ddc-dot ddc-dot--6"></span>
+      <span class="ddc-dot ddc-dot--7"></span><span class="ddc-dot ddc-dot--8"></span>
+      <span class="ddc-float ddc-float--a">🎈</span>
+      <span class="ddc-float ddc-float--b">⭐</span>
+      <span class="ddc-float ddc-float--c">🎨</span>
+      <span class="ddc-float ddc-float--d">🧁</span>
+    </div>
+
+    <div class="ddc-hero__inner">
+      <div class="ddc-hero__text">
+        <span class="ddc-hero__kicker">🎉 Dia das Crianças · 12 de outubro</span>
+        <h1 class="ddc-hero__title">
+          O brinquedo<br>
+          ele esquece.<br>
+          <span class="ddc-rainbow">O dia com você, nunca.</span>
+        </h1>
+        <p class="ddc-hero__sub">
+          Mãe, esse ano troque mais um brinquedo por uma <strong>tarde de mão na massa</strong>:
+          cozinhar, modelar, pintar, rir junto. Sem tela, sem bagunça em casa —
+          e com uma lembrança feita pelas mãozinhas dele.
+        </p>
+
+        <div class="ddc-countdown" id="ddc-countdown" aria-label="Contagem regressiva para o Dia das Crianças">
+          <span class="ddc-countdown__label">Faltam para o Dia das Crianças</span>
+          <div class="ddc-countdown__cells">
+            <span class="ddc-count-cell ddc-count-cell--pink"><span class="ddc-count-cell__num" id="ddc-cd-days">--</span><span class="ddc-count-cell__unit">dias</span></span>
+            <span class="ddc-count-cell ddc-count-cell--yellow"><span class="ddc-count-cell__num" id="ddc-cd-hours">--</span><span class="ddc-count-cell__unit">horas</span></span>
+            <span class="ddc-count-cell ddc-count-cell--blue"><span class="ddc-count-cell__num" id="ddc-cd-min">--</span><span class="ddc-count-cell__unit">min</span></span>
+            <span class="ddc-count-cell ddc-count-cell--green"><span class="ddc-count-cell__num" id="ddc-cd-sec">--</span><span class="ddc-count-cell__unit">seg</span></span>
+          </div>
+        </div>
+
+        <div class="ddc-hero__ctas">
+          <a href="#ddc-experiencias" class="ddc-btn ddc-btn--primary">
+            Ver experiências para os pequenos
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+          </a>
+          <a href="presentear.html?campaign=dia-das-criancas" class="ddc-btn ddc-btn--ghost">🎁 Dar vale-presente</a>
+        </div>
+      </div>
+
+      <!-- Colagem de fotos -->
+      <div class="ddc-collage" aria-hidden="true">
+        <div class="ddc-polaroid ddc-polaroid--1"><img src="assets/kids1.jpg" alt=""><span>cozinhando juntos</span></div>
+        <div class="ddc-polaroid ddc-polaroid--2"><img src="assets/kids4.jpg" alt=""><span>mão na massa!</span></div>
+        <div class="ddc-polaroid ddc-polaroid--3"><img src="assets/ceramicafamiliamais12.jpg" alt=""><span>cerâmica em família</span></div>
+        <div class="ddc-polaroid ddc-polaroid--4"><img src="assets/kids14.jpg" alt=""><span>muita risada</span></div>
+      </div>
+    </div>
+
+    <svg class="ddc-wave" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 C 240 90 480 0 720 40 S 1200 90 1440 40 V80 H0 Z" fill="currentColor"/></svg>
+  </section>
+
+  <!-- ========== FAIXA ROLANTE ========== -->
+  <div class="ddc-marquee" aria-hidden="true">
+    <div class="ddc-marquee__track">
+      <span>🍕 pizza</span><span>🧁 confeitaria</span><span>🏺 cerâmica</span><span>🎨 pintura</span><span>🍪 cookies</span><span>🌭 hot dog</span><span>🍣 sushi</span><span>🧼 sabonete</span>
+      <span>🍕 pizza</span><span>🧁 confeitaria</span><span>🏺 cerâmica</span><span>🎨 pintura</span><span>🍪 cookies</span><span>🌭 hot dog</span><span>🍣 sushi</span><span>🧼 sabonete</span>
+    </div>
+  </div>
+
+  <!-- ========== POR QUE ========== -->
+  <section class="ddc-why">
+    <div class="ddc-why__inner">
+      <span class="ddc-kicker">Pra você, mãe</span>
+      <h2 class="ddc-h2">Por que trocar o brinquedo por uma experiência?</h2>
+      <p class="ddc-lead">Porque daqui a dez anos ninguém lembra qual boneco ganhou. Mas lembra do dia em que fez pizza com a mãe.</p>
+      <div class="ddc-why__grid">
+        <article class="ddc-why-card ddc-why-card--pink">
+          <span class="ddc-why-card__icon" aria-hidden="true">📵</span>
+          <h3>Longe das telas</h3>
+          <p>Algumas horas em que o celular fica no bolso e a atenção fica toda em vocês.</p>
+        </article>
+        <article class="ddc-why-card ddc-why-card--yellow">
+          <span class="ddc-why-card__icon" aria-hidden="true">✋</span>
+          <h3>Mão na massa de verdade</h3>
+          <p>Cozinhar, modelar, criar. Criança que faz sozinha descobre que é capaz — e sai cheia de orgulho.</p>
+        </article>
+        <article class="ddc-why-card ddc-why-card--blue">
+          <span class="ddc-why-card__icon" aria-hidden="true">🧽</span>
+          <h3>Zero bagunça em casa</h3>
+          <p>Material, instrutor e limpeza são por nossa conta. Você só aparece e aproveita.</p>
+        </article>
+        <article class="ddc-why-card ddc-why-card--green">
+          <span class="ddc-why-card__icon" aria-hidden="true">💛</span>
+          <h3>Uma lembrança feita por ele</h3>
+          <p>Ele volta pra casa com algo que fez — e com uma história pra contar na escola na segunda.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== EXPERIÊNCIAS ========== -->
+  <section id="ddc-experiencias" class="ddc-experiences">
+    <div class="ddc-experiences__inner">
+      <header class="ddc-experiences__head">
+        <span class="ddc-kicker ddc-kicker--light">Vitrine Dia das Crianças</span>
+        <h2 class="ddc-h2">Experiências pra fazer com os pequenos</h2>
+        <p class="ddc-lead">
+          Separamos as vivências mais gostosas pra criança fazer — sozinha ou com você do lado.
+          Escolha pelo jeitinho dele e reserve.
+        </p>
+        <p class="ddc-experiences__count" id="ddc-count" aria-live="polite"></p>
+      </header>
+
+      <div class="ddc-chips" id="ddc-chips" role="tablist" aria-label="Filtrar por tipo de experiência"></div>
+
+      <div class="ddc-grid" id="ddc-grid">
+        <div class="ddc-loading" aria-hidden="true"><span></span><span></span><span></span></div>
+      </div>
+
+      <div class="ddc-empty" id="ddc-empty" style="display:none;">
+        <div class="ddc-empty__emoji" aria-hidden="true">🎈</div>
+        <h3>As experiências estão chegando!</h3>
+        <p>Estamos fechando as turmas do Dia das Crianças. Enquanto isso, você pode
+          <a href="presentear.html?campaign=dia-das-criancas">dar um vale-presente</a> pra ele escolher depois.</p>
+      </div>
+
+      <p class="ddc-tip">
+        💡 <strong>Dica:</strong> cada experiência informa na descrição a idade indicada e se o adulto participa junto.
+        Ficou na dúvida? <a href="https://wa.me/5511914455930?text=Oi!%20Tenho%20uma%20d%C3%BAvida%20sobre%20as%20experi%C3%AAncias%20de%20Dia%20das%20Crian%C3%A7as" target="_blank" rel="noopener">Chama a gente no WhatsApp</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ========== COMO FUNCIONA ========== -->
+  <section class="ddc-steps">
+    <div class="ddc-steps__inner">
+      <span class="ddc-kicker">Simples assim</span>
+      <h2 class="ddc-h2">Em 3 passos o presente está pronto</h2>
+      <ol class="ddc-steps__list">
+        <li class="ddc-step ddc-step--pink">
+          <span class="ddc-step__num">1</span>
+          <h3>Escolha a experiência</h3>
+          <p>Pizza, cookies, cerâmica… pelo que ele mais ama fazer.</p>
+        </li>
+        <li class="ddc-step ddc-step--yellow">
+          <span class="ddc-step__num">2</span>
+          <h3>Reserve a data</h3>
+          <p>Pagamento online, rapidinho. A confirmação chega no seu WhatsApp.</p>
+        </li>
+        <li class="ddc-step ddc-step--blue">
+          <span class="ddc-step__num">3</span>
+          <h3>Vivam juntos</h3>
+          <p>Leve a câmera: as fotos desse dia vão parar no álbum da família.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ========== VALE-PRESENTE ========== -->
+  <section class="ddc-gift">
+    <div class="ddc-gift__inner">
+      <div class="ddc-gift__card" aria-hidden="true">
+        <span class="ddc-gift__card-logo">Elarah</span>
+        <span class="ddc-gift__card-title">Vale-experiência</span>
+        <span class="ddc-gift__card-sub">Dia das Crianças 🎈</span>
+      </div>
+      <div class="ddc-gift__text">
+        <h2 class="ddc-h2">Ainda não sabe a data? Dê um vale-presente.</h2>
+        <p>Entregue no dia 12 um cartão bonito e deixe a escolha da experiência pra depois — ou pra ele mesmo escolher.
+          Perfeito também pra madrinhas, avós e tias.</p>
+        <a href="presentear.html?campaign=dia-das-criancas" class="ddc-btn ddc-btn--primary">🎁 Montar vale-presente</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== FAQ ========== -->
+  <section class="ddc-faq">
+    <div class="ddc-faq__inner">
+      <span class="ddc-kicker">Dúvidas de mãe</span>
+      <h2 class="ddc-h2">Perguntas frequentes</h2>
+      <details class="ddc-faq__item">
+        <summary>A partir de que idade a criança pode participar?</summary>
+        <p>Depende da experiência — cada uma traz a idade indicada na descrição. Algumas são só pra criança, outras são pra fazer em família.</p>
+      </details>
+      <details class="ddc-faq__item">
+        <summary>Eu preciso ficar junto?</summary>
+        <p>Nas experiências em família, sim — a graça é fazer junto! Nas exclusivas pra crianças, a descrição explica se o responsável acompanha ou espera no local.</p>
+      </details>
+      <details class="ddc-faq__item">
+        <summary>Posso comprar pra irmãos ou amiguinhos?</summary>
+        <p>Pode! Na hora da reserva é só escolher a quantidade de vagas. Pra turmas maiores ou festinhas, fale com a gente no WhatsApp.</p>
+      </details>
+      <details class="ddc-faq__item">
+        <summary>E se a criança ficar doente no dia?</summary>
+        <p>Cada experiência tem seu prazo de cancelamento com reembolso, informado na página dela. Veja também a nossa <a href="cancelamento.html">política de cancelamento</a>.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ========== FECHAMENTO ========== -->
+  <section class="ddc-closer">
+    <div class="ddc-closer__inner">
+      <p class="ddc-closer__quote">“Infância boa<br>se mede em <span class="ddc-rainbow">memórias</span>.”</p>
+      <p class="ddc-closer__lead">Neste 12 de outubro, dê a ele um dia que vale mais que qualquer pacote.</p>
+      <div class="ddc-hero__ctas ddc-hero__ctas--center">
+        <a href="#ddc-experiencias" class="ddc-btn ddc-btn--primary">Escolher experiência</a>
+        <a href="presentear.html?campaign=dia-das-criancas" class="ddc-btn ddc-btn--white">Dar vale-presente</a>
+      </div>
+      <p class="ddc-closer__fine">Vagas limitadas · Turmas pequenas · Curadoria Elarah</p>
+    </div>
+  </section>
+
+<!-- ========== FOOTER ========== -->
+<footer class="footer">
+  <div class="footer__inner">
+    <div class="footer__brand">
+      <a href="/" class="footer__logo">
+        <img loading="lazy" decoding="async" src="assets/logo.png" alt="Elarah" class="footer__logo-img">
+      </a>
+      <p class="footer__tagline">Offline is a feeling.</p>
+
+      <div class="footer__socials">
+        <a href="https://www.instagram.com/elarah.oficial?igsh=NWV5NHVycXQ3a2dt&utm_source=qr" target="_blank" aria-label="Instagram">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M7 2C4.2 2 2 4.2 2 7v10c0 2.8 2.2 5 5 5h10c2.8 0 5-2.2 5-5V7c0-2.8-2.2-5-5-5H7zm10 2c1.7 0 3 1.3 3 3v10c0 1.7-1.3 3-3 3H7c-1.7 0-3-1.3-3-3V7c0-1.7 1.3-3 3-3h10zm-5 3.8A5.2 5.2 0 1 0 17.2 13 5.2 5.2 0 0 0 12 7.8zm0 8.4a3.2 3.2 0 1 1 3.2-3.2 3.2 3.2 0 0 1-3.2 3.2zm5.5-8.9a1.2 1.2 0 1 0-1.2-1.2 1.2 1.2 0 0 0 1.2 1.2z"/></svg>
+        </a>
+        <a href="https://wa.me/5511914455930" target="_blank" aria-label="WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M20 3.9A10 10 0 0 0 4.3 16.1L3 21l5-1.3A10 10 0 1 0 20 3.9zm-8 16.3a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1s-.6.8-.8 1c-.1.1-.3.2-.5.1a6.7 6.7 0 0 1-2-1.2 7.3 7.3 0 0 1-1.4-1.8c-.1-.2 0-.4.1-.5l.4-.5.2-.4a.5.5 0 0 0 0-.5c-.1-.1-.6-1.3-.8-1.7-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.3 2.3 0 0 0-.7 1.7 4 4 0 0 0 .8 2.1 9.3 9.3 0 0 0 3.6 3.3c1.9.8 1.9.5 2.3.5a2 2 0 0 0 1.4-1 1.8 1.8 0 0 0 .1-1c-.1-.1-.3-.2-.5-.3z"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@elarah.oficial" target="_blank" aria-label="TikTok">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M19.6 6.7a5.8 5.8 0 0 1-3.4-1.1V14a5 5 0 1 1-5-5h.4v2.5h-.4a2.5 2.5 0 1 0 2.5 2.5V2h2.5a3.3 3.3 0 0 0 3.4 3.2z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/company/elarah/" target="_blank" aria-label="LinkedIn">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M4.98 3.5A2.48 2.48 0 1 0 7.46 6 2.48 2.48 0 0 0 4.98 3.5zM3 8h4v13H3zm7 0h3.8v1.8h.1A4.2 4.2 0 0 1 17.7 8c4 0 4.7 2.6 4.7 6V21h-4v-6.2c0-1.5 0-3.3-2-3.3s-2.3 1.6-2.3 3.2V21h-4z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="footer__column">
+      <h4>Explorar</h4>
+      <a href="categoria.html?cat=Bartenderia">Bartenderia</a>
+      <a href="categoria.html?cat=Cerâmica">Cerâmica</a>
+      <a href="categoria.html?cat=Floral">Floral</a>
+      <a href="categoria.html?cat=Gastronomia">Gastronomia</a>
+      <a href="categoria.html?cat=Macramê">Macramê</a>
+      <a href="categoria.html?cat=Pintura">Pintura</a>
+      <a href="categoria.html?cat=Sabonete">Sabonete</a>
+      <a href="categoria.html?cat=Tufting%20%26%20Punch">Tufting &amp; Punch</a>
+      <a href="categoria.html?cat=Vela">Vela</a>
+    </div>
+
+    <div class="footer__column">
+      <h4>Elarah</h4>
+      <a href="/sobre.html">Sobre nós</a>
+      <a href="/como-funciona.html">Como funciona</a>
+      <a href="/oferecer.html">Ofereça experiências</a>
+      <p>Contato | +55 11 91445-5930</p>
+      <p>contato.elarah@gmail.com</p>
+    </div>
+
+    <div class="footer__column">
+      <h4>Informações</h4>
+      <a href="/termos.html">Termos de uso</a>
+      <a href="/privacidade.html">Política de privacidade</a>
+      <a href="/cancelamento.html">Política de cancelamento</a>
+      <a href="/seguranca.html">Segurança</a>
+    </div>
+  </div>
+
+  <div class="footer__bottom">
+    <p>© 2026 Elarah. Todos os direitos reservados.</p>
+  </div>
+</footer>
+
+<script src="promo.js?v=10"></script>
+<script src="supabase-loader.js?v=11"></script>
+<script src="supabase-client.js?v=12"></script>
+<script src="explorar-menu.js?v=2" defer></script>
+<script src="phone-input.js?v=1"></script>
+<script src="password-toggle.js?v=1"></script>
+<script src="auth.js?v=15"></script>
+<script src="experiences-data.js?v=45"></script>
+<script src="analytics.js?v=3"></script>
+<script src="header-nav.js?v=1" defer></script>
+<script src="dia-das-criancas.js?v=2"></script>
+</body>
+</html>
