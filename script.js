@@ -2789,6 +2789,7 @@ if (groupForm) {
         +     '<input id="erm-cpf" type="text" inputmode="numeric" autocomplete="off" placeholder="000.000.000-00" style="width:100%;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.95rem;margin-bottom:4px;box-sizing:border-box;">'
         +     '<p id="erm-cpf-msg" style="margin:0 0 14px;font-size:.78rem;color:#888;min-height:1em;">Exigido pelo Mercado Pago pra gerar o PIX.</p>'
         +   '</div>'
+        +   '<div id="erm-credito" style="display:none;margin:0 0 12px;padding:12px 14px;background:#fff8ef;border:1px solid #f0ddc8;border-radius:12px;"></div>'
         +   '<label style="display:block;font-size:.85rem;color:#333;margin-bottom:6px;">Cupom / Gift Card (opcional)</label>'
         +   '<div style="display:flex;gap:8px;">'
         +     '<input id="erm-cupom" type="text" placeholder="ELRH-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;padding:11px 12px;border:1px solid #ddd;border-radius:10px;font-size:.92rem;text-transform:uppercase;">'
@@ -5020,6 +5021,9 @@ if (groupForm) {
       // Bind buttons (uma vez por abertura, com remoção do antigo)
       const validateBtn = root.querySelector('#erm-validate');
       validateBtn.onclick = function () { handleValidateCupom(); };
+      // Crédito Elarah da cliente logada: botão "Usar meu crédito" que
+      // aplica o código sozinho (ela não precisa ter anotado).
+      carregarCreditosDaConta(root);
       confirmBtn.onclick = function () { handleConfirmReservation(); };
 
       // ===== Binds dos botões de método de pagamento =====
@@ -5057,6 +5061,74 @@ if (groupForm) {
         telefoneInput.onkeydown = function (e) {
           if (e.key === 'Enter') { e.preventDefault(); handleConfirmReservation(); }
         };
+      }
+    }
+
+    // ===== Créditos da cliente logada =====
+    // Experiência guardada (metadata.aguardando_credito) e sobra de crédito
+    // (metadata.credito_sobra) ficam nas reservas dela — RLS deixa ler só
+    // as próprias. Some o que já foi usado (outra reserva paga com o mesmo
+    // cupom), desativado ou vencido. O servidor revalida tudo no checkout.
+    async function carregarCreditosDaConta(root) {
+      const box = root && root.querySelector('#erm-credito');
+      if (!box) return;
+      box.style.display = 'none';
+      box.innerHTML = '';
+      const sb = window.supabaseClient;
+      if (!sb || !sb.auth) return;
+      try {
+        const sess = await sb.auth.getSession();
+        const user = sess && sess.data && sess.data.session && sess.data.session.user;
+        if (!user) return;
+        const { data, error } = await sb.from('bookings')
+          .select('id, status, aguardando_experiencia, coupon_id, metadata')
+          .order('created_at', { ascending: false })
+          .limit(200);
+        if (error || !Array.isArray(data)) return;
+        const usados = new Set(data
+          .filter(function (b) { return b.status === 'pago' && b.coupon_id; })
+          .map(function (b) { return String(b.coupon_id); }));
+        const agora = Date.now();
+        const creditos = [];
+        const vistos = new Set();
+        data.forEach(function (b) {
+          const m = (b.metadata && typeof b.metadata === 'object') ? b.metadata : {};
+          const candidatos = [m.credito_sobra];
+          if (b.status === 'pago' && b.aguardando_experiencia === true) candidatos.push(m.aguardando_credito);
+          candidatos.forEach(function (c) {
+            if (!c || typeof c !== 'object' || !c.codigo || c.cancelado_at || c.usado) return;
+            if (c.coupon_id && usados.has(String(c.coupon_id))) return;
+            if (c.valido_ate && new Date(c.valido_ate).getTime() < agora) return;
+            const valor = Number(c.valor_centavos) || 0;
+            const codigo = String(c.codigo).toUpperCase();
+            if (valor <= 0 || vistos.has(codigo)) return;
+            vistos.add(codigo);
+            creditos.push({ codigo: codigo, valor: valor });
+          });
+        });
+        if (!creditos.length || !box.isConnected) return;
+        creditos.sort(function (a, b) { return b.valor - a.valor; });
+
+        const titulo = document.createElement('p');
+        titulo.style.cssText = 'margin:0 0 8px;font-size:.88rem;color:#4a3f35;';
+        titulo.textContent = '🎟 Você tem crédito na Elarah pra usar nesta reserva:';
+        box.appendChild(titulo);
+        creditos.forEach(function (c) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.style.cssText = 'display:block;width:100%;margin-top:6px;padding:11px 12px;border:none;border-radius:10px;background:#b56a15;color:#fff;font-weight:700;font-size:.9rem;cursor:pointer;';
+          btn.textContent = 'Usar meu crédito de ' + brl(c.valor);
+          btn.onclick = function () {
+            const input = root.querySelector('#erm-cupom');
+            if (!input) return;
+            input.value = c.codigo;
+            handleValidateCupom();
+          };
+          box.appendChild(btn);
+        });
+        box.style.display = 'block';
+      } catch (e) {
+        console.warn('[Elarah checkout] não consegui carregar os créditos da conta', e);
       }
     }
 
