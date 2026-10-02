@@ -208,7 +208,6 @@ cover = f'''
       </div>
       <div class="cover-photo">{img("vela-grupo-oficina.jpg", "Mulheres reunidas à mesa criando velas aromáticas", "center 40%")}</div>
     </div>
-    <div class="pfproof pffoot"><span class="star">★</span><p>Aguardamos a <b>definição do espaço</b> para alinharmos os detalhes finais da experiência.</p></div>
     {foot("Encontro de Mulheres · 31.10")}
   </section>'''
 
@@ -243,18 +242,21 @@ atmosfera = f'''
     {foot("A atmosfera")}
   </section>'''
 
-# ===== 4 · DUAS FORMAS DE VIVER A EXPERIÊNCIA =====
+# ===== 4+5 · DUAS FORMAS + INVESTIMENTO (unificado) =====
 duasformas = f'''
   <section class="slide">
-{head_simple("Duas opções")}
+{head_simple("Experiências & investimento")}
     <span class="eyebrow orange">◆ Duas formas de viver a experiência</span>
     <h2>Escolham o <em>clima do encontro</em></h2>
+    <p class="invsub">60 mulheres · 2 turmas privativas de 30 participantes</p>
     <div class="cmp">
-      <div class="cmpc">
+      <div class="cmpc hl">
         <div class="cph">{img("vela-lavanda.jpg", "Vela aromática artesanal em recipiente de vidro, com lavanda", "center 60%")}</div>
         <div class="cbd">
           <div class="nm">Vela Aromática</div>
+          <span class="sg">Nossa sugestão</span>
           <p class="ds">Clássica, delicada e sensorial. Cada participante cria a <b>sua própria vela artesanal</b>.</p>
+          <div class="pr">A partir de <b>R$ 239</b> / pessoa<span>60 participantes · R$ 14.340</span></div>
         </div>
       </div>
       <div class="cmpc">
@@ -262,36 +264,12 @@ duasformas = f'''
         <div class="cbd">
           <div class="nm">Vela Aromática Decorada</div>
           <p class="ds">Mais visual e personalizada, com <b>detalhes decorativos em cera</b>.</p>
+          <div class="pr">A partir de <b>R$ 269</b> / pessoa<span>60 participantes · R$ 16.140</span></div>
         </div>
       </div>
     </div>
-    {foot("Duas opções")}
-  </section>'''
-
-# ===== 5 · INVESTIMENTO =====
-investimento = f'''
-  <section class="slide">
-{head_simple("Investimento")}
-    <span class="eyebrow orange">◆ Investimento</span>
-    <h2>O investimento para <em>esse encontro</em></h2>
-    <p class="invsub">60 mulheres · 2 turmas privativas de 30 participantes</p>
-    <div class="invcards">
-      <div class="invcard hl">
-        <span class="sg">Nossa sugestão</span>
-        <div class="nm">Vela Aromática</div>
-        <div class="big">R$ 239</div>
-        <div class="per">a partir de · por pessoa</div>
-        <div class="tot">Para 60 participantes · <b>R$ 14.340</b></div>
-      </div>
-      <div class="invcard">
-        <div class="nm">Vela Aromática Decorada</div>
-        <div class="big">R$ 269</div>
-        <div class="per">a partir de · por pessoa</div>
-        <div class="tot">Para 60 participantes · <b>R$ 16.140</b></div>
-      </div>
-    </div>
-    <p class="invobs">Valores por pessoa, a partir de · duas turmas de 30 no mesmo dia · local a definir. ☕ Coffee break <b>opcional</b> e contratado à parte — veja as opções a seguir.</p>
-    {foot("Investimento")}
+    <p class="cmpnote"><b>2 turmas privativas de 30</b> no mesmo dia · local a definir · ☕ coffee break opcional à parte (a seguir).</p>
+    {foot("Experiências & investimento")}
   </section>'''
 
 # ===== 6 · COFFEE BREAK (opcional) =====
@@ -345,8 +323,8 @@ final = f'''
       <div class="ftx">
         <p class="lead">Mais do que uma oficina, queremos preparar um encontro <strong>gostoso, leve e especial</strong> para essas 60 mulheres. Vamos adorar viver esse momento com vocês.</p>
         <div class="ctabox">
-          <p class="t">Vocês escolhem a experiência.</p>
-          <p class="el">Nós cuidamos do restante</p>
+          <p class="t">Vamos fechar? <em>✦</em></p>
+          <p class="el">Vocês escolhem · nós cuidamos do restante</p>
           <p class="contact">WhatsApp <b>+55 (11) 91445-5930</b> · @elarah.oficial · elarah.com.br</p>
         </div>
       </div>
@@ -354,7 +332,7 @@ final = f'''
     {foot("Para fechar")}
   </section>'''
 
-deck = ('<div class="deck">\n' + cover + vela + atmosfera + duasformas + investimento
+deck = ('<div class="deck">\n' + cover + vela + atmosfera + duasformas
         + coffee + proximos + final + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-encontro-mulheres.html"
@@ -369,7 +347,8 @@ for proib in ["fornecedor", "20%", "R$ 29", "R$ 72", "R$ 91", "comiss"]:
 assert "Tudo preparado para viver" not in deck
 assert deck.count("Wax Melts") == 0
 assert "experiência completa" not in deck.lower() and "Como funciona" not in deck
-assert "O investimento para" in deck, "falta slide de investimento"
+assert "Experiências &amp; investimento" in deck or "Duas formas" in deck, "falta slide de experiências/investimento"
 assert "Próximos passos" in deck and "Daqui pra frente" in deck, "falta slide de próximos passos"
-assert html.count('<section class="slide">') == 8, "esperado 8 slides"
+assert html.count('<section class="slide">') == 7, "esperado 7 slides"
+assert "Vamos fechar" in deck, "falta CTA Vamos fechar no fechamento"
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
