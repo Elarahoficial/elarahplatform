@@ -369,10 +369,43 @@
       if (active === '@familia') return isFamily(e);
       return grupo(e) === active;
     }
+    let expanded = false;
+    const moreWrap = document.createElement('div');
+    moreWrap.className = 'ddc-more';
+    const moreBtn = document.createElement('button');
+    moreBtn.type = 'button';
+    moreBtn.className = 'ddc-btn ddc-btn--primary ddc-more__btn';
+    moreWrap.appendChild(moreBtn);
+    grid.insertAdjacentElement('afterend', moreWrap);
+    moreBtn.addEventListener('click', function () {
+      expanded = !expanded;
+      render();
+      if (!expanded) {
+        const vit = document.getElementById('ddc-experiencias');
+        if (vit) vit.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+
     function render() {
       grid.innerHTML = '';
       const shown = list.filter(matches);
-      shown.forEach(function (e, i) { grid.appendChild(createCard(e, i)); });
+      // Mostra só as primeiras (2 fileiras no computador, 4 cards no
+      // celular) + botão "Ver todas" — senão ninguém chega no fim da página.
+      const limit = window.matchMedia('(max-width: 640px)').matches ? 4 : 8;
+      const visible = expanded ? shown : shown.slice(0, limit);
+      visible.forEach(function (e, i) { grid.appendChild(createCard(e, i)); });
+      if (moreWrap) {
+        const hidden = shown.length - visible.length;
+        if (!expanded && hidden > 0) {
+          moreWrap.style.display = '';
+          moreBtn.textContent = '👀 Ver todas as ' + shown.length + ' experiências';
+        } else if (expanded && shown.length > limit) {
+          moreWrap.style.display = '';
+          moreBtn.textContent = '⬆ Mostrar menos';
+        } else {
+          moreWrap.style.display = 'none';
+        }
+      }
       if (!shown.length) {
         const none = document.createElement('p');
         none.className = 'ddc-none';
@@ -401,6 +434,7 @@
         b.textContent = f.label;
         b.addEventListener('click', function () {
           active = f.key;
+          expanded = false;
           render();
         });
         container.appendChild(b);
