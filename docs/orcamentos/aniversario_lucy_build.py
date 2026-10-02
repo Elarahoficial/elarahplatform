@@ -26,16 +26,20 @@ extra = '''
   /* note band */
   .noteband{margin-top:22px;background:#EBF1F4;border-left:4px solid var(--orange);border-radius:12px;padding:16px 22px;font-size:12.5px;color:var(--navy-soft);line-height:1.55}
   .noteband b{color:var(--navy);font-weight:700}
-  /* mosaico atmosfera/experiencia (vibestrip) */
-  .vibestrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-top:24px;width:100%}
-  .vibestrip figure{margin:0;border-radius:16px;overflow:hidden;position:relative;height:300px;box-shadow:0 14px 34px -24px rgba(0,0,0,.4)}
-  .vibestrip img{width:100%;height:100%;object-fit:cover;display:block}
-  .vibestrip figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 14px 14px;color:#fff;font-family:'DM Serif Display',serif;font-size:15px;line-height:1.18;background:linear-gradient(to top,rgba(46,31,42,.92),transparent)}
-  /* highlights (chips grandes) */
-  .hlrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:20px;width:100%}
-  .hlc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 12px 28px -24px rgba(0,0,0,.3);text-align:center}
-  .hlc .ic{font-size:20px}
-  .hlc .tx{margin-top:6px;font-size:11.5px;font-weight:700;color:var(--navy);line-height:1.25}
+  /* a experiencia (editorial: hero vertical + lista de destaques com thumb) */
+  .expwrap{display:grid;grid-template-columns:1.08fr .92fr;gap:34px;margin-top:24px;width:100%;align-items:stretch}
+  .exphero{border-radius:22px;overflow:hidden;position:relative;border:1px solid var(--line);box-shadow:0 24px 54px -28px rgba(0,0,0,.46);min-height:560px}
+  .exphero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .exphero .cap{position:absolute;left:0;right:0;bottom:0;padding:60px 22px 22px;background:linear-gradient(to top,rgba(46,31,42,.9),transparent)}
+  .exphero .cap .k{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.82);font-weight:700}
+  .exphero .cap .t{margin-top:5px;color:#fff;font-family:'DM Serif Display',serif;font-size:22px;line-height:1.15}
+  .explist{display:flex;flex-direction:column;gap:14px;justify-content:center}
+  .expc{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 16px 12px 12px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
+  .expc .th{width:96px;height:96px;border-radius:12px;overflow:hidden;position:relative;flex:none}
+  .expc .th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .expc .th .no{position:absolute;left:8px;top:6px;font-family:'DM Serif Display',serif;font-size:15px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+  .expc .bd .t{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);line-height:1.1}
+  .expc .bd .d{margin-top:5px;font-size:11.5px;color:var(--muted);line-height:1.45}
   /* workshops (4 cards, 2 por linha, com foto) */
   .wkg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:22px;width:100%;align-items:stretch}
   .wkc{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);display:flex;flex-direction:column;min-width:0}
@@ -146,24 +150,28 @@ cover = f'''
     {foot("Aniversário · Lucy Andrade")}
   </section>'''
 
-# ===== 2 · A EXPERIÊNCIA =====
+# ===== 2 · A EXPERIÊNCIA (novo layout: hero editorial + lista de destaques) =====
+def expc(no, src, titulo, desc, pos="center 50%"):
+    return (f'<div class="expc"><div class="th">{img(src, titulo, pos)}<span class="no">{no}</span></div>'
+            f'<div class="bd"><div class="t">{titulo}</div><div class="d">{desc}</div></div></div>')
+
+
 experiencia = f'''
   <section class="slide">
 {head_simple("A experiência")}
     <span class="eyebrow orange">◆ A experiência</span>
     <h2>Mais do que drinks, uma experiência <em>para viver juntos</em></h2>
-    <p class="lead">Todo mundo coloca a mão na massa, prova, descobre e brinda. Um encontro pensado para <strong>aproximar as pessoas</strong> em volta de boas doses e boa conversa.</p>
-    <div class="vibestrip">
-      {vfig("shoyu-grupo-brinde.jpg", "Mão na massa", "center 40%")}
-      {vfig("andre-preparo.jpg", "Preparar junto", "center 45%")}
-      {vfig("drinks-degustacao.jpg", "Degustar e descobrir", "center 50%")}
-      {vfig("andre-mesa-drinks.jpg", "Brindar e celebrar", "center 45%")}
-    </div>
-    <div class="hlrow">
-      <div class="hlc"><div class="ic">🙌</div><div class="tx">Mão na massa</div></div>
-      <div class="hlc"><div class="ic">🍸</div><div class="tx">Degustação guiada</div></div>
-      <div class="hlc"><div class="ic">🧀</div><div class="tx">Drinks + petiscos</div></div>
-      <div class="hlc"><div class="ic">🥂</div><div class="tx">Experiência compartilhada</div></div>
+    <p class="lead">Todo mundo coloca a mão na massa, prova, descobre e brinda — um encontro pensado para <strong>aproximar as pessoas</strong> em volta de boas doses e boa conversa.</p>
+    <div class="expwrap">
+      <div class="exphero">{img("shoyu-grupo-brinde.jpg", "Amigas preparando drinks e brindando juntas", "center 42%")}
+        <div class="cap"><div class="k">Entre amigos</div><div class="t">Preparar, provar<br>e brindar juntos</div></div>
+      </div>
+      <div class="explist">
+        {expc("01", "andre-preparo.jpg", "Mão na massa", "Cada um assume o shaker e prepara o próprio drink.", "center 45%")}
+        {expc("02", "drinks-degustacao.jpg", "Degustação guiada", "Um especialista conduz os sabores e as combinações.", "center 50%")}
+        {expc("03", "drinkspetisco.jpg", "Drinks + petiscos", "Coquetéis que ganham o acompanhamento perfeito.", "center 55%")}
+        {expc("04", "andre-mesa-drinks.jpg", "Experiência compartilhada", "Tudo pensado para aproximar e render boas histórias.", "center 45%")}
+      </div>
     </div>
     {foot("A experiência")}
   </section>'''
