@@ -22,19 +22,14 @@ extra = '''
   .pftitle .big{font-size:17px;font-weight:800;color:var(--navy);letter-spacing:.01em;margin-top:2px}
   .pftitle .big em{font-style:normal;color:var(--orange)}
   .pftitle .sub{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:2px}
-  /* slide 2 — a experiencia (hero editorial + lista) */
-  .expwrap{display:grid;grid-template-columns:1.02fr .98fr;gap:34px;margin-top:24px;width:100%;align-items:stretch}
-  .exphero{border-radius:22px;overflow:hidden;position:relative;border:1px solid var(--line);box-shadow:0 24px 54px -28px rgba(0,0,0,.42);min-height:540px}
-  .exphero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .exphero .cap{position:absolute;left:0;right:0;bottom:0;padding:62px 22px 22px;background:linear-gradient(to top,rgba(46,31,42,.88),transparent)}
-  .exphero .cap .k{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.82);font-weight:700}
-  .exphero .cap .t{margin-top:5px;color:#fff;font-family:'DM Serif Display',serif;font-size:22px;line-height:1.15}
-  .explist{display:flex;flex-direction:column;gap:14px;justify-content:center}
-  .expc{display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 16px 12px 12px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
-  .expc .th{width:96px;height:96px;border-radius:12px;overflow:hidden;position:relative;flex:none}
-  .expc .th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .expc .bd .t{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.12}
-  .expc .bd .d{margin-top:5px;font-size:11.5px;color:var(--muted);line-height:1.45}
+  /* slide 2 — a experiencia (2x2 cards editoriais) */
+  .expgrid2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;width:100%}
+  .ec{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 38px -26px rgba(0,0,0,.32);min-width:0}
+  .ec .ph{height:184px;position:relative;overflow:hidden}
+  .ec .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .ec .bd{padding:17px 20px 19px}
+  .ec h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:19px;color:var(--navy);margin:0 0 6px;line-height:1.12}
+  .ec p{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
   /* slide 3 — trio desacelerar/criar/conectar */
   .trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:24px;width:100%}
   .tcard{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 16px 38px -26px rgba(0,0,0,.32);min-width:0}
@@ -68,12 +63,10 @@ extra = '''
   .incl .i{display:flex;align-items:flex-start;gap:10px;font-size:12.5px;color:var(--navy-soft);line-height:1.35}
   .incl .i::before{content:"✓";color:var(--orange);font-weight:800;flex:none;margin-top:1px}
   .invsmall{margin-top:16px;font-size:11px;color:var(--muted);font-style:italic;line-height:1.5}
-  /* slide 6 — primeiro encontro de muitos */
-  .finwrap{display:grid;grid-template-columns:1fr 1.02fr;gap:36px;margin-top:20px;align-items:center}
-  .finwrap .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 22px 52px -28px rgba(0,0,0,.45);height:430px;position:relative}
-  .finwrap .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .finwrap p.lead{margin-top:0}
-  .bigquote{margin-top:16px;font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy);line-height:1.22}
+  /* slide 6 — primeiro encontro de muitos (fecho emocional) */
+  .closer{max-width:62ch;margin-top:22px}
+  .closer p.lead{margin-top:0}
+  .bigquote{margin-top:18px;font-family:'DM Serif Display',serif;font-size:30px;color:var(--navy);line-height:1.2;max-width:22ch}
   .bigquote em{font-style:italic;color:var(--orange)}
   .ctabox{margin-top:18px;background:#EBF1F4;border-left:4px solid var(--orange);border-radius:14px;padding:20px 24px}
   .ctabox .t{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);margin:0 0 6px;line-height:1.25}
@@ -99,9 +92,9 @@ def head_simple(kicker):
     </div>'''
 
 
-def expc(src, titulo, desc, pos="center 50%"):
-    return (f'<div class="expc"><div class="th">{img(src, titulo, pos)}</div>'
-            f'<div class="bd"><div class="t">{titulo}</div><div class="d">{desc}</div></div></div>')
+def ec(src, titulo, desc, pos="center 50%"):
+    return (f'<div class="ec"><div class="ph">{img(src, titulo, pos)}</div>'
+            f'<div class="bd"><h3>{titulo}</h3><p>{desc}</p></div></div>')
 
 
 def tcard(src, titulo, desc, pos="center 50%"):
@@ -131,7 +124,7 @@ cover = f'''
           <span class="chip">data a definir</span>
         </div>
       </div>
-      <div class="cover-photo">{img("foldingbook-maos.jpg", "Mãos segurando uma escultura de livro criada à mão", "center 45%")}</div>
+      <div class="cover-photo">{img("foldingbook-encontro.jpg", "Mulheres rindo e criando esculturas de livro juntas", "center 30%")}</div>
     </div>
     {foot("Folding Book · Campinas")}
   </section>'''
@@ -143,16 +136,11 @@ experiencia = f'''
     <span class="eyebrow orange">◆ A experiência</span>
     <h2>Páginas que ganham <em>uma nova forma</em></h2>
     <p class="lead">Cada participante transforma um livro em uma <strong>escultura tridimensional</strong> pela técnica do Folding Book — dobra a dobra, as páginas ganham volume, textura e forma.</p>
-    <div class="expwrap">
-      <div class="exphero">{img("foldingbook2.jpg", "Escultura de livro dobrado, peça autoral finalizada", "center 45%")}
-        <div class="cap"><div class="k">Feito à mão</div><div class="t">Uma peça única<br>para levar para casa</div></div>
-      </div>
-      <div class="explist">
-        {expc("foldingbook-grupo.jpg", "Sem experiência prévia", "Nenhum conhecimento é necessário — a técnica é ensinada do zero.", "center 40%")}
-        {expc("foldingbook-artista.jpg", "Acompanhamento da artista", "A artista conduz cada passo, da preparação à finalização da peça.", "center 38%")}
-        {expc("foldingbook3.jpg", "Processo manual e contemplativo", "Horas de presença, mãos ocupadas e mente tranquila.", "center 50%")}
-        {expc("foldingbook.jpg", "Uma peça para levar", "Cada participante leva para casa a escultura que criou.", "center 50%")}
-      </div>
+    <div class="expgrid2">
+      {ec("foldingbook-concentrada.jpg", "Sem experiência prévia", "Nenhum conhecimento é necessário — a técnica é ensinada do zero.", "center 40%")}
+      {ec("foldingbook-artista.jpg", "Acompanhamento da artista", "A artista conduz cada passo, da preparação à finalização da peça.", "center 35%")}
+      {ec("foldingbook-maos.jpg", "Processo manual e contemplativo", "Horas de presença, mãos ocupadas e mente tranquila.", "center 45%")}
+      {ec("foldingbook2.jpg", "Uma peça para levar", "Cada participante leva para casa a escultura que criou.", "center 45%")}
     </div>
     {foot("A experiência")}
   </section>'''
@@ -165,7 +153,7 @@ combina = f'''
     <h2>Criar também pode ser uma forma de <em>pausa</em></h2>
     <p class="lead">Durante algumas horas, o grupo desacelera, trabalha com as mãos e acompanha <strong>páginas comuns se transformarem</strong> em uma peça completamente nova.</p>
     <div class="trio">
-      {tcard("foldingbook-maos.jpg", "Desacelerar", "Um tempo só seu, longe da pressa, para estar inteira no presente.", "center 45%")}
+      {tcard("foldingbook3.jpg", "Desacelerar", "Um tempo só seu, longe da pressa, para estar inteira no presente.", "center 50%")}
       {tcard("foldingbook-dobra.jpg", "Criar", "Mãos ocupadas, mente leve: a arte como pausa e expressão.", "center 50%")}
       {tcard("foldingbook-grupo.jpg", "Conectar", "Um encontro feminino para criar e compartilhar lado a lado.", "center 40%")}
     </div>
@@ -179,7 +167,7 @@ comofunciona = f'''
     <span class="eyebrow orange">◆ Como funciona</span>
     <h2>Tudo pensado para o <em>grupo criar junto</em></h2>
     <div class="cfwrap">
-      <div class="ph">{img("foldingbook-grupo.jpg", "Grupo de mulheres em workshop de Folding Book", "center 45%")}</div>
+      <div class="ph">{img("foldingbook.jpg", "Esculturas de livro criadas na experiência de Folding Book", "center 50%")}</div>
       <div class="cflist">
         {cfi("Grupo de <b>até 20 participantes</b>")}
         {cfi("Experiência conduzida pela <b>artista</b>")}
@@ -230,15 +218,12 @@ final = f'''
 {head_simple("Um primeiro encontro de muitos")}
     <span class="eyebrow orange">◆ Um primeiro encontro de muitos</span>
     <h2>Este pode ser apenas <em>o começo</em></h2>
-    <div class="finwrap">
-      <div class="ph">{img("foldingbook-dobra.jpg", "Mãos criando juntas durante a oficina de Folding Book", "center 45%")}</div>
-      <div>
-        <p class="lead">A Elarah pode acompanhar os próximos encontros do seu projeto com <strong>novas experiências criativas</strong>, construindo formatos diferentes ao longo do calendário e de acordo com cada momento.</p>
-        <p class="bigquote">Um encontro delicado — <em>o primeiro de muitos.</em></p>
-        <div class="ctabox">
-          <p class="t">Quando a data e o espaço estiverem definidos, <em>seguimos juntos</em></p>
-          <p class="contact">Cuidamos dos próximos detalhes e deixamos toda a experiência pronta para vocês.<br>WhatsApp <b>+55 (11) 91445-5930</b> · @elarah.oficial · elarah.com.br</p>
-        </div>
+    <div class="closer">
+      <p class="lead">A Elarah pode acompanhar os próximos encontros do seu projeto com <strong>novas experiências criativas</strong>, construindo formatos diferentes ao longo do calendário e de acordo com cada momento.</p>
+      <p class="bigquote">Um encontro delicado — <em>o primeiro de muitos.</em></p>
+      <div class="ctabox">
+        <p class="t">Quando a data e o espaço estiverem definidos, <em>seguimos juntos</em></p>
+        <p class="contact">Cuidamos dos próximos detalhes e deixamos toda a experiência pronta para vocês.<br>WhatsApp <b>+55 (11) 91445-5930</b> · @elarah.oficial · elarah.com.br</p>
       </div>
     </div>
     {foot("Folding Book · Campinas")}
@@ -260,6 +245,12 @@ assert "A definir" not in deck, "investimento agora tem valores confirmados"
 assert "Deslocamento da profissional até Campinas" in deck, "falta item de deslocamento"
 assert "Folding Book" in deck
 assert "Páginas que ganham" in deck
+# NENHUMA foto pode se repetir no deck
+srcs = re.findall(r'src="assets/([^"]+)"', deck)
+srcs = [s for s in srcs if s != "logo.png"]
+dups = {s for s in srcs if srcs.count(s) > 1}
+assert not dups, f"FOTOS REPETIDAS: {dups}"
+print("fotos unicas:", len(srcs), "->", srcs)
 assert "Desacelerar" in deck and "Criar" in deck and "Conectar" in deck
 assert "até 20 participantes" in deck or "até <b>20</b> participantes" in deck
 assert "locação do espaço não está incluída" in deck
