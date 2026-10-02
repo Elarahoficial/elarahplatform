@@ -93,6 +93,20 @@ extra = '''
   .cbhead span{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy)}
   .cbhead span em{font-style:italic;color:var(--orange)}
   .cbhead small{font-size:11.5px;color:var(--muted);line-height:1.4}
+  /* pacotes */
+  .pkgs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:22px;width:100%;align-items:stretch}
+  .pkg{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px 30px;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);display:flex;flex-direction:column}
+  .pkg.hl{border:2px solid var(--orange)}
+  .pkg .tag{align-self:flex-start;font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--orange-dark);margin-bottom:4px}
+  .pkg .pt{font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);line-height:1.08;margin:0 0 3px}
+  .pkg .psub{font-size:12px;color:var(--muted);line-height:1.45;margin:0 0 6px}
+  .pkg .prow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:1px solid var(--line);padding:13px 0 11px}
+  .pkg .prow .e{font-family:'DM Serif Display',serif;font-size:16px;color:var(--navy);line-height:1.15}
+  .pkg .prow .e small{display:block;font-family:'DM Sans',sans-serif;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-top:3px}
+  .pkg .prow .v{text-align:right;font-family:'DM Serif Display',serif;font-size:20px;color:var(--orange-dark);white-space:nowrap}
+  .pkg .prow .v small{display:block;font-family:'DM Sans',sans-serif;font-size:10px;color:var(--muted);font-weight:600}
+  .pkg .pnote{margin-top:auto;padding-top:13px;font-size:11px;color:var(--navy-soft);line-height:1.5}
+  .pkg .pnote b{color:var(--navy);font-weight:700}
   .combos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:20px;width:100%}
   .combo{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
   .combo .ct{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);margin:0 0 12px;line-height:1.1}
@@ -115,6 +129,8 @@ extra = '''
   .ctabox .t{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);margin:0 0 6px;line-height:1.2}
   .ctabox .t em{font-style:italic;color:var(--orange)}
   .ctabox .el{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange-dark);font-weight:700}
+  .ctabox .contact{margin-top:8px;font-size:12px;color:var(--navy-soft);line-height:1.5}
+  .ctabox .contact b{color:var(--navy)}
   .cover-note{margin-top:14px;font-size:11.5px;color:var(--muted);font-style:italic;line-height:1.5;max-width:42ch}
 </style>'''
 head = head.replace("</head>", extra + "</head>", 1)
@@ -253,29 +269,26 @@ investimento = f'''
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>O investimento para <em>esse encontro</em></h2>
     <p class="invsub">60 mulheres · 2 turmas privativas de 30 participantes</p>
-    <div class="invcards">
-      <div class="invcard hl">
-        <span class="sg">Nossa sugestão</span>
-        <div class="nm">Vela Aromática</div>
-        <div class="big">R$ 239</div>
-        <div class="per">a partir de · por pessoa</div>
-        <div class="tot">Para 60 participantes · <b>R$ 14.340</b></div>
+    <div class="pkgs">
+      <div class="pkg">
+        <span class="tag">Pacote experiência</span>
+        <p class="pt">Só a experiência</p>
+        <p class="psub">O workshop de vela, do começo ao fim.</p>
+        <div class="prow"><span class="e">Vela Aromática<small>Nossa sugestão</small></span><span class="v">R$ 239<small>60p · R$ 14.340</small></span></div>
+        <div class="prow"><span class="e">Vela Aromática Decorada</span><span class="v">R$ 269<small>60p · R$ 16.140</small></span></div>
+        <p class="pnote">Valores <b>a partir de</b>, por pessoa.</p>
       </div>
-      <div class="invcard">
-        <div class="nm">Vela Aromática Decorada</div>
-        <div class="big">R$ 269</div>
-        <div class="per">a partir de · por pessoa</div>
-        <div class="tot">Para 60 participantes · <b>R$ 16.140</b></div>
+      <div class="pkg hl">
+        <span class="tag">Pacote completo · + coffee</span>
+        <p class="pt">Experiência + coffee break</p>
+        <p class="psub">A experiência com o coffee break para acompanhar.</p>
+        <div class="prow"><span class="e">Vela Aromática + coffee</span><span class="v">R$ 338<small>a partir de · por pessoa</small></span></div>
+        <div class="prow"><span class="e">Vela Decorada + coffee</span><span class="v">R$ 368<small>a partir de · por pessoa</small></span></div>
+        <p class="pnote">☕ Coffee <b>opcional</b>, em 3 composições: Essencial <b>R$ 99</b> · Clássico <b>R$ 114</b> · Especial <b>R$ 142</b> por pessoa.</p>
       </div>
     </div>
-    <div class="cbhead"><span>☕ Coffee break <em>opcional</em></span><small>Para deixar o encontro ainda mais completo — contratado à parte, nunca somado ao workshop.</small></div>
-    <div class="cbg">
-      {cbc("Essencial", "R$ 99", "R$ 5.940", "Mini sanduíches, salgado, doce, fruta, suco, água e café.")}
-      {cbc("Clássico", "R$ 114", "R$ 6.840", "Composição completa e equilibrada — montagem e utensílios inclusos.", hl=True)}
-      {cbc("Especial", "R$ 142", "R$ 8.520", "Mais opções de salgados e doces para o coffee.")}
-    </div>
-    <p class="invobs">Valores considerando duas turmas de 30 participantes no mesmo dia. Local ainda a definir. Coffee break opcional, não somado ao workshop.</p>
-    {foot("Investimento & coffee")}
+    <p class="invobs">Valores por pessoa, a partir de · duas turmas de 30 participantes no mesmo dia · coffee break opcional, contratado à parte · local ainda a definir.</p>
+    {foot("Investimento")}
   </section>'''
 
 # ===== 7 · PRÓXIMOS PASSOS =====
@@ -307,6 +320,7 @@ final = f'''
         <div class="ctabox">
           <p class="t">Vocês escolhem a experiência.</p>
           <p class="el">Nós cuidamos do restante</p>
+          <p class="contact">WhatsApp <b>+55 (11) 91445-5930</b> · @elarah.oficial · elarah.com.br</p>
         </div>
       </div>
     </div>
@@ -320,8 +334,8 @@ out = ROOT + "/proposta-encontro-mulheres.html"
 io.open(out, "w", encoding="utf-8").write(html)
 for bad in ["fornecedor", "repasse", "comiss", "margem", "wax melt", "sob consulta"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
-for val in ["R$ 239", "R$ 14.340", "R$ 269", "R$ 16.140", "R$ 99", "R$ 5.940", "R$ 114",
-            "R$ 6.840", "R$ 142", "R$ 8.520"]:
+for val in ["R$ 239", "R$ 14.340", "R$ 269", "R$ 16.140", "R$ 99", "R$ 114", "R$ 142",
+            "R$ 338", "R$ 368"]:
     assert val in deck, f"FALTA VALOR: {val}"
 assert "Tudo preparado para viver" not in deck
 assert deck.count("Wax Melts") == 0
