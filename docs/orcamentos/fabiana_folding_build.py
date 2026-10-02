@@ -1,6 +1,6 @@
 # Proposta Elarah · Fabiana · Folding Book em Campinas (projeto de reconexão do feminino)
 # 6 slides, editorial/feminino/clean/artesanal. Ate 20 participantes. Data/horario/local a definir.
-# INVESTIMENTO em placeholder ("a definir") ate a fornecedora confirmar o custo de Campinas.
+# INVESTIMENTO: R$ 299/pessoa · total 20 = R$ 5.980 (grupo de 20, Campinas). Deslocamento incluso.
 # NAO expor custo/fornecedor/margem/comissao/marca. Somente Folding Book (sem Low Poly/Honey Comb/colagem).
 import io, re
 
@@ -52,18 +52,22 @@ extra = '''
   .cfi::before{content:"✦";color:var(--orange);font-weight:800;flex:none;font-size:13px;margin-top:1px}
   .cfi b{color:var(--navy);font-weight:700}
   .cfnote{margin-top:16px;font-size:11.5px;color:var(--muted);font-style:italic;line-height:1.5}
-  /* slide 5 — investimento (preparado, a definir) */
-  .invprep{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px;align-items:stretch}
-  .ipc{background:var(--card);border:1.5px solid var(--line);border-radius:20px;padding:30px 32px;box-shadow:0 18px 44px -28px rgba(0,0,0,.3);display:flex;flex-direction:column;justify-content:center}
-  .ipc.hl{border:2px solid var(--orange);background:#FBF7F2}
-  .ipc .lab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange-dark);font-weight:800}
-  .ipc .nm{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:8px 0 14px;line-height:1.1}
-  .ipc .val{font-family:'DM Serif Display',serif;font-size:40px;color:var(--orange-dark);line-height:1}
-  .ipc .val small{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--muted);font-weight:600;letter-spacing:.04em}
-  .ipc .per{margin-top:7px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
-  .invnote{margin-top:20px;background:#EBF1F4;border-left:4px solid var(--orange);border-radius:12px;padding:16px 22px;font-size:12.5px;color:var(--navy-soft);line-height:1.55}
-  .invnote b{color:var(--navy);font-weight:700}
-  .invsmall{margin-top:12px;font-size:11px;color:var(--muted);font-style:italic}
+  /* slide 5 — investimento */
+  .invwrap{display:grid;grid-template-columns:.92fr 1.08fr;gap:26px;margin-top:22px;align-items:stretch}
+  .pcard{background:var(--navy);color:#fff;border-radius:22px;padding:34px 34px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 26px 60px -30px rgba(60,31,40,.6)}
+  .pcard .lab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);font-weight:800}
+  .pcard .wk{font-family:'DM Serif Display',serif;font-size:21px;margin:8px 0 18px;line-height:1.14}
+  .pcard .num{font-family:'DM Serif Display',serif;font-size:58px;line-height:1;color:var(--orange)}
+  .pcard .per{margin-top:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:700}
+  .pcard .tot{margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.22)}
+  .pcard .tot .k{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.7);font-weight:700}
+  .pcard .tot .v{font-family:'DM Serif Display',serif;font-size:32px;color:var(--orange);line-height:1.05;margin-top:3px}
+  .inccard{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 30px;box-shadow:0 18px 44px -28px rgba(0,0,0,.3);display:flex;flex-direction:column;justify-content:center}
+  .inccard .h{font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);margin:0 0 14px}
+  .incl{display:grid;grid-template-columns:1fr;gap:9px}
+  .incl .i{display:flex;align-items:flex-start;gap:10px;font-size:12.5px;color:var(--navy-soft);line-height:1.35}
+  .incl .i::before{content:"✓";color:var(--orange);font-weight:800;flex:none;margin-top:1px}
+  .invsmall{margin-top:16px;font-size:11px;color:var(--muted);font-style:italic;line-height:1.5}
   /* slide 6 — primeiro encontro de muitos */
   .finwrap{display:grid;grid-template-columns:1fr 1.02fr;gap:36px;margin-top:20px;align-items:center}
   .finwrap .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 22px 52px -28px rgba(0,0,0,.45);height:430px;position:relative}
@@ -127,7 +131,7 @@ cover = f'''
           <span class="chip">data a definir</span>
         </div>
       </div>
-      <div class="cover-photo">{img("foldingbook2.jpg", "Escultura de livro dobrado em ambiente delicado", "center 45%")}</div>
+      <div class="cover-photo">{img("foldingbook-maos.jpg", "Mãos segurando uma escultura de livro criada à mão", "center 45%")}</div>
     </div>
     {foot("Folding Book · Campinas")}
   </section>'''
@@ -140,7 +144,7 @@ experiencia = f'''
     <h2>Páginas que ganham <em>uma nova forma</em></h2>
     <p class="lead">Cada participante transforma um livro em uma <strong>escultura tridimensional</strong> pela técnica do Folding Book — dobra a dobra, as páginas ganham volume, textura e forma.</p>
     <div class="expwrap">
-      <div class="exphero">{img("foldingbook-maos.jpg", "Mãos segurando uma escultura de livro finalizada", "center 45%")}
+      <div class="exphero">{img("foldingbook2.jpg", "Escultura de livro dobrado, peça autoral finalizada", "center 45%")}
         <div class="cap"><div class="k">Feito à mão</div><div class="t">Uma peça única<br>para levar para casa</div></div>
       </div>
       <div class="explist">
@@ -161,7 +165,7 @@ combina = f'''
     <h2>Criar também pode ser uma forma de <em>pausa</em></h2>
     <p class="lead">Durante algumas horas, o grupo desacelera, trabalha com as mãos e acompanha <strong>páginas comuns se transformarem</strong> em uma peça completamente nova.</p>
     <div class="trio">
-      {tcard("foldingbook3.jpg", "Desacelerar", "Um tempo só seu, longe da pressa, para estar inteira no presente.", "center 50%")}
+      {tcard("foldingbook-maos.jpg", "Desacelerar", "Um tempo só seu, longe da pressa, para estar inteira no presente.", "center 45%")}
       {tcard("foldingbook-dobra.jpg", "Criar", "Mãos ocupadas, mente leve: a arte como pausa e expressão.", "center 50%")}
       {tcard("foldingbook-grupo.jpg", "Conectar", "Um encontro feminino para criar e compartilhar lado a lado.", "center 40%")}
     </div>
@@ -190,28 +194,33 @@ comofunciona = f'''
     {foot("Como funciona")}
   </section>'''
 
-# ===== 5 · INVESTIMENTO (preparado — a definir) =====
+# ===== 5 · INVESTIMENTO =====
+inc_items = [
+    "Workshop de Folding Book", "Condução da artista",
+    "Livros para a realização da experiência", "Todos os materiais necessários",
+    "Tesoura, cola e itens de acabamento", "Certificado",
+    "Deslocamento da profissional até Campinas",
+]
+inc_html = "".join(f'<div class="i">{t}</div>' for t in inc_items)
 investimento = f'''
   <section class="slide">
 {head_simple("Investimento")}
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>Um encontro feito <em>sob medida</em></h2>
-    <div class="invprep">
-      <div class="ipc">
+    <div class="invwrap">
+      <div class="pcard">
         <div class="lab">Experiência Folding Book</div>
-        <div class="nm">Por participante</div>
-        <div class="val">A definir</div>
-        <div class="per">valor por pessoa</div>
+        <div class="wk">Oficina completa<br>para o grupo</div>
+        <div class="num">R$ 299</div>
+        <div class="per">por pessoa</div>
+        <div class="tot"><div class="k">Total · 20 participantes</div><div class="v">R$ 5.980</div></div>
       </div>
-      <div class="ipc hl">
-        <div class="lab">Grupo completo</div>
-        <div class="nm">20 participantes</div>
-        <div class="val">A definir</div>
-        <div class="per">investimento total</div>
+      <div class="inccard">
+        <p class="h">O valor inclui:</p>
+        <div class="incl">{inc_html}</div>
       </div>
     </div>
-    <div class="invnote">Estamos finalizando o <b>valor exato para Campinas</b>, já considerando o deslocamento da artista. Assim que confirmado, enviamos o investimento por pessoa e para as 20 participantes.</div>
-    <p class="invsmall">A locação do espaço não está incluída nesta proposta.</p>
+    <p class="invsmall">Valor considerando grupo de 20 participantes e realização em Campinas. A locação do espaço não está incluída. Data sujeita à disponibilidade da profissional.</p>
     {foot("Investimento")}
   </section>'''
 
@@ -222,7 +231,7 @@ final = f'''
     <span class="eyebrow orange">◆ Um primeiro encontro de muitos</span>
     <h2>Este pode ser apenas <em>o começo</em></h2>
     <div class="finwrap">
-      <div class="ph">{img("foldingbook.jpg", "Coleção de esculturas de livros em Folding Book", "center 50%")}</div>
+      <div class="ph">{img("foldingbook-dobra.jpg", "Mãos criando juntas durante a oficina de Folding Book", "center 45%")}</div>
       <div>
         <p class="lead">A Elarah pode acompanhar os próximos encontros do seu projeto com <strong>novas experiências criativas</strong>, construindo formatos diferentes ao longo do calendário e de acordo com cada momento.</p>
         <p class="bigquote">Um encontro delicado — <em>o primeiro de muitos.</em></p>
@@ -245,8 +254,10 @@ io.open(out, "w", encoding="utf-8").write(html)
 for bad in ["fornecedor", "repasse", "comiss", "margem", "papelizei", "low poly", "honey comb", "colagem",
             "r$ 200", "r$ 4.000", "4.000", "sob consulta"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
-assert deck.count("A definir") == 2, "investimento deve ficar com 2x 'A definir' (por pessoa e total)"
-assert "R$" not in deck, "nenhum valor R$ deve aparecer enquanto o custo nao for confirmado"
+for val in ["R$ 299", "R$ 5.980"]:
+    assert val in deck, f"FALTA VALOR: {val}"
+assert "A definir" not in deck, "investimento agora tem valores confirmados"
+assert "Deslocamento da profissional até Campinas" in deck, "falta item de deslocamento"
 assert "Folding Book" in deck
 assert "Páginas que ganham" in deck
 assert "Desacelerar" in deck and "Criar" in deck and "Conectar" in deck
