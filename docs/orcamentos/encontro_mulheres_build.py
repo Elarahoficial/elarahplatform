@@ -40,6 +40,8 @@ extra = '''
   .pqc h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);margin:0 0 7px;line-height:1.14}
   .pqc p{font-size:12px;color:var(--muted);line-height:1.55;margin:0}
   .pqc p b{color:var(--navy);font-weight:700}
+  .pqc .bd.word{padding:20px;text-align:center}
+  .pqc .bd.word h3{margin:0;font-size:22px;color:var(--orange-dark)}
   /* mosaico atmosfera (vibestrip) */
   .vibestrip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-top:22px;width:100%}
   .vibestrip figure{margin:0;border-radius:16px;overflow:hidden;position:relative;height:224px;box-shadow:0 14px 34px -24px rgba(0,0,0,.4)}
@@ -123,6 +125,11 @@ def pqc(src, titulo, desc, pos="center 50%"):
             f'<div class="bd"><h3>{titulo}</h3><p>{desc}</p></div></div>')
 
 
+def pqc_word(src, palavra, pos="center 50%"):
+    return (f'<div class="pqc"><div class="ph">{img(src, palavra, pos)}</div>'
+            f'<div class="bd word"><h3>{palavra}</h3></div></div>')
+
+
 def vfig(src, cap, pos="center 50%"):
     return f'<figure>{img(src, cap, pos)}<figcaption>{cap}</figcaption></figure>'
 
@@ -174,13 +181,12 @@ vela = f'''
 {head_simple("A experiência")}
     <span class="eyebrow orange">◆ A experiência</span>
     <h2>Vela <em>Aromática</em></h2>
-    <p class="lead">Tem alguma coisa especial em <strong>criar com as próprias mãos</strong>. Escolher um aroma, acompanhar a vela ganhar forma e transformar aquele momento em algo só seu.</p>
+    <p class="lead">Escolher um aroma, acompanhar a vela ganhar forma e criar algo com as próprias mãos. Cada participante produz <strong>sua própria vela artesanal</strong> e leva a criação para casa.</p>
     <div class="pqg">
-      {pqc("velas3.jpg", "Criar com as próprias mãos", "Cada participante produz a <b>sua própria vela aromática artesanal</b>, do começo ao fim.", "center 50%")}
-      {pqc("teoriavela.jpg", "Uma pausa sensorial", "Escolher fragrâncias e acompanhar o processo, num ritmo <b>leve e compartilhado</b>.", "center 45%")}
-      {pqc("vela2.jpg", "Uma lembrança pra levar", "No final, a vela vai para casa — <b>e a memória do encontro também</b>.", "center 50%")}
+      {pqc_word("velas3.jpg", "Criar", "center 50%")}
+      {pqc_word("teoriavela.jpg", "Sentir", "center 45%")}
+      {pqc_word("vela2.jpg", "Levar", "center 50%")}
     </div>
-    <div class="noteband">◆ Uma pausa delicada e criativa para <b>desacelerar, despertar os sentidos</b> e criar algo só seu, com as próprias mãos. 🤍</div>
     {foot("A experiência")}
   </section>'''
 
@@ -190,7 +196,7 @@ atmosfera = f'''
 {head_simple("A atmosfera")}
     <span class="eyebrow orange">◆ A atmosfera</span>
     <h2>Uma mesa, bons aromas e <em>tempo para estar presente</em></h2>
-    <p class="lead">Uma pausa na rotina para sentar juntas, criar sem pressa, conversar e viver algo diferente. A experiência acontece em torno de uma <strong>mesa preparada para receber o grupo</strong> — é só chegar, criar e aproveitar.</p>
+    <p class="lead">Uma mesa preparada para receber o grupo, materiais à mão e <strong>tempo para criar juntas</strong>.</p>
     <div class="vibestrip">
       {vfig("teoriavela.jpg", "Mãos criando juntas", "center 45%")}
       {vfig("vela3.jpg", "Aromas escolhidos por cada uma", "center 50%")}
@@ -304,15 +310,16 @@ final = f'''
   </section>'''
 
 deck = ('<div class="deck">\n' + cover + vela + atmosfera + comparativo
-        + coffee + completa + como + final + '\n\n</div>\n\n')
+        + coffee + final + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-encontro-mulheres.html"
 io.open(out, "w", encoding="utf-8").write(html)
 for bad in ["fornecedor", "repasse", "comiss", "margem", "wax melt", "sob consulta"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
 for val in ["R$ 239", "R$ 14.340", "R$ 269", "R$ 16.140", "R$ 99", "R$ 5.940", "R$ 114",
-            "R$ 6.840", "R$ 142", "R$ 8.520", "R$ 338", "R$ 353", "R$ 381", "R$ 368", "R$ 383", "R$ 411"]:
+            "R$ 6.840", "R$ 142", "R$ 8.520"]:
     assert val in deck, f"FALTA VALOR: {val}"
 assert "Tudo preparado para viver" not in deck
 assert deck.count("Wax Melts") == 0
+assert "experiência completa" not in deck.lower() and "Como funciona" not in deck
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
