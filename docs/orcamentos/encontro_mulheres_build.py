@@ -296,44 +296,29 @@ coffee = f'''
     {foot("Coffee break opcional")}
   </section>'''
 
-# ===== 7 · PRÓXIMOS PASSOS =====
-proximos = f'''
+# ===== 6 · PRÓXIMOS PASSOS + FECHAMENTO (unificado) =====
+final = f'''
   <section class="slide">
-{head_simple("Próximos passos")}
+{head_simple("Para fechar")}
     <span class="eyebrow orange">◆ Próximos passos</span>
     <h2>Daqui pra frente, <em>a gente cuida de tudo</em></h2>
+    <p class="lead">Mais do que uma oficina, queremos preparar um encontro <strong>gostoso, leve e especial</strong> para essas 60 mulheres.</p>
     <div class="stg">
       {stc("1", "Vocês escolhem a experiência", "Vela Aromática ou Vela Aromática Decorada.")}
       {stc("2", "Definimos o espaço", "Aguardamos a confirmação do local no ABC Paulista.")}
       {stc("3", "Alinhamos os detalhes", "Horários, dinâmica e coffee break, caso desejem incluir.")}
-      {stc("4", "Preparamos o encontro", "Nós organizamos materiais, estrutura e toda a operação para receber o grupo.")}
+      {stc("4", "Preparamos o encontro", "Nós organizamos materiais, estrutura e toda a operação.")}
     </div>
-    <div class="noteband">◆ Depois da confirmação, seguimos com a <b>reserva da data</b> e todos os alinhamentos finais.</div>
-    {foot("Próximos passos")}
-  </section>'''
-
-# ===== 8 · FECHAMENTO =====
-final = f'''
-  <section class="slide">
-{head_simple("Para fechar")}
-    <span class="eyebrow orange">◆ Para fechar</span>
-    <h2>Criar com as próprias mãos — e <em>levar essa memória para casa</em></h2>
-    <div class="finwrap">
-      <div class="ph">{img("vela-grupo-oficina.jpg", "Mulheres criando e conversando juntas", "center 50%")}</div>
-      <div class="ftx">
-        <p class="lead">Mais do que uma oficina, queremos preparar um encontro <strong>gostoso, leve e especial</strong> para essas 60 mulheres. Vamos adorar viver esse momento com vocês.</p>
-        <div class="ctabox">
-          <p class="t">Vamos fechar? <em>✦</em></p>
-          <p class="el">Vocês escolhem · nós cuidamos do restante</p>
-          <p class="contact">WhatsApp <b>+55 (11) 91445-5930</b> · @elarah.oficial · elarah.com.br</p>
-        </div>
-      </div>
+    <div class="ctabox">
+      <p class="t">Vamos fechar? <em>✦</em></p>
+      <p class="el">Vocês escolhem · nós cuidamos do restante</p>
+      <p class="contact">WhatsApp <b>+55 (11) 91445-5930</b> · @elarah.oficial · elarah.com.br</p>
     </div>
     {foot("Para fechar")}
   </section>'''
 
 deck = ('<div class="deck">\n' + cover + vela + atmosfera + duasformas
-        + coffee + proximos + final + '\n\n</div>\n\n')
+        + coffee + final + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-encontro-mulheres.html"
 io.open(out, "w", encoding="utf-8").write(html)
@@ -348,7 +333,7 @@ assert "Tudo preparado para viver" not in deck
 assert deck.count("Wax Melts") == 0
 assert "experiência completa" not in deck.lower() and "Como funciona" not in deck
 assert "Experiências &amp; investimento" in deck or "Duas formas" in deck, "falta slide de experiências/investimento"
-assert "Próximos passos" in deck and "Daqui pra frente" in deck, "falta slide de próximos passos"
-assert html.count('<section class="slide">') == 7, "esperado 7 slides"
+assert "Daqui pra frente" in deck, "falta próximos passos no fechamento"
+assert html.count('<section class="slide">') == 6, "esperado 6 slides"
 assert "Vamos fechar" in deck, "falta CTA Vamos fechar no fechamento"
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
