@@ -149,7 +149,7 @@ experiencia = f'''
       </div>
       <div class="explist">
         {expc("foldingbook-grupo.jpg", "Sem experiência prévia", "Nenhum conhecimento é necessário — a técnica é ensinada do zero.", "center 40%")}
-        {expc("foldingbook-dobra.jpg", "Acompanhamento da artista", "A artista conduz cada passo, da preparação à finalização da peça.", "center 50%")}
+        {expc("foldingbook-artista.jpg", "Acompanhamento da artista", "A artista conduz cada passo, da preparação à finalização da peça.", "center 38%")}
         {expc("foldingbook3.jpg", "Processo manual e contemplativo", "Horas de presença, mãos ocupadas e mente tranquila.", "center 50%")}
         {expc("foldingbook.jpg", "Uma peça para levar", "Cada participante leva para casa a escultura que criou.", "center 50%")}
       </div>
