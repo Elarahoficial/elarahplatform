@@ -230,8 +230,8 @@ atmosfera = f'''
     <p class="lead">Uma mesa preparada para receber o grupo, materiais à mão e <strong>tempo para criar juntas</strong>.</p>
     <div class="vibestrip">
       {vfig("teoriavela.jpg", "Mãos criando juntas", "center 45%")}
-      {vfig("vela3.jpg", "Aromas escolhidos por cada uma", "center 50%")}
-      {vfig("vela-grupo-oficina.jpg", "Conversas sem pressa", "center 40%")}
+      {vfig("vela-mesa-materiais.webp", "Aromas escolhidos por cada uma", "center 50%")}
+      {vfig("vela-mulheres-sorrindo.webp", "Conversas sem pressa", "center 50%")}
       {vfig("vela2.jpg", "Uma criação para levar", "center 50%")}
     </div>
     {foot("A atmosfera")}
@@ -282,9 +282,9 @@ investimento = f'''
         <span class="tag">Pacote completo · + coffee</span>
         <p class="pt">Experiência + coffee break</p>
         <p class="psub">A experiência com o coffee break para acompanhar.</p>
-        <div class="prow"><span class="e">Vela Aromática + coffee</span><span class="v">R$ 338<small>a partir de · por pessoa</small></span></div>
-        <div class="prow"><span class="e">Vela Decorada + coffee</span><span class="v">R$ 368<small>a partir de · por pessoa</small></span></div>
-        <p class="pnote">☕ Coffee <b>opcional</b>, em 3 composições: Essencial <b>R$ 99</b> · Clássico <b>R$ 114</b> · Especial <b>R$ 142</b> por pessoa.</p>
+        <div class="prow"><span class="e">Vela Aromática + coffee</span><span class="v">R$ 338<small>a partir de · 60p · R$ 20.280</small></span></div>
+        <div class="prow"><span class="e">Vela Decorada + coffee</span><span class="v">R$ 368<small>a partir de · 60p · R$ 22.080</small></span></div>
+        <p class="pnote">☕ Coffee <b>opcional</b>, em 3 composições: Essencial <b>R$ 99</b> · Clássico <b>R$ 114</b> · Especial <b>R$ 142</b> por pessoa. Total a partir do coffee Essencial.</p>
       </div>
     </div>
     <p class="invobs">Valores por pessoa, a partir de · duas turmas de 30 participantes no mesmo dia · coffee break opcional, contratado à parte · local ainda a definir.</p>
@@ -335,7 +335,7 @@ io.open(out, "w", encoding="utf-8").write(html)
 for bad in ["fornecedor", "repasse", "comiss", "margem", "wax melt", "sob consulta"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
 for val in ["R$ 239", "R$ 14.340", "R$ 269", "R$ 16.140", "R$ 99", "R$ 114", "R$ 142",
-            "R$ 338", "R$ 368"]:
+            "R$ 338", "R$ 368", "R$ 20.280", "R$ 22.080"]:
     assert val in deck, f"FALTA VALOR: {val}"
 assert "Tudo preparado para viver" not in deck
 assert deck.count("Wax Melts") == 0
