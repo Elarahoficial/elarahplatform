@@ -792,14 +792,12 @@ renderFavoritos();
     const escolherUrl = contatoWhatsappUrl(booking, 'Olá! Quero usar meu crédito da Elarah pra escolher uma nova experiência.');
     let corpo;
     if (usado) {
-      corpo = '<p class="purchase-card__credito-texto">Você já usou esse crédito numa nova reserva. 🧡</p>';
+      corpo = '<p class="purchase-card__credito-texto">Você já usou esse crédito numa nova reserva. 🧡' +
+        ' Se sobrou alguma diferença, o código novo está no card da nova reserva.</p>';
     } else if (cupom) {
       corpo =
         '<p class="purchase-card__credito-texto">Escolha qualquer experiência da Elarah e use o código no campo de cupom na hora de reservar:</p>' +
-        '<div class="purchase-card__cupom-linha">' +
-          '<div class="purchase-card__cupom">' + escapeHtmlLocal(cupom.codigo) + '</div>' +
-          '<button type="button" class="purchase-card__cupom-copiar" data-copiar-cupom="' + escapeHtmlLocal(cupom.codigo) + '">Copiar</button>' +
-        '</div>' +
+        cupomComCopiar(cupom.codigo) +
         (cupom.valido_ate ? '<p class="purchase-card__credito-validade">Vale até ' + escapeHtmlLocal(formatCreatedAt(cupom.valido_ate)) + ' · uma compra</p>' : '');
     } else {
       corpo = '<p class="purchase-card__credito-texto">' +
@@ -839,17 +837,53 @@ renderFavoritos();
 
   // Resumo no topo de "Minhas compras": soma o crédito ainda disponível
   // das reservas guardadas. Some quando não há nenhum.
+  // Sobra de crédito: usou o crédito numa experiência mais barata e a
+  // diferença virou outro cupom (metadata.credito_sobra, gravado pelo
+  // servidor em _shared/reserva_credito.ts). null = não tem ou já usou.
+  function sobraDisponivel(booking) {
+    const m = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
+    const c = m.credito_sobra;
+    if (!c || typeof c !== 'object' || !c.codigo) return null;
+    if (c.coupon_id && cuponsUsados.has(String(c.coupon_id))) return null;
+    if (c.valido_ate && new Date(c.valido_ate).getTime() < Date.now()) return null;
+    return c;
+  }
+
+  function cupomComCopiar(codigo) {
+    return '<div class="purchase-card__cupom-linha">' +
+      '<div class="purchase-card__cupom">' + escapeHtmlLocal(codigo) + '</div>' +
+      '<button type="button" class="purchase-card__cupom-copiar" data-copiar-cupom="' + escapeHtmlLocal(codigo) + '">Copiar</button>' +
+    '</div>';
+  }
+
+  // Linha da sobra no card da reserva que usou o crédito.
+  function renderSobraCredito(booking) {
+    const c = sobraDisponivel(booking);
+    if (!c) return '';
+    return '<div class="purchase-card__sobra">' +
+      '<p class="purchase-card__credito-texto">🎟 Sobrou <strong>' + escapeHtmlLocal(formatBrlCents(c.valor_centavos)) +
+        '</strong> de crédito pra sua próxima experiência:</p>' +
+      cupomComCopiar(c.codigo) +
+      (c.valido_ate ? '<p class="purchase-card__credito-validade">Vale até ' + escapeHtmlLocal(formatCreatedAt(c.valido_ate)) + ' · uma compra</p>' : '') +
+    '</div>';
+  }
+
+  // Resumo no topo de "Minhas compras": soma o crédito ainda disponível
+  // (reservas guardadas + sobras de crédito). Some quando não há nenhum.
   function renderCreditoResumo(bookings) {
     const el = document.getElementById('purchases-credito');
     if (!el) return;
     const guardadas = bookings.filter(b => isGuardandoExperiencia(b) && !creditoJaUsado(b));
-    if (!guardadas.length) {
+    const sobras = bookings.map(sobraDisponivel).filter(Boolean);
+    if (!guardadas.length && !sobras.length) {
       el.style.display = 'none';
       el.innerHTML = '';
       return;
     }
-    const total = guardadas.reduce((acc, b) => acc + (valorGuardadoCentavos(b) || 0), 0);
-    const codigos = guardadas.map(cupomGuardado).filter(Boolean).map(c => c.codigo);
+    const total = guardadas.reduce((acc, b) => acc + (valorGuardadoCentavos(b) || 0), 0) +
+      sobras.reduce((acc, c) => acc + (Number(c.valor_centavos) || 0), 0);
+    const codigos = guardadas.map(cupomGuardado).filter(Boolean).map(c => c.codigo)
+      .concat(sobras.map(c => c.codigo));
     el.innerHTML =
       '<span class="purchases__credito-label">Seu crédito na Elarah</span>' +
       '<strong class="purchases__credito-valor">' + escapeHtmlLocal(formatBrlCents(total)) + '</strong>' +
@@ -913,6 +947,7 @@ renderFavoritos();
           '<div class="purchase-card__meta">' + metaParts.join('') + '</div>' +
           localHtml +
           renderCreditoTroca(meta) +
+          renderSobraCredito(booking) +
           renderPrazoRemarcacao(booking, group) +
         '</div>' +
       '</article>'

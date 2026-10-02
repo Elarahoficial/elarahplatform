@@ -619,6 +619,14 @@
   background: #9a5810;
 }
 
+.purchase-card__sobra {
+  margin-top: 8px;
+  padding: 9px 11px;
+  background: #fff8ef;
+  border: 1px solid #f0ddc8;
+  border-radius: 10px;
+}
+
 .purchase-card__credito-validade {
   margin: 0 0 6px;
   font-size: 0.75rem;
