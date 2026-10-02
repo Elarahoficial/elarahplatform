@@ -164,7 +164,7 @@ cover = f'''
           <span class="chip">São Paulo · local a definir</span>
         </div>
       </div>
-      <div class="cover-photo">{img("andre-brinde.jpg", "Amigos reunidos brindando e rindo juntos", "center 35%")}</div>
+      <div class="cover-photo">{img("lucy-capa-amigas-brinde.jpg", "Amigas rindo e brindando juntas", "center 30%")}</div>
     </div>
     {foot("Aniversário · Lucy Andrade")}
   </section>'''
