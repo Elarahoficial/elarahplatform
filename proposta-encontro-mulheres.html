@@ -902,7 +902,13 @@
   .cmpnote{margin-top:16px;text-align:center;font-size:12.5px;color:var(--navy-soft)}
   .cmpnote b{color:var(--navy)}
   /* coffee opcional (3 cards) */
-  .cbg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:14px;width:100%}
+  .cofwrap{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin-top:16px;width:100%}
+  .cofbig{border-radius:18px;overflow:hidden;position:relative;height:300px;border:1px solid var(--line);box-shadow:0 18px 44px -28px rgba(0,0,0,.42)}
+  .cofbig img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .cofside{display:grid;grid-template-rows:repeat(3,1fr);gap:16px}
+  .cofside figure{margin:0;border-radius:14px;overflow:hidden;position:relative;border:1px solid var(--line);box-shadow:0 12px 28px -22px rgba(0,0,0,.4)}
+  .cofside figure img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .cbg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:16px;width:100%}
   .cbc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column;position:relative}
   .cbc.hl{border:2px solid var(--orange)}
   .cbc .sg{display:inline-block;align-self:flex-start;background:var(--orange);color:#fff;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;padding:4px 10px;border-radius:999px;margin-bottom:8px}
@@ -1061,26 +1067,47 @@
     <span class="eyebrow orange">◆ Investimento</span>
     <h2>O investimento para <em>esse encontro</em></h2>
     <p class="invsub">60 mulheres · 2 turmas privativas de 30 participantes</p>
-    <div class="pkgs">
-      <div class="pkg">
-        <span class="tag">Pacote experiência</span>
-        <p class="pt">Só a experiência</p>
-        <p class="psub">O workshop de vela, do começo ao fim.</p>
-        <div class="prow"><span class="e">Vela Aromática<small>Nossa sugestão</small></span><span class="v">R$ 239<small>60p · R$ 14.340</small></span></div>
-        <div class="prow"><span class="e">Vela Aromática Decorada</span><span class="v">R$ 269<small>60p · R$ 16.140</small></span></div>
-        <p class="pnote">Valores <b>a partir de</b>, por pessoa.</p>
+    <div class="invcards">
+      <div class="invcard hl">
+        <span class="sg">Nossa sugestão</span>
+        <div class="nm">Vela Aromática</div>
+        <div class="big">R$ 239</div>
+        <div class="per">a partir de · por pessoa</div>
+        <div class="tot">Para 60 participantes · <b>R$ 14.340</b></div>
       </div>
-      <div class="pkg hl">
-        <span class="tag">Pacote completo · + coffee</span>
-        <p class="pt">Experiência + coffee break</p>
-        <p class="psub">A experiência com o coffee break para acompanhar.</p>
-        <div class="prow"><span class="e">Vela Aromática + coffee</span><span class="v">R$ 338<small>a partir de · 60p · R$ 20.280</small></span></div>
-        <div class="prow"><span class="e">Vela Decorada + coffee</span><span class="v">R$ 368<small>a partir de · 60p · R$ 22.080</small></span></div>
-        <p class="pnote">☕ Coffee <b>opcional</b>, em 3 composições: Essencial <b>R$ 99</b> · Clássico <b>R$ 114</b> · Especial <b>R$ 142</b> por pessoa. Total a partir do coffee Essencial.</p>
+      <div class="invcard">
+        <div class="nm">Vela Aromática Decorada</div>
+        <div class="big">R$ 269</div>
+        <div class="per">a partir de · por pessoa</div>
+        <div class="tot">Para 60 participantes · <b>R$ 16.140</b></div>
       </div>
     </div>
-    <p class="invobs">Valores por pessoa, a partir de · duas turmas de 30 participantes no mesmo dia · coffee break opcional, contratado à parte · local ainda a definir.</p>
+    <p class="invobs">Valores por pessoa, a partir de · duas turmas de 30 no mesmo dia · local a definir. ☕ Coffee break <b>opcional</b> e contratado à parte — veja as opções a seguir.</p>
     <div class="slide__foot"><span>Elarah · Experiências</span><span>Investimento</span></div>
+  </section>
+  <section class="slide">
+    <div class="slide__head">
+      <div class="brand"><img src="assets/logo.png" alt="Elarah"></div>
+      <div class="head-right"><span class="kicker">Coffee break</span></div>
+    </div>
+    <span class="eyebrow orange">◆ Opcional · contratado adicionalmente</span>
+    <h2>Para deixar o encontro ainda mais <em>gostoso</em></h2>
+    <p class="lead">Se quiserem completar esse momento, também podemos preparar o coffee break para acompanhar a experiência — <strong>tudo organizado e montado</strong> para receber o grupo.</p>
+    <div class="cofwrap">
+      <div class="cofbig"><img src="assets/brunch-office1.jpg" alt="Mesa de coffee break montada" style="object-position:center 55%"></div>
+      <div class="cofside">
+        <figure><img src="assets/salgadinho.jpg" alt="Salgados quentinhos" style="object-position:center 50%"></figure>
+        <figure><img src="assets/paodoce.jpg" alt="Doces" style="object-position:center 50%"></figure>
+        <figure><img src="assets/bolocaseiro.jpg" alt="Bolo e frutas da estação" style="object-position:center 50%"></figure>
+      </div>
+    </div>
+    <div class="cbg">
+      <div class="cbc"><div class="nm">Básico</div><div class="pr"><b>R$ 34,80</b> /pessoa<small>60 participantes · R$ 2.088</small></div></div>
+      <div class="cbc"><div class="nm">Essencial</div><div class="pr"><b>R$ 86,40</b> /pessoa<small>60 participantes · R$ 5.184</small></div></div>
+      <div class="cbc hl"><span class="sg">Nossa sugestão</span><div class="nm">Clássico</div><div class="pr"><b>R$ 109,20</b> /pessoa<small>60 participantes · R$ 6.552</small></div></div>
+    </div>
+    <p class="invobs">Todos incluem mini sanduíches, salgado, doce, fruta ou iogurte, suco, Água na Caixa, café e serviço de montagem. ☕ Opcional, não incluído no valor das experiências de vela.</p>
+    <div class="slide__foot"><span>Elarah · Experiências</span><span>Coffee break opcional</span></div>
   </section>
   <section class="slide">
     <div class="slide__head">
