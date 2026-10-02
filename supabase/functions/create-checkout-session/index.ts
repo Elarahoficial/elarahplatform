@@ -406,6 +406,13 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
     return Math.round(n);
   })();
+  // Prazo de cancelamento com reembolso exibido no checkout (48h na
+  // regra geral, maior em algumas experiências). Congelado na reserva.
+  const politicaCancelamentoHoras = (function () {
+    const n = Number(payload.politica_cancelamento_horas);
+    if (!Number.isFinite(n) || n <= 0 || n > 720) return null;
+    return Math.round(n);
+  })();
   // Preço unitário da variação exibido no front (centavos). Só dica de
   // segurança — o banco continua autoritativo (ver bloco de preço abaixo).
   const variantExpectedCents = (function () {
@@ -1488,6 +1495,7 @@ async function handleExperienceCheckout(payload: Record<string, unknown>) {
     variant_selected: variantSelected || undefined,
     politica_aceita_em: politicaAceitaEm,
     politica_remarcacao_horas: politicaRemarcacaoHoras,
+    politica_cancelamento_horas: politicaCancelamentoHoras,
     // Frete + endereço de entrega (kits). Vive no metadata (jsonb) pra
     // o admin ver e despachar — sem depender de migração de colunas.
     shipping: shippingResolved

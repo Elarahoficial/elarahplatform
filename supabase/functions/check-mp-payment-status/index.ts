@@ -103,6 +103,7 @@ async function sendConfirmationEmail(booking: Booking) {
     // Prazo de remarcação congelado na compra. Reserva antiga (sem o
     // campo) cai no padrão de 48h dentro do template.
     prazoRemarcacaoHoras: (meta.politica_remarcacao_horas as number | null) ?? null,
+    prazoCancelamentoHoras: (meta.politica_cancelamento_horas as number | null) ?? null,
     precoLabel: booking.preco_label,
     quantidade: (booking as { quantidade?: number | null }).quantidade ?? null,
     participantes: Array.isArray((meta as { participantes?: unknown }).participantes)

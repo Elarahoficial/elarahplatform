@@ -3536,6 +3536,7 @@ if (groupForm) {
             // remarcação que estava na tela. Congelado no metadata da reserva.
             politica_aceita_em: ctx.politicaAceitaEm || null,
             politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
+            politica_cancelamento_horas: ctx.politicaCancelamentoHoras || null,
             card_token: cardToken,
             installments: installments,
             // Endereço de cobrança pro antifraude (customer.address no pedido).
@@ -3930,6 +3931,7 @@ if (groupForm) {
         // remarcação que estava na tela. Congelado no metadata da reserva.
         politica_aceita_em: ctx.politicaAceitaEm || null,
         politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
+        politica_cancelamento_horas: ctx.politicaCancelamentoHoras || null,
         cpf: String(cardData.identificationNumber || '').replace(/\D+/g, ''),
       };
 
@@ -4516,25 +4518,31 @@ if (groupForm) {
 
       // Prazo de remarcação SEM CUSTO varia por categoria (bartenderia
       // 5 dias, gastronomia 72h, resto 48h). Cancelar com reembolso é
-      // sempre 48h. O texto é montado aqui, com o prazo desta
+      // 48h, salvo exceções por experiência. O texto é montado aqui, com o prazo desta
       // experiência, e o número vai junto no payload pra ser congelado
       // na reserva — o e-mail de confirmação exibe o mesmo número.
       var _prazo = (window.ElarahData && ElarahData.prazoRemarcacaoDe)
         ? ElarahData.prazoRemarcacaoDe({ categoria: ctx.categoria })
         : { horas: 48, rotulo: '48 horas' };
       ctx.politicaRemarcacaoHoras = _prazo.horas;
+      // Cancelar com reembolso: 48h na regra geral, mas algumas
+      // experiências têm prazo maior (ver ElarahData.prazoCancelamentoDe).
+      var _prazoCanc = (window.ElarahData && ElarahData.prazoCancelamentoDe)
+        ? ElarahData.prazoCancelamentoDe({ nome: ctx.experienceNome })
+        : { horas: 48, rotulo: '48 horas' };
+      ctx.politicaCancelamentoHoras = _prazoCanc.horas;
       var _policyTextReset = root.querySelector('#erm-policy-text');
       if (_policyTextReset) {
         _policyTextReset.style.color = '#555';
         // Na maioria das categorias os dois prazos são 48h; separar em duas
         // frases idênticas soaria burocrático e ninguém leria. Só quando a
         // categoria tem prazo de remarcação MAIOR é que vale distinguir.
-        var _msg = _prazo.horas === 48
+        var _msg = _prazo.horas === _prazoCanc.horas
           ? 'Confirmo que remarcações e cancelamentos precisam ser pedidos com no mínimo ' +
-            '<strong>48 horas de antecedência</strong> desta experiência. '
+            '<strong>' + _prazo.rotulo + ' de antecedência</strong> desta experiência. '
           : 'Confirmo que posso remarcar sem custo até <strong>' + _prazo.rotulo +
-            ' antes</strong> desta experiência, e cancelar com reembolso até ' +
-            '<strong>48 horas antes</strong>. ';
+            ' antes</strong> desta experiência, e cancelar com reembolso só até ' +
+            '<strong>' + _prazoCanc.rotulo + ' antes</strong>. ';
         _policyTextReset.innerHTML = _msg +
           '<a href="/cancelamento.html" target="_blank" rel="noopener" ' +
           'style="color:#b9764f;text-decoration:underline;">Ver política</a>';
@@ -5743,6 +5751,7 @@ if (groupForm) {
             // remarcação que estava na tela. Congelado no metadata da reserva.
             politica_aceita_em: ctx.politicaAceitaEm || null,
             politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
+            politica_cancelamento_horas: ctx.politicaCancelamentoHoras || null,
           };
           console.log('[Elarah CHECKOUT FINAL] PIX payload:', JSON.stringify({
             selectedQuantity: ctx.quantidade,
@@ -5887,6 +5896,7 @@ if (groupForm) {
             // remarcação que estava na tela. Congelado no metadata da reserva.
             politica_aceita_em: ctx.politicaAceitaEm || null,
             politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
+            politica_cancelamento_horas: ctx.politicaCancelamentoHoras || null,
           };
           console.log('[Elarah Payment/MP card] iniciando Checkout Pro', {
             base: ctx.precoCentavos,
@@ -5982,6 +5992,7 @@ if (groupForm) {
           // remarcação que estava na tela. Congelado no metadata da reserva.
           politica_aceita_em: ctx.politicaAceitaEm || null,
           politica_remarcacao_horas: ctx.politicaRemarcacaoHoras || null,
+          politica_cancelamento_horas: ctx.politicaCancelamentoHoras || null,
         };
         console.log('[Elarah CHECKOUT FINAL] Stripe payload:', JSON.stringify({
           selectedQuantity: ctx.quantidade,

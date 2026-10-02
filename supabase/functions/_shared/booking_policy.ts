@@ -10,7 +10,9 @@
 //     Gastronomia .......... 72 horas
 //     Todas as demais ...... 48 horas
 //
-//   CANCELAR COM REEMBOLSO — 48 horas pra todas as categorias.
+//   CANCELAR COM REEMBOLSO — 48 horas pra todas as categorias, salvo
+//   exceções por experiência (parceira que compra material antes):
+//     Crie Sua Joia & Brinde com Vinho - Ingresso 2 Pessoas ... 7 dias
 //
 // Ambas estão publicadas em /cancelamento.html.
 //
@@ -41,11 +43,36 @@ export const PRAZO_REMARCACAO_PADRAO: PrazoRemarcacao = {
   rotulo: "48 horas",
 };
 
-// Prazo de cancelamento COM REEMBOLSO — igual pra todas as categorias.
+// Prazo de cancelamento COM REEMBOLSO — regra geral, todas as categorias.
 export const PRAZO_CANCELAMENTO: PrazoRemarcacao = {
   horas: 48,
   rotulo: "48 horas",
 };
+
+// Exceções de cancelamento por experiência. Chave = nome normalizado
+// (sem acento, minúsculo, só letras e números). Se o nome for editado
+// no painel, atualize aqui também.
+//
+// ATENÇÃO — esta tabela existe DUAS vezes: aqui e em experiences-data.js
+// (prazoCancelamentoDe, pro checkout). Mudou aqui, muda lá.
+const PRAZO_CANCELAMENTO_POR_EXPERIENCIA: Record<string, PrazoRemarcacao> = {
+  "crie sua joia brinde com vinho ingresso 2 pessoas": { horas: 168, rotulo: "7 dias" },
+};
+
+function chaveNomeExperiencia(nome: string | null | undefined): string {
+  return String(nome || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function prazoCancelamentoPorExperiencia(
+  nome: string | null | undefined,
+): PrazoRemarcacao {
+  return PRAZO_CANCELAMENTO_POR_EXPERIENCIA[chaveNomeExperiencia(nome)] ||
+    PRAZO_CANCELAMENTO;
+}
 
 // Uma experiência pode estar em mais de uma categoria ("Barismo |
 // Bartenderia"). Nesse caso vale o prazo MAIS LONGO: se uma das

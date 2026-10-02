@@ -2220,6 +2220,7 @@
     // Prazo de remarcação sem custo (por categoria) — ver bloco
     // PRAZO DE REMARCAÇÃO. Devolve { horas, rotulo }.
     prazoRemarcacaoDe: prazoRemarcacaoDe,
+    prazoCancelamentoDe: prazoCancelamentoDe,
   };
 
   // Normaliza qualquer formato de preço pra "R$ X" no display, SEMPRE
@@ -2373,8 +2374,9 @@
   //   Gastronomia .......... 72 horas
   //   Todas as demais ...... 48 horas
   //
-  // CANCELAMENTO COM REEMBOLSO é outra coisa e continua 48h pra todas
-  // — ver /cancelamento.html. Não misture os dois prazos.
+  // CANCELAMENTO COM REEMBOLSO é outra coisa: 48h pra todas, salvo as
+  // exceções por experiência de prazoCancelamentoDe (abaixo) — ver
+  // /cancelamento.html. Não misture os dois prazos.
   //
   // ATENÇÃO — esta tabela existe DUAS vezes: aqui (navegador) e em
   // supabase/functions/_shared/booking_policy.ts (Deno, pro e-mail).
@@ -2403,6 +2405,43 @@
       if (p && p.horas > escolhido.horas) escolhido = p;
     }
     return escolhido;
+  }
+
+  // =============================================================
+  // PRAZO DE CANCELAMENTO COM REEMBOLSO — exceções por experiência
+  // -------------------------------------------------------------
+  // A regra geral é 48h pra todas as categorias. Algumas experiências
+  // têm prazo maior porque a parceira compra material/insumo com
+  // antecedência — nelas o reembolso só vale se o cancelamento chegar
+  // antes do prazo listado aqui.
+  //
+  //   Crie Sua Joia & Brinde com Vinho - Ingresso 2 Pessoas ... 7 dias
+  //
+  // A chave é o NOME da experiência normalizado (sem acento, minúsculo,
+  // só letras e números) — se o nome for editado no painel, atualize
+  // aqui também.
+  //
+  // ATENÇÃO — esta tabela existe DUAS vezes: aqui (navegador) e em
+  // supabase/functions/_shared/booking_policy.ts (Deno, pro e-mail).
+  // Mudou aqui, muda lá. O prazo é congelado no metadata da reserva
+  // (politica_cancelamento_horas) no momento da compra.
+  // =============================================================
+  var PRAZO_CANCELAMENTO_POR_EXPERIENCIA = {
+    'crie sua joia brinde com vinho ingresso 2 pessoas': { horas: 168, rotulo: '7 dias' },
+  };
+  var PRAZO_CANCELAMENTO_PADRAO = { horas: 48, rotulo: '48 horas' };
+
+  function chaveNomeExperiencia(nome) {
+    return String(nome || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function prazoCancelamentoDe(exp) {
+    var p = PRAZO_CANCELAMENTO_POR_EXPERIENCIA[chaveNomeExperiencia(exp && exp.nome)];
+    return p || PRAZO_CANCELAMENTO_PADRAO;
   }
 
   // Markup do "de" riscado, pra ser colado ANTES do preço dentro do
