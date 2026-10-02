@@ -41,6 +41,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsHeaders } from "../_shared/cors.ts";
+import { confirmarReservaSemCobranca } from "../_shared/reserva_credito.ts";
 import { buildAcompanhantes } from "../_shared/acompanhantes.ts";
 import {
   createPixPayment,
@@ -600,6 +601,10 @@ async function handlePixRequest(payload: Record<string, unknown>): Promise<Respo
       await rollback();
       return jsonResponse({ error: "booking_failed" }, 500);
     }
+
+    // Sem cobrança não há webhook: confirma, avisa o parceiro e gera a
+    // sobra do crédito aqui (_shared/reserva_credito.ts).
+    await confirmarReservaSemCobranca(supabase, directBookingId, "Crédito/cupom 100% (Pix Mercado Pago)");
 
     console.info(
       "[Elarah Payment/MP] booking gratuita via cupom 100%",
