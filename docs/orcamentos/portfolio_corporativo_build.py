@@ -25,6 +25,8 @@ extra = '''
   .pfproof .star{color:var(--orange);font-size:14px;line-height:1.3}
   .pfproof p{font-size:11.5px;color:var(--navy-soft);line-height:1.5;margin:0}
   .pfproof b{color:var(--navy);font-weight:700}
+  .pffoot{margin-top:auto;max-width:none;width:100%;box-sizing:border-box;align-items:center}
+  .pffoot p{font-size:12.5px}
   /* grade de icones */
   .ig{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:20px;width:100%}
   .igc{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:19px 20px;box-shadow:0 12px 30px -24px rgba(0,0,0,.3)}
@@ -131,10 +133,10 @@ cover = f'''
           <span class="chip">Sofisticado &amp; criativo</span>
           <span class="chip">Team building diferente</span>
         </div>
-        <div class="pfproof"><span class="star">★</span><p>Experiências já realizadas para times de empresas como <b>Amazon</b>, <b>Natura</b> e <b>Itaú</b> — e vistas no <b>Mais Você</b> (Globo)</p></div>
       </div>
       <div class="cover-photo">{img("eventocorporativo.jpg", "Time corporativo misto brindando e celebrando junto", "center 32%")}</div>
     </div>
+    <div class="pfproof pffoot"><span class="star">★</span><p>Experiências já realizadas para times de empresas como <b>Amazon</b>, <b>Natura</b> e <b>Itaú</b> — e vistas no <b>Mais Você</b> (Globo)</p></div>
     {foot("Portfólio institucional · Elarah")}
   </section>'''
 
