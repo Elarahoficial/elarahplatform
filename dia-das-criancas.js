@@ -263,7 +263,35 @@
       return;
     }
 
-    // Chips: "Todas" + "Em família" (se houver) + categorias presentes.
+    // ---- Dias: cada experiência cai no dia dela (DD/MM). Sem data
+    // reconhecível (ex.: "Semanal", agendamento livre) → "Datas flexíveis".
+    const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const DIAS_CURTO = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const year = nextChildrensDay().getFullYear();
+    function dayInfo(e) {
+      const k = dateKey(e);
+      if (k === Infinity) return { key: 'flex', sort: Infinity, label: '🗓️ Datas flexíveis', short: '🗓️ Flexível' };
+      const mes = Math.floor(k / 100), dia = k % 100;
+      const dt = new Date(year, mes - 1, dia);
+      const ddmm = String(dia).padStart(2, '0') + '/' + String(mes).padStart(2, '0');
+      const isDay = mes === 10 && dia === 12;
+      return {
+        key: ddmm,
+        sort: k,
+        label: (isDay ? '🎉 ' : '') + DIAS_SEMANA[dt.getDay()] + ', ' + ddmm + (isDay ? ' — Dia das Crianças!' : ''),
+        short: (isDay ? '🎉 ' : '') + DIAS_CURTO[dt.getDay()] + ' ' + ddmm,
+        isDay: isDay
+      };
+    }
+    const days = [];
+    const daySeen = new Map();
+    list.forEach(function (e) {
+      const d = dayInfo(e);
+      if (!daySeen.has(d.key)) { daySeen.set(d.key, d); days.push(d); }
+    });
+    days.sort(function (a, b) { return a.sort - b.sort; });
+
+    // Chips de tipo: "Todas" + "Em família" (se houver) + categorias presentes.
     const cats = [];
     const catSeen = new Set();
     list.forEach(function (e) {
@@ -275,8 +303,14 @@
     if (hasFamily) filters.push({ key: '@familia', label: '👨‍👩‍👧 Em família' });
     if (cats.length > 1) cats.forEach(function (c) { filters.push(c); });
 
+    const dayFilters = [{ key: '*', label: '📅 Todos os dias' }].concat(
+      days.map(function (d) { return { key: d.key, label: d.short }; })
+    );
+
     let active = '*';
+    let activeDay = '*';
     function matches(e) {
+      if (activeDay !== '*' && dayInfo(e).key !== activeDay) return false;
       if (active === '*') return true;
       if (active === '@familia') return isFamily(e);
       return (normalize(e.categoria).trim() || 'outros') === active;
@@ -284,31 +318,65 @@
     function render() {
       grid.innerHTML = '';
       const shown = list.filter(matches);
-      shown.forEach(function (e, i) { grid.appendChild(createCard(e, i)); });
+      let idx = 0;
+      days.forEach(function (d) {
+        const items = shown.filter(function (e) { return dayInfo(e).key === d.key; });
+        if (!items.length) return;
+        const head = document.createElement('div');
+        head.className = 'ddc-day' + (d.isDay ? ' ddc-day--special' : '');
+        head.innerHTML =
+          '<span class="ddc-day__label">' + escapeHtml(d.label) + '</span>' +
+          '<span class="ddc-day__count">' + items.length + ' experiência' + (items.length !== 1 ? 's' : '') + '</span>';
+        grid.appendChild(head);
+        items.forEach(function (e) { grid.appendChild(createCard(e, idx++)); });
+      });
+      if (!shown.length) {
+        const none = document.createElement('p');
+        none.className = 'ddc-none';
+        none.textContent = 'Nenhuma experiência com esse filtro. Tente outro dia ou tipo 😉';
+        grid.appendChild(none);
+      }
       if (countEl) {
         countEl.textContent = '🎈 ' + shown.length + ' experiência' + (shown.length !== 1 ? 's' : '') +
           ' pra fazer com os pequenos';
       }
-      if (chipsEl) {
-        chipsEl.querySelectorAll('.ddc-chip').forEach(function (b) {
-          const on = b.dataset.key === active;
-          b.classList.toggle('is-active', on);
-          b.setAttribute('aria-selected', on ? 'true' : 'false');
-        });
-      }
+      document.querySelectorAll('.ddc-chip').forEach(function (b) {
+        const cur = b.dataset.group === 'day' ? activeDay : active;
+        const on = b.dataset.key === cur;
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
     }
 
-    if (chipsEl && filters.length > 1) {
-      filters.forEach(function (f) {
+    function addChips(container, items, group) {
+      items.forEach(function (f) {
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'ddc-chip';
+        b.className = 'ddc-chip' + (group === 'day' ? ' ddc-chip--day' : '');
         b.setAttribute('role', 'tab');
         b.dataset.key = f.key;
+        b.dataset.group = group;
         b.textContent = f.label;
-        b.addEventListener('click', function () { active = f.key; render(); });
-        chipsEl.appendChild(b);
+        b.addEventListener('click', function () {
+          if (group === 'day') activeDay = f.key; else active = f.key;
+          render();
+        });
+        container.appendChild(b);
       });
+    }
+    if (chipsEl) {
+      if (dayFilters.length > 2) {
+        const row = document.createElement('div');
+        row.className = 'ddc-chips__row';
+        addChips(row, dayFilters, 'day');
+        chipsEl.appendChild(row);
+      }
+      if (filters.length > 1) {
+        const row = document.createElement('div');
+        row.className = 'ddc-chips__row';
+        addChips(row, filters, 'cat');
+        chipsEl.appendChild(row);
+      }
     }
     render();
 

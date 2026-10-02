@@ -321,7 +321,34 @@
 .ddc-experiences__count:empty { display: none; }
 
 /* Chips de filtro */
-.ddc-chips { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 0 0 34px; }
+.ddc-chips { display: flex; flex-direction: column; gap: 12px; align-items: center; margin: 0 0 34px; }
+.ddc-chips__row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.ddc-chip--day { border-style: dashed; }
+.ddc-chip--day.is-active { background: var(--ddc-pink); border-color: var(--ddc-pink); color: #fff; border-style: solid; }
+
+/* Título de cada dia, entre os cards */
+.ddc-day {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0 -4px;
+}
+.ddc-day:first-child { margin-top: 0; }
+.ddc-day::after { content: ""; flex: 1; height: 3px; border-radius: 3px; background: repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 10px, transparent 10px 18px); }
+.ddc-day__label {
+  font-family: 'Fredoka', sans-serif;
+  font-weight: 700;
+  font-size: 1.35rem;
+  background: #fff;
+  color: var(--ddc-ink);
+  padding: 8px 18px;
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--ddc-blue);
+}
+.ddc-day--special .ddc-day__label { background: var(--ddc-yellow); box-shadow: 0 4px 0 var(--ddc-pink); }
+.ddc-day__count { order: 3; font-size: .85rem; color: #D9D2F0; font-weight: 600; white-space: nowrap; }
+.ddc-none { grid-column: 1 / -1; text-align: center; color: #D9D2F0; padding: 30px 0; margin: 0; }
 .ddc-chip {
   border: 2px solid rgba(255,255,255,.35);
   background: transparent;
@@ -543,6 +570,9 @@
   .ddc-gift, .ddc-faq { padding-left: 16px; padding-right: 16px; }
   .ddc-gift__inner { box-shadow: 6px 6px 0 var(--ddc-ink); }
   .ddc-btn { width: 100%; }
+  .ddc-day__label { font-size: 1.1rem; padding: 7px 14px; }
+  .ddc-day { flex-wrap: wrap; }
+  .ddc-day::after { display: none; }
   .ddc-hero__ctas { flex-direction: column; }
 }
 @media (prefers-reduced-motion: reduce) {
