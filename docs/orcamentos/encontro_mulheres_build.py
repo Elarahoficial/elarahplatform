@@ -1,7 +1,8 @@
-# Proposta Elarah · Encontro de Mulheres · Vela Aromática + Wax Melts + Coffee Break Pão e Talho
-# 31/10 · 60 mulheres (2 turmas de 30) · regiao do ABC · local a definir.
-# Vela R$249/p (R$14.940) · Wax Melts R$279/p (R$16.740). Coffee opcional (nao somar).
-# Estetica editorial/clean/humana. Sem fornecedor/margem/comissao. Comunicacao no plural (nos).
+# Proposta Elarah · Encontro de Mulheres · Vela Aromática (+ Decorada) · Coffee opcional
+# 31/10 · 60 mulheres (2 turmas de 30) · ABC Paulista · local a definir.
+# Narrativa feminina, sensorial, acolhedora. Vela em recipiente de vidro, processo manual.
+# Vela R$239/p (R$14.340) · Vela Decorada R$269/p (R$16.140). Coffee OPCIONAL (99/114/142).
+# Sem alimentacao inclusa no workshop. Sem fornecedor/margem/comissao. Elarah no plural.
 import io, re
 
 ROOT = "/home/user/elarahplatform"
@@ -9,101 +10,84 @@ ref = io.open(ROOT + "/orcamento-adriana.html", encoding="utf-8").read()
 head = ref.split('<div class="deck">')[0]
 tail = '<div class="toolbar">' + ref.split('<div class="toolbar">', 1)[1]
 
-head = re.sub(r'<title>.*?</title>', '<title>Encontro de Mulheres · Experiência Sensorial · Elarah</title>', head, count=1, flags=re.DOTALL)
+head = re.sub(r'<title>.*?</title>', '<title>Encontro de Mulheres · Vela Aromática · Elarah</title>', head, count=1, flags=re.DOTALL)
 head = re.sub(r'<meta name="description"[^>]*>',
-              '<meta name="description" content="Encontro de Mulheres · uma pausa para criar, sentir e compartilhar. Workshop de Vela Aromática ou Wax Melts para 60 participantes.">',
+              '<meta name="description" content="Encontro de Mulheres · uma pausa para criar, sentir e compartilhar. Workshop de Vela Aromática artesanal para 60 participantes.">',
               head, count=1)
 
 extra = '''
 <style>
-  /* experiencia */
-  .exp{display:grid;grid-template-columns:1.04fr .96fr;gap:36px;margin-top:20px;align-items:center}
-  .exp .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 48px -28px rgba(0,0,0,.45);height:410px;position:relative}
+  .cover-note{margin-top:16px;font-size:11.5px;color:var(--muted);font-style:italic;line-height:1.5;max-width:40ch}
+  /* experiencia (split foto + texto) */
+  .exp{display:grid;grid-template-columns:1.02fr .98fr;gap:38px;margin-top:20px;align-items:center}
+  .exp.rev .ph{order:2}
+  .exp .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 48px -28px rgba(0,0,0,.45);height:420px;position:relative}
   .exp .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .exp p.tx{font-size:14px;color:var(--ink);line-height:1.62;margin:0 0 10px}
+  .exp p.tx{font-size:14.5px;color:var(--ink);line-height:1.7;margin:0 0 12px}
   .exp p.tx b{color:var(--navy);font-weight:700}
-  .kwpills{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
-  .kwpills span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:10px 17px;font-size:12.5px;font-weight:700;color:var(--navy);box-shadow:0 10px 24px -20px rgba(0,0,0,.3)}
-  .kwpills span.hl{background:var(--orange);color:#fff;border-color:transparent}
-  /* incluso */
-  .incstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
-  .incstrip figure{margin:0;border-radius:16px;overflow:hidden;height:156px;position:relative;border:1px solid var(--line);box-shadow:0 14px 32px -24px rgba(0,0,0,.4)}
-  .incstrip img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .inclist2{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:9px 26px}
-  .inclist2 li{position:relative;padding-left:24px;font-size:12.5px;color:var(--ink);line-height:1.4}
-  .inclist2 li .ck{position:absolute;left:0;top:1px;color:var(--orange);font-weight:800}
-  .inclist2 li b{color:var(--navy);font-weight:700}
-  .incnote{margin-top:16px;background:#FBF1EE;border-radius:14px;padding:15px 20px;font-size:13.5px;color:var(--navy);font-weight:700}
-  .incnote span{color:var(--orange-dark)}
-  /* investimento */
-  .sugtag{display:inline-block;background:var(--orange);color:#fff;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;padding:7px 15px;border-radius:999px;margin-bottom:12px}
-  .invwrap{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;margin-top:8px;align-items:stretch}
-  .invmain{background:linear-gradient(158deg,var(--navy),#241722);color:#fff;border-radius:22px;padding:36px 36px;display:flex;flex-direction:column;justify-content:center;box-shadow:0 22px 50px -28px rgba(0,0,0,.5)}
-  .invmain .tag{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--orange);font-weight:700}
-  .invmain .big{font-family:'DM Serif Display',serif;font-size:58px;line-height:1;margin:8px 0 2px}
-  .invmain .per{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72);font-weight:700}
-  .invside{display:flex;flex-direction:column;justify-content:center;gap:14px}
-  .invtot{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
-  .invtot .k{font-size:10px;letter-spacing:.13em;text-transform:uppercase;font-weight:700;color:var(--orange-dark)}
-  .invtot .v{font-family:'DM Serif Display',serif;font-size:34px;color:var(--navy);margin-top:4px;line-height:1}
-  .invnote{background:#FBF1EE;border-radius:14px;padding:13px 17px;font-size:12px;color:var(--navy-soft);line-height:1.5}
-  /* wax melts */
-  .waxsplit{display:grid;grid-template-columns:.95fr 1.05fr;gap:34px;margin-top:20px;align-items:center}
-  .waxsplit .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 48px -28px rgba(0,0,0,.45);height:380px;position:relative}
-  .waxsplit .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .waxsplit p.tx{font-size:13.5px;color:var(--ink);line-height:1.6;margin:0 0 12px}
-  .waxsplit p.tx b{color:var(--navy);font-weight:700}
-  .waxinc{list-style:none;margin:0 0 16px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 22px}
-  .waxinc li{position:relative;padding-left:22px;font-size:12px;color:var(--ink);line-height:1.4}
-  .waxinc li .ck{position:absolute;left:0;top:1px;color:var(--orange);font-weight:800}
-  .waxprice{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 22px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
-  .waxprice .pp{font-family:'DM Serif Display',serif;font-size:34px;color:var(--navy);line-height:1}
-  .waxprice .pp small{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);font-weight:600}
-  .waxprice .tt{font-size:12.5px;color:var(--navy-soft);font-weight:700}
-  .waxprice .tt b{color:var(--orange-dark)}
-  /* escolha (comparativo) */
-  .cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:22px;align-items:stretch;width:100%}
+  .exp .price{margin-top:8px;display:inline-flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .exp .price .pp{font-family:'DM Serif Display',serif;font-size:32px;color:var(--navy);line-height:1}
+  .exp .price .pp small{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);font-weight:600}
+  .exp .price .tt{font-size:12.5px;color:var(--navy-soft);font-weight:700}
+  .exp .price .tt b{color:var(--orange-dark)}
+  /* atmosfera mosaico */
+  .atm{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-top:22px;width:100%}
+  .atm figure{margin:0;border-radius:16px;overflow:hidden;position:relative;height:230px;box-shadow:0 14px 34px -24px rgba(0,0,0,.4)}
+  .atm img{width:100%;height:100%;object-fit:cover;display:block}
+  .atm figcaption{position:absolute;left:0;right:0;bottom:0;padding:30px 14px 13px;color:#fff;font-family:'DM Serif Display',serif;font-size:14px;line-height:1.2;background:linear-gradient(to top,rgba(46,31,42,.9),transparent)}
+  /* comparativo */
+  .cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:22px;width:100%;align-items:stretch}
   .cmpc{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);display:flex;flex-direction:column;min-width:0}
   .cmpc.hl{border:2px solid var(--orange)}
-  .cmpc .cph{height:180px;position:relative;overflow:hidden}
+  .cmpc .cph{height:190px;position:relative;overflow:hidden}
   .cmpc .cph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
   .cmpc .cbd{padding:22px 24px 24px;display:flex;flex-direction:column;flex:1}
-  .cmpc .nm{font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy);line-height:1.05}
-  .cmpc .sg{display:inline-block;align-self:flex-start;background:var(--orange);color:#fff;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:5px 11px;border-radius:999px;margin-top:8px}
-  .cmpc .pr{margin-top:12px;font-family:'DM Serif Display',serif;font-size:30px;color:var(--orange-dark);line-height:1}
-  .cmpc .pr small{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);font-weight:600}
+  .cmpc .nm{font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);line-height:1.05}
+  .cmpc .sg{display:inline-block;align-self:flex-start;background:var(--orange);color:#fff;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:5px 12px;border-radius:999px;margin-top:9px}
   .cmpc .ds{font-size:12.5px;color:var(--muted);line-height:1.55;margin:12px 0 0}
   .cmpc .ds b{color:var(--navy);font-weight:700}
-  .cmpc .tot{margin-top:auto;padding-top:14px;font-size:12.5px;font-weight:700;color:var(--navy)}
-  .cmpc .tot b{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy)}
-  /* coffee break */
-  .cbg{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px;align-items:stretch}
-  .cbc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 22px 24px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column;position:relative}
+  .cmpc .pr{margin-top:auto;padding-top:14px;font-size:12.5px;font-weight:700;color:var(--navy-soft)}
+  .cmpc .pr b{font-family:'DM Serif Display',serif;font-weight:400;font-size:24px;color:var(--orange-dark)}
+  .cmpc .pr span{display:block;font-weight:600;color:var(--muted);margin-top:3px}
+  .cmpnote{margin-top:16px;text-align:center;font-size:12.5px;color:var(--navy-soft)}
+  .cmpnote b{color:var(--navy)}
+  /* coffee opcional */
+  .cbintro{background:#FBF1EE;border-radius:16px;padding:16px 22px;margin-top:18px;font-size:13px;color:var(--navy-soft);line-height:1.55}
+  .cbintro b{color:var(--navy)}
+  .cbtag{display:inline-block;background:var(--navy);color:#fff;font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;padding:6px 14px;border-radius:999px;margin-bottom:12px}
+  .cbg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:14px;width:100%}
+  .cbc{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 22px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3);display:flex;flex-direction:column;position:relative}
   .cbc.hl{border:2px solid var(--orange)}
-  .cbc .sg{display:inline-block;align-self:flex-start;background:var(--orange);color:#fff;font-size:9px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:5px 11px;border-radius:999px;margin-bottom:9px}
-  .cbc .nm{font-family:'DM Serif Display',serif;font-size:20px;color:var(--navy);line-height:1}
-  .cbc .pr{margin-top:8px;font-size:12px;font-weight:700;color:var(--orange-dark)}
+  .cbc .sg{display:inline-block;align-self:flex-start;background:var(--orange);color:#fff;font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;padding:5px 11px;border-radius:999px;margin-bottom:9px}
+  .cbc .nm{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy)}
+  .cbc .pr{margin-top:7px;font-size:12px;font-weight:700;color:var(--orange-dark)}
   .cbc .pr b{font-family:'DM Serif Display',serif;font-weight:400;font-size:22px;color:var(--navy)}
   .cbc .pr small{color:var(--muted);font-weight:600;display:block;margin-top:2px}
-  .cbc ul{list-style:none;margin:13px 0 12px;padding:0;display:grid;gap:6px}
-  .cbc ul li{position:relative;padding-left:18px;font-size:11px;color:var(--ink);line-height:1.35}
-  .cbc ul li .ck{position:absolute;left:0;top:0;color:var(--orange);font-weight:800;font-size:10px}
-  .cbc .tx{margin-top:auto;font-size:11px;color:var(--muted);line-height:1.45;font-style:italic}
-  .cbnote{margin-top:15px;font-size:11px;color:var(--muted);line-height:1.5}
+  .cbc .it{margin-top:12px;font-size:11px;color:var(--muted);line-height:1.5}
+  /* experiencia completa (combos) */
+  .combos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:22px;width:100%}
+  .combo{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 26px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
+  .combo .ct{font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);margin:0 0 14px;line-height:1.1}
+  .combo .cr{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding:9px 0}
+  .combo .cr:last-child{border-bottom:none}
+  .combo .cr .k{font-size:12.5px;color:var(--navy-soft)}
+  .combo .cr .v{font-family:'DM Serif Display',serif;font-size:17px;color:var(--orange-dark);white-space:nowrap}
+  .combo .cr .v small{font-family:'DM Sans',sans-serif;font-size:10px;color:var(--muted);font-weight:600}
   /* fluxo */
-  .flow{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:22px}
+  .flow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:22px;width:100%}
   .fstep{display:flex;align-items:flex-start;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:0 12px 30px -26px rgba(0,0,0,.3)}
   .fstep .fn{width:36px;height:36px;flex:none;border-radius:999px;background:var(--orange);color:#fff;font-family:'DM Serif Display',serif;font-size:17px;display:flex;align-items:center;justify-content:center}
   .fstep h3{font-family:'DM Serif Display',serif;font-weight:400;font-size:18px;color:var(--navy);margin:0 0 4px;line-height:1.1}
   .fstep p{font-size:12px;color:var(--muted);line-height:1.45;margin:0}
   /* fechamento */
   .finwrap{display:grid;grid-template-columns:1.02fr .98fr;gap:38px;margin-top:20px;align-items:center}
-  .finwrap .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 22px 52px -28px rgba(0,0,0,.45);height:420px;position:relative}
+  .finwrap .ph{border-radius:20px;overflow:hidden;border:1px solid var(--line);box-shadow:0 22px 52px -28px rgba(0,0,0,.45);height:430px;position:relative}
   .finwrap .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-  .finwrap .ftx p.lead{margin-top:0}
-  .finsign{margin-top:20px;font-family:'DM Serif Display',serif;font-size:19px;color:var(--navy);line-height:1.3}
+  .finwrap .ftx p.tx{font-size:14px;color:var(--ink);line-height:1.7;margin:0 0 12px}
+  .finwrap .ftx p.tx b{color:var(--navy);font-weight:700}
+  .finsign{margin-top:16px;font-family:'DM Serif Display',serif;font-size:17px;color:var(--navy);line-height:1.35}
   .finsign em{font-style:italic;color:var(--orange)}
-  .finsign .el{display:block;margin-top:10px;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;font-family:'DM Sans',sans-serif}
+  .finsign .el{display:block;margin-top:10px;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;font-family:'DM Sans',sans-serif}
 </style>'''
 head = head.replace("</head>", extra + "</head>", 1)
 
@@ -123,6 +107,10 @@ def head_simple(kicker):
     </div>'''
 
 
+def vfig(src, cap, pos="center 50%"):
+    return f'<figure>{img(src, cap, pos)}<figcaption>{cap}</figcaption></figure>'
+
+
 # ===== 1 · CAPA =====
 cover = f'''
   <section class="slide">
@@ -132,178 +120,154 @@ cover = f'''
     </div>
     <div class="cover">
       <div>
-        <span class="eyebrow">✦ Experiência sensorial em grupo</span>
+        <span class="eyebrow">✦ Uma experiência sensorial em grupo</span>
         <h1>Uma pausa para <em>criar, sentir e compartilhar</em></h1>
-        <p class="lead">Experiência sensorial para <strong>60 participantes</strong>.</p>
+        <p class="lead">Entre aromas, conversas e mãos criando juntas, um encontro pensado para transformar algumas horas do dia em uma <strong>memória gostosa de levar para casa</strong>.</p>
         <div class="rule"></div>
         <div class="chips">
           <span class="chip"><b>31.10</b></span>
-          <span class="chip"><b>2 turmas</b> de 30</span>
-          <span class="chip">Local a definir</span>
+          <span class="chip"><b>60</b> mulheres</span>
+          <span class="chip">2 turmas de 30</span>
+          <span class="chip">ABC Paulista · local a definir</span>
         </div>
+        <p class="cover-note">Aguardamos a definição do espaço para alinharmos os detalhes finais da experiência.</p>
       </div>
-      <div class="cover-photo">{img("aroma-meninas-jardim.jpg", "Mulheres criando e compartilhando juntas em uma experiência sensorial", "center 45%")}</div>
+      <div class="cover-photo">{img("vela-grupo-oficina.jpg", "Mulheres reunidas à mesa criando velas aromáticas", "center 40%")}</div>
     </div>
     {foot("Encontro de Mulheres · 31.10")}
   </section>'''
 
-# ===== 2 · A EXPERIÊNCIA =====
-experiencia = f'''
+# ===== 2 · VELA AROMÁTICA =====
+vela = f'''
   <section class="slide">
 {head_simple("A experiência")}
     <span class="eyebrow orange">◆ A experiência</span>
     <h2>Vela <em>Aromática</em></h2>
     <div class="exp">
-      <div class="ph">{img("teoriavela.jpg", "Processo de criação de uma vela aromática artesanal", "center 45%")}</div>
+      <div class="ph">{img("velas3.jpg", "Mãos criando velas aromáticas em recipientes de vidro", "center 50%")}</div>
       <div>
-        <p class="tx">Uma experiência delicada e criativa para <b>desacelerar, despertar os sentidos</b> e criar algo especial com as próprias mãos.</p>
-        <p class="tx">Cada participante aprende a produzir sua <b>própria vela aromática artesanal</b>, acompanhando o processo e explorando aromas e possibilidades de personalização. Ao final, <b>leva para casa a peça que produziu</b>.</p>
-        <div class="kwpills">
-          <span>Criatividade</span><span>Aromas</span><span>Experiência sensorial</span><span>Conexão</span><span class="hl">Uma criação para levar para casa</span>
-        </div>
+        <p class="tx">Tem alguma coisa especial em <b>criar com as próprias mãos</b>. Escolher um aroma, acompanhar a vela ganhar forma e transformar aquele momento em algo só seu.</p>
+        <p class="tx">Nesta experiência, cada participante produz a <b>sua própria vela aromática artesanal</b> em uma pausa leve, sensorial e compartilhada.</p>
+        <p class="tx">No final, a vela vai para casa — <b>e a memória do encontro também</b>.</p>
       </div>
     </div>
     {foot("A experiência")}
   </section>'''
 
-# ===== 3 · O QUE ESTÁ INCLUSO =====
-incluso = f'''
+# ===== 3 · A ATMOSFERA =====
+atmosfera = f'''
   <section class="slide">
-{head_simple("O que está incluso")}
-    <span class="eyebrow orange">◆ O que está incluso</span>
-    <h2>Tudo preparado para <em>viver a experiência</em></h2>
-    <div class="incstrip">
-      <figure>{img("sabonete-grupo-oficina.jpg", "Mulheres reunidas criando juntas", "center 40%")}</figure>
-      <figure>{img("vela-aromatica-real.jpg", "Materiais e fragrâncias da experiência", "center 50%")}</figure>
-      <figure>{img("bolocaseiro.jpg", "Cafezinho e bolo para acompanhar o encontro", "center 50%")}</figure>
+{head_simple("A atmosfera")}
+    <span class="eyebrow orange">◆ A atmosfera</span>
+    <h2>Uma mesa, bons aromas e <em>tempo para estar presente</em></h2>
+    <p class="lead">Uma pausa na rotina para sentar juntas, criar sem pressa, conversar e viver algo diferente. A experiência acontece em torno de uma <strong>mesa preparada para receber o grupo</strong>, com materiais organizados e toda a condução necessária — é só chegar, criar e aproveitar.</p>
+    <div class="atm">
+      {vfig("teoriavela.jpg", "Mãos criando juntas", "center 45%")}
+      {vfig("vela3.jpg", "Aromas escolhidos por cada uma", "center 50%")}
+      {vfig("vela-grupo-oficina.jpg", "Conversas sem pressa", "center 40%")}
+      {vfig("vela2.jpg", "Uma criação para levar", "center 50%")}
     </div>
-    <ul class="inclist2">
-      <li><span class="ck">✓</span><b>Todos os materiais</b> para a produção da vela</li>
-      <li><span class="ck">✓</span><b>Orientação</b> durante toda a oficina</li>
-      <li><span class="ck">✓</span>Seleção de <b>fragrâncias</b></li>
-      <li><span class="ck">✓</span><b>Recipiente de 170 ml</b></li>
-      <li><span class="ck">✓</span>Materiais e insumos necessários</li>
-      <li><span class="ck">✓</span><b>Vela artesanal</b> de cada uma para levar</li>
-    </ul>
-    <div class="incnote"><span>☕</span> <b>Cafezinho e bolo</b> também fazem parte da experiência.</div>
-    {foot("O que está incluso")}
+    {foot("A atmosfera")}
   </section>'''
 
-# ===== 4 · INVESTIMENTO VELA =====
-inv_vela = f'''
+# ===== 4 · VELA AROMÁTICA DECORADA =====
+decorada = f'''
   <section class="slide">
-{head_simple("Investimento")}
-    <span class="sugtag">Nossa sugestão</span>
-    <h2>Workshop de <em>Vela Aromática</em></h2>
-    <p class="lead" style="max-width:62ch">Uma experiência sensorial, criativa e aconchegante para o grupo <strong>criar junto e sair do automático</strong> por algumas horas.</p>
-    <div class="invwrap">
-      <div class="invmain">
-        <div class="tag">Investimento · por pessoa</div>
-        <div class="big">R$ 249</div>
-        <div class="per">workshop completo</div>
-      </div>
-      <div class="invside">
-        <div class="invtot"><div class="k">Para 60 participantes</div><div class="v">R$ 14.940</div></div>
-        <div class="invnote">60 participantes · 2 turmas de 30 · mesma experiência nos dois períodos.</div>
-      </div>
-    </div>
-    {foot("Investimento · Vela Aromática")}
-  </section>'''
-
-# ===== 5 · SEGUNDA OPÇÃO · WAX MELTS =====
-wax = f'''
-  <section class="slide">
-{head_simple("Segunda opção")}
-    <span class="eyebrow orange">◆ Segunda opção</span>
-    <h2>Workshop de <em>Wax Melts</em></h2>
-    <div class="waxsplit">
-      <div class="ph">{img("velaflor.jpg", "Peças de cera aromática moldadas em diferentes formas", "center 50%")}</div>
+{head_simple("Segunda experiência")}
+    <span class="eyebrow orange">◆ Segunda experiência</span>
+    <h2>Vela Aromática <em>Decorada</em></h2>
+    <div class="exp rev">
+      <div class="ph">{img("velas2.jpg", "Vela aromática artesanal com acabamento decorado delicado", "center 45%")}</div>
       <div>
-        <p class="tx">Uma alternativa mais <b>criativa e visual</b>. Wax melts são pequenas <b>peças de cera aromática moldada</b>, criadas em diferentes formatos e usadas para perfumar ambientes.</p>
-        <p class="tx">Durante a experiência, as participantes exploram <b>fragrâncias, formatos e composições</b> em uma atividade artesanal e sensorial.</p>
-        <ul class="waxinc">
-          <li><span class="ck">✓</span>Todos os materiais</li>
-          <li><span class="ck">✓</span>Cera</li>
-          <li><span class="ck">✓</span>Fragrâncias</li>
-          <li><span class="ck">✓</span>Moldes</li>
-          <li><span class="ck">✓</span>Formas e cores</li>
-          <li><span class="ck">✓</span>Orientação completa</li>
-        </ul>
-        <div class="waxprice"><div class="pp">R$ 279 <small>/pessoa</small></div><div class="tt">Para 60 participantes<br><b>R$ 16.740</b></div></div>
+        <p class="tx"><b>Uma versão mais visual e personalizada.</b></p>
+        <p class="tx">Cada participante cria a sua própria vela aromática e, na finalização, a peça ganha <b>detalhes decorativos</b>, que podem ser alinhados conforme o conceito escolhido para o encontro.</p>
+        <p class="tx">Uma forma delicada de deixar cada criação ainda mais única.</p>
+        <div class="price"><span class="pp">R$ 269 <small>/pessoa</small></span><span class="tt">60 participantes<br><b>R$ 16.140</b></span></div>
       </div>
     </div>
-    {foot("Segunda opção · Wax Melts")}
+    {foot("Segunda experiência")}
   </section>'''
 
-# ===== 6 · ESCOLHA SUA EXPERIÊNCIA =====
-escolha = f'''
+# ===== 5 · COMPARATIVO / INVESTIMENTO =====
+comparativo = f'''
   <section class="slide">
-{head_simple("Escolha sua experiência")}
-    <span class="eyebrow orange">◆ Escolha sua experiência</span>
-    <h2>Duas formas de <em>criar junto</em></h2>
+{head_simple("Qual combina mais?")}
+    <span class="eyebrow orange">◆ Nossa sugestão</span>
+    <h2>Qual experiência combina mais com <em>esse encontro?</em></h2>
     <div class="cmp">
       <div class="cmpc hl">
-        <div class="cph">{img("vela-grupo-oficina.jpg", "Workshop de vela aromática em grupo", "center 40%")}</div>
+        <div class="cph">{img("vela1.jpg", "Vela aromática artesanal em recipiente de vidro", "center 50%")}</div>
         <div class="cbd">
           <div class="nm">Vela Aromática</div>
           <span class="sg">Nossa sugestão</span>
-          <div class="pr">R$ 249 <small>/pessoa</small></div>
-          <p class="ds">Mais <b>clássica, sensorial e aconchegante</b>. Cada participante cria sua própria vela artesanal para levar para casa. <b>Inclui cafezinho + bolo.</b></p>
-          <div class="tot">Para 60 pessoas: <b>R$ 14.940</b></div>
+          <p class="ds">Clássica, delicada e sensorial. Cada participante cria a <b>sua própria vela artesanal</b>.</p>
+          <div class="pr">A partir de <b>R$ 239</b> / pessoa<span>60 participantes · R$ 14.340</span></div>
         </div>
       </div>
       <div class="cmpc">
-        <div class="cph">{img("velasuculenta.jpg", "Workshop de wax melts, peças moldadas em formas e cores", "center 50%")}</div>
+        <div class="cph">{img("velas2.jpg", "Vela aromática decorada de forma delicada", "center 45%")}</div>
         <div class="cbd">
-          <div class="nm">Wax Melts</div>
-          <div class="pr">R$ 279 <small>/pessoa</small></div>
-          <p class="ds">Mais <b>visual, criativa e artesanal</b>. Cada participante desenvolve pequenas peças aromáticas com moldes, fragrâncias e diferentes composições.</p>
-          <div class="tot">Para 60 pessoas: <b>R$ 16.740</b></div>
+          <div class="nm">Vela Aromática Decorada</div>
+          <p class="ds">Mais visual e personalizada. A experiência ganha uma <b>finalização especial</b> com detalhes decorativos.</p>
+          <div class="pr">A partir de <b>R$ 269</b> / pessoa<span>60 participantes · R$ 16.140</span></div>
         </div>
       </div>
     </div>
-    {foot("Escolha sua experiência")}
+    <p class="cmpnote"><b>2 turmas privativas de 30 participantes</b> · mesma experiência nos dois períodos.</p>
+    {foot("Qual combina mais?")}
   </section>'''
 
-# ===== 7 · COFFEE BREAK OPCIONAL =====
-LISTA_BASE = (
-    '<li><span class="ck">✓</span>2 sabores de mini sanduíches</li>'
-    '<li><span class="ck">✓</span>{salg}</li>'
-    '<li><span class="ck">✓</span>{doce}</li>'
-    '<li><span class="ck">✓</span>Fruta ou iogurte</li>'
-    '<li><span class="ck">✓</span>1 tipo de suco · Água na Caixa</li>'
-    '<li><span class="ck">✓</span>Café</li>'
-    '<li><span class="ck">✓</span>Serviço de montagem + utensílios</li>'
-)
+# ===== 6 · COFFEE BREAK OPCIONAL =====
 coffee = f'''
   <section class="slide">
-{head_simple("Coffee break opcional")}
-    <span class="eyebrow orange">◆ Coffee break opcional · Pão e Talho</span>
-    <h2>Para deixar o encontro <em>ainda mais completo</em></h2>
-    <p class="lead" style="max-width:88ch">O Workshop de Vela Aromática <strong>já inclui cafezinho e bolo</strong>. Para quem quiser um momento ainda mais completo, preparamos três possibilidades de coffee break — <strong>opcional e contratado à parte</strong>.</p>
+{head_simple("Para completar")}
+    <span class="eyebrow orange">◆ Quer deixar o encontro ainda mais completo?</span>
+    <h2>Coffee break <em>opcional</em></h2>
+    <div class="cbintro">Também podemos preparar o coffee break para acompanhar esse momento — <b>tudo organizado no mesmo formato</b>, para vocês não precisarem se preocupar com a operação. <span style="white-space:nowrap">☕ Opcional · contratado adicionalmente.</span></div>
     <div class="cbg">
       <div class="cbc">
         <div class="nm">Essencial</div>
-        <div class="pr"><b>R$ 90</b> /pessoa<small>R$ 5.400 · 60 participantes</small></div>
-        <ul>{LISTA_BASE.format(salg="1 tipo de salgado", doce="1 tipo de doce")}</ul>
-        <p class="tx">Uma composição leve e prática para acompanhar o encontro.</p>
+        <div class="pr"><b>R$ 99</b> /pessoa<small>60 participantes · R$ 5.940</small></div>
+        <div class="it">Mini sanduíches, salgado, doce, fruta ou iogurte, suco, água e café — com serviço de montagem.</div>
       </div>
       <div class="cbc hl">
         <span class="sg">Nossa sugestão</span>
         <div class="nm">Clássico</div>
-        <div class="pr"><b>R$ 114</b> /pessoa<small>R$ 6.840 · 60 participantes</small></div>
-        <ul>{LISTA_BASE.format(salg="1 tipo de salgado", doce="1 tipo de doce")}</ul>
-        <p class="tx">Uma composição completa e equilibrada para acompanhar a experiência.</p>
+        <div class="pr"><b>R$ 114</b> /pessoa<small>60 participantes · R$ 6.840</small></div>
+        <div class="it">A composição completa e equilibrada para acompanhar a experiência — montagem e utensílios inclusos.</div>
       </div>
       <div class="cbc">
         <div class="nm">Especial</div>
-        <div class="pr"><b>R$ 142</b> /pessoa<small>R$ 8.520 · 60 participantes</small></div>
-        <ul>{LISTA_BASE.format(salg="2 tipos de salgados", doce="2 tipos de doces")}</ul>
-        <p class="tx">Uma composição mais completa para transformar o coffee break em parte importante do encontro.</p>
+        <div class="pr"><b>R$ 142</b> /pessoa<small>60 participantes · R$ 8.520</small></div>
+        <div class="it">Mais opções de salgados e doces, para transformar o coffee em parte importante do encontro.</div>
       </div>
     </div>
-    <div class="cbnote">Sabores e escolhas dentro de cada categoria serão alinhados posteriormente, conforme disponibilidade e preferências do grupo. O coffee break é opcional e não está somado ao valor da experiência.</div>
     {foot("Coffee break opcional")}
+  </section>'''
+
+# ===== 7 · EXPERIÊNCIA COMPLETA (combos) =====
+completa = f'''
+  <section class="slide">
+{head_simple("Experiência completa")}
+    <span class="eyebrow orange">◆ Se quiserem juntar tudo</span>
+    <h2>A experiência <em>completa</em></h2>
+    <p class="lead">Uma composição opcional: a experiência + o coffee break, já no mesmo formato. O workshop também pode ser contratado sozinho.</p>
+    <div class="combos">
+      <div class="combo">
+        <p class="ct">Vela Aromática + coffee</p>
+        <div class="cr"><span class="k">Com Essencial</span><span class="v">a partir de R$ 338<small> /p</small></span></div>
+        <div class="cr"><span class="k">Com Clássico</span><span class="v">a partir de R$ 353<small> /p</small></span></div>
+        <div class="cr"><span class="k">Com Especial</span><span class="v">a partir de R$ 381<small> /p</small></span></div>
+      </div>
+      <div class="combo">
+        <p class="ct">Vela Aromática Decorada + coffee</p>
+        <div class="cr"><span class="k">Com Essencial</span><span class="v">a partir de R$ 368<small> /p</small></span></div>
+        <div class="cr"><span class="k">Com Clássico</span><span class="v">a partir de R$ 383<small> /p</small></span></div>
+        <div class="cr"><span class="k">Com Especial</span><span class="v">a partir de R$ 411<small> /p</small></span></div>
+      </div>
+    </div>
+    <p class="fineprint">Valores por pessoa, a partir de. O coffee break é opcional e contratado adicionalmente. Cada proposta é ajustada conforme número de participantes, local e formato do encontro.</p>
+    {foot("Experiência completa")}
   </section>'''
 
 # ===== 8 · COMO FUNCIONA =====
@@ -313,10 +277,10 @@ como = f'''
     <span class="eyebrow orange">◆ Como funciona</span>
     <h2>Simples do começo <em>ao fim</em></h2>
     <div class="flow">
-      <div class="fstep"><div class="fn">1</div><div><h3>Escolhemos a experiência</h3><p>Vela Aromática ou Wax Melts.</p></div></div>
-      <div class="fstep"><div class="fn">2</div><div><h3>Alinhamos os detalhes</h3><p>Definimos local, horários, dinâmica e necessidades do grupo.</p></div></div>
-      <div class="fstep"><div class="fn">3</div><div><h3>Preparamos tudo</h3><p>Nós organizamos materiais, estrutura e todos os detalhes da experiência.</p></div></div>
-      <div class="fstep"><div class="fn">4</div><div><h3>Vivemos o encontro</h3><p>O grupo cria junto e cada participante leva sua criação para casa.</p></div></div>
+      <div class="fstep"><div class="fn">1</div><div><h3>Escolhemos a experiência</h3><p>Vela Aromática ou Vela Aromática Decorada.</p></div></div>
+      <div class="fstep"><div class="fn">2</div><div><h3>Montamos o formato</h3><p>Definimos local, horários e se o encontro terá apenas a experiência ou também coffee break.</p></div></div>
+      <div class="fstep"><div class="fn">3</div><div><h3>Preparamos tudo</h3><p>Nós organizamos os materiais, a estrutura e os detalhes para receber o grupo.</p></div></div>
+      <div class="fstep"><div class="fn">4</div><div><h3>Vivemos o encontro</h3><p>É só chegar, criar juntas e aproveitar o momento.</p></div></div>
     </div>
     {foot("Como funciona")}
   </section>'''
@@ -328,21 +292,28 @@ final = f'''
     <span class="eyebrow orange">◆ Para fechar</span>
     <h2>Uma pausa no dia para criar com as próprias mãos — e <em>levar essa memória para casa</em></h2>
     <div class="finwrap">
-      <div class="ph">{img("pintura-grupo.jpg", "Mulheres sorrindo e criando juntas", "center 35%")}</div>
+      <div class="ph">{img("vela-grupo-oficina.jpg", "Mulheres criando e conversando juntas", "center 50%")}</div>
       <div class="ftx">
-        <p class="lead">Acreditamos que os melhores encontros são os que aproximam as pessoas de forma <strong>leve, criativa e natural</strong>. Vamos adorar preparar essa experiência com vocês.</p>
+        <p class="tx">No fim, não é só sobre fazer uma vela. É sobre <b>sentar juntas, conversar sem pressa, descobrir um aroma novo</b> e transformar algumas horas do dia em uma lembrança compartilhada.</p>
+        <p class="tx">Vamos adorar preparar esse encontro com vocês.</p>
         <div class="finsign">Vocês escolhem a experiência. <em>Nós cuidamos do restante.</em><span class="el">Elarah</span></div>
       </div>
     </div>
     {foot("Para fechar")}
   </section>'''
 
-deck = ('<div class="deck">\n' + cover + experiencia + incluso + inv_vela + wax + escolha + coffee + como + final + '\n\n</div>\n\n')
+deck = ('<div class="deck">\n' + cover + vela + atmosfera + decorada + comparativo
+        + coffee + completa + como + final + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-encontro-mulheres.html"
 io.open(out, "w", encoding="utf-8").write(html)
-for bad in ["fornecedor", "repasse", "comiss", "margem"]:
+# guards
+for bad in ["fornecedor", "repasse", "comiss", "margem", "wax melt", "sob consulta"]:
     assert bad not in deck.lower(), f"PROIBIDO: {bad}"
-for val in ["R$ 249", "R$ 14.940", "R$ 279", "R$ 16.740", "R$ 90", "R$ 5.400", "R$ 114", "R$ 6.840", "R$ 142", "R$ 8.520"]:
+for val in ["R$ 239", "R$ 14.340", "R$ 269", "R$ 16.140", "R$ 99", "R$ 5.940", "R$ 114",
+            "R$ 6.840", "R$ 142", "R$ 8.520", "R$ 338", "R$ 353", "R$ 381", "R$ 368", "R$ 383", "R$ 411"]:
     assert val in deck, f"FALTA VALOR: {val}"
+# nao mencionar cafe/bolo como incluso no workshop (so na secao coffee opcional)
+assert "Tudo preparado para viver" not in deck
+assert deck.count("Wax Melts") == 0 and deck.count("Wax melt") == 0
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
