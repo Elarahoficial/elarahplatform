@@ -553,6 +553,54 @@
   color: #666;
 }
 
+/* Experiência guardada: virou crédito em reais na conta. */
+.purchase-card__status--credito {
+  background: #fff3e0;
+  color: #b56a15;
+}
+
+.purchase-card--credito {
+  border-color: #f0d3a8;
+}
+
+.purchase-card__credito-texto {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  color: #4a3f35;
+  line-height: 1.45;
+}
+
+.purchases__credito {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  background: #fff8ef;
+  border: 1px solid #f0ddc8;
+  border-radius: 12px;
+}
+
+.purchases__credito-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #b56a15;
+}
+
+.purchases__credito-valor {
+  display: block;
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem;
+  color: #1a1a1a;
+  margin: 2px 0;
+}
+
+.purchases__credito-sub {
+  display: block;
+  font-size: 0.8rem;
+  color: #7a6a52;
+}
+
 .purchase-card__title {
   font-family: 'DM Serif Display', serif;
   font-size: 1.05rem;
