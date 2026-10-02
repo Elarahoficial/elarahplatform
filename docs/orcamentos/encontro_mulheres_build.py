@@ -78,6 +78,17 @@ extra = '''
   .invhero .n{font-family:'DM Serif Display',serif;font-size:42px;color:var(--navy);line-height:1}
   .invhero .n em{font-style:italic;color:var(--orange)}
   .invhero .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;max-width:14ch;line-height:1.3}
+  .invsub{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy-soft);font-weight:700;margin-top:4px}
+  .invcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:24px;width:100%}
+  .invcard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:30px 32px;box-shadow:0 16px 38px -26px rgba(0,0,0,.34);display:flex;flex-direction:column}
+  .invcard.hl{border:2px solid var(--orange)}
+  .invcard .sg{align-self:flex-start;background:var(--orange);color:#fff;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;padding:5px 12px;border-radius:999px;margin-bottom:12px}
+  .invcard .nm{font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);line-height:1.05}
+  .invcard .big{font-family:'DM Serif Display',serif;font-size:46px;color:var(--orange-dark);line-height:1;margin:14px 0 2px}
+  .invcard .per{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-soft);font-weight:700}
+  .invcard .tot{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--navy-soft);font-weight:700}
+  .invcard .tot b{font-family:'DM Serif Display',serif;font-weight:400;font-size:17px;color:var(--navy)}
+  .invobs{margin-top:18px;font-size:11.5px;color:var(--muted);line-height:1.5}
   .combos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:20px;width:100%}
   .combo{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 26px;box-shadow:0 14px 34px -26px rgba(0,0,0,.3)}
   .combo .ct{font-family:'DM Serif Display',serif;font-size:18px;color:var(--navy);margin:0 0 12px;line-height:1.1}
@@ -206,33 +217,55 @@ atmosfera = f'''
     {foot("A atmosfera")}
   </section>'''
 
-# ===== 4 · ESCOLHAM A EXPERIÊNCIA =====
-comparativo = f'''
+# ===== 4 · DUAS FORMAS DE VIVER A EXPERIÊNCIA =====
+duasformas = f'''
   <section class="slide">
-{head_simple("Qual combina mais?")}
-    <span class="eyebrow orange">◆ Nossa sugestão</span>
-    <h2>Qual experiência combina mais com <em>esse encontro?</em></h2>
+{head_simple("Duas opções")}
+    <span class="eyebrow orange">◆ Duas formas de viver a experiência</span>
+    <h2>Escolham o <em>clima do encontro</em></h2>
     <div class="cmp">
-      <div class="cmpc hl">
+      <div class="cmpc">
         <div class="cph">{img("vela1.jpg", "Vela aromática artesanal em recipiente de vidro", "center 50%")}</div>
         <div class="cbd">
           <div class="nm">Vela Aromática</div>
-          <span class="sg">Nossa sugestão</span>
           <p class="ds">Clássica, delicada e sensorial. Cada participante cria a <b>sua própria vela artesanal</b>.</p>
-          <div class="pr">A partir de <b>R$ 239</b> / pessoa<span>60 participantes · R$ 14.340</span></div>
         </div>
       </div>
       <div class="cmpc">
         <div class="cph">{img("velas2.jpg", "Vela aromática decorada de forma delicada", "center 45%")}</div>
         <div class="cbd">
           <div class="nm">Vela Aromática Decorada</div>
-          <p class="ds">Mais visual e personalizada. A experiência ganha uma <b>finalização especial</b> com detalhes decorativos.</p>
-          <div class="pr">A partir de <b>R$ 269</b> / pessoa<span>60 participantes · R$ 16.140</span></div>
+          <p class="ds">Mais visual e personalizada, com <b>detalhes decorativos em cera</b>.</p>
         </div>
       </div>
     </div>
-    <p class="cmpnote"><b>2 turmas privativas de 30 participantes</b> · mesma experiência nos dois períodos.</p>
-    {foot("Qual combina mais?")}
+    {foot("Duas opções")}
+  </section>'''
+
+# ===== 5 · INVESTIMENTO =====
+investimento = f'''
+  <section class="slide">
+{head_simple("Investimento")}
+    <span class="eyebrow orange">◆ Investimento</span>
+    <h2>O investimento para <em>esse encontro</em></h2>
+    <p class="invsub">60 mulheres · 2 turmas privativas de 30 participantes</p>
+    <div class="invcards">
+      <div class="invcard hl">
+        <span class="sg">Nossa sugestão</span>
+        <div class="nm">Vela Aromática</div>
+        <div class="big">R$ 239</div>
+        <div class="per">a partir de · por pessoa</div>
+        <div class="tot">Para 60 participantes · <b>R$ 14.340</b></div>
+      </div>
+      <div class="invcard">
+        <div class="nm">Vela Aromática Decorada</div>
+        <div class="big">R$ 269</div>
+        <div class="per">a partir de · por pessoa</div>
+        <div class="tot">Para 60 participantes · <b>R$ 16.140</b></div>
+      </div>
+    </div>
+    <p class="invobs">Valores considerando duas turmas de 30 participantes no mesmo dia. Local ainda a definir.</p>
+    {foot("Investimento")}
   </section>'''
 
 # ===== 5 · COFFEE BREAK OPCIONAL =====
@@ -250,44 +283,20 @@ coffee = f'''
     {foot("Coffee break opcional")}
   </section>'''
 
-# ===== 6 · A EXPERIÊNCIA COMPLETA =====
-completa = f'''
+# ===== 7 · PRÓXIMOS PASSOS =====
+proximos = f'''
   <section class="slide">
-{head_simple("Experiência completa")}
-    <span class="eyebrow orange">◆ Se quiserem juntar tudo</span>
-    <h2>A experiência <em>completa</em></h2>
-    <p class="lead">Uma composição opcional: a experiência + o coffee break, já no mesmo formato. O workshop também pode ser contratado sozinho.</p>
-    <div class="combos">
-      <div class="combo">
-        <p class="ct">Vela Aromática + coffee</p>
-        {crow("Com Essencial", "a partir de R$ 338")}
-        {crow("Com Clássico", "a partir de R$ 353")}
-        {crow("Com Especial", "a partir de R$ 381")}
-      </div>
-      <div class="combo">
-        <p class="ct">Vela Aromática Decorada + coffee</p>
-        {crow("Com Essencial", "a partir de R$ 368")}
-        {crow("Com Clássico", "a partir de R$ 383")}
-        {crow("Com Especial", "a partir de R$ 411")}
-      </div>
-    </div>
-    <p class="fineprint">Valores por pessoa, a partir de. O coffee break é opcional e contratado adicionalmente. Cada proposta é ajustada conforme número de participantes, local e formato do encontro.</p>
-    {foot("Experiência completa")}
-  </section>'''
-
-# ===== 7 · COMO FUNCIONA =====
-como = f'''
-  <section class="slide">
-{head_simple("Como funciona")}
-    <span class="eyebrow orange">◆ Como funciona</span>
-    <h2>Simples do começo <em>ao fim</em></h2>
+{head_simple("Próximos passos")}
+    <span class="eyebrow orange">◆ Próximos passos</span>
+    <h2>Daqui pra frente, <em>a gente cuida de tudo</em></h2>
     <div class="stg">
-      {stc("1", "Escolhemos a experiência", "Vela Aromática ou Vela Aromática Decorada.")}
-      {stc("2", "Montamos o formato", "Definimos local, horários e se o encontro terá apenas a experiência ou também coffee break.")}
-      {stc("3", "Preparamos tudo", "Nós organizamos os materiais, a estrutura e os detalhes para receber o grupo.")}
-      {stc("4", "Vivemos o encontro", "É só chegar, criar juntas e aproveitar o momento.")}
+      {stc("1", "Vocês escolhem a experiência", "Vela Aromática ou Vela Aromática Decorada.")}
+      {stc("2", "Definimos o espaço", "Aguardamos a confirmação do local no ABC Paulista.")}
+      {stc("3", "Alinhamos os detalhes", "Horários, dinâmica e coffee break, caso desejem incluir.")}
+      {stc("4", "Preparamos o encontro", "Nós organizamos materiais, estrutura e toda a operação para receber o grupo.")}
     </div>
-    {foot("Como funciona")}
+    <div class="noteband">◆ Depois da confirmação, seguimos com a <b>reserva da data</b> e todos os alinhamentos finais.</div>
+    {foot("Próximos passos")}
   </section>'''
 
 # ===== 8 · FECHAMENTO =====
@@ -299,18 +308,18 @@ final = f'''
     <div class="finwrap">
       <div class="ph">{img("vela-grupo-oficina.jpg", "Mulheres criando e conversando juntas", "center 50%")}</div>
       <div class="ftx">
-        <p class="lead">No fim, não é só sobre fazer uma vela. É sobre <strong>sentar juntas, conversar sem pressa, descobrir um aroma novo</strong> e transformar algumas horas do dia em uma lembrança compartilhada.</p>
+        <p class="lead">Mais do que uma oficina, queremos preparar um encontro <strong>gostoso, leve e especial</strong> para essas 60 mulheres. Vamos adorar viver esse momento com vocês.</p>
         <div class="ctabox">
-          <p class="t">Vamos adorar preparar <em>esse encontro</em> com vocês.</p>
-          <p class="el">Vocês escolhem · nós cuidamos do restante</p>
+          <p class="t">Vocês escolhem a experiência.</p>
+          <p class="el">Nós cuidamos do restante</p>
         </div>
       </div>
     </div>
     {foot("Para fechar")}
   </section>'''
 
-deck = ('<div class="deck">\n' + cover + vela + atmosfera + comparativo
-        + coffee + final + '\n\n</div>\n\n')
+deck = ('<div class="deck">\n' + cover + vela + atmosfera + duasformas + investimento
+        + coffee + proximos + final + '\n\n</div>\n\n')
 html = head + deck + tail
 out = ROOT + "/proposta-encontro-mulheres.html"
 io.open(out, "w", encoding="utf-8").write(html)
@@ -322,4 +331,7 @@ for val in ["R$ 239", "R$ 14.340", "R$ 269", "R$ 16.140", "R$ 99", "R$ 5.940", "
 assert "Tudo preparado para viver" not in deck
 assert deck.count("Wax Melts") == 0
 assert "experiência completa" not in deck.lower() and "Como funciona" not in deck
+assert "O investimento para" in deck, "falta slide de investimento"
+assert "Próximos passos" in deck and "Daqui pra frente" in deck, "falta slide de próximos passos"
+assert html.count('<section class="slide">') == 8, "esperado 8 slides"
 print("wrote", out, "| slides:", html.count('<section class="slide">'))
