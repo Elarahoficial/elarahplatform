@@ -570,6 +570,27 @@
   line-height: 1.45;
 }
 
+.purchase-card__cupom {
+  display: inline-block;
+  margin: 2px 0 4px;
+  padding: 7px 12px;
+  font-family: Menlo, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #1a1a1a;
+  background: #fff3ea;
+  border: 1px dashed #e0b48a;
+  border-radius: 8px;
+  user-select: all;
+}
+
+.purchase-card__credito-validade {
+  margin: 0 0 6px;
+  font-size: 0.75rem;
+  color: #7a6a52;
+}
+
 .purchases__credito {
   margin: 0 0 16px;
   padding: 14px 16px;

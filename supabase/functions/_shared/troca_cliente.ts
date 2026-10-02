@@ -228,7 +228,7 @@ export interface Devolucao {
 export const CREDITO_DIAS = 90;
 export const REEMBOLSO_PIX_HORAS = 72;
 
-function gerarCodigoCredito(): string {
+export function gerarCodigoCredito(): string {
   const alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const bytes = new Uint8Array(8);
   crypto.getRandomValues(bytes);

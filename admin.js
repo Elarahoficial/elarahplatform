@@ -6024,6 +6024,7 @@
       // Crédito que aparece na conta da cliente quando a reserva fica
       // "aguardando experiência": o que ela pagou de verdade (com
       // promoção/cupom, SEM a taxa do cartão) — mesma conta do conta.js.
+      var creditoCupom = (booking.metadata && booking.metadata.aguardando_credito) || null;
       var creditoGuardadoCents = (function () {
         var m = (booking.metadata && typeof booking.metadata === 'object') ? booking.metadata : {};
         var q = Math.max(1, Number(booking.quantidade) || 1);
@@ -6161,7 +6162,11 @@
                   '<span style="display:block;font-size:.84rem;font-weight:700;color:#1a1a1a;">⏳ Aguardando experiência (sem reembolso)</span>' +
                   '<span style="display:block;font-size:.74rem;color:#7a6a52;margin-top:3px;line-height:1.45;">Cliente desmarcou e vai escolher outra experiência depois. Enquanto marcado, <b>nenhuma mensagem automática</b> é enviada pro cliente e a <b>vaga volta pro estoque</b>. O valor continua com a Elarah (sem reembolso).</span>' +
                   (creditoGuardadoCents != null
-                    ? '<span style="display:block;font-size:.78rem;color:#1a7a4a;margin-top:6px;line-height:1.45;">💰 A cliente vê na conta dela <b>R$ ' + (creditoGuardadoCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' de crédito</b> pra escolher outra experiência (valor pago, sem a taxa do cartão).</span>'
+                    ? '<span style="display:block;font-size:.78rem;color:#1a7a4a;margin-top:6px;line-height:1.45;">💰 Ao salvar marcado, vira um <b>cupom de R$ ' + (creditoGuardadoCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</b> pra cliente reservar outra experiência (valor pago, sem a taxa do cartão). O código aparece na conta dela e vai por e-mail.</span>'
+                    : '') +
+                  (creditoCupom && creditoCupom.codigo
+                    ? '<span style="display:block;font-size:.78rem;color:#1a1a1a;margin-top:6px;line-height:1.45;">🎟 Cupom: <b style="letter-spacing:.5px;">' + escapeHtml(creditoCupom.codigo) + '</b>' +
+                        (creditoCupom.cancelado_at ? ' (desativado)' : (creditoCupom.usado ? ' (já usado)' : '')) + '</span>'
                     : '') +
                 '</span>' +
               '</label>' +
@@ -6606,7 +6611,12 @@
         // pra a função ler o metadata já atualizado e não ser sobrescrita.
         var aguardarChk = modal.querySelector('#admin-edit-booking-aguardando');
         var novoAguardando = !!(aguardarChk && aguardarChk.checked);
-        var mudouAguardando = novoAguardando !== (booking.aguardando_experiencia === true);
+        // Marcada antes de existir o cupom de crédito: salvar com a caixa
+        // ligada chama a função de novo, que gera o cupom.
+        var creditoAtual = booking.metadata && booking.metadata.aguardando_credito;
+        var semCredito = !(creditoAtual && creditoAtual.coupon_id && !creditoAtual.cancelado_at);
+        var mudouAguardando = novoAguardando !== (booking.aguardando_experiencia === true) ||
+          (novoAguardando && semCredito);
         if (mudouAguardando && (!s.functions || !s.functions.invoke)) {
           alert('Supabase indisponível pra alterar "Aguardando experiência". Recarregue a página.');
           saveBtn.disabled = false;
@@ -6661,7 +6671,20 @@
               alert('Os dados da reserva foram salvos, mas NÃO consegui alterar "Aguardando experiência".\nMotivo: ' + agMotivo + '\n\nTente de novo abrindo o editar.');
             } else {
               booking.aguardando_experiencia = novoAguardando;
-              if (agData.warning) alert('Atenção: ' + agData.warning);
+              // O servidor gravou o crédito/vaga no metadata: copia pra cá,
+              // senão a próxima edição salvaria o metadata antigo por cima.
+              booking.metadata = Object.assign({}, booking.metadata || {}, {
+                aguardando_credito: agData.credito || null,
+                aguardando_experiencia_vaga_liberada: agData.vaga_liberada === true,
+              });
+              var avisos = [];
+              if (agData.credito_novo && agData.credito && agData.credito.codigo) {
+                avisos.push('Cupom de crédito gerado: ' + agData.credito.codigo + ' (R$ ' +
+                  (Number(agData.credito.valor_centavos) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+                  '). Já aparece na conta da cliente e foi enviado por e-mail.');
+              }
+              if (agData.warning) avisos.push('Atenção: ' + agData.warning);
+              if (avisos.length) alert(avisos.join('\n\n'));
             }
           } catch (agEx) {
             console.error('[Admin] exceção ao alterar aguardando_experiencia:', agEx);
