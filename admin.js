@@ -8442,7 +8442,7 @@
         'dia-dos-pais': 'dia-dos-pais.html',
         'dia-das-maes': 'dia-das-maes.html',
         'dia-dos-namorados': 'dia-dos-namorados.html',
-        'dia-das-criancas': 'elarah-kids.html',
+        'dia-das-criancas': 'dia-das-criancas.html',
         'natal': 'categoria.html?campanha=natal',
         'ano-novo': 'categoria.html?campanha=ano-novo',
       };

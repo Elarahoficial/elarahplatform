@@ -7,7 +7,7 @@
   <title>Presentear com experiências em SP — vale-presente Elarah</title>
   <link rel="canonical" href="https://elarah.com.br/presentear.html">
   <link rel="icon" href="assets/logo.png" type="image/png">
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=23">
   <link rel="stylesheet" href="auth.css">
   <link rel="stylesheet" href="presentear.css">
   <link rel="stylesheet" href="dia-dos-namorados.css?v=4">
@@ -89,6 +89,18 @@
       background: var(--ddn-bg-warm, #f5ebe0);
     }
     body.ddn-mode .ddn-back-link:hover { color: var(--ddn-wine-dark); }
+
+    /* TEMA DIA DAS CRIANÇAS — aplicado quando body.ddc-mode
+       (visitas via ?campaign=dia-das-criancas). Fundo creme com
+       confete colorido, sem mexer no layout do gift card. */
+    body.ddc-mode {
+      background:
+        radial-gradient(40% 30% at 0% 0%, rgba(255,201,60,.30) 0%, transparent 70%),
+        radial-gradient(40% 30% at 100% 0%, rgba(61,165,255,.22) 0%, transparent 70%),
+        radial-gradient(40% 30% at 100% 100%, rgba(255,92,138,.18) 0%, transparent 70%),
+        #fff8ec;
+    }
+    body.ddc-mode .header { background: rgba(255, 248, 236, 0.95); }
 
     /* TEMA DIA DOS PAIS — aplicado quando body.ddp-mode
        (visitas via ?campaign=dia-dos-pais). Paleta navy + latão/âmbar. */
@@ -194,6 +206,11 @@
         document.title = 'Gift Card · Especial Dia dos Pais — Elarah';
         var metaP = document.querySelector('meta[name="description"]');
         if (metaP) metaP.content = 'Cartão-presente Especial Dia dos Pais — dê a ele uma experiência pra viver com você.';
+      } else if (camp === 'dia-das-criancas') {
+        document.body.classList.add('ddc-mode');
+        document.title = 'Gift Card · Especial Dia das Crianças — Elarah';
+        var metaC = document.querySelector('meta[name="description"]');
+        if (metaC) metaC.content = 'Cartão-presente Especial Dia das Crianças — dê aos pequenos uma experiência pra viver com você.';
       }
     })();
   </script>
@@ -233,6 +250,7 @@
 </div>
         </div>
         <!-- Aba Elarah Kids oculta temporariamente (sem experiencias infantis no momento). Para reativar, remova este comentario: <a href="elarah-kids.html" class="header__nav-link" style="color:#7a9a6e;font-weight:600;">Elarah Kids</a> -->
+        <a href="dia-das-criancas.html" class="header__nav-link header__nav-link--ddc">Dia das Crianças</a>
         <a href="elarah-em-casa.html" class="header__nav-link">Kits Elarah</a>
         <!-- Aba Dia dos Pais oculta (campanha encerrada). Para reativar na proxima edicao, remova este comentario: <a href="dia-dos-pais.html" class="header__nav-link header__nav-link--ddp">Dia dos Pais</a> -->
         <a href="presentear.html" class="header__nav-link header__nav-link--active">Presentear</a>

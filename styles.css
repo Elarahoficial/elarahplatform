@@ -235,6 +235,28 @@ select {
   background: #f4ede0;
 }
 
+/* Dia das Crianças — texto arco-íris com bolinha colorida. */
+.header__nav-link--ddc {
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #ff5c8a !important;
+}
+.header__nav-link--ddc::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: conic-gradient(#ff5c8a, #ffc93c, #2ec4a0, #3da5ff, #8b5cf6, #ff5c8a);
+  box-shadow: 0 0 0 3px rgba(255,92,138,0.16);
+}
+.header__nav-link--ddc:hover {
+  color: #d63d6b !important;
+  background: #fff1f5;
+}
+
 .header__nav-chevron {
   width: 16px;
   height: 16px;
